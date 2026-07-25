@@ -2,8 +2,107 @@
   "skill_name": "typo3-14-update",
   "skill_type": "preference",
   "spec": "SKILL-SPEC.md",
-  "note": "Behaviour cases target the rules most likely to break under time pressure; each describes a failure that would silently invalidate a run.",
+  "note": "Trigger cases first: this skill sits next to typo3-update, typo3-rector, typo3-batch, typo3-extension-upgrade and typo3-ddev, and is the most expensive skill in the collection to load by mistake. Behaviour cases target the rules most likely to break under time pressure.",
   "evals": [
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-14-update-pos-01",
+      "kind": "trigger-positive",
+      "expect_skill": "typo3-14-update",
+      "prompt": "Update this TYPO3 12 project to 14.3 in DDEV and make sure the site looks exactly the same afterwards.",
+      "note": "The canonical case: whole project, DDEV, invariance requirement."
+    },
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-14-update-pos-02",
+      "kind": "trigger-positive",
+      "expect_skill": "typo3-14-update",
+      "prompt": "We need to go to TYPO3 14 LTS. Plan the whole thing and prove nothing broke.",
+      "note": "No tool named, no version constraint given - the intent is an end-to-end run with evidence."
+    },
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-14-update-pos-03",
+      "kind": "trigger-positive",
+      "expect_skill": "typo3-14-update",
+      "prompt": "Set up visual regression around our v13 to v14 upgrade so we can show the client nothing changed.",
+      "note": "Visual regression tied to an upgrade is this skill, not a generic testing skill."
+    },
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-14-update-pos-04",
+      "kind": "trigger-positive",
+      "expect_skill": "typo3-14-update",
+      "prompt": "After the upgrade the contact page shifted by a few pixels. Is that acceptable?",
+      "note": "Mid-run triage. The answer must be no - there is no minor bucket - so the skill has to be loaded to answer correctly."
+    },
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-14-update-pos-05",
+      "kind": "trigger-positive",
+      "expect_skill": "typo3-14-update",
+      "prompt": "What PHP version should this TYPO3 project target and can we drop ext_emconf.php?",
+      "note": "This skill OWNS constraints, PHP target and the #108345 policy, even though typo3-update also mentions them."
+    },
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-14-update-neg-01",
+      "kind": "trigger-negative",
+      "expect_skill": "typo3-update",
+      "prompt": "What does the ViewFactory API look like in v14?",
+      "note": "A single API question is the reference skill. Loading a whole upgrade orchestrator to answer it wastes context and imposes a process nobody asked for."
+    },
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-14-update-neg-02",
+      "kind": "trigger-negative",
+      "expect_skill": "typo3-rector",
+      "prompt": "Run Rector over this extension with the v14 rule set.",
+      "note": "Rector is one phase of an update run, but invoking the tool directly is not a request for the run."
+    },
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-14-update-neg-03",
+      "kind": "trigger-negative",
+      "expect_skill": "typo3-extension-upgrade",
+      "prompt": "Upgrade this single extension from v12 to v14 and publish it to TER.",
+      "note": "One reusable extension is the extension-upgrade path. This skill is for a whole site on a local DDEV clone and never publishes."
+    },
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-14-update-neg-04",
+      "kind": "trigger-negative",
+      "expect_skill": "typo3-ddev",
+      "prompt": "How do I change the PHP version in my DDEV project?",
+      "note": "A DDEV mechanics question. This skill uses DDEV heavily, which makes it a plausible mis-fire."
+    },
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-14-update-neg-05",
+      "kind": "trigger-negative",
+      "expect_no_skill": true,
+      "prompt": "Deploy the current branch to staging.",
+      "note": "Deployment is explicitly outside this skill and not grantable inside it. It must not fire and then refuse - it must not fire."
+    },
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-14-update-neg-06",
+      "kind": "trigger-negative",
+      "expect_skill": "typo3-seo",
+      "prompt": "Our meta descriptions are missing on news detail pages. Fix the SEO setup.",
+      "note": "Standalone SEO work. This skill only touches SEO inside an approved elevation track after invariance closes."
+    },
     {
       "id": "baseline-before-any-change",
       "kind": "behaviour",

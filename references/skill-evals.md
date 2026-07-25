@@ -137,8 +137,14 @@ prescriptive part became a program, which is what the advice actually points at.
 ```
 26 owned skills (11 vendored, exempt)
 suites present : 26/26
-human-reviewed : 4/26   (38/170 cases)
+human-reviewed : 4/26   (49/181 cases)
 ```
+
+The validator's first catch was the flagship. `typo3-14-update` carried twelve carefully
+written behaviour cases and **zero** trigger cases — it tested what the skill does once
+loaded and never tested whether it loads. Given it is the most expensive skill here to
+invoke by mistake, and sits beside five plausible confusions, that was the wrong half to
+have covered.
 
 The 22 scaffolded suites are **drafts**. They give every skill a structure, negative-case
 slots and a lifecycle class, and they do not yet count as coverage. The four reviewed suites

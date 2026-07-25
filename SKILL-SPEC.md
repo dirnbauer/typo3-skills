@@ -175,6 +175,15 @@ Their evals, where we add them, live in the overlay and are marked as ours.
 
 ## Honest status
 
+```
+26 owned skills (11 vendored, exempt)
+suites present : 26/26
+human-reviewed : 4/26   (49/181 cases)
+```
+
 This spec is newer than most of the skills it governs. `validate_evals.py` reports actual
 coverage rather than asserting compliance, and reviewed coverage is deliberately separate
 from generated coverage so that gap stays visible.
+
+It caught its own author first: `typo3-14-update` had twelve behaviour cases and no trigger
+cases at all, and failed S4 the moment the validator ran.
