@@ -1,0 +1,517 @@
+# Automated Scanning Tools Reference
+
+Configuration, custom rules, CI integration, and best practices for semgrep / opengrep, trivy, and gitleaks, plus false-positive handling for SonarCloud / SonarQube quality gates (SonarCloud is hosted; SonarQube is self-hosted).
+
+## Tool Comparison
+
+| Tool | Purpose | Scans | Best For |
+|------|---------|-------|----------|
+| **semgrep** / **opengrep** | SAST (Static Application Security Testing) | Source code patterns | Injection, XSS, insecure crypto, code quality |
+| **trivy** | Vulnerability scanner | Dependencies, containers, IaC | Known CVEs, outdated packages, misconfigurations |
+| **gitleaks** | Secret detection | Git history, staged files | API keys, passwords, tokens, private keys |
+
+**Run order in audits:**
+
+1. **gitleaks** -- fast, catches critical secrets immediately
+2. **trivy** -- scans dependencies and infrastructure
+3. **semgrep** / **opengrep** -- deep code analysis, takes longest
+
+> **semgrep vs opengrep:** [Opengrep](https://github.com/opengrep/opengrep) is a fully open-source (LGPL-2.1) fork of Semgrep, created after Semgrep relicensed the community rule registry to CC-BY-NC-SA. The CLI is a drop-in replacement — rule syntax, `.semgrepignore`, `nosemgrep:` comments, and config files all work identically. See the [opengrep subsection](#opengrep-fully-oss-drop-in-replacement) below for when to prefer it.
+
+---
+
+## semgrep - Static Analysis (SAST)
+
+### Configuration (.semgrep.yml)
+
+Place in project root for custom rules alongside community rulesets:
+
+```yaml
+# .semgrep.yml
+rules:
+  - id: no-eval-user-input
+    patterns:
+      - pattern: eval($INPUT)
+      - pattern-not: eval("static string")
+    message: "eval() with dynamic input is a code injection risk (CWE-95)"
+    languages: [php, python, javascript]
+    severity: ERROR
+    metadata:
+      cwe: ["CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code"]
+      owasp: ["A03:2021 - Injection"]
+
+  - id: no-md5-passwords
+    pattern: md5($PASSWORD)
+    message: "MD5 is not suitable for password hashing. Use password_hash() with PASSWORD_ARGON2ID"
+    languages: [php]
+    severity: WARNING
+    metadata:
+      cwe: ["CWE-328: Use of Weak Hash"]
+
+  - id: no-unserialize-user-input
+    patterns:
+      - pattern: unserialize($INPUT)
+      - metavariable-regex:
+          metavariable: $INPUT
+          regex: "^(?!.*(static_value)).*$"
+    message: "unserialize() with user input leads to object injection (CWE-502). Use json_decode() instead."
+    languages: [php]
+    severity: ERROR
+    metadata:
+      cwe: ["CWE-502: Deserialization of Untrusted Data"]
+```
+
+### Ignoring False Positives
+
+```python
+# nosemgrep: rule-id
+some_safe_code()
+```
+
+Or use `.semgrepignore` (follows .gitignore syntax):
+
+```
+# .semgrepignore
+tests/
+vendor/
+node_modules/
+*.min.js
+```
+
+### Key Rulesets
+
+| Ruleset | Command | Coverage |
+|---------|---------|----------|
+| Auto (recommended) | `--config auto` | Language-detected community rules |
+| OWASP Top 10 | `--config p/owasp-top-ten` | All OWASP categories |
+| PHP Security | `--config p/php-security` | PHP-specific patterns |
+| JavaScript | `--config p/javascript` | JS/TS patterns |
+| Secrets | `--config p/secrets` | Hardcoded credentials |
+| Docker | `--config p/dockerfile` | Dockerfile misconfigurations |
+| Supply chain | `--config p/supply-chain` | Dependency confusion, typosquatting |
+
+### CI Integration
+
+```yaml
+# GitHub Actions
+- name: Semgrep SAST
+  uses: semgrep/semgrep-action@v1
+  with:
+    config: >-
+      p/owasp-top-ten
+      p/php-security
+      .semgrep.yml
+  env:
+    SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+```
+
+### opengrep: fully-OSS drop-in replacement
+
+[Opengrep](https://github.com/opengrep/opengrep) is an LGPL-2.1 fork of Semgrep maintained by a coalition of security vendors. Reasons to prefer it:
+
+- **No license friction.** Semgrep's Community rule registry is CC-BY-NC-SA (non-commercial). Opengrep rules are freely usable in any setting, including commercial audits and derived rulesets.
+- **Fully open engine.** Semgrep's Pro engine (interfile / taint tracking beyond the OSS baseline) is proprietary. Opengrep keeps the complete analysis engine open.
+- **CLI-compatible.** Same rule syntax, same config files (`.semgrep.yml`, `.semgrepignore`), same `nosemgrep:` ignore comments. Existing rules and CI pipelines port over by swapping the binary.
+
+Install via `coding_agent_cli_toolset`:
+
+```bash
+make install-opengrep   # downloads statically-linked binary to ~/.local/bin
+```
+
+Usage — identical to semgrep:
+
+```bash
+opengrep scan --config auto --error .                           # community rules
+opengrep scan --config p/owasp-top-ten --sarif --output out.sarif .
+opengrep scan --config .semgrep.yml .                           # custom rules (same format)
+```
+
+CI integration (no official action yet — invoke the binary directly). Pin the version and verify the SHA256 to keep the pipeline reproducible and supply-chain safe:
+
+```yaml
+- name: Opengrep SAST
+  env:
+    OPENGREP_VERSION: v1.19.0
+    # SHA256 of opengrep_manylinux_x86 at OPENGREP_VERSION
+    OPENGREP_SHA256: 1d69a41beb88e8e7917f26cc6a16c1edf298f31402807e6d1afbb5d8684c3590
+  run: |
+    mkdir -p "$HOME/.local/bin"
+    curl -fsSL -o "$HOME/.local/bin/opengrep" \
+      "https://github.com/opengrep/opengrep/releases/download/${OPENGREP_VERSION}/opengrep_manylinux_x86"
+    echo "${OPENGREP_SHA256}  $HOME/.local/bin/opengrep" | sha256sum -c -
+    chmod +x "$HOME/.local/bin/opengrep"
+    echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+    opengrep scan --config auto --sarif --output opengrep.sarif --error .
+- name: Upload SARIF
+  uses: github/codeql-action/upload-sarif@v3
+  with:
+    sarif_file: opengrep.sarif
+```
+
+**When to stay on semgrep:** Semgrep Pro/AppSec Platform features (interfile taint tracking, managed registry, SCM integrations). **When to switch:** rule-authoring freedom, offline/air-gapped scanning, avoiding the Semgrep account requirement for `--config auto` against the Pro registry.
+
+---
+
+## trivy - Vulnerability Scanner
+
+### Configuration (trivy.yaml)
+
+Place in project root:
+
+```yaml
+# trivy.yaml
+severity:
+  - HIGH
+  - CRITICAL
+
+scan:
+  # Skip directories
+  skip-dirs:
+    - vendor
+    - node_modules
+    - .git
+
+  # Skip specific files
+  skip-files:
+    - "composer.lock.bak"
+
+# Ignore specific CVEs (document why!)
+ignore:
+  # CVE-YYYY-NNNNN: Not exploitable in our context because...
+  unfixed: false
+```
+
+### Ignore File (.trivyignore)
+
+```
+# .trivyignore
+# CVE-2024-12345: False positive - function not reachable from user input
+CVE-2024-12345
+
+# CVE-2024-67890: Accepted risk - mitigated by WAF rules, fix ETA Q2 2026
+CVE-2024-67890
+```
+
+**Important:** Always document WHY a CVE is ignored. Revisit ignored CVEs quarterly.
+
+### Scan Types
+
+```bash
+# Filesystem scan (dependencies)
+trivy fs --severity HIGH,CRITICAL .
+
+# Docker image scan
+trivy image --severity HIGH,CRITICAL myapp:latest
+
+# IaC scan (Terraform, Kubernetes, CloudFormation, Dockerfile)
+trivy config --severity HIGH,CRITICAL .
+
+# SBOM generation
+trivy fs --format cyclonedx --output sbom.json .
+
+# License scanning
+trivy fs --scanners license .
+```
+
+### CI Integration
+
+```yaml
+# GitHub Actions
+- name: Trivy vulnerability scan
+  uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1  # v0.35.0
+  with:
+    scan-type: fs
+    severity: HIGH,CRITICAL
+    format: table
+    exit-code: 1
+    ignore-unfixed: true
+
+- name: Trivy Docker scan
+  uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1  # v0.35.0
+  with:
+    scan-type: image
+    image-ref: ${{ env.IMAGE }}
+    severity: HIGH,CRITICAL
+    exit-code: 1
+```
+
+---
+
+## gitleaks - Secret Detection
+
+### Configuration (.gitleaks.toml)
+
+```toml
+# .gitleaks.toml
+title = "Custom gitleaks config"
+
+# Extend default rules (recommended)
+[extend]
+useDefault = true
+
+# Allowlist specific paths or patterns
+[allowlist]
+  description = "Allowed patterns"
+  commits = [
+    "abc123def456",  # Commit that added test fixtures with dummy keys
+  ]
+  paths = [
+    '''vendor/.*''',
+    '''node_modules/.*''',
+    '''tests/fixtures/.*''',
+    '''\.env\.example''',
+  ]
+  regexes = [
+    '''EXAMPLE_API_KEY''',
+    '''test[_-]?key''',
+    '''dummy[_-]?secret''',
+    '''AKIAIOSFODNN7EXAMPLE''',  # AWS example key from documentation
+  ]
+
+# Custom rules
+[[rules]]
+  id = "custom-internal-token"
+  description = "Internal service token"
+  regex = '''NR-[A-Za-z0-9]{32}'''
+  secretGroup = 0
+  entropy = 3.5
+  keywords = ["NR-"]
+```
+
+### Pre-commit Hook Setup
+
+```bash
+# Install pre-commit hook
+cat > .git/hooks/pre-commit << 'HOOK'
+#!/bin/bash
+gitleaks protect --staged --verbose
+if [ $? -ne 0 ]; then
+    echo "gitleaks detected secrets in staged files. Commit blocked."
+    echo "If this is a false positive, add to .gitleaks.toml allowlist."
+    exit 1
+fi
+HOOK
+chmod +x .git/hooks/pre-commit
+```
+
+Or with the `pre-commit` framework:
+
+```yaml
+# .pre-commit-config.yaml
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.0
+    hooks:
+      - id: gitleaks
+```
+
+### CI Integration
+
+```yaml
+# GitHub Actions
+- name: Gitleaks secret scan
+  uses: gitleaks/gitleaks-action@v2.3.9
+  env:
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+---
+
+## SonarCloud / SonarQube Quality Gate
+
+SonarCloud runs its own SAST engine (including AI-authored taint rules) and gates a PR
+via a **quality gate**. Sonar's inline suppression is `# NOSONAR` (or
+`# NOSONAR(ruleKey)`), but it leaves a marker in the code and suppresses *every* issue on
+the line. For a genuine false positive, prefer clearing it through the SonarCloud **API**
+(or UI): it records an auditable review decision, keeps the source clean, and the gate
+then recomputes.
+
+### AI taint rules over-flag safe patterns
+
+Sonar's AI taint rules match a **call pattern**, not the actual exploitability, so they
+raise false positives on code that is already safe:
+
+| Rule | Flags | Why it is often a false positive |
+|------|-------|----------------------------------|
+| `pythonsecurity:S8705` | `subprocess.run([...])` reaching a variable argument (framed as "an LLM could pass faulty CLI arguments and escape a shell sandbox") | Fires even in **array form** (`[cmd, "-x", var]`), which is immune to shell injection because no shell parses the arguments. Adding inline **or** cross-function argument validation does not clear it — the rule matches the shape of the call. |
+| `python:S5443` | String literals under publicly writable directories (`/tmp/...`) | Fires on `/tmp/...` **string literals even inside test fixtures**, where no untrusted process shares the path. |
+
+Practical consequences:
+
+- For **S8705** on an array-form `subprocess` call, two source-side sanitization attempts
+  (inline validation and a cross-function validator) will typically **not** clear the
+  finding. If the call is genuinely safe, mark it a false positive via the API rather than
+  contorting the code.
+- For **S5443** in test data, prefer a non-writable placeholder such as `/opt/...` instead
+  of `/tmp/...` so the literal never trips the rule in the first place.
+
+### Marking a false positive via the API
+
+Requires a token with **Administer Issues** on the project. Use an `Authorization: Bearer`
+header rather than `curl -u` basic auth — the `-u user:pass` form trips secret scanners
+(and reviewers). Note that a token passed as *any* curl argument (header included) is
+still visible to other users via `ps`; to keep it off the process list entirely, load it
+from a file with `curl --config <file>` or a `~/.netrc`.
+
+```bash
+AUTH="Authorization: Bearer $SONAR_TOKEN"
+
+# 1. Find the open issue keys for this PR
+curl -H "$AUTH" \
+  "https://sonarcloud.io/api/issues/search?components=<projectKey>&pullRequest=<N>&types=VULNERABILITY&resolved=false"
+
+# 2. (Optional) attach context explaining why it is a false positive
+curl -H "$AUTH" -X POST \
+  "https://sonarcloud.io/api/issues/add_comment" \
+  --data-urlencode "issue=<issueKey>" \
+  --data-urlencode "text=Array-form subprocess call; args never reach a shell. FP."
+
+# 3. Transition the issue to false-positive
+curl -H "$AUTH" -X POST \
+  "https://sonarcloud.io/api/issues/do_transition" \
+  --data-urlencode "issue=<issueKey>" \
+  --data-urlencode "transition=falsepositive"
+
+# 4. Confirm the gate recomputed green (status: OK)
+curl -H "$AUTH" \
+  "https://sonarcloud.io/api/qualitygates/project_status?projectKey=<projectKey>&pullRequest=<N>"
+```
+
+> **Always document the rationale** (step 2) before resolving — a bare `falsepositive`
+> transition with no comment is indistinguishable from suppressing a real finding.
+
+### Confirm the gate actually blocks merge
+
+SonarCloud's check is frequently **not a required status check**. Before treating a red
+SonarCloud gate as a merge blocker, verify the branch ruleset / protection rules actually
+require it. If it is advisory, fix genuine findings but do not let an over-flagging AI
+taint rule stall the PR.
+
+---
+
+## Combined CI Pipeline
+
+A complete security scanning pipeline combining all three tools:
+
+```yaml
+# .github/workflows/security-scan.yml
+name: Security Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly full scan (catches newly disclosed CVEs)
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  secret-detection:
+    name: Secret Detection (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for git log scanning
+
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2.3.9
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  dependency-scan:
+    name: Dependency Scan (trivy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1  # v0.35.0
+        with:
+          scan-type: fs
+          severity: HIGH,CRITICAL
+          format: sarif
+          output: trivy-results.sarif
+          exit-code: 1
+          ignore-unfixed: true
+
+      - name: Upload Trivy SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-results.sarif
+
+  sast:
+    name: Static Analysis (semgrep)
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Semgrep scan
+        run: semgrep --config auto --sarif --output semgrep-results.sarif .
+
+      - name: Upload Semgrep SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: semgrep-results.sarif
+
+  iac-scan:
+    name: IaC Scan (trivy)
+    runs-on: ubuntu-latest
+    if: hashFiles('**/Dockerfile') != '' || hashFiles('**/*.tf') != '' || hashFiles('**/k8s/**') != ''
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Trivy config scan
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1  # v0.35.0
+        with:
+          scan-type: config
+          severity: HIGH,CRITICAL
+          exit-code: 1
+```
+
+### Pipeline Design Notes
+
+- **secret-detection** runs first and independently -- secrets are always critical
+- **dependency-scan** and **sast** run in parallel for speed
+- **iac-scan** only runs when infrastructure files exist
+- SARIF output integrates with GitHub Security tab (Code Scanning alerts)
+- Weekly scheduled scan catches newly disclosed CVEs in existing dependencies
+- `fetch-depth: 0` for gitleaks ensures full git history is scanned
+
+### Local Development Workflow
+
+Run all three tools locally before pushing:
+
+```bash
+#!/bin/bash
+# scripts/security-check.sh - Run before push
+
+set -euo pipefail
+
+echo "=== Secret Detection (gitleaks) ==="
+gitleaks detect --source . --verbose
+echo "PASS: No secrets detected"
+
+echo ""
+echo "=== Dependency Scan (trivy) ==="
+trivy fs --severity HIGH,CRITICAL .
+echo "PASS: No high/critical CVEs"
+
+echo ""
+echo "=== Static Analysis (semgrep) ==="
+semgrep --config auto --error .
+echo "PASS: No security findings"
+
+echo ""
+echo "All security checks passed."
+```

@@ -1,0 +1,8 @@
+node_modules/
+.DS_Store
+*.log
+.env
+.env.*
+!.env.example
+.typo3-update/
+skills/*/scripts/node_modules/

@@ -1,0 +1,354 @@
+---
+name: "typo3-rector"
+description: "Applies TYPO3 Rector upgrade patterns for PHP migrations toward TYPO3 v14, including Rector configuration, dry runs, rule sets, ViewFactory, Extbase responses, PSR-14 events, backend modules, TCA, and manual follow-up checks. Use when running Rector, fixing deprecations, upgrading TYPO3 PHP code, or preparing extensions for v14."
+compatibility: "TYPO3 14.x"
+metadata:
+  version: "2.2.0"
+  origin: "webconsulting"
+license: "MIT / CC-BY-SA-4.0"
+---
+# TYPO3 Rector Upgrade Patterns
+
+> Source: https://github.com/dirnbauer/webconsulting-skills
+
+> **Compatibility:** TYPO3 v14.x
+> This skill covers patterns for writing code that works on TYPO3 v14.
+
+> **TYPO3 API First:** Always use TYPO3's built-in APIs, core features, and established conventions before creating custom implementations. Do not reinvent what TYPO3 already provides. Always verify that the APIs and methods you use exist and are not deprecated in TYPO3 v14 by checking the official TYPO3 documentation.
+
+## 1. Introduction to TYPO3 Rector
+
+Rector is an automated refactoring tool that helps migrate TYPO3 **PHP code** between major versions. It applies predefined rules to update deprecated code patterns. For non-PHP migrations (FlexForms, TypoScript, Fluid, YAML), use Fractor -- see the `typo3-fractor` skill.
+
+### Installation
+
+```bash
+composer require --dev ssch/typo3-rector
+# or with DDEV:
+ddev composer require --dev ssch/typo3-rector
+```
+
+> **Important:** Rector loads your project's autoloader. For TYPO3 v14 projects, Rector
+> **must** run on PHP 8.2+ because TYPO3 v14 packages use `readonly` classes and other
+> PHP 8.2 syntax — and webconsulting projects target PHP 8.4+, so run Rector on the same
+> PHP version the project requires. If your local PHP is older, always use DDEV or a
+> container: `ddev exec vendor/bin/rector process --dry-run`
+
+> **Always run Rector, never skip it.** Manual replacements (e.g. `strpos` -> `str_starts_with`)
+> miss edge cases that Rector rules handle correctly. Rector also catches deprecated TYPO3
+> namespace changes and method signature updates that are hard to find manually.
+
+### Basic configuration (TYPO3 v14 target)
+
+Create `rector.php` in your project root:
+
+```php
+<?php
+declare(strict_types=1);
+
+use Rector\Config\RectorConfig;
+use Rector\Set\ValueObject\LevelSetList;
+use Rector\ValueObject\PhpVersion;
+use Ssch\TYPO3Rector\Set\Typo3LevelSetList;
+
+return RectorConfig::configure()
+    ->withPaths([
+        __DIR__ . '/packages',
+        __DIR__ . '/public/typo3conf/ext',
+    ])
+    ->withSkip([
+        __DIR__ . '/public/typo3conf/ext/*/Resources/',
+        __DIR__ . '/public/typo3conf/ext/*/Tests/',
+    ])
+    ->withPhpVersion(PhpVersion::PHP_84)
+    ->withSets([
+        LevelSetList::UP_TO_PHP_84,
+        Typo3LevelSetList::UP_TO_TYPO3_14,
+    ])
+    ->withImportNames();
+```
+
+> **Incremental upgrades:** On a very old codebase you may run `UP_TO_TYPO3_13` in a dedicated step first, then `UP_TO_TYPO3_14`. Published extensions should declare **`typo3/cms-core: ^14.3`** once you ship for v14 — 14.0 through 14.2 no longer receive security updates.
+
+### Current state (typo3-rector v3.14, mid-2026)
+
+typo3-rector 3.14 runs on Rector 2.5 and is maintained by Simon Schaufelberger, partly funded through TYPO3 community budgets. Run `composer update ssch/typo3-rector` before each migration pass so the newest v14 rules apply. Notable in 3.14:
+
+- Migrates TYPO3-bundled Fluid class names to standalone Fluid, which TYPO3 v14 uses
+- Migrates `makeCategorizable()` registrations
+- Extends `$GLOBALS['TSFE']->fe_user` migration coverage
+- Hardens the `HashService` and `MailMessage::send()` migrations
+
+## 2. Running Rector
+
+### Dry Run (Preview Changes)
+
+```bash
+# Show what would be changed
+ddev exec vendor/bin/rector process --dry-run
+
+# For specific extension
+ddev exec vendor/bin/rector process packages/my_extension --dry-run
+```
+
+### Apply Changes
+
+```bash
+# Apply all changes
+ddev exec vendor/bin/rector process
+
+# Apply to specific path
+ddev exec vendor/bin/rector process packages/my_extension
+```
+
+### Clear Cache After
+
+```bash
+ddev typo3 cache:flush
+ddev composer dump-autoload
+```
+
+## 3. Version constraints and extra Rector sets
+
+### Version constraints
+
+For extensions targeting TYPO3 v14:
+
+```php
+<?php
+// ext_emconf.php
+$EM_CONF[$_EXTKEY] = [
+    'title' => 'My Extension',
+    'version' => '2.0.0',
+    'state' => 'stable',
+    'constraints' => [
+        'depends' => [
+            'typo3' => '14.3.0-14.99.99',
+            'php' => '8.4.0-8.5.99',
+        ],
+        'conflicts' => [],
+        'suggests' => [],
+    ],
+];
+```
+
+```json
+// composer.json
+{
+    "require": {
+        "php": "^8.4",
+        "typo3/cms-core": "^14.3"
+    }
+}
+```
+
+### Optional: TYPO3 v14 rule set only
+
+Add explicit v14 rules (in addition to or instead of the level set, depending on your Rector version):
+
+```php
+<?php
+declare(strict_types=1);
+
+use Rector\Config\RectorConfig;
+use Ssch\TYPO3Rector\Set\Typo3SetList;
+
+return RectorConfig::configure()
+    ->withPaths([__DIR__ . '/packages'])
+    ->withSets([
+        Typo3SetList::TYPO3_14,
+    ]);
+```
+
+## 4. Key Migration Patterns (TYPO3 v14)
+
+### Fluid ViewFactory (Replaces StandaloneView)
+
+The ViewFactory approach works on TYPO3 v14:
+
+```php
+<?php
+declare(strict_types=1);
+
+namespace Vendor\Extension\Service;
+
+use Psr\Http\Message\ServerRequestInterface;
+use TYPO3\CMS\Core\View\ViewFactoryData;
+use TYPO3\CMS\Core\View\ViewFactoryInterface;
+
+final class RenderingService
+{
+    public function __construct(
+        private readonly ViewFactoryInterface $viewFactory,
+    ) {}
+
+    public function render(ServerRequestInterface $request): string
+    {
+        $viewFactoryData = new ViewFactoryData(
+            templateRootPaths: ['EXT:my_extension/Resources/Private/Templates'],
+            partialRootPaths: ['EXT:my_extension/Resources/Private/Partials'],
+            layoutRootPaths: ['EXT:my_extension/Resources/Private/Layouts'],
+            request: $request,
+        );
+        
+        $view = $this->viewFactory->create($viewFactoryData);
+        $view->assign('data', ['key' => 'value']);
+        $view->assignMultiple([
+            'items' => [],
+            'settings' => [],
+        ]);
+        
+        return $view->render('MyTemplate');
+    }
+}
+```
+
+### Extbase controller response (TYPO3 v14)
+
+```php
+<?php
+declare(strict_types=1);
+
+namespace Vendor\Extension\Controller;
+
+use Psr\Http\Message\ResponseInterface;
+use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
+
+final class ItemController extends ActionController
+{
+    // ✅ Correct: Return ResponseInterface (required in TYPO3 v14)
+    public function listAction(): ResponseInterface
+    {
+        $items = $this->itemRepository->findAll();
+        $this->view->assign('items', $items);
+        return $this->htmlResponse();
+    }
+
+    // ✅ Correct: JSON response
+    public function apiAction(): ResponseInterface
+    {
+        $data = ['success' => true];
+        return $this->jsonResponse(json_encode($data));
+    }
+
+    // ✅ Correct: Redirect
+    public function createAction(Item $item): ResponseInterface
+    {
+        $this->itemRepository->add($item);
+        return $this->redirect('list');
+    }
+}
+```
+
+### PSR-14 Events (Preferred over Hooks)
+
+PSR-14 events work on TYPO3 v14. Use them instead of legacy hooks:
+
+```php
+<?php
+declare(strict_types=1);
+
+namespace Vendor\Extension\EventListener;
+
+use TYPO3\CMS\Core\Attribute\AsEventListener;
+use TYPO3\CMS\Frontend\Event\ModifyPageLinkConfigurationEvent;
+
+#[AsEventListener(identifier: 'vendor-extension/modify-pagelink')]
+final class ModifyPageLinkListener
+{
+    public function __invoke(ModifyPageLinkConfigurationEvent $event): void
+    {
+        $configuration = $event->getConfiguration();
+        // Modify link configuration
+        $event->setConfiguration($configuration);
+    }
+}
+```
+
+### Backend Module Registration (TYPO3 v14)
+
+```php
+<?php
+// Configuration/Backend/Modules.php
+return [
+    'web_myextension_mymodule' => [
+        'parent' => 'content',
+        'position' => ['after' => 'records'],
+        'access' => 'user,group',
+        'iconIdentifier' => 'myextension-module',
+        'path' => '/module/content/myextension',
+        'labels' => 'LLL:EXT:my_extension/Resources/Private/Language/locallang_mod.xlf',
+        'extensionName' => 'MyExtension',
+        'controllerActions' => [
+            \Vendor\MyExtension\Controller\ModuleController::class => [
+                'index',
+                'edit',
+            ],
+        ],
+    ],
+];
+```
+
+### Service Configuration (Services.yaml)
+
+```yaml
+# Configuration/Services.yaml
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    public: false
+
+  Vendor\MyExtension\:
+    resource: '../Classes/*'
+    exclude:
+      - '../Classes/Domain/Model/*'
+```
+
+## 5. TCA Best Practices (TYPO3 v14)
+
+### Static TCA Only
+
+In v14, `$GLOBALS['TCA']` becomes read-only after loading. Always use static TCA files:
+
+```php
+<?php
+// Configuration/TCA/Overrides/tt_content.php
+defined('TYPO3') or die();
+
+// ✅ Correct: Static TCA configuration
+\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addTcaSelectItem(
+    'tt_content',
+    'CType',
+    [
+        'label' => 'LLL:EXT:my_extension/Resources/Private/Language/locallang.xlf:mytype.title',
+        'value' => 'myextension_mytype',
+        'icon' => 'content-text',
+        'group' => 'default',
+    ]
+);
+
+$GLOBALS['TCA']['tt_content']['types']['myextension_mytype'] = [
+    'showitem' => '
+        --div--;LLL:EXT:core/Resources/Private/Language/Form/locallang_tabs.xlf:general,
+            --palette--;;general,
+            header;LLL:EXT:frontend/Resources/Private/Language/locallang_ttc.xlf:header_formlabel,
+            bodytext,
+        --div--;LLL:EXT:core/Resources/Private/Language/Form/locallang_tabs.xlf:access,
+            --palette--;;hidden,
+            --palette--;;access,
+    ',
+    'columnsOverrides' => [
+        'bodytext' => [
+            'config' => [
+                'enableRichtext' => true,
+            ],
+        ],
+    ],
+];
+```
+
+
+## Detailed Reference
+
+Read [the full guide](references/full-guide.md) when the task needs detailed examples, long templates, troubleshooting matrices, appendices, or sections not included above. Keep this file unloaded for narrow tasks so the skill follows progressive disclosure.
