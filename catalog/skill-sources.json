@@ -500,11 +500,11 @@
   {
     "directory": "typo3-upgrade-run",
     "skill_name": "typo3-upgrade-run",
-    "description": "End-to-end TYPO3 upgrade run: takes a v12 or v13 site to 14.3 LTS inside a local DDEV clone under two contracts. Invariance: the migration must be provably invisible to visitors, measured against a baseline frozen before any change. Elevation: separately approved performance, SEO, accessibility and security work may start only after invariance closes. Owns the version constraints, the PHP target and the process; consults typo3-v14-reference for API detail. Every step runs as one loop protocol with preconditions, a snapshot rollback anchor, bounded iterations, classified findings and abort conditions, documented per loop in its own numbered directory. Covers sitemaps, Bootstrap 5, extensions, PHP 8.4+, Rector, Fractor, PHPStan, wizards, workspaces, Vite, Solr, Visual Editor, CKEditor RTE, security headers, Lighthouse and a Word KPI report. Never deploys to staging or live.",
+    "description": "Update or upgrade a whole TYPO3 site or project from v12 or v13 to 14.3 LTS, end to end, in a local DDEV clone, and prove nothing changed for visitors. Use when the user says update TYPO3, upgrade to v14, move to 14.3 LTS, migrate the site, do the whole upgrade, set up visual regression around an upgrade, make sure the site looks exactly the same after the update, prove nothing broke, or asks whether a pixel difference after the upgrade is acceptable. Owns the TYPO3 version constraint, the PHP target and the ext_emconf.php policy for a project. Runs the update as bounded loops against a baseline frozen before any change, with a snapshot to roll back to and a documented verdict per loop; approved performance, SEO, accessibility and security work starts only afterwards. Never deploys to staging or live.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "/Users/dirnbauer/projects/typo3-skills/skills/typo3-upgrade-run/SKILL.md",
-    "line_count": 404,
+    "line_count": 403,
     "frontmatter_keys": [
       "name",
       "description"
@@ -516,7 +516,7 @@
   {
     "directory": "typo3-v14-reference",
     "skill_name": "typo3-v14-reference",
-    "description": "TYPO3 v14 API reference for writing v14 code: controllers, ViewFactory, Fluid, PSR-14 events, backend modules, TCA, QueryBuilder, CLI commands and tests. Use when the user asks what a v14 API looks like, which event replaced a hook, or how to write a specific piece of v14 code. Does NOT run upgrades: for a whole project or site upgrade use typo3-upgrade-run, which owns the version constraints, the PHP target and the migration process.",
+    "description": "TYPO3 v14 API reference: how to write v14 code. Covers controllers, building a view with ViewFactory, Fluid templates, PSR-14 events that replaced old hooks, backend modules, TCA, QueryBuilder queries without SQL injection, CLI commands and tests. Use when the user asks what a v14 API looks like, which event replaced a hook, how to build or write a specific piece of v14 code, or which class or interface to use. Does NOT run upgrades or migrations: for a whole project or site upgrade use typo3-upgrade-run, which owns the version constraint, the PHP target and the process.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "/Users/dirnbauer/projects/typo3-skills/skills/typo3-v14-reference/SKILL.md",

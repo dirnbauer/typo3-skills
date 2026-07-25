@@ -188,13 +188,35 @@ Their evals, where we add them, live in the overlay and are marked as ours.
 
 ```
 26 owned skills (11 vendored, exempt)
-suites present : 26/26
-human-reviewed : 4/26   (49/181 cases)
+suites present  : 26/26
+human-reviewed  : 4/26   (49/181 cases)
+lexical grader  : reviewed 78%  ·  draft 87%
 ```
 
-This spec is newer than most of the skills it governs. `validate_evals.py` reports actual
-coverage rather than asserting compliance, and reviewed coverage is deliberately separate
-from generated coverage so that gap stays visible.
+The evals are **run**, not merely present: `scripts/run_evals.py` grades every trigger case
+and `evals-baseline.json` pins the numbers so a regression is detectable.
 
-It caught its own author first: `typo3-upgrade-run` had twelve behaviour cases and no trigger
-cases at all, and failed S4 the moment the validator ran.
+```bash
+python3 scripts/run_evals.py --grader lexical --fail-under 0.75
+python3 scripts/run_evals.py --grader claude --trials 3     # real routing, needs a CLI login
+```
+
+Two results worth keeping.
+
+**Draft cases pass more often than reviewed ones — 87% against 78%.** That looks backwards
+until you see why: drafts were derived from the descriptions themselves, so they test a
+description against its own vocabulary. Circular, and therefore easy. The reviewed cases use
+the words a user would actually type, which is a genuinely harder and more informative test.
+This is S5 confirmed by measurement rather than assertion.
+
+**The spec caught its own author twice.** `typo3-upgrade-run` failed all five of its own
+reviewed positive cases: its description was full of our internal vocabulary — invariance,
+elevation, loop protocol — and missing the user's words: update, looks, same, project. That
+is exactly the S2 failure, committed while writing the rule against it. Rewriting it for
+routing rather than for precision took the reviewed rate from 60% to 78% and removed a
+collision pair.
+
+The lexical grader is a **router proxy**, not a model test. It shows whether a description
+carries the vocabulary a user would type; it cannot tell you what an agent will do. Do not
+tune descriptions to raise its score past the point where they read naturally — that is
+optimising the proxy. The `claude` grader is implemented for real measurement.

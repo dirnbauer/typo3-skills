@@ -472,7 +472,7 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source owner: webconsulting
 - Source URL: https://github.com/dirnbauer/webconsulting-skills
 - Frontmatter name: typo3-upgrade-run
-- SKILL.md lines: 404
+- SKILL.md lines: 403
 
 **Pass 1: Structure**
 - No pass 1 issues found.

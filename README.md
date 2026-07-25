@@ -118,10 +118,11 @@ off.** Coverage is reported as reviewed-versus-total so the number cannot flatte
 python3 scripts/validate_evals.py --min-cases 6      # eval structure and honest coverage
 python3 scripts/validate_structure.py                # directives, size limits, TOCs
 python3 scripts/trigger_collisions.py --threshold 0.13
+python3 scripts/run_evals.py --grader lexical        # actually run the trigger evals
 ```
 
-Current: **26/26 owned skills have suites, 4/26 human-reviewed.** The rest are scaffolds and
-are counted as such.
+Current: **26/26 owned skills have suites, 4/26 human-reviewed**, reviewed cases passing at
+**78%** under the offline grader. The rest are scaffolds and are counted as such.
 
 ## Contributing
 

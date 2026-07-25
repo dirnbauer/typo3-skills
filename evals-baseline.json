@@ -1,0 +1,26 @@
+{
+  "recorded": "2026-07-25",
+  "grader": "lexical",
+  "note": "Offline router proxy, not a model test. Regressions in reviewed_pass_rate mean a description lost user vocabulary.",
+  "summary": {
+    "grader": "lexical",
+    "trials": 1,
+    "cases": 169,
+    "reviewed": 37,
+    "drafts": 132,
+    "errors": 0,
+    "reviewed_pass_rate": 0.784,
+    "draft_pass_rate": 0.871,
+    "overall_pass_rate": 0.852
+  },
+  "failing_reviewed": [
+    "typo3-batch-pos-02",
+    "typo3-batch-pos-04",
+    "typo3-batch-neg-02",
+    "typo3-rector-pos-02",
+    "typo3-rector-pos-03",
+    "typo3-upgrade-run-neg-04",
+    "typo3-v14-reference-pos-02",
+    "typo3-v14-reference-neg-01"
+  ]
+}
