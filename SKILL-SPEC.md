@@ -63,11 +63,17 @@ python3 scripts/trigger_collisions.py --threshold 0.13
 Every pair the analyser reports must be resolved in one of three ways:
 
 1. **Reword** so the distinctive terms differ.
-2. **Route explicitly** — the skills name each other and state which wins. `typo3-update`
-   and `typo3-14-update` do this: the API reference defers to the upgrade orchestrator on
+2. **Route explicitly** — the skills name each other and state which wins. `typo3-v14-reference`
+   and `typo3-upgrade-run` do this: the API reference defers to the upgrade orchestrator on
    constraints, PHP target and process.
 3. **Pin it with negative trigger evals** in both skills, so the confusion is at least
    measured.
+
+**A name is a trigger too, and the analyser cannot see it.** Check by hand that the shorter,
+more obvious name belongs to the skill users most often want. In this collection it did not:
+`typo3-update` was the API reference while `typo3-14-update` did the upgrading. Renaming them
+to `typo3-v14-reference` and `typo3-upgrade-run`, and rewriting both descriptions, took the
+collection from three colliding pairs to two.
 
 Lexical overlap is a signal, not the whole truth. Two skills can collide conceptually while
 sharing few words. The analyser finds the cheap cases; judgement covers the rest.
@@ -125,7 +131,7 @@ Loading everything defeats the mechanism the collection is built on.
 Describe the outcome and the constraints, and leave the agent room to adapt. Where a
 sequence genuinely must be exact, that sequence belongs in a **script**, not in prose.
 
-`typo3-14-update` is the worked example: the contract, the prohibitions and the gates are in
+`typo3-upgrade-run` is the worked example: the contract, the prohibitions and the gates are in
 the skill; the exact command sequence is `scripts/t3u.mjs`. Prose that must be followed
 literally is a program written in the wrong language.
 
@@ -156,7 +162,7 @@ This repository claims Claude Code, Cursor, Codex, Gemini CLI and Windsurf suppo
 depending on `scripts/`, `assets/` or `templates/` does **not** work in an `.mdc`-only
 client, which receives the skill body alone.
 
-Either verify the claim or state the degradation in the skill. `typo3-14-update` states it:
+Either verify the claim or state the degradation in the skill. `typo3-upgrade-run` states it:
 an `.mdc`-only client cannot run the harness and must fall back, at a lower evidence bar.
 
 ---
@@ -185,5 +191,5 @@ This spec is newer than most of the skills it governs. `validate_evals.py` repor
 coverage rather than asserting compliance, and reviewed coverage is deliberately separate
 from generated coverage so that gap stays visible.
 
-It caught its own author first: `typo3-14-update` had twelve behaviour cases and no trigger
+It caught its own author first: `typo3-upgrade-run` had twelve behaviour cases and no trigger
 cases at all, and failed S4 the moment the validator ran.

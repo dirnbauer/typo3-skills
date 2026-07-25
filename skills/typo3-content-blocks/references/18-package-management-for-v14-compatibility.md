@@ -8,7 +8,7 @@ If extensions don't support TYPO3 v14 yet, fork and update:
 
 ```bash
 # Add private fork as VCS repository in composer.json
-# Then update extension for v14 using typo3-rector and typo3-update skills
+# Then update extension for v14 using typo3-rector and typo3-v14-reference skills
 ```
 
 Required private forks for webconsulting stack:

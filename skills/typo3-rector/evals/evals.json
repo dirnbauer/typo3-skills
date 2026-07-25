@@ -2,7 +2,7 @@
   "skill_name": "typo3-rector",
   "skill_type": "preference",
   "spec": "SKILL-SPEC.md",
-  "note": "Measurably collides with typo3-update (0.155). The discriminator is automation: Rector APPLIES transformations to PHP; typo3-update EXPLAINS the target API; Fractor handles everything that is not PHP.",
+  "note": "Measurably collides with typo3-v14-reference (0.155). The discriminator is automation: Rector APPLIES transformations to PHP; typo3-v14-reference EXPLAINS the target API; Fractor handles everything that is not PHP.",
   "evals": [
     {
       "status": "reviewed",
@@ -45,7 +45,7 @@
       "reviewed_by": "dirnbauer",
       "id": "typo3-rector-neg-01",
       "kind": "trigger-negative",
-      "expect_skill": "typo3-update",
+      "expect_skill": "typo3-v14-reference",
       "prompt": "What does the ViewFactory API look like in v14?",
       "note": "Measured collision (0.155). Explaining an API is not applying a transformation."
     },
@@ -63,7 +63,7 @@
       "reviewed_by": "dirnbauer",
       "id": "typo3-rector-neg-03",
       "kind": "trigger-negative",
-      "expect_skill": "typo3-14-update",
+      "expect_skill": "typo3-upgrade-run",
       "prompt": "Take this v13 project to 14.3 end to end and prove the frontend is unchanged.",
       "note": "Rector is one phase of that run, not the run."
     },

@@ -15,7 +15,7 @@ The upstream skill covers PHP 8.1–8.5 features generally. This collection appl
   `^8.2` when it tests that range in CI. Do not copy a project's 8.4 floor into a reusable package,
   and do not copy a package's `^8.2` into a project.
 
-`typo3-14-update` owns this policy and gates on it; `typo3-initial-release` covers the reusable-
+`typo3-upgrade-run` owns this policy and gates on it; `typo3-initial-release` covers the reusable-
 package side.
 
 ## Platform pin
@@ -32,5 +32,5 @@ like a code problem rather than a configuration one — which is why it costs so
 | Local extensions in `packages/` | 10 |
 
 Never lower an existing stricter level. No new suppressions or baseline entries for new or touched
-code; the baseline must **shrink** across an upgrade, and gate A5 of `typo3-14-update` checks that
+code; the baseline must **shrink** across an upgrade, and gate A5 of `typo3-upgrade-run` checks that
 it did.

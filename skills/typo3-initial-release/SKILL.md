@@ -55,7 +55,7 @@ CI, security posture, and final review all agree with the public promise.
 ## Scope
 
 This skill is for TYPO3 14.3 and higher only. Do not use it for v12/v13/v14 dual-compatible releases or for
-extensions that still support TYPO3 14.0-14.2. For upgrade or compatibility work, hand off to `typo3-update`,
+extensions that still support TYPO3 14.0-14.2. For upgrade or compatibility work, hand off to `typo3-v14-reference`,
 `typo3-extension-upgrade`, `typo3-rector`, or `typo3-conformance`.
 
 Do not require or create `ext_emconf.php` in this workflow. In TYPO3 14.3+, release metadata belongs in
@@ -90,7 +90,7 @@ for the local repository instructions pattern that informs the use of `AGENTS.md
 6. Extend before inventing.
    Prefer extending existing Partials, services, models, DTOs, configuration, CI jobs, and docs structures over creating parallel replacements.
 7. Use dedicated skills for specialized work.
-   Use `typo3-update`, `typo3-extension-upgrade`, `typo3-rector`, and `typo3-conformance` for
+   Use `typo3-v14-reference`, `typo3-extension-upgrade`, `typo3-rector`, and `typo3-conformance` for
    upgrade/conformance work. Use `typo3-testing` for test infrastructure, `typo3-security` for hardening, and
    `typo3-records-list-types` when releasing or reviewing that extension.
 
@@ -216,7 +216,7 @@ Composer metadata rules:
   when publishing to TER or Packagist. Raise it only if the code uses newer PHP features, and only
   with a CI job that proves the claim.
 - This differs from project and site work, which targets **PHP 8.4 as standard** (8.5 where the
-  whole dependency set resolves). `typo3-14-update` owns that policy; do not copy a project's 8.4
+  whole dependency set resolves). `typo3-upgrade-run` owns that policy; do not copy a project's 8.4
   floor into a reusable package without a reason, and do not copy this `^8.2` into a project.
 - `require.typo3/cms-core` must be `^14.3` or a later TYPO3 14-only range. Do not use `^14.0`, `^14.1`, or `^14.2` for this release workflow.
 - Add direct TYPO3 system extension dependencies in `require`, for example `typo3/cms-backend`,

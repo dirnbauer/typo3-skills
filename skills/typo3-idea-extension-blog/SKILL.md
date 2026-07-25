@@ -4,7 +4,7 @@ description: "Evaluates external ideas for TYPO3 extension potential, builds the
 compatibility: "TYPO3 14.x preferred with TYPO3 13.4 fallback; PHP 8.2+; Git; network access for verification and push"
 metadata:
   version: "1.0.0"
-  related_skills: "grill-me, firecrawl, typo3-update, typo3-testing, webconsulting-create-documentation"
+  related_skills: "grill-me, firecrawl, typo3-v14-reference, typo3-testing, webconsulting-create-documentation"
   origin: "webconsulting"
 license: "MIT / CC-BY-SA-4.0"
 ---
@@ -30,7 +30,7 @@ Load adjacent skills when they materially improve the result:
 
 - `grill-me`: use this right after the initial source summary to interrogate what the user actually wants to transfer into TYPO3 and to resolve open product decisions one question at a time
 - `firecrawl`: fetching the source page, repo pages, and independent coverage
-- `typo3-update`: TYPO3 v14-first architecture and API choices
+- `typo3-v14-reference`: TYPO3 v14-first architecture and API choices
 - `typo3-testing`: unit tests and verification structure
 - `webconsulting-create-documentation`: help when shaping the MDX deliverable
 

@@ -12,7 +12,7 @@
 #   • Optionally add one .sync-config.json entry for upstream-managed skills
 #   • Do not add per-client symlink code for individual skills
 #   • The installer fans every skill out to supported clients automatically
-#   • Local skills such as typo3-webcomponents and typo3-14-update are included
+#   • Local skills such as typo3-webcomponents and typo3-upgrade-run are included
 #     by discovery after README.md/AGENTS.md trigger metadata and generated
 #     manifests are refreshed
 #
@@ -294,7 +294,7 @@ To use a skill, read \`skills/<skill-name>/SKILL.md\` and follow its instruction
 ## Key Conventions
 
 - $TYPO3_CONVENTION
-- Cross-cutting TYPO3/PHP guidance lives in the owning skills, for example \`php-modernization\`, \`typo3-content-blocks\`, and \`typo3-update\`.
+- Cross-cutting TYPO3/PHP guidance lives in the owning skills, for example \`php-modernization\`, \`typo3-content-blocks\`, and \`typo3-v14-reference\`.
 - Always review AI-generated code before committing.
 - When multiple skills are relevant, combine them, for example \`typo3-rector\` + \`typo3-testing\`.
 - Keep upstream credits and thank-you text intact, especially Netresearch acknowledgements.

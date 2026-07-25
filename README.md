@@ -23,7 +23,7 @@ The installer writes to every client path it detects: `.claude/skills/`, `.curso
 
 ### The upgrade orchestrator
 
-**`typo3-14-update`** is the centre of the collection: a v12/v13 → 14.3 LTS update run inside a
+**`typo3-upgrade-run`** is the centre of the collection: a v12/v13 → 14.3 LTS update run inside a
 local DDEV clone, under two sequential contracts.
 
 - **Invariance** — the migration must be *provably invisible* to visitors. Zero unexplained
@@ -38,7 +38,7 @@ documents itself in its own numbered directory.
 
 ### TYPO3 development
 
-`typo3-update` (v14 API reference) · `typo3-content-blocks` · `typo3-datahandler` ·
+`typo3-v14-reference` (v14 API reference) · `typo3-content-blocks` · `typo3-datahandler` ·
 `typo3-records-list-types` · `typo3-webcomponents` · `typo3-icon14` · `typo3-translations` ·
 `typo3-workspaces` · `typo3-visual-editor` · `typo3-shadcn-content-elements` · `typo3-powermail` ·
 `typo3-news-tags`
@@ -92,7 +92,7 @@ A rule answers *is this change allowed?*. A skill answers *how do I build this?*
   remains the Core floor for reusable packages that test that range.
 - `ext_emconf.php` is deprecated in v14 and unevaluated in v15 (feature #108345). Composer metadata
   is the source of truth.
-- Skills are **composable**. Combine `typo3-rector` with `typo3-testing`, or `typo3-14-update` with
+- Skills are **composable**. Combine `typo3-rector` with `typo3-testing`, or `typo3-upgrade-run` with
   `typo3-ddev` and `typo3-solr`. Do not run unrelated domain skills merely because they exist.
 - Always review AI-generated code before committing.
 
@@ -153,7 +153,7 @@ the upstream state recorded in [VENDORED.md](VENDORED.md).
 | `typo3-testing` | Use when setting up TYPO3 extension test infrastructure, writing unit/functional/E2E tests, con… | Netresearch |
 | `typo3-vite` | Use when configuring Vite 7 for TYPO3 v13/v14 LTS projects, setting up SCSS architecture with B… | Netresearch |
 | `architecture-decision-records` | Creates and reviews architecture decision records (ADRs), decision logs, and supersession histo… | webconsulting |
-| `typo3-14-update` | Update a TYPO3 v12 or v13 site to TYPO3 14.3 LTS inside a local DDEV project under two contract… | webconsulting |
+| `typo3-upgrade-run` | Update a TYPO3 v12 or v13 site to TYPO3 14.3 LTS inside a local DDEV project under two contract… | webconsulting |
 | `typo3-accessibility` | Audits and implements TYPO3 accessibility patterns for WCAG 2.2 AA, including Fluid templates, … | webconsulting |
 | `typo3-batch` | Plans and executes batch TYPO3 migrations and large-scale refactors across hooks, PSR-14 events… | webconsulting |
 | `typo3-content-blocks` | Guides TYPO3 Content Blocks modeling for Content Elements, Record Types, Page Types, and File T… | webconsulting |
@@ -171,7 +171,7 @@ the upstream state recorded in [VENDORED.md](VENDORED.md).
 | `typo3-shadcn-content-elements` | Produces, audits, and overhauls TYPO3 Content Blocks content elements styled with shadcn/ui pre… | webconsulting |
 | `typo3-solr` | Configures and debugs Apache Solr search for TYPO3, including EXT:solr, configsets, indexing qu… | webconsulting |
 | `typo3-translations` | Guides TYPO3 13/14 localization with locallang.xlf, labels.xlf, XLIFF 1.2 and 2.0, ICU MessageF… | webconsulting |
-| `typo3-update` | Guides TYPO3 v14 extension development and upgrades, including version constraints, PHP require… | webconsulting |
+| `typo3-v14-reference` | Guides TYPO3 v14 extension development and upgrades, including version constraints, PHP require… | webconsulting |
 | `typo3-visual-editor` | Installs, configures, removes, and migrates TYPO3 sitepackages for FriendsOfTYPO3 Visual Editor… | webconsulting |
 | `typo3-wcag22-aa-agentic` | Use this skill to audit, fix, and document accessibility for TYPO3 websites and Fluid sitepacka… | webconsulting |
 | `typo3-webcomponents` | Build, review, or migrate TYPO3 v14 backend Web Components with Lit, ES module import maps, Ass… | webconsulting |

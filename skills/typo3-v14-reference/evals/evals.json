@@ -1,0 +1,98 @@
+{
+  "skill_name": "typo3-v14-reference",
+  "skill_type": "preference",
+  "spec": "SKILL-SPEC.md",
+  "note": "The v14 API reference. Measurably collides with typo3-rector (0.155) and typo3-batch (0.139), and is conceptually confusable with typo3-upgrade-run. The negative cases pin all three boundaries.",
+  "evals": [
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-v14-reference-pos-01",
+      "kind": "trigger-positive",
+      "expect_skill": "typo3-v14-reference",
+      "prompt": "What is the correct way to build a Fluid view in a TYPO3 v14 controller - ViewFactory or the old view interface?",
+      "note": "Pure API-shape question about code that already exists. No migration, no tooling."
+    },
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-v14-reference-pos-02",
+      "kind": "trigger-positive",
+      "expect_skill": "typo3-v14-reference",
+      "prompt": "Show me how to register a backend module in TYPO3 v14 and what the TCA for a simple record should look like.",
+      "note": "Writing new v14 code from scratch."
+    },
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-v14-reference-pos-03",
+      "kind": "trigger-positive",
+      "expect_skill": "typo3-v14-reference",
+      "prompt": "Which PSR-14 event replaces the old post-processing hook in v14, and what is its namespace?",
+      "note": "API lookup. Must be verified against installed source, never guessed."
+    },
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-v14-reference-pos-04",
+      "kind": "trigger-positive",
+      "expect_skill": "typo3-v14-reference",
+      "prompt": "How do I write a QueryBuilder query in v14 without SQL injection risk?",
+      "note": "Core API usage."
+    },
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-v14-reference-neg-01",
+      "kind": "trigger-negative",
+      "expect_skill": "typo3-rector",
+      "prompt": "Run the automated migration to fix the deprecated calls across this extension.",
+      "note": "Measured collision (0.155): both mention migrations and deprecated APIs. Discriminator is AUTOMATION - applying a tool is typo3-rector; explaining the target API is typo3-v14-reference."
+    },
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-v14-reference-neg-02",
+      "kind": "trigger-negative",
+      "expect_skill": "typo3-fractor",
+      "prompt": "Migrate the FlexForms and TypoScript in this sitepackage to v14.",
+      "note": "Non-PHP migration belongs to Fractor, not the API reference."
+    },
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-v14-reference-neg-03",
+      "kind": "trigger-negative",
+      "expect_skill": "typo3-upgrade-run",
+      "prompt": "Upgrade this whole site from TYPO3 12 to 14.3 in DDEV and make sure nothing changes visually.",
+      "note": "The confusion this repo most needs pinned. A whole-project upgrade is never this skill."
+    },
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-v14-reference-neg-04",
+      "kind": "trigger-negative",
+      "expect_skill": "typo3-batch",
+      "prompt": "Apply the same hook-to-event change across all 30 extensions in packages/.",
+      "note": "Measured collision (0.139). Discriminator is SCALE: one API explained here; the same change repeated across many extensions is typo3-batch."
+    },
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-v14-reference-neg-05",
+      "kind": "trigger-negative",
+      "expect_no_skill": true,
+      "prompt": "Set up a Kubernetes ingress for our staging cluster.",
+      "note": "Unrelated domain. No TYPO3 skill may fire."
+    },
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-v14-reference-neg-06",
+      "kind": "trigger-negative",
+      "expect_skill": "typo3-upgrade-run",
+      "prompt": "What PHP version should this project target, and should I keep ext_emconf.php?",
+      "note": "Deliberate trap: typo3-v14-reference states these facts but does not OWN the policy. Answering here would be a project-level ruling from an API reference."
+    }
+  ]
+}

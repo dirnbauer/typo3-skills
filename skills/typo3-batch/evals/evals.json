@@ -2,7 +2,7 @@
   "skill_name": "typo3-batch",
   "skill_type": "preference",
   "spec": "SKILL-SPEC.md",
-  "note": "Measurably collides with typo3-update (0.139). The discriminator is SCALE and PLANNING: one change explained is typo3-update; the same change planned and executed across many extensions is this skill.",
+  "note": "Measurably collides with typo3-v14-reference (0.139). The discriminator is SCALE and PLANNING: one change explained is typo3-v14-reference; the same change planned and executed across many extensions is this skill.",
   "evals": [
     {
       "status": "reviewed",
@@ -45,7 +45,7 @@
       "reviewed_by": "dirnbauer",
       "id": "typo3-batch-neg-01",
       "kind": "trigger-negative",
-      "expect_skill": "typo3-update",
+      "expect_skill": "typo3-v14-reference",
       "prompt": "Which event replaces the DataHandler hook in v14?",
       "note": "Measured collision (0.139). A single API question is the reference skill, whatever the eventual scale."
     },
@@ -63,7 +63,7 @@
       "reviewed_by": "dirnbauer",
       "id": "typo3-batch-neg-03",
       "kind": "trigger-negative",
-      "expect_skill": "typo3-14-update",
+      "expect_skill": "typo3-upgrade-run",
       "prompt": "Upgrade our main website to 14.3 with visual regression proof.",
       "note": "One project end to end is the orchestrator, not a batch across many."
     },

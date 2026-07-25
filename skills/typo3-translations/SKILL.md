@@ -4,7 +4,7 @@ description: "Guides TYPO3 13/14 localization with locallang.xlf, labels.xlf, XL
 compatibility: "TYPO3 13.4 and TYPO3 14.x; TYPO3 14 preferred"
 metadata:
   version: "2.1.0"
-  related_skills: "typo3-content-blocks, typo3-shadcn-content-elements, typo3-conformance, typo3-update"
+  related_skills: "typo3-content-blocks, typo3-shadcn-content-elements, typo3-conformance, typo3-v14-reference"
   origin: "webconsulting"
 license: "MIT / CC-BY-SA-4.0"
 ---

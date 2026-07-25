@@ -64,22 +64,6 @@
     "pass_3": []
   },
   {
-    "directory": "typo3-14-update",
-    "skill_name": "typo3-14-update",
-    "description": "Update a TYPO3 v12 or v13 site to TYPO3 14.3 LTS inside a local DDEV project under two contracts. Invariance: the migration must be provably invisible to visitors, measured against a baseline frozen before any change. Elevation: separately approved performance, SEO, accessibility and security work may start only after invariance closes. Every step runs as one loop protocol with preconditions, a snapshot rollback anchor, bounded iterations, classified findings and abort conditions, documented per loop in its own numbered directory in a project-local .typo3-update run directory. Covers sitemap validation, Bootstrap 5, extension strategy, PHP 8.4+, Rector, Fractor, PHPStan, upgrade wizards, workspaces, a Vite build, Solr, Visual Editor, CKEditor RTE, security headers, Lighthouse and a Word KPI report. Never deploys to staging or live. Use for a complete TYPO3 v14 update, a visual regression run around an upgrade, or a proven DDEV upgrade.",
-    "source_owner": "webconsulting",
-    "source_url": "https://github.com/dirnbauer/webconsulting-skills",
-    "file_path": "/Users/dirnbauer/projects/typo3-skills/skills/typo3-14-update/SKILL.md",
-    "line_count": 404,
-    "frontmatter_keys": [
-      "name",
-      "description"
-    ],
-    "pass_1": [],
-    "pass_2": [],
-    "pass_3": []
-  },
-  {
     "directory": "typo3-accessibility",
     "skill_name": "typo3-accessibility",
     "description": "Audits and implements TYPO3 accessibility patterns for WCAG 2.2 AA, including Fluid templates, PHP helpers, JavaScript widgets, forms, focus states, ARIA, and go-live checks. Use when building or reviewing TYPO3 templates, content elements, extensions, or frontend code for accessibility, keyboard support, screen readers, WCAG, ARIA, or a11y readiness.",
@@ -514,12 +498,28 @@
     "pass_3": []
   },
   {
-    "directory": "typo3-update",
-    "skill_name": "typo3-update",
-    "description": "Guides TYPO3 v14 extension development and upgrades, including version constraints, PHP requirements, controllers, ViewFactory, Fluid, events, backend modules, TCA, QueryBuilder, CLI commands, tests, and v14-only manual changes. Use when the user asks about TYPO3 v14, upgrades, migrations, extension modernization, LTS constraints, or current Core APIs.",
+    "directory": "typo3-upgrade-run",
+    "skill_name": "typo3-upgrade-run",
+    "description": "End-to-end TYPO3 upgrade run: takes a v12 or v13 site to 14.3 LTS inside a local DDEV clone under two contracts. Invariance: the migration must be provably invisible to visitors, measured against a baseline frozen before any change. Elevation: separately approved performance, SEO, accessibility and security work may start only after invariance closes. Owns the version constraints, the PHP target and the process; consults typo3-v14-reference for API detail. Every step runs as one loop protocol with preconditions, a snapshot rollback anchor, bounded iterations, classified findings and abort conditions, documented per loop in its own numbered directory. Covers sitemaps, Bootstrap 5, extensions, PHP 8.4+, Rector, Fractor, PHPStan, wizards, workspaces, Vite, Solr, Visual Editor, CKEditor RTE, security headers, Lighthouse and a Word KPI report. Never deploys to staging or live.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
-    "file_path": "/Users/dirnbauer/projects/typo3-skills/skills/typo3-update/SKILL.md",
+    "file_path": "/Users/dirnbauer/projects/typo3-skills/skills/typo3-upgrade-run/SKILL.md",
+    "line_count": 404,
+    "frontmatter_keys": [
+      "name",
+      "description"
+    ],
+    "pass_1": [],
+    "pass_2": [],
+    "pass_3": []
+  },
+  {
+    "directory": "typo3-v14-reference",
+    "skill_name": "typo3-v14-reference",
+    "description": "TYPO3 v14 API reference for writing v14 code: controllers, ViewFactory, Fluid, PSR-14 events, backend modules, TCA, QueryBuilder, CLI commands and tests. Use when the user asks what a v14 API looks like, which event replaced a hook, or how to write a specific piece of v14 code. Does NOT run upgrades: for a whole project or site upgrade use typo3-upgrade-run, which owns the version constraints, the PHP target and the migration process.",
+    "source_owner": "webconsulting",
+    "source_url": "https://github.com/dirnbauer/webconsulting-skills",
+    "file_path": "/Users/dirnbauer/projects/typo3-skills/skills/typo3-v14-reference/SKILL.md",
     "line_count": 346,
     "frontmatter_keys": [
       "name",

@@ -16,7 +16,7 @@ Combine skills rather than merging them. `typo3-rector` + `typo3-testing` is the
 
 | Skill | Owner | What it does |
 |---|---|---|
-| `typo3-14-update` | webconsulting | Update a TYPO3 v12 or v13 site to TYPO3 14.3 LTS inside a local DDEV project under two contracts. Invariance: the migration must be provably invisible… |
+| `typo3-upgrade-run` | webconsulting | Update a TYPO3 v12 or v13 site to TYPO3 14.3 LTS inside a local DDEV project under two contracts. Invariance: the migration must be provably invisible… |
 | `typo3-extension-upgrade` | **Netresearch** (vendored) | Use when upgrading TYPO3 extensions to newer LTS versions (v11->v12, v12->v13, v13->v14 - v14.3 LTS is the current target), running Extension Scanner,… |
 | `typo3-rector` | webconsulting | Applies TYPO3 Rector upgrade patterns for PHP migrations toward TYPO3 v14, including Rector configuration, dry runs, rule sets, ViewFactory, Extbase r… |
 | `typo3-fractor` | webconsulting | Automates non-PHP TYPO3 upgrade migrations with Fractor for FlexForms, TypoScript, Fluid, YAML, XLIFF translation files, Htaccess, and composer.json c… |
@@ -27,7 +27,7 @@ Combine skills rather than merging them. `typo3-rector` + `typo3-testing` is the
 
 | Skill | Owner | What it does |
 |---|---|---|
-| `typo3-update` | webconsulting | Guides TYPO3 v14 extension development and upgrades, including version constraints, PHP requirements, controllers, ViewFactory, Fluid, events, backend… |
+| `typo3-v14-reference` | webconsulting | Guides TYPO3 v14 extension development and upgrades, including version constraints, PHP requirements, controllers, ViewFactory, Fluid, events, backend… |
 | `typo3-content-blocks` | webconsulting | Guides TYPO3 Content Blocks modeling for Content Elements, Record Types, Page Types, and File Types as the single source of truth |
 | `typo3-datahandler` | webconsulting | Guides transactional TYPO3 record manipulation with DataHandler, including datamaps, cmdmaps, backend user context, reference index handling, workspac… |
 | `typo3-records-list-types` | webconsulting | Configures TYPO3 v14 Records module list types and custom backend views, including grid, compact, teaser, kanban-style, timeline-style, TSconfig, Flui… |
@@ -78,8 +78,8 @@ Combine skills rather than merging them. `typo3-rector` + `typo3-testing` is the
 
 | Profile | Load | For |
 |---|---|---|
-| **Update run** | `typo3-14-update`, `typo3-ddev`, `typo3-vite`, `typo3-wcag22-aa-agentic`, `typo3-solr`, `typo3-visual-editor`, `typo3-security`, `webconsulting-branding` | A complete v12/v13 → 14.3 update on a local DDEV clone |
-| **Extension development** | `typo3-update`, `typo3-content-blocks`, `typo3-datahandler`, `typo3-translations`, `typo3-testing` | Building v14 extensions |
+| **Update run** | `typo3-upgrade-run`, `typo3-ddev`, `typo3-vite`, `typo3-wcag22-aa-agentic`, `typo3-solr`, `typo3-visual-editor`, `typo3-security`, `webconsulting-branding` | A complete v12/v13 → 14.3 update on a local DDEV clone |
+| **Extension development** | `typo3-v14-reference`, `typo3-content-blocks`, `typo3-datahandler`, `typo3-translations`, `typo3-testing` | Building v14 extensions |
 | **Migration** | `typo3-rector`, `typo3-fractor`, `typo3-extension-upgrade`, `php-modernization`, `typo3-batch` | Moving code forward |
 | **Quality gate** | `typo3-conformance`, `typo3-simplify`, `typo3-testing`, `security-audit`, `enterprise-readiness` | Pre-release review |
 | **Release** | `typo3-initial-release`, `typo3-docs`, `typo3-testing` | Publishing to TER/Packagist |

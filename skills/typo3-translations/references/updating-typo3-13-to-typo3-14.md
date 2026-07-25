@@ -8,7 +8,7 @@ Use this translation-specific checklist during a TYPO3 13-to-14 upgrade:
 
 1. Keep XLIFF 1.2 and `LLL:EXT:` references while the same branch must support
    both TYPO3 13 and 14.
-2. Run Rector/Fractor and the project upgrade checklist from `typo3-update`.
+2. Run Rector/Fractor and the project upgrade checklist from `typo3-v14-reference`.
 3. Inventory all `.xlf` files and note their versions, language prefixes, and
    consumers.
 4. Fix invalid XML and duplicate IDs before format conversion.

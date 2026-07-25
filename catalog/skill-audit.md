@@ -83,22 +83,6 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 **Pass 3: Optimization**
 - No pass 3 issues found.
 
-## `typo3-14-update`
-
-- Source owner: webconsulting
-- Source URL: https://github.com/dirnbauer/webconsulting-skills
-- Frontmatter name: typo3-14-update
-- SKILL.md lines: 404
-
-**Pass 1: Structure**
-- No pass 1 issues found.
-
-**Pass 2: Source**
-- No pass 2 issues found.
-
-**Pass 3: Optimization**
-- No pass 3 issues found.
-
 ## `typo3-accessibility`
 
 - Source owner: webconsulting
@@ -483,11 +467,27 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 **Pass 3: Optimization**
 - No pass 3 issues found.
 
-## `typo3-update`
+## `typo3-upgrade-run`
 
 - Source owner: webconsulting
 - Source URL: https://github.com/dirnbauer/webconsulting-skills
-- Frontmatter name: typo3-update
+- Frontmatter name: typo3-upgrade-run
+- SKILL.md lines: 404
+
+**Pass 1: Structure**
+- No pass 1 issues found.
+
+**Pass 2: Source**
+- No pass 2 issues found.
+
+**Pass 3: Optimization**
+- No pass 3 issues found.
+
+## `typo3-v14-reference`
+
+- Source owner: webconsulting
+- Source URL: https://github.com/dirnbauer/webconsulting-skills
+- Frontmatter name: typo3-v14-reference
 - SKILL.md lines: 346
 
 **Pass 1: Structure**

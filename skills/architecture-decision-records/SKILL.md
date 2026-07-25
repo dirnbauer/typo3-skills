@@ -58,7 +58,7 @@ renderer, link checker, or Markdown/ReST linter after this structural check.
 ## Decisions taken inside a running process
 
 Some skills record decisions while work is in progress rather than in a project's
-permanent `docs/adr`. `typo3-14-update` is the case to know: it writes ADRs into
+permanent `docs/adr`. `typo3-upgrade-run` is the case to know: it writes ADRs into
 `.typo3-update/decisions/` for the run scope, degraded sampling, and any URL it
 had to exclude from its invariance claim.
 

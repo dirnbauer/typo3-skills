@@ -84,7 +84,7 @@ afternoon and learn nothing. So every case carries `status`, and only `reviewed`
 a `reviewed_by` count. `validate_evals.py` prints both numbers.
 
 The scaffolder makes the argument better than the rule does. Asked to derive trigger prompts
-from `typo3-update`'s own description, it produced `"TYPO3 v14"` and `"Upgrades"` — text that
+from `typo3-v14-reference`'s own description, it produced `"TYPO3 v14"` and `"Upgrades"` — text that
 matches nearly every skill in the collection and therefore tests nothing. Those cases exist,
 they are valid JSON, they satisfy a case count, and they are worthless. That is precisely
 what the split is for.
@@ -106,6 +106,8 @@ shared common vocabulary. Three real collisions at threshold 0.13:
 | 0.145 | `typo3-conformance` ↔ `typo3-extension-upgrade` | hashservice, ext_tables.php, v14.3, migration |
 | 0.139 | `typo3-batch` ↔ `typo3-update` | upgrades, tca, migrations, modernization, fluid |
 
+(Names as measured at the time. Two of these skills have since been renamed — see below.)
+
 Each resolved boundary is a one-line discriminator, now pinned by hand-written negative
 evals in both skills:
 
@@ -116,15 +118,43 @@ evals in both skills:
 - **conformance ↔ extension-upgrade — both vendored.** We do not edit vendored skills, so
   this one is documented rather than reworded, and pinned from the owned side.
 
-Two honest limits. Lexical overlap is a proxy: `typo3-update` and `typo3-14-update` are the
-pair users confuse most, yet they score *below* threshold because their vocabularies diverge
-— the confusion is conceptual, and only judgement caught it. And the threshold is a
-convention, not a measurement; 0.13 surfaces a reviewable number of pairs on this corpus.
+### The limit that turned out to be the biggest finding
+
+The analyser reads **descriptions**. It does not read **names** — and the worst collision in
+the collection was a name collision.
+
+`typo3-update` and `typo3-14-update` scored *below* threshold, because their description
+vocabularies genuinely diverge. Yet they were the pair users confused most, for a reason no
+lexical measure could see: `typo3-update` was the shorter, more obvious name — the one a
+person or an agent reaches for when they want to update TYPO3 — and it was only the API
+reference. The skill that actually performed upgrades carried the longer, version-pinned
+name.
+
+A name is a trigger signal too. Renaming fixed it:
+
+| | before | after |
+|---|---|---|
+| API reference | `typo3-update` | `typo3-v14-reference` |
+| Upgrade orchestrator | `typo3-14-update` | `typo3-upgrade-run` |
+
+The result was measurable, which is the part worth keeping. Renaming, plus rewriting both
+descriptions so the opening words disambiguate, took the collection from **three colliding
+pairs to two**: `typo3-batch ↔ typo3-update` disappeared entirely, and the rector pair fell
+from 0.155 to 0.137. The one remaining owned-skill collision is gone; what is left is
+between two vendored skills we do not edit.
+
+`typo3-upgrade-run` also stops being version-scoped in its name, which was wrong on its own
+terms: the contract it encodes — invariance first, elevation second — is not specific to
+v14. Only its target is.
+
+Two limits remain. The threshold 0.13 is a convention, not a measurement. And the analyser
+still cannot see names, conceptual overlap, or two well-worded descriptions that happen to
+describe genuinely overlapping jobs.
 
 ### Where we deliberately diverge
 
 The sources favour small, composable skills and warn against over-specification.
-`typo3-14-update` is unapologetically a process orchestrator with a fixed phase order,
+`typo3-upgrade-run` is unapologetically a process orchestrator with a fixed phase order,
 because the order **is** the safety property — a baseline captured after a change cannot
 show what the change broke.
 
@@ -140,7 +170,7 @@ suites present : 26/26
 human-reviewed : 4/26   (49/181 cases)
 ```
 
-The validator's first catch was the flagship. `typo3-14-update` carried twelve carefully
+The validator's first catch was the flagship. `typo3-upgrade-run` carried twelve carefully
 written behaviour cases and **zero** trigger cases — it tested what the skill does once
 loaded and never tested whether it loads. Given it is the most expensive skill here to
 invoke by mistake, and sits beside five plausible confusions, that was the wrong half to
@@ -148,7 +178,7 @@ have covered.
 
 The 22 scaffolded suites are **drafts**. They give every skill a structure, negative-case
 slots and a lifecycle class, and they do not yet count as coverage. The four reviewed suites
-are `typo3-14-update` (12 behaviour cases) plus the three collision-critical skills.
+are `typo3-upgrade-run` (12 behaviour cases) plus the three collision-critical skills.
 
 The next work is per-skill and cannot be automated: replace each draft prompt with something
 a user actually sent, then mark it reviewed. Extending from real failures (S11) is the

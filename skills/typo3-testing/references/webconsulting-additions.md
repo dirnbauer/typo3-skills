@@ -8,7 +8,7 @@
 Before trusting any check as evidence, prove it can fail. A suite that has never failed may be
 measuring nothing, and it is indistinguishable from a passing one until the day it matters.
 
-This is not hypothetical. The `typo3-14-update` harness shipped for months with three actions that
+This is not hypothetical. The `typo3-upgrade-run` harness shipped for months with three actions that
 **never exited non-zero**: a run with forty differing screenshots exited `0`. Every consumer of that
 exit code — CI, the loop, the completion gate — read it as success. The bug was not in the
 comparison logic, which worked; it was that the result never reached the exit code.
