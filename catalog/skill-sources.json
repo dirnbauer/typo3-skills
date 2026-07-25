@@ -1,5 +1,21 @@
 [
   {
+    "directory": "architecture-decision-records",
+    "skill_name": "architecture-decision-records",
+    "description": "Creates and reviews architecture decision records (ADRs), decision logs, and supersession histories using established conventions and verifiable evidence. Use when users ask to write, reconstruct, audit, standardize, validate, or maintain ADRs, architecture decisions, decision logs, or ADR templates in Markdown or reStructuredText.",
+    "source_owner": "webconsulting",
+    "source_url": "https://github.com/dirnbauer/webconsulting-skills",
+    "file_path": "/Users/dirnbauer/projects/typo3-skills/skills/architecture-decision-records/SKILL.md",
+    "line_count": 87,
+    "frontmatter_keys": [
+      "name",
+      "description"
+    ],
+    "pass_1": [],
+    "pass_2": [],
+    "pass_3": []
+  },
+  {
     "directory": "enterprise-readiness",
     "skill_name": "enterprise-readiness",
     "description": "Use when evaluating projects for production or enterprise readiness, implementing supply chain security (SLSA, cosign, SBOMs, pnpm), hardening CI/CD pipelines, establishing quality gates (TYPO3: CI matrix PHP 8.2-8.5 x TYPO3 12.4/13.4/14.3 LTS), pursuing OpenSSF Best Practices Badge (Passing/Silver/Gold) or OSPS Baseline levels, reviewing code quality, writing ADRs, or configuring Git hooks and CI pipelines.",
@@ -54,7 +70,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "/Users/dirnbauer/projects/typo3-skills/skills/typo3-14-update/SKILL.md",
-    "line_count": 402,
+    "line_count": 404,
     "frontmatter_keys": [
       "name",
       "description"

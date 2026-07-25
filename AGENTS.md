@@ -71,6 +71,7 @@ Combine skills rather than merging them. `typo3-rector` + `typo3-testing` is the
 |---|---|---|
 | `webconsulting-branding` | webconsulting | Applies the current webconsulting.at design system: borderless square surfaces, Hanken Grotesk typography, teal/ink color tokens, invoice-led informat… |
 | `webconsulting-create-documentation` | webconsulting | Creates product documentation systems with help pages, AI-generated screenshots, Remotion product tours, GSAP animation, narration scripts, TTS, backg… |
+| `architecture-decision-records` | webconsulting | Creates and reviews architecture decision records (ADRs), decision logs, and supersession histo… |
 | `typo3-idea-extension-blog` | webconsulting | Evaluates external ideas for TYPO3 extension potential, builds the extension, and drafts the companion German webconsulting.at MDX article |
 
 ## Session profiles

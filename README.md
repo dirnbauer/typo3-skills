@@ -56,7 +56,8 @@ documents itself in its own numbered directory.
 
 ### Supporting
 
-`webconsulting-branding` · `webconsulting-create-documentation` · `typo3-idea-extension-blog`
+`webconsulting-branding` · `webconsulting-create-documentation` · `typo3-idea-extension-blog` ·
+`architecture-decision-records`
 
 ## The rules layer
 
@@ -122,6 +123,7 @@ the upstream state recorded in [VENDORED.md](VENDORED.md).
 | `typo3-simplify` | Simplify and refine TYPO3 extension code for clarity, consistency, and maintainability while pr… | Anthropic |
 | `typo3-testing` | Use when setting up TYPO3 extension test infrastructure, writing unit/functional/E2E tests, con… | Netresearch |
 | `typo3-vite` | Use when configuring Vite 7 for TYPO3 v13/v14 LTS projects, setting up SCSS architecture with B… | Netresearch |
+| `architecture-decision-records` | Creates and reviews architecture decision records (ADRs), decision logs, and supersession histo… | webconsulting |
 | `typo3-14-update` | Update a TYPO3 v12 or v13 site to TYPO3 14.3 LTS inside a local DDEV project under two contract… | webconsulting |
 | `typo3-accessibility` | Audits and implements TYPO3 accessibility patterns for WCAG 2.2 AA, including Fluid templates, … | webconsulting |
 | `typo3-batch` | Plans and executes batch TYPO3 migrations and large-scale refactors across hooks, PSR-14 events… | webconsulting |

@@ -7,7 +7,7 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 2. Source attribution and provenance drift
 3. Repository optimization gaps
 
-- Skills audited: 36
+- Skills audited: 37
 - Total findings: 0
 - Skills with pass 1 findings: 0
 - Skills with pass 2 findings: 0
@@ -18,6 +18,22 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - `install.sh` previously mutated every `SKILL.md` by appending a Netresearch credit line. That behavior has been removed, but existing Netresearch attributions are preserved per current repo policy.
 - `web-platform-design` had a duplicate frontmatter name that collided with `web-design-guidelines`; it now uses `web-platform-design`.
 - `refactor-clean` had a mismatched frontmatter name plus a truncated description; both have been corrected.
+
+## `architecture-decision-records`
+
+- Source owner: webconsulting
+- Source URL: https://github.com/dirnbauer/webconsulting-skills
+- Frontmatter name: architecture-decision-records
+- SKILL.md lines: 87
+
+**Pass 1: Structure**
+- No pass 1 issues found.
+
+**Pass 2: Source**
+- No pass 2 issues found.
+
+**Pass 3: Optimization**
+- No pass 3 issues found.
 
 ## `enterprise-readiness`
 
@@ -72,7 +88,7 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source owner: webconsulting
 - Source URL: https://github.com/dirnbauer/webconsulting-skills
 - Frontmatter name: typo3-14-update
-- SKILL.md lines: 402
+- SKILL.md lines: 404
 
 **Pass 1: Structure**
 - No pass 1 issues found.
