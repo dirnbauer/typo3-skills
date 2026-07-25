@@ -72,9 +72,50 @@ def read_frontmatter(path: Path) -> dict:
     return {k: v for k, v in out.items() if not k.startswith("__f")}
 
 
+def stem(word: str) -> str:
+    """Light suffix stripping, Porter-style but deliberately small.
+
+    Without it, "migration" and "migrations" are different tokens, and a description saying
+    "PHP migrations" scores zero against a user typing "the automated migration". That is a
+    property of the instrument, not of the description.
+
+    Every branch funnels through one exit so the normalisation is applied uniformly. An
+    earlier version returned early from the plural branches, which left "upgrades" -> upgrade
+    while "upgrade" -> upgrad, and cost eight points of pass rate: a stemmer that is
+    inconsistent with itself is worse than none.
+    """
+    if len(word) <= 3 or any(c.isdigit() for c in word):
+        return word
+
+    base = word
+    if word.endswith("ies") and len(word) > 4:
+        base = word[:-3] + "y"
+    elif word.endswith("sses") or word.endswith(("ches", "shes", "xes", "zes")):
+        base = word[:-2]
+    elif word.endswith("es") and len(word) > 4:
+        base = word[:-1]
+    elif word.endswith("s") and not word.endswith(("ss", "us", "is")):
+        base = word[:-1]
+    else:
+        for suffix in ("ing", "ed"):
+            if word.endswith(suffix) and len(word) - len(suffix) >= 3:
+                base = word[: -len(suffix)]
+                # "runn" -> "run"
+                if len(base) > 3 and base[-1] == base[-2] and base[-1] not in "aeiousl":
+                    base = base[:-1]
+                break
+
+    # A trailing-'e' step was tried and removed. It unified "removed"/"remove" but
+    # over-stemmed discriminative terms ("upgrade" -> "upgrad"), and measured worse on both
+    # reviewed and draft cases. Known limitation: -ed forms do not meet their -e base.
+    return base
+
+
 def terms(text: str) -> Counter:
     words = re.findall(r"[a-z0-9][a-z0-9._-]*", text.lower())
-    return Counter(w.strip("._-") for w in words if w not in STOP and len(w) > 2)
+    return Counter(
+        stem(w.strip("._-")) for w in words if w not in STOP and len(w) > 2
+    )
 
 
 def load_corpus() -> dict[str, str]:
@@ -90,28 +131,56 @@ def load_corpus() -> dict[str, str]:
     return corpus
 
 
-def build_weights(corpus: dict[str, str]) -> dict[str, float]:
-    n = len(corpus)
+# BM25 parameters. k1 saturates term frequency; b controls length normalisation.
+# These are the standard values and are deliberately not tuned - tuning the grader to make
+# our own descriptions score better is the exact failure this whole exercise is about.
+BM25_K1 = 1.2
+BM25_B = 0.75
+
+
+def build_index(corpus: dict[str, str]) -> dict:
+    """BM25 index.
+
+    The first version of this scored set-intersection over sqrt(len(description)), which
+    was wrong twice: it ignored term frequency, and it over-penalised long descriptions so
+    badly that a thorough description lost to a terse one on its own subject matter. That
+    is a defect in the instrument, not in the descriptions - and it would have been read as
+    "our descriptions are bad" if left in place.
+    """
+    docs = {name: terms(text) for name, text in corpus.items()}
+    n = len(docs)
     df = Counter()
-    for text in corpus.values():
-        for w in set(terms(text)):
+    for tf in docs.values():
+        for w in tf:
             df[w] += 1
-    return {w: math.log(n / (1 + d)) + 1.0 for w, d in df.items()}
+    idf = {
+        w: math.log(1 + (n - d + 0.5) / (d + 0.5))
+        for w, d in df.items()
+    }
+    lengths = {name: sum(tf.values()) for name, tf in docs.items()}
+    avgdl = (sum(lengths.values()) / n) if n else 0.0
+    return {"docs": docs, "idf": idf, "lengths": lengths, "avgdl": avgdl}
 
 
-def rank_skills(prompt: str, corpus: dict[str, str], weights: dict[str, float]) -> list[tuple[str, float]]:
-    p = set(terms(prompt))
+def rank_skills(prompt: str, corpus: dict[str, str], index: dict) -> list[tuple[str, float]]:
+    query = terms(prompt)
+    docs, idf, lengths, avgdl = index["docs"], index["idf"], index["lengths"], index["avgdl"]
     scores = []
-    for name, text in corpus.items():
-        t = set(terms(text))
-        shared = p & t
-        score = sum(weights.get(w, 1.0) for w in shared) / (math.sqrt(len(t)) or 1.0)
-        scores.append((name, round(score, 4)))
+    for name, tf in docs.items():
+        dl = lengths[name]
+        norm = BM25_K1 * (1 - BM25_B + BM25_B * (dl / avgdl if avgdl else 1.0))
+        s = 0.0
+        for w in query:
+            f = tf.get(w, 0)
+            if not f:
+                continue
+            s += idf.get(w, 0.0) * (f * (BM25_K1 + 1)) / (f + norm)
+        scores.append((name, round(s, 4)))
     return sorted(scores, key=lambda x: -x[1])
 
 
-def grade_lexical(case: dict, skill: str, corpus, weights, top_k: int) -> dict:
-    ranked = rank_skills(case["prompt"], corpus, weights)
+def grade_lexical(case: dict, skill: str, corpus, index, top_k: int) -> dict:
+    ranked = rank_skills(case["prompt"], corpus, index)
     top = [n for n, _ in ranked[:top_k]]
     best, best_score = ranked[0]
     kind = case["kind"]
@@ -196,7 +265,7 @@ def main() -> int:
     args = ap.parse_args()
 
     corpus = load_corpus()
-    weights = build_weights(corpus)
+    index = build_index(corpus)
     skip = vendored()
     trials = 1 if args.grader == "lexical" else max(1, args.trials)
 
@@ -223,7 +292,7 @@ def main() -> int:
             runs = []
             for _ in range(trials):
                 if args.grader == "lexical":
-                    runs.append(grade_lexical(case, name, corpus, weights, args.top_k))
+                    runs.append(grade_lexical(case, name, corpus, index, args.top_k))
                 else:
                     runs.append(grade_claude(case, name, corpus, args.timeout))
             passes = sum(1 for r in runs if r["result"] == "pass")

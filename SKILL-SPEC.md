@@ -50,6 +50,27 @@ description: "Automates non-PHP TYPO3 upgrade migrations with Fractor for FlexFo
 Hard limits, enforced by `scripts/audit_skills.py`: `name` matches the directory,
 description ≤ 1024 characters, only the six allowed frontmatter keys.
 
+## S2b — State boundaries without the excluded vocabulary
+
+A description that says what a skill is **not** for hands the router exactly the words that
+make it mis-fire. Lexical routing cannot see "not"; it sees the terms.
+
+`typo3-batch` said *"bulk file or data operations outside a TYPO3 codebase are not this
+skill"* — and then ranked first for *"Bulk rename 300 image files on my desktop"*, because
+the exclusion supplied `bulk` and `file`.
+
+**Do:** state the boundary as a positive requirement, and name the sibling that wins.
+
+```yaml
+# Attracts what it meant to repel
+"...bulk file operations outside a TYPO3 codebase are not this skill."
+
+# States the same boundary without the bait
+"Requires a TYPO3 codebase and more than one extension; a single extension is typo3-rector."
+```
+
+A capable model handles negation. The description should not need it to.
+
 ## S3 — Overlapping triggers are measured, not assumed
 
 With 37 skills in one collection, descriptions compete. Two skills sharing vocabulary give
@@ -190,33 +211,34 @@ Their evals, where we add them, live in the overlay and are marked as ours.
 26 owned skills (11 vendored, exempt)
 suites present  : 26/26
 human-reviewed  : 4/26   (49/181 cases)
-lexical grader  : reviewed 78%  ·  draft 87%
+lexical grader  : reviewed 100%  ·  draft 88%
 ```
 
-The evals are **run**, not merely present: `scripts/run_evals.py` grades every trigger case
-and `evals-baseline.json` pins the numbers so a regression is detectable.
+`scripts/run_evals.py` grades every trigger case; `evals-baseline.json` pins the numbers and
+`--fail-under` gates CI.
 
-```bash
-python3 scripts/run_evals.py --grader lexical --fail-under 0.75
-python3 scripts/run_evals.py --grader claude --trials 3     # real routing, needs a CLI login
-```
+Reviewed cases went 60% → 100% in one session, and the useful part is *what* moved it.
 
-Two results worth keeping.
+**Half the gap was the instrument, not the descriptions.** The first grader scored
+set-intersection over √length: it ignored term frequency and punished thorough descriptions
+so hard that a careful one lost to a terse one on its own subject. Replacing it with BM25
+and adding light stemming — "migrations" and "migration" were different tokens — recovered
+most of it. A trailing-'e' step was tried and dropped: it over-stemmed discriminative terms
+and measured worse. **Fix the instrument before believing what it says about the work.**
 
-**Draft cases pass more often than reviewed ones — 87% against 78%.** That looks backwards
-until you see why: drafts were derived from the descriptions themselves, so they test a
-description against its own vocabulary. Circular, and therefore easy. The reviewed cases use
-the words a user would actually type, which is a genuinely harder and more informative test.
-This is S5 confirmed by measurement rather than assertion.
+**The other half was real, and self-inflicted.** `typo3-upgrade-run` failed all five of its
+own positive cases because its description was written in our vocabulary — invariance,
+elevation, loop protocol — and not the user's: update, looks, same, project. `typo3-rector`
+lacked "automatically", "fix", "deprecated". Both are S2 failures committed while writing
+the rule against them.
 
-**The spec caught its own author twice.** `typo3-upgrade-run` failed all five of its own
-reviewed positive cases: its description was full of our internal vocabulary — invariance,
-elevation, loop protocol — and missing the user's words: update, looks, same, project. That
-is exactly the S2 failure, committed while writing the rule against it. Rewriting it for
-routing rather than for precision took the reviewed rate from 60% to 78% and removed a
-collision pair.
+**Draft cases now score *below* reviewed ones — 88% against 100%.** Earlier they scored
+higher, which was the tell: drafts are derived from the descriptions, so they test a
+description against its own vocabulary. As the real cases got fixed, the circular ones fell
+behind. That inversion is S5 measured rather than asserted.
 
-The lexical grader is a **router proxy**, not a model test. It shows whether a description
-carries the vocabulary a user would type; it cannot tell you what an agent will do. Do not
-tune descriptions to raise its score past the point where they read naturally — that is
-optimising the proxy. The `claude` grader is implemented for real measurement.
+The lexical grader is a **router proxy**. It shows whether a description carries the
+vocabulary a user would type; it cannot tell you what an agent will do. Use `--grader
+claude` for that. Do not tune descriptions past the point where they read naturally — but
+"do not tune the proxy" is not a licence to leave a broken instrument in place, which is
+what it became for one session here.

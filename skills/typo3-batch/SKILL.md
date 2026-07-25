@@ -1,6 +1,6 @@
 ---
 name: "typo3-batch"
-description: "Plans and executes batch TYPO3 migrations and large-scale refactors across hooks, PSR-14 events, TCA, dependency injection, Fluid, namespaces, ext_localconf, Content Blocks, localization, and PHP upgrades. Use when the user asks for bulk migration, mass refactor, codemod-style TYPO3 updates, repeated fixes across an extension, or coordinated v14 modernization."
+description: "Roll out the same change across many TYPO3 extensions at once: plans and executes batch migrations and large-scale refactors over every extension in a monorepo or packages/ directory. Covers hooks to PSR-14 events, TCA, dependency injection, Fluid, namespaces, ext_localconf, Content Blocks, localization and PHP upgrades. Use when the user says roll out a change to every extension, inventory which extensions still use a removed API such as HashService and fix them together, apply the same fix across the monorepo, mass or codemod-style refactor, or sequence a large refactor so it stays reviewable. Requires a TYPO3 codebase and more than one extension; a single extension is typo3-rector."
 compatibility: "TYPO3 14.x"
 metadata:
   version: "1.0.0"

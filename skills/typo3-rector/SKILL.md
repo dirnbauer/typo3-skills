@@ -1,6 +1,6 @@
 ---
 name: "typo3-rector"
-description: "Applies TYPO3 Rector upgrade patterns for PHP migrations toward TYPO3 v14, including Rector configuration, dry runs, rule sets, ViewFactory, Extbase responses, PSR-14 events, backend modules, TCA, and manual follow-up checks. Use when running Rector, fixing deprecations, upgrading TYPO3 PHP code, or preparing extensions for v14."
+description: "Automatically fix deprecated PHP calls in TYPO3 code by running Rector: configuration, dry run, review the diff, apply, second dry run. Covers rule sets for the v12 or v13 to v14 path, ViewFactory, Extbase responses, PSR-14 events, backend modules, TCA and the manual follow-ups Rector cannot do. Use when the user says run Rector, automatically fix the deprecated calls in this extension, automate the PHP migration, which Rector sets do I need, or asks how to review a large Rector diff. PHP only: TypoScript, Fluid, FlexForms and YAML are typo3-fractor. One extension at a time; the same change across many extensions is typo3-batch."
 compatibility: "TYPO3 14.x"
 metadata:
   version: "2.2.0"
