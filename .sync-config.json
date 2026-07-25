@@ -1,0 +1,88 @@
+{
+  "$schema": "./sync-config.schema.json",
+  "description": "External skill sources for automatic synchronization. After each sync, source-specific Credits & Attribution blocks are restored automatically. Netresearch-derived skills keep their existing thank-you wording; other upstream-derived skills get the same block style with owner-specific thank-you text.",
+  "syncSchedule": "weekly",
+  "lastSync": "2026-06-11T11:22:28Z",
+  "skills": [
+    {
+      "name": "enterprise-readiness",
+      "source": "https://github.com/netresearch/enterprise-readiness-skill.git",
+      "branch": "main",
+      "enabled": true,
+      "path": "skills/enterprise-readiness",
+      "note": "Keep full Netresearch credits and thank-you block after sync"
+    },
+    {
+      "name": "php-modernization",
+      "source": "https://github.com/netresearch/php-modernization-skill.git",
+      "branch": "main",
+      "enabled": true,
+      "path": "skills/php-modernization",
+      "note": "Keep full Netresearch credits and thank-you block after sync"
+    },
+    {
+      "name": "security-audit",
+      "source": "https://github.com/netresearch/security-audit-skill.git",
+      "branch": "main",
+      "enabled": true,
+      "path": "skills/security-audit",
+      "note": "Keep full Netresearch credits and thank-you block after sync"
+    },
+    {
+      "name": "typo3-conformance",
+      "source": "https://github.com/netresearch/typo3-conformance-skill.git",
+      "branch": "main",
+      "enabled": true,
+      "path": "skills/typo3-conformance",
+      "note": "Keep full Netresearch credits and thank-you block after sync"
+    },
+    {
+      "name": "typo3-core-contributions",
+      "source": "https://github.com/netresearch/typo3-core-contributions-skill.git",
+      "branch": "main",
+      "enabled": true,
+      "path": "skills/typo3-core-contributions",
+      "note": "Keep full Netresearch credits and thank-you block after sync"
+    },
+    {
+      "name": "typo3-ddev",
+      "source": "https://github.com/netresearch/typo3-ddev-skill.git",
+      "branch": "main",
+      "enabled": true,
+      "path": "skills/typo3-ddev",
+      "note": "Keep full Netresearch credits and thank-you block after sync"
+    },
+    {
+      "name": "typo3-docs",
+      "source": "https://github.com/netresearch/typo3-docs-skill.git",
+      "branch": "main",
+      "enabled": true,
+      "path": "skills/typo3-docs",
+      "note": "Keep full Netresearch credits and thank-you block after sync"
+    },
+    {
+      "name": "typo3-extension-upgrade",
+      "source": "https://github.com/netresearch/typo3-extension-upgrade-skill.git",
+      "branch": "main",
+      "enabled": true,
+      "path": "skills/typo3-extension-upgrade",
+      "note": "Keep full Netresearch credits and thank-you block after sync"
+    },
+    {
+      "name": "typo3-vite",
+      "source": "https://github.com/netresearch/typo3-vite-skill.git",
+      "branch": "main",
+      "enabled": true,
+      "path": "skills/typo3-vite",
+      "note": "Keep full Netresearch credits and thank-you block after sync"
+    },
+    {
+      "name": "typo3-testing",
+      "source": "https://github.com/netresearch/typo3-testing-skill.git",
+      "branch": "main",
+      "enabled": true,
+      "path": "skills/typo3-testing",
+      "note": "Keep full Netresearch credits and thank-you block after sync"
+    }
+  ]
+}
