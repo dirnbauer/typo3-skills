@@ -1,0 +1,80 @@
+{
+  "skill_name": "typo3-rector",
+  "skill_type": "preference",
+  "spec": "SKILL-SPEC.md",
+  "note": "Measurably collides with typo3-update (0.155). The discriminator is automation: Rector APPLIES transformations to PHP; typo3-update EXPLAINS the target API; Fractor handles everything that is not PHP.",
+  "evals": [
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-rector-pos-01",
+      "kind": "trigger-positive",
+      "expect_skill": "typo3-rector",
+      "prompt": "Set up Rector for this extension and do a dry run against the v14 rule set.",
+      "note": "Named tool, applied to code."
+    },
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-rector-pos-02",
+      "kind": "trigger-positive",
+      "expect_skill": "typo3-rector",
+      "prompt": "Automatically fix the deprecated PHP calls in Classes/ for TYPO3 v14.",
+      "note": "Automation intent without naming the tool."
+    },
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-rector-pos-03",
+      "kind": "trigger-positive",
+      "expect_skill": "typo3-rector",
+      "prompt": "Rector changed 200 files and I do not trust the Extbase response changes. How should I review and split this?",
+      "note": "Reviewing a bulk transformation is part of the same workflow."
+    },
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-rector-pos-04",
+      "kind": "trigger-positive",
+      "expect_skill": "typo3-rector",
+      "prompt": "Which Rector sets do I need for a v12 to v14 PHP migration?",
+      "note": "Tool configuration."
+    },
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-rector-neg-01",
+      "kind": "trigger-negative",
+      "expect_skill": "typo3-update",
+      "prompt": "What does the ViewFactory API look like in v14?",
+      "note": "Measured collision (0.155). Explaining an API is not applying a transformation."
+    },
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-rector-neg-02",
+      "kind": "trigger-negative",
+      "expect_skill": "typo3-fractor",
+      "prompt": "My TypoScript and Fluid templates still use v12 syntax. Automate that migration.",
+      "note": "Automation intent, but NOT PHP. Rector is PHP-only; this boundary is easy to get wrong because both are 'automated migration'."
+    },
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-rector-neg-03",
+      "kind": "trigger-negative",
+      "expect_skill": "typo3-14-update",
+      "prompt": "Take this v13 project to 14.3 end to end and prove the frontend is unchanged.",
+      "note": "Rector is one phase of that run, not the run."
+    },
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-rector-neg-04",
+      "kind": "trigger-negative",
+      "expect_no_skill": true,
+      "prompt": "Refactor this React component to use hooks.",
+      "note": "Refactoring, but not PHP and not TYPO3."
+    }
+  ]
+}

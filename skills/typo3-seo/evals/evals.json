@@ -1,0 +1,56 @@
+{
+  "skill_name": "typo3-seo",
+  "skill_type": "preference",
+  "spec": "SKILL-SPEC.md",
+  "note": "Scaffold. Per SKILL-SPEC.md S5, draft cases do not count as coverage until a human marks them reviewed.",
+  "evals": [
+    {
+      "id": "typo3-seo-trigger-pos-01",
+      "kind": "trigger-positive",
+      "status": "draft",
+      "prompt": "Working on TYPO3 SEO",
+      "expect_skill": "typo3-seo",
+      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+    },
+    {
+      "id": "typo3-seo-trigger-pos-02",
+      "kind": "trigger-positive",
+      "status": "draft",
+      "prompt": "Sitemap setup",
+      "expect_skill": "typo3-seo",
+      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+    },
+    {
+      "id": "typo3-seo-trigger-pos-03",
+      "kind": "trigger-positive",
+      "status": "draft",
+      "prompt": "Meta tags",
+      "expect_skill": "typo3-seo",
+      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+    },
+    {
+      "id": "typo3-seo-trigger-pos-04",
+      "kind": "trigger-positive",
+      "status": "draft",
+      "prompt": "Robots rules",
+      "expect_skill": "typo3-seo",
+      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+    },
+    {
+      "id": "typo3-seo-trigger-neg-01",
+      "kind": "trigger-negative",
+      "status": "draft",
+      "prompt": "Write a Python script that renames files in a folder by their EXIF date.",
+      "expect_no_skill": true,
+      "note": "Unrelated domain. No TYPO3 skill may fire."
+    },
+    {
+      "id": "typo3-seo-trigger-neg-02",
+      "kind": "trigger-negative",
+      "status": "draft",
+      "prompt": "TODO: a prompt that looks close to this skill but belongs to a sibling. Name the sibling in expect_skill.",
+      "expect_no_skill": true,
+      "note": "Replace with a real near-miss; see scripts/trigger_collisions.py."
+    }
+  ]
+}

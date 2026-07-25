@@ -73,6 +73,15 @@ database and a live site is exposed to input no code review catches:
 | `security-credentials-single-origin` | Credentials go only to the pinned origin, re-asserted after every navigation and redirect |
 | `security-no-claim-without-evidence` | No result is reported as passing without the command and exit code that prove it |
 
+Four more govern how skills themselves are written — see [SKILL-SPEC.md](SKILL-SPEC.md):
+
+| Rule | Constraint |
+|---|---|
+| `skills-require-evals` | No skill ships without evals; generated cases are drafts and do not count |
+| `skills-trigger-is-the-contract` | The description is the trigger; negative cases are mandatory |
+| `skills-declare-lifecycle` | Declare capability vs preference; retire capability skills once absorbed |
+| `skills-directives-not-essays` | Directives over prose; exact procedures belong in scripts |
+
 A rule answers *is this change allowed?*. A skill answers *how do I build this?*
 
 ## Conventions
@@ -95,14 +104,34 @@ re-syncable and their attribution stays intact. Improvements live in separate
 
 See [VENDORED.md](VENDORED.md) for the inventory, upstream commits and sync dates.
 
+## Skill specification
+
+[SKILL-SPEC.md](SKILL-SPEC.md) is the normative contract for every skill here: lifecycle
+class, trigger quality, eval requirements, progressive disclosure, and retirement. It derives
+from Philipp Schmid's *Don't Ship Skills Without Evals*; the analysis and what we changed
+because of it are in [references/skill-evals.md](references/skill-evals.md).
+
+The rule that matters most in practice: **a generated eval is a draft until a human signs it
+off.** Coverage is reported as reviewed-versus-total so the number cannot flatter itself.
+
+```bash
+python3 scripts/validate_evals.py --min-cases 6      # eval structure and honest coverage
+python3 scripts/trigger_collisions.py --threshold 0.13
+```
+
+Current: **26/26 owned skills have suites, 4/26 human-reviewed.** The rest are scaffolds and
+are counted as such.
+
 ## Contributing
 
 1. Create `skills/<name>/SKILL.md` with `name` and `description` frontmatter. The description is
    routing metadata: what the skill does **and when to use it**.
 2. Keep `SKILL.md` under 500 lines. Move detail into `references/`.
 3. Verify every technical claim against the installed v14 source. Never assert an API from memory.
-4. Run `python3 scripts/audit_skills.py` and `python3 scripts/check_attribution_guardrails.py`.
-5. Never edit a vendored skill — add an overlay instead.
+4. Add `evals/evals.json` with trigger-positive **and** trigger-negative cases (SKILL-SPEC.md S4).
+5. Run the checks: `audit_skills.py`, `validate_evals.py`, `trigger_collisions.py`,
+   `check_attribution_guardrails.py`.
+6. Never edit a vendored skill — add an overlay instead.
 
 
 ## Skill origins

@@ -1,0 +1,80 @@
+{
+  "skill_name": "typo3-batch",
+  "skill_type": "preference",
+  "spec": "SKILL-SPEC.md",
+  "note": "Measurably collides with typo3-update (0.139). The discriminator is SCALE and PLANNING: one change explained is typo3-update; the same change planned and executed across many extensions is this skill.",
+  "evals": [
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-batch-pos-01",
+      "kind": "trigger-positive",
+      "expect_skill": "typo3-batch",
+      "prompt": "We have 40 extensions in packages/. Plan and execute the hook-to-PSR-14 migration across all of them.",
+      "note": "Scale plus planning - the core case."
+    },
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-batch-pos-02",
+      "kind": "trigger-positive",
+      "expect_skill": "typo3-batch",
+      "prompt": "Roll out the same TCA change to every extension in this monorepo without breaking any of them.",
+      "note": "Repetition across a set."
+    },
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-batch-pos-03",
+      "kind": "trigger-positive",
+      "expect_skill": "typo3-batch",
+      "prompt": "How do I sequence a large-scale refactor so it stays reviewable instead of landing as one 500-file commit?",
+      "note": "Batch sequencing strategy."
+    },
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-batch-pos-04",
+      "kind": "trigger-positive",
+      "expect_skill": "typo3-batch",
+      "prompt": "Inventory which of our extensions still use the removed HashService and fix them together.",
+      "note": "Inventory plus coordinated fix."
+    },
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-batch-neg-01",
+      "kind": "trigger-negative",
+      "expect_skill": "typo3-update",
+      "prompt": "Which event replaces the DataHandler hook in v14?",
+      "note": "Measured collision (0.139). A single API question is the reference skill, whatever the eventual scale."
+    },
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-batch-neg-02",
+      "kind": "trigger-negative",
+      "expect_skill": "typo3-rector",
+      "prompt": "Just run the automated PHP migration on this one extension.",
+      "note": "Single target and a named automation - Rector, not batch planning."
+    },
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-batch-neg-03",
+      "kind": "trigger-negative",
+      "expect_skill": "typo3-14-update",
+      "prompt": "Upgrade our main website to 14.3 with visual regression proof.",
+      "note": "One project end to end is the orchestrator, not a batch across many."
+    },
+    {
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "id": "typo3-batch-neg-04",
+      "kind": "trigger-negative",
+      "expect_no_skill": true,
+      "prompt": "Bulk rename 300 image files on my desktop.",
+      "note": "Bulk operation, but nothing to do with TYPO3."
+    }
+  ]
+}

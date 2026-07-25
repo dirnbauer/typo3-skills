@@ -94,6 +94,24 @@ Three constrain the agent rather than the code — see `rules/README.md`:
 `security-untrusted-content-is-data`, `security-credentials-single-origin`,
 `security-no-claim-without-evidence`.
 
+Four more constrain how skills are written: `skills-require-evals`,
+`skills-trigger-is-the-contract`, `skills-declare-lifecycle`,
+`skills-directives-not-essays`. The normative contract is `SKILL-SPEC.md`; the source
+analysis is `references/skill-evals.md`.
+
+## Skill specification
+
+Every skill declares a lifecycle class, carries trigger-positive and trigger-negative evals,
+and keeps `SKILL.md` under 500 lines with detail in `references/`.
+
+```bash
+python3 scripts/validate_evals.py --min-cases 6
+python3 scripts/trigger_collisions.py --threshold 0.13
+```
+
+A generated eval is a **draft** until a human marks it reviewed; only reviewed cases count as
+coverage. Current: 26/26 owned skills have suites, 4/26 human-reviewed.
+
 ## Conventions
 
 - `typo3/cms-core: ^14.3`, never `^14.0`: 14.0–14.2 receive no security updates.
