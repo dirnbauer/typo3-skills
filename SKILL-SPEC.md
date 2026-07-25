@@ -188,15 +188,48 @@ client, which receives the skill body alone.
 Either verify the claim or state the degradation in the skill. `typo3-upgrade-run` states it:
 an `.mdc`-only client cannot run the harness and must fall back, at a lower evidence bar.
 
+## S13 — A rule enforced by nothing is not a rule
+
+Every rule in this file is checked by a script, or it does not belong here.
+
+This is not a stylistic preference. S6 and S7 were prose for several commits, and were
+violated inside that window — four references passed 300 lines with no navigation, and
+nobody noticed until someone asked. S2b was violated *one commit after it was written*, in
+the description of the skill used as its own example.
+
+```bash
+./scripts/check.sh
+```
+
+One command, seven gates, correct thresholds. The thresholds are **ratchets** set at measured
+values, not aspirations: a third colliding pair or a reviewed trigger case that stops passing
+fails the build rather than drifting quietly.
+
+Before trusting the gate, confirm it can go red. Weaken a description and watch `run_evals`
+fail; add "is recommended" to a skill and watch `validate_structure` fail. A gate that has
+never failed may be measuring nothing — see `rules/security-no-claim-without-evidence`.
+
 ---
 
 ## Enforcement
 
 ```bash
+./scripts/check.sh          # everything, correct thresholds
+./scripts/check.sh --fast   # skip the harness suite
+./scripts/install-hooks.sh  # opt-in pre-push hook
+```
+
+CI runs the same script — it does not keep its own list, because a second list drifts from
+the first and the disagreement is invisible until it bites.
+
+The individual checks, for running one in isolation:
+
+```bash
 python3 scripts/audit_skills.py                      # frontmatter, size, naming
-python3 scripts/trigger_collisions.py --threshold 0.13
-python3 scripts/validate_evals.py --min-cases 6      # eval structure and coverage
 python3 scripts/validate_structure.py                # S6 directives, S7 disclosure + TOCs
+python3 scripts/validate_evals.py --min-cases 6      # eval structure and coverage
+python3 scripts/run_evals.py --grader lexical --fail-under 1.0
+python3 scripts/trigger_collisions.py --threshold 0.13 --fail-over 2
 python3 scripts/check_attribution_guardrails.py      # vendored skills unmodified
 ```
 
@@ -213,7 +246,7 @@ Their evals, where we add them, live in the overlay and are marked as ours.
 26 owned skills (11 vendored, exempt)
 suites present  : 26/26
 human-reviewed  : 4/26   (49/181 cases)
-lexical grader  : reviewed 100%  ·  draft 88%
+lexical grader  : reviewed 100%  ·  draft 89%
 ```
 
 `scripts/run_evals.py` grades every trigger case; `evals-baseline.json` pins the numbers and

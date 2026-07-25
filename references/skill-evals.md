@@ -185,7 +185,8 @@ have covered.
 
 The 22 scaffolded suites are **drafts**. They give every skill a structure, negative-case
 slots and a lifecycle class, and they do not yet count as coverage. The four reviewed suites
-are `typo3-upgrade-run` (12 behaviour cases) plus the three collision-critical skills.
+are `typo3-upgrade-run` (11 trigger + 12 behaviour cases) plus the three
+collision-critical skills: `typo3-v14-reference`, `typo3-batch` and `typo3-rector`.
 
 The next work is per-skill and cannot be automated: replace each draft prompt with something
 a user actually sent, then mark it reviewed. Extending from real failures (S11) is the

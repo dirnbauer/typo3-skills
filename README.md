@@ -115,11 +115,11 @@ The rule that matters most in practice: **a generated eval is a draft until a hu
 off.** Coverage is reported as reviewed-versus-total so the number cannot flatter itself.
 
 ```bash
-python3 scripts/validate_evals.py --min-cases 6      # eval structure and honest coverage
-python3 scripts/validate_structure.py                # directives, size limits, TOCs
-python3 scripts/trigger_collisions.py --threshold 0.13
-python3 scripts/run_evals.py --grader lexical        # actually run the trigger evals
+./scripts/check.sh    # every gate: structure, evals, collisions, attribution, harness
 ```
+
+Thresholds are ratchets set at measured values, so a regression fails the build rather than
+drifting quietly. CI runs the same script.
 
 Current: **26/26 owned skills have suites, 4/26 human-reviewed**, reviewed cases passing at
 **100%** under the offline grader. The rest are scaffolds and are counted as such.

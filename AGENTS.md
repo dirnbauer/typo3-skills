@@ -105,8 +105,7 @@ Every skill declares a lifecycle class, carries trigger-positive and trigger-neg
 and keeps `SKILL.md` under 500 lines with detail in `references/`.
 
 ```bash
-python3 scripts/validate_evals.py --min-cases 6
-python3 scripts/trigger_collisions.py --threshold 0.13
+./scripts/check.sh
 ```
 
 A generated eval is a **draft** until a human marks it reviewed; only reviewed cases count as

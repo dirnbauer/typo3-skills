@@ -1,0 +1,40 @@
+name: checks
+
+# Calls scripts/check.sh and nothing else, deliberately.
+#
+# An earlier version of this repository had two scripts that each kept their own copy of the
+# tokeniser; they drifted, and the two instruments silently disagreed about whether
+# "migrations" and "migration" were the same word. A CI job that maintains its own list of
+# checks is that bug in a different costume: it drifts from what a developer runs locally,
+# and the divergence only shows up as a surprise.
+#
+# If a check belongs in CI, it belongs in check.sh.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: skills/typo3-upgrade-run/scripts/package-lock.json
+
+      - name: Install harness dependencies
+        working-directory: skills/typo3-upgrade-run/scripts
+        run: npm ci
+
+      - name: Run the gate
+        run: ./scripts/check.sh
