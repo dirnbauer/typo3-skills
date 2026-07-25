@@ -173,8 +173,13 @@ an `.mdc`-only client cannot run the harness and must fall back, at a lower evid
 python3 scripts/audit_skills.py                      # frontmatter, size, naming
 python3 scripts/trigger_collisions.py --threshold 0.13
 python3 scripts/validate_evals.py --min-cases 6      # eval structure and coverage
+python3 scripts/validate_structure.py                # S6 directives, S7 disclosure + TOCs
 python3 scripts/check_attribution_guardrails.py      # vendored skills unmodified
 ```
+
+S6 and S7 were prose-only until a sweep found four owned references over 300 lines with no
+navigation. Prose rules do not hold; `validate_structure.py` exists so these two are checked
+rather than intended.
 
 Vendored skills are exempt from S1–S12: they are upstream artefacts kept byte-identical.
 Their evals, where we add them, live in the overlay and are marked as ours.

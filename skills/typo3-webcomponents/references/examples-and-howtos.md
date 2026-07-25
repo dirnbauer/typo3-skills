@@ -1,5 +1,18 @@
 # TYPO3 v14 Web Components Examples And How-Tos
 
+## Contents
+
+- [Table Of Contents](#table-of-contents) — line 5
+- [Inventory Existing Components](#inventory-existing-components) — line 17
+- [Create A No-Build Lit Component](#create-a-no-build-lit-component) — line 28
+- [Register The Import Map](#register-the-import-map) — line 110
+- [Load The Component From PHP Or Fluid](#load-the-component-from-php-or-fluid) — line 134
+- [Add Backend Data With An AJAX Route](#add-backend-data-with-an-ajax-route) — line 190
+- [Use Web Components In Backend Modules](#use-web-components-in-backend-modules) — line 255
+- [Modernize Form Editor Custom Elements](#modernize-form-editor-custom-elements) — line 285
+- [Reuse Existing Components](#reuse-existing-components) — line 304
+- [Frontend Web Components Decision](#frontend-web-components-decision) — line 314
+
 Use these examples as patterns, not as a package to copy blindly. Replace `Vendor`, `my_extension`, route names, and labels with the project conventions.
 
 ## Table Of Contents

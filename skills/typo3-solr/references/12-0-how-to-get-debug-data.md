@@ -1,5 +1,29 @@
 # 12.0 How to Get Debug Data
 
+## Contents
+
+- [12.0 How to Get Debug Data](#120-how-to-get-debug-data) — line 5
+  - [Layer 1: Quick checks (zero configuration)](#layer-1-quick-checks-zero-configuration) — line 34
+  - [Layer 2: Enable TypoScript debug logging](#layer-2-enable-typoscript-debug-logging) — line 53
+  - [Layer 3: Solr debugQuery (score explanation)](#layer-3-solr-debugquery-score-explanation) — line 112
+  - [Layer 4: EXT:solrdebugtools (funding extension)](#layer-4-extsolrdebugtools-funding-extension) — line 155
+  - [Layer 5: CLI curl to Solr API](#layer-5-cli-curl-to-solr-api) — line 171
+  - [Layer 6: Database-level inspection](#layer-6-database-level-inspection) — line 203
+  - [Putting it all together: Debug workflow](#putting-it-all-together-debug-workflow) — line 235
+- [12.1 Where to Start: Diagnostic Flowchart](#121-where-to-start-diagnostic-flowchart) — line 253
+- [12.2 Connection Problems](#122-connection-problems) — line 279
+- [12.3 Indexing Problems](#123-indexing-problems) — line 296
+  - [Nothing in Index Queue](#nothing-in-index-queue) — line 298
+  - [Items in Queue but Not Indexed](#items-in-queue-but-not-indexed) — line 305
+  - [Items Indexed but Wrong/Missing Content](#items-indexed-but-wrongmissing-content) — line 318
+  - [Re-indexing](#re-indexing) — line 328
+- [12.4 Search / Query Problems](#124-search--query-problems) — line 334
+  - [No Results in Frontend](#no-results-in-frontend) — line 336
+  - [Wrong Results / Bad Relevance](#wrong-results--bad-relevance) — line 354
+  - [Facets Not Showing](#facets-not-showing) — line 366
+- [12.5 Logging Deep Dive](#125-logging-deep-dive) — line 373
+- [12.6 Solr Admin UI as Debugging Tool](#126-solr-admin-ui-as-debugging-tool) — line 416
+
 Continues `typo3-solr` from [full guide](full-guide.md).
 
 ### 12.0 How to Get Debug Data

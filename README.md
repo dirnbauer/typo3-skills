@@ -116,6 +116,7 @@ off.** Coverage is reported as reviewed-versus-total so the number cannot flatte
 
 ```bash
 python3 scripts/validate_evals.py --min-cases 6      # eval structure and honest coverage
+python3 scripts/validate_structure.py                # directives, size limits, TOCs
 python3 scripts/trigger_collisions.py --threshold 0.13
 ```
 

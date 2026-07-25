@@ -1,5 +1,13 @@
 # 9. Testing Workspace Support
 
+## Contents
+
+- [9. Testing Workspace Support](#9-testing-workspace-support) — line 5
+  - [Prerequisites: Install Testing Framework](#prerequisites-install-testing-framework) — line 7
+  - [Functional Test Setup](#functional-test-setup) — line 94
+  - [CSV Fixture File](#csv-fixture-file) — line 270
+  - [Run Tests](#run-tests) — line 293
+
 Continues `typo3-workspaces` from [full guide](full-guide.md).
 
 ## 9. Testing Workspace Support
