@@ -24,50 +24,13 @@ import sys
 from collections import Counter
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
 ROOT = Path(__file__).resolve().parent.parent
 SKILLS = ROOT / "skills"
 
 # Words that carry no routing signal. Deliberately small: over-stripping hides real overlap.
-STOP = {
-    "use", "when", "the", "a", "an", "and", "or", "for", "to", "of", "in", "on", "with",
-    "this", "that", "it", "its", "is", "are", "be", "as", "by", "from", "at", "into",
-    "also", "including", "includes", "such", "user", "users", "asks", "ask", "wants",
-    "want", "need", "needs", "triggers", "trigger", "skill", "using", "used", "via",
-    "any", "all", "other", "others", "etc", "e", "g", "i", "you", "your", "we", "our",
-    "how", "what", "which", "who", "can", "may", "should", "must", "will", "do", "does",
-    "not", "no", "yes", "new", "old", "more", "most", "less", "than", "then", "if",
-    "about", "before", "after", "during", "across", "between", "over", "under", "up",
-    "down", "out", "off", "per", "each", "every", "both", "either", "neither",
-}
-
-
-def read_frontmatter(path: Path) -> dict:
-    text = path.read_text(encoding="utf-8", errors="ignore")
-    m = re.match(r"^---\n(.*?)\n---\n", text, re.S)
-    if not m:
-        return {}
-    block = m.group(1)
-    out = {}
-    key = None
-    for line in block.split("\n"):
-        km = re.match(r'^([A-Za-z_][\w-]*):\s*(.*)$', line)
-        if km and not line.startswith(" "):
-            key = km.group(1)
-            val = km.group(2).strip()
-            if val in (">-", "|", ">", "|-"):
-                out[key] = ""
-                out[f"__folded__{key}"] = True
-            else:
-                out[key] = val.strip('"').strip("'")
-        elif key and out.get(f"__folded__{key}"):
-            out[key] = (out[key] + " " + line.strip()).strip()
-    return {k: v for k, v in out.items() if not k.startswith("__folded__")}
-
-
-def terms(description: str) -> Counter:
-    words = re.findall(r"[a-z0-9][a-z0-9._-]*", description.lower())
-    keep = [w.strip("._-") for w in words if w not in STOP and len(w) > 2]
-    return Counter(w for w in keep if w)
+from _skilltext import STOP, read_frontmatter, stem, terms  # noqa: F401
 
 
 def idf(corpus: dict[str, Counter]) -> dict[str, float]:

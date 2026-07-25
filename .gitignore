@@ -6,3 +6,5 @@ node_modules/
 !.env.example
 .typo3-update/
 skills/*/scripts/node_modules/
+__pycache__/
+*.pyc

@@ -122,7 +122,7 @@ python3 scripts/run_evals.py --grader lexical        # actually run the trigger 
 ```
 
 Current: **26/26 owned skills have suites, 4/26 human-reviewed**, reviewed cases passing at
-**78%** under the offline grader. The rest are scaffolds and are counted as such.
+**100%** under the offline grader. The rest are scaffolds and are counted as such.
 
 ## Contributing
 

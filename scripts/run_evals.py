@@ -4,8 +4,8 @@
 Two graders, because they answer different questions:
 
   --grader lexical   Offline, deterministic, no API, no cost. Ranks every skill description
-                     against the prompt using the same IDF-weighted scoring as
-                     trigger_collisions.py, then checks whether the expected skill wins.
+                     against the prompt with BM25, then checks whether the expected skill
+                     wins.
                      This is a ROUTER PROXY, not a model test. It cannot tell you what an
                      agent will do. It CAN tell you that a description contains none of the
                      vocabulary a user would actually type - which is the failure mode the
@@ -36,86 +36,13 @@ import sys
 from collections import Counter
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
 ROOT = Path(__file__).resolve().parent.parent
 SKILLS = ROOT / "skills"
 VENDORED = ROOT / "VENDORED.md"
 
-STOP = {
-    "use", "when", "the", "a", "an", "and", "or", "for", "to", "of", "in", "on", "with",
-    "this", "that", "it", "its", "is", "are", "be", "as", "by", "from", "at", "into",
-    "also", "including", "such", "user", "users", "asks", "ask", "wants", "want", "need",
-    "needs", "triggers", "trigger", "skill", "using", "used", "via", "any", "all", "how",
-    "what", "which", "who", "can", "may", "should", "must", "will", "do", "does", "not",
-    "no", "yes", "new", "more", "most", "than", "then", "if", "about", "before", "after",
-    "my", "our", "we", "you", "your", "me", "i", "please", "help", "make", "sure", "so",
-}
-
-
-def read_frontmatter(path: Path) -> dict:
-    text = path.read_text(encoding="utf-8", errors="ignore")
-    m = re.match(r"^---\n(.*?)\n---\n", text, re.S)
-    if not m:
-        return {}
-    out, key = {}, None
-    for line in m.group(1).split("\n"):
-        km = re.match(r"^([A-Za-z_][\w-]*):\s*(.*)$", line)
-        if km and not line.startswith(" "):
-            key = km.group(1)
-            val = km.group(2).strip()
-            if val in (">-", "|", ">", "|-"):
-                out[key] = ""
-                out["__f" + key] = True
-            else:
-                out[key] = val.strip('"').strip("'")
-        elif key and out.get("__f" + key):
-            out[key] = (out[key] + " " + line.strip()).strip()
-    return {k: v for k, v in out.items() if not k.startswith("__f")}
-
-
-def stem(word: str) -> str:
-    """Light suffix stripping, Porter-style but deliberately small.
-
-    Without it, "migration" and "migrations" are different tokens, and a description saying
-    "PHP migrations" scores zero against a user typing "the automated migration". That is a
-    property of the instrument, not of the description.
-
-    Every branch funnels through one exit so the normalisation is applied uniformly. An
-    earlier version returned early from the plural branches, which left "upgrades" -> upgrade
-    while "upgrade" -> upgrad, and cost eight points of pass rate: a stemmer that is
-    inconsistent with itself is worse than none.
-    """
-    if len(word) <= 3 or any(c.isdigit() for c in word):
-        return word
-
-    base = word
-    if word.endswith("ies") and len(word) > 4:
-        base = word[:-3] + "y"
-    elif word.endswith("sses") or word.endswith(("ches", "shes", "xes", "zes")):
-        base = word[:-2]
-    elif word.endswith("es") and len(word) > 4:
-        base = word[:-1]
-    elif word.endswith("s") and not word.endswith(("ss", "us", "is")):
-        base = word[:-1]
-    else:
-        for suffix in ("ing", "ed"):
-            if word.endswith(suffix) and len(word) - len(suffix) >= 3:
-                base = word[: -len(suffix)]
-                # "runn" -> "run"
-                if len(base) > 3 and base[-1] == base[-2] and base[-1] not in "aeiousl":
-                    base = base[:-1]
-                break
-
-    # A trailing-'e' step was tried and removed. It unified "removed"/"remove" but
-    # over-stemmed discriminative terms ("upgrade" -> "upgrad"), and measured worse on both
-    # reviewed and draft cases. Known limitation: -ed forms do not meet their -e base.
-    return base
-
-
-def terms(text: str) -> Counter:
-    words = re.findall(r"[a-z0-9][a-z0-9._-]*", text.lower())
-    return Counter(
-        stem(w.strip("._-")) for w in words if w not in STOP and len(w) > 2
-    )
+from _skilltext import STOP, read_frontmatter, stem, terms  # noqa: F401
 
 
 def load_corpus() -> dict[str, str]:

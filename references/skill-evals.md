@@ -138,18 +138,25 @@ A name is a trigger signal too. Renaming fixed it:
 | Upgrade orchestrator | `typo3-14-update` | `typo3-upgrade-run` |
 
 The result was measurable, which is the part worth keeping. Renaming, plus rewriting both
-descriptions so the opening words disambiguate, took the collection from **three colliding
-pairs to two**: `typo3-batch ↔ typo3-update` disappeared entirely, and the rector pair fell
-from 0.155 to 0.137. The one remaining owned-skill collision is gone; what is left is
-between two vendored skills we do not edit.
+descriptions so the opening words disambiguate, removed that pair outright.
 
-`typo3-upgrade-run` also stops being version-scoped in its name, which was wrong on its own
-terms: the contract it encodes — invariance first, elevation second — is not specific to
-v14. Only its target is.
+### Where it ended up
 
-Two limits remain. The threshold 0.13 is a convention, not a measurement. And the analyser
-still cannot see names, conceptual overlap, or two well-worded descriptions that happen to
-describe genuinely overlapping jobs.
+Two colliding pairs remain, and both involve **vendored** skills we do not edit:
+
+| Overlap | Pair | Why it stands |
+|---|---|---|
+| 0.167 | `typo3-conformance` ↔ `typo3-extension-upgrade` | both vendored |
+| 0.140 | `typo3-extension-upgrade` ↔ `typo3-fractor` | the vendored one recites the tool names Fractor owns |
+
+Both are pinned from the owned side with negative trigger evals, which is the third
+resolution S3 allows: measure the confusion when you cannot reword it.
+
+Along the way the analyser caught two collisions we had **created**. Cross-referencing
+`typo3-batch` and `typo3-rector` in each other's descriptions made them collide on generic
+filler — *many, apply, one, says, large, same*. And `typo3-rector` listed Fractor's whole
+territory to exclude it, which is exactly the S2b failure: a lexical router reads an
+exclusion as an attraction. Naming the sibling without reciting its vocabulary fixed both.
 
 ### Where we deliberately diverge
 

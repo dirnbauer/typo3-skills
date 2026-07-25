@@ -1,6 +1,6 @@
 {
   "recorded": "2026-07-25",
-  "grader": "lexical (BM25 + light stemming)",
+  "grader": "lexical (BM25 + light stemming, shared tokeniser)",
   "note": "Offline router proxy, not a model test. A drop in reviewed_pass_rate means a description lost user vocabulary.",
   "summary": {
     "grader": "lexical",
@@ -10,8 +10,8 @@
     "drafts": 132,
     "errors": 0,
     "reviewed_pass_rate": 1.0,
-    "draft_pass_rate": 0.879,
-    "overall_pass_rate": 0.905
+    "draft_pass_rate": 0.886,
+    "overall_pass_rate": 0.911
   },
   "failing_reviewed": []
 }
