@@ -497,6 +497,24 @@ abgeleiteter Fall prüft eine Beschreibung gegen ihr eigenes Vokabular. Er ist z
 deshalb leicht. Nachdem die echten Lücken behoben waren, kehrte sich das Verhältnis um: 89 %
 gegen 100 %.
 
+Eine spätere Prüfung des Bestands zeigte, dass die Zirkularität nicht subtil war, sondern
+wörtlich. Von 132 generierten Fällen waren **alle** entartet: 88 waren wörtliche Teilzeichen-
+ketten der eigenen `SKILL.md` — der Generator hatte Beschreibungen an Kommata zerlegt und die
+Bruchstücke als Prompts verwendet ("Building", "Content elements", "Axe-core") —, 22 waren
+unausgefüllte `TODO:`-Platzhalter, 22 dieselbe kopierte Negativprobe. Die 89 % maßen nichts;
+sie maßen `prompt in description`. Damit wird der Detektor billiger als gedacht: Wo die
+Ableitung wörtlich ist, genügt ein Teilstring-Test, und genau der läuft jetzt maschinell
+gegen jeden Fall, den ein Mensch unterschreiben soll.
+
+Der erste Ersatzstapel bestätigte die Vorhersage quantitativ. 16 neu geschriebene Fälle für
+ein Skillpaar erreichten im ersten Lauf **50 %**, während die entarteten Fälle desselben
+Bestands bei 91 % lagen. Jeder Fehlschlag war diagnostisch, und keiner lag am Fall: Eine
+Beschreibung eröffnete mit "Audits …" und beanspruchte damit das Verb des Nachbarskills;
+eine andere kannte "focus states", während Nutzer "focus outline" und "tab" tippen; eine
+dritte enthielt die Wörter "skip link" und "landmark" überhaupt nicht. Korrigiert wurden die
+**Beschreibungen**, nicht die Fälle — Ergebnis 100 %, und die lexikalische Überlappung des
+Paares fiel von 0,120 auf 0,088.
+
 Verallgemeinert:
 
 > **Übertreffen Tests, die aus dem Artefakt abgeleitet wurden, systematisch Tests, die
@@ -522,6 +540,18 @@ der einzige Punkt, an dem echte Unabhängigkeit ins Verfahren kommt.
 **Der Agent setzt die Schwellen.** Gegenmaßnahme ist die Ratsche: Schwellen stehen auf den
 gemessenen Werten, nicht auf Wunschwerten, sodass jede Verschlechterung ein Fehlschlag ist
 und kein langsames Abrutschen.
+
+Und, weil dieselbe Prüfung ein zweites Mal fündig wurde: Die Negativfälle waren als
+`skill not in top[:1] and best_score > 0` formuliert. Beide Hälften waren falsch. "Dieses
+Skill ist nicht Platz 1" ist für 21 der 22 Suiten, die denselben Fall führen, trivial
+erfüllt — die Prüfung konnte nicht scheitern. Und `best_score > 0` **verlangte** einen
+Treffer, sodass ein Prompt, der korrekt nichts trifft, durchgefallen wäre. Gemessen ordnete
+eine Python-Dateiumbenennung `typo3-v14-reference` mit 3,44 ein, und der Test, der genau das
+verhindern sollte, meldete Erfolg. Nach der Korrektur — *nichts darf wie ein echter Treffer
+punkten*, Schwelle aus den Daten abgeleitet statt gewählt — fiel die Quote der
+unterschriebenen Fälle von 100 % auf 97 %: Ein signierter Fall hatte folgenlos bestanden.
+Das ist derselbe Defekt wie der Exit-Code aus 6.5, eine Ebene höher: eine Prüfung, die nicht
+rot werden kann, misst nichts.
 
 Und eine Lehre, die diese Arbeit sich selbst erteilt hat: **Man repariere das Instrument,
 bevor man ihm glaubt.** Als die Trigger-Evals zuerst 60 % ergaben, lag die Hälfte der Lücke

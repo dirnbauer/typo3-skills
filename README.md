@@ -121,8 +121,10 @@ off.** Coverage is reported as reviewed-versus-total so the number cannot flatte
 Thresholds are ratchets set at measured values, so a regression fails the build rather than
 drifting quietly. CI runs the same script.
 
-Current: **26/26 owned skills have suites, 4/26 human-reviewed**, reviewed cases passing at
-**100%** under the offline grader. The rest are scaffolds and are counted as such.
+Current: **26/26 owned skills have suites, 4/26 human-reviewed** (49/185 cases), with a
+further 2 skills (16 cases) written and awaiting a signature. Reviewed and proposed cases
+both pass at **100%** under the offline grader; the remaining 22 suites are scaffold and are
+counted as such, not as coverage.
 
 ## Contributing
 

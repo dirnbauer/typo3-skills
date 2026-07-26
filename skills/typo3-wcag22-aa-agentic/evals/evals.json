@@ -1,8 +1,8 @@
 {
   "skill_name": "typo3-wcag22-aa-agentic",
-  "skill_type": "capability",
+  "skill_type": "preference",
   "spec": "SKILL-SPEC.md",
-  "note": "The sibling is typo3-accessibility, and the boundary is build-vs-run: this skill drives Playwright/axe against a URL and produces reports, CI baselines and a DACH/EAA accessibility statement; the sibling answers 'what is the correct accessible markup'. Cases lead with the artefacts only this skill produces - a scanned URL, a CI baseline, a legal statement. Classified capability, not preference: it wraps tooling the model cannot drive unaided, so it retires if that stops being true.",
+  "note": "The sibling is typo3-accessibility, and the boundary is build-vs-run: this skill drives Playwright/axe against a URL and produces reports, CI baselines and a DACH/EAA accessibility statement; the sibling answers 'what is the correct accessible markup'. Cases lead with the artefacts only this skill produces - a scanned URL, a CI baseline, a legal statement. Classified preference. It was briefly changed to capability on the grounds that it wraps Playwright/axe tooling, which was the wrong test: S1 asks whether a model absorbing the skill would make it deletable. It would not. The mandatory human sign-off, the DACH/EAA legal profiles and the CI baseline conventions are house policy and stay correct however good the model gets at driving a scanner.",
   "evals": [
     {
       "id": "typo3-wcag22-aa-agentic-trigger-pos-01",

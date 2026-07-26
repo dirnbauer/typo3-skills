@@ -69,8 +69,11 @@ run "eval structure and coverage (S4, S5)" \
     python3 scripts/validate_evals.py --min-cases 6
 
 # Reviewed trigger cases are at 100%; anything less is a regression, not a starting point.
+# Proposed cases ratchet too — they are resolved before they are committed, so a drop means a
+# description regressed, not that a batch is still in progress. A known_limitation case that
+# starts passing also fails here, so an xfail annotation cannot outlive the problem it names.
 run "trigger evals actually pass (S2, S4)" \
-    python3 scripts/run_evals.py --grader lexical --fail-under 1.0
+    python3 scripts/run_evals.py --grader lexical --fail-under 1.0 --fail-under-proposed 1.0
 
 # Two pairs remain, both between vendored skills we cannot edit. A third is ours.
 run "trigger collisions within budget (S3)" \

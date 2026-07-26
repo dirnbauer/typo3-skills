@@ -106,6 +106,22 @@ def rank_skills(prompt: str, corpus: dict[str, str], index: dict) -> list[tuple[
     return sorted(scores, key=lambda x: -x[1])
 
 
+# Below this BM25 score, a "match" is indistinguishable from vocabulary noise.
+#
+# Derived, not chosen: the weakest score any passing trigger-positive gives its own skill is
+# 6.18, and the median is 13.6. 6.0 sits just under that floor. It is a RATCHET — if a real
+# match ever scores below it, that is a description regression worth seeing, not a reason to
+# lower the number.
+#
+# The previous assertion for expect_no_skill was `skill not in top[:1] and best_score > 0`,
+# and it was wrong twice over: "this skill is not #1" is trivially true for 21 of the 22
+# suites carrying the same case, and `best_score > 0` REQUIRED some skill to match, so a
+# prompt that correctly matched nothing would have failed. A Python/EXIF file-renaming task
+# was scoring typo3-v14-reference at 3.44 and the eval built to catch exactly that reported
+# a pass.
+NO_MATCH_FLOOR = 6.0
+
+
 def grade_lexical(case: dict, skill: str, corpus, index, top_k: int) -> dict:
     ranked = rank_skills(case["prompt"], corpus, index)
     top = [n for n, _ in ranked[:top_k]]
@@ -123,10 +139,19 @@ def grade_lexical(case: dict, skill: str, corpus, index, top_k: int) -> dict:
             ok = rank_exp < rank_self
             why = f"{expected} at #{rank_exp + 1}, {skill} at #{rank_self + 1}"
         else:
-            ok = skill not in top[:1] and best_score > 0
-            why = f"{skill} must not rank #1; #1 is {best} ({best_score})"
+            # expect_no_skill means NOTHING should fire — not merely "not this one".
+            ok = best_score < NO_MATCH_FLOOR
+            why = (f"nothing may score >= {NO_MATCH_FLOOR}; "
+                   f"#1 is {best} ({best_score:.2f})")
     else:
         return {"result": "skipped", "why": "behaviour case needs a model grader"}
+
+    # A case may declare a known limitation of the lexical proxy — homonyms it cannot see
+    # past, for instance. It is reported, never silently tolerated: an xfail that starts
+    # passing is surfaced as xpass so the annotation cannot outlive the problem.
+    if case.get("known_limitation"):
+        result = "xpass" if ok else "xfail"
+        return {"result": result, "why": f"{why} [{case['known_limitation']}]", "top": ranked[:3]}
 
     return {"result": "pass" if ok else "fail", "why": why, "top": ranked[:3]}
 
@@ -189,6 +214,10 @@ def main() -> int:
     ap.add_argument("--timeout", type=int, default=120)
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--fail-under", type=float, help="exit 1 if reviewed pass rate is below this (0-1)")
+    ap.add_argument("--fail-under-proposed", type=float,
+                    help="exit 1 if proposed pass rate is below this (0-1). Proposed cases are "
+                         "resolved before they are committed, so they ratchet like reviewed ones "
+                         "rather than waiting for a signature to start being measured.")
     args = ap.parse_args()
 
     corpus = load_corpus()
@@ -232,19 +261,24 @@ def main() -> int:
             })
 
     def rate(rows, key="pass_pow_k"):
-        rows = [r for r in rows if r["result"] != "error"]
+        # xfail/xpass are declared limitations of the proxy, not measurements of the
+        # descriptions. They are reported on their own line and kept out of the rates so a
+        # known homonym cannot quietly drag a ratchet down — nor prop one up.
+        rows = [r for r in rows if r["result"] not in ("error", "xfail", "xpass")]
         return (sum(1 for r in rows if r[key]) / len(rows)) if rows else 0.0
 
     reviewed = [r for r in results if r["status"] == "reviewed"]
     proposed = [r for r in results if r["status"] == "proposed"]
     drafts = [r for r in results if r["status"] == "draft"]
     errors = [r for r in results if r["result"] == "error"]
+    xfail = [r for r in results if r["result"] == "xfail"]
+    xpass = [r for r in results if r["result"] == "xpass"]
 
     summary = {
         "grader": args.grader, "trials": trials,
         "cases": len(results), "reviewed": len(reviewed),
         "proposed": len(proposed), "drafts": len(drafts),
-        "errors": len(errors),
+        "errors": len(errors), "xfail": len(xfail), "xpass": len(xpass),
         "reviewed_pass_rate": round(rate(reviewed), 3),
         "proposed_pass_rate": round(rate(proposed), 3),
         "draft_pass_rate": round(rate(drafts), 3),
@@ -257,6 +291,13 @@ def main() -> int:
         print(f"grader={args.grader} trials={trials}  {len(results)} trigger case(s)\n")
         if errors:
             print(f"  {len(errors)} case(s) could not be graded: {errors[0]['why']}\n")
+        for r in xfail:
+            print(f"  xfail  {r['id']}\n         {r['why']}")
+        for r in xpass:
+            print(f"  XPASS  {r['id']} — known limitation no longer reproduces; drop the annotation")
+            print(f"         {r['why']}")
+        if xfail or xpass:
+            print()
         for group, rows in (("reviewed", reviewed), ("proposed", proposed), ("draft", drafts)):
             if not rows:
                 continue
@@ -277,11 +318,21 @@ def main() -> int:
             print("  description carries the vocabulary a user would type. Use --grader claude for real")
             print("  routing behaviour.")
 
+    failed = False
     if args.fail_under is not None and summary["reviewed_pass_rate"] < args.fail_under:
         print(f"\nFAIL: reviewed pass rate {summary['reviewed_pass_rate']:.0%} "
               f"below {args.fail_under:.0%}", file=sys.stderr)
-        return 1
-    return 0
+        failed = True
+    if (args.fail_under_proposed is not None and proposed
+            and summary["proposed_pass_rate"] < args.fail_under_proposed):
+        print(f"\nFAIL: proposed pass rate {summary['proposed_pass_rate']:.0%} "
+              f"below {args.fail_under_proposed:.0%}", file=sys.stderr)
+        failed = True
+    if xpass:
+        print(f"\nFAIL: {len(xpass)} known_limitation case(s) now pass; remove the annotation",
+              file=sys.stderr)
+        failed = True
+    return 1 if failed else 0
 
 
 if __name__ == "__main__":

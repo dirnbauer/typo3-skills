@@ -173,8 +173,10 @@ prescriptive part became a program, which is what the advice actually points at.
 
 ```
 26 owned skills (11 vendored, exempt)
-suites present : 26/26
-human-reviewed : 4/26   (49/181 cases)
+suites present    : 26/26
+human-reviewed    :  4/26   (49/185 cases)
+awaiting signature:  2/26   (16/185 cases — not coverage until signed)
+lexical grader    : reviewed 100%  ·  proposed 100%  ·  draft 91%  ·  1 xfail
 ```
 
 The validator's first catch was the flagship. `typo3-upgrade-run` carried twelve carefully
@@ -183,11 +185,78 @@ loaded and never tested whether it loads. Given it is the most expensive skill h
 invoke by mistake, and sits beside five plausible confusions, that was the wrong half to
 have covered.
 
-The 22 scaffolded suites are **drafts**. They give every skill a structure, negative-case
-slots and a lifecycle class, and they do not yet count as coverage. The four reviewed suites
-are `typo3-upgrade-run` (11 trigger + 12 behaviour cases) plus the three
-collision-critical skills: `typo3-v14-reference`, `typo3-batch` and `typo3-rector`.
+### The scaffold was not partially useful — it was entirely degenerate
 
-The next work is per-skill and cannot be automated: replace each draft prompt with something
-a user actually sent, then mark it reviewed. Extending from real failures (S11) is the
-cheapest way to get there — every bug report is a free eval case that has already failed once.
+Auditing all 132 draft cases before replacing any of them produced a sharper result than
+"drafts are circular":
+
+| | Count |
+|---|---|
+| Verbatim substrings of the skill's own `SKILL.md` | 88 |
+| Literal `TODO:` placeholders with no `expect_skill` | 22 |
+| The identical Python/EXIF negative, copied into every suite | 22 |
+
+That is all 132. The scaffolder had split each description on commas and used the fragments
+as prompts — `"Building"`, `"Content elements"`, `"Axe-core"`, `"Use this skill to audit"`.
+So the 89% draft pass rate was never a measurement of anything; it was `prompt in
+description`. §6.7 of the dissertation argued drafts are circular *by derivation*. They were
+circular by string containment, which is both worse and easier to check — so it is now
+checked, in `validate_evals.py`, for every case a human is asked to sign.
+
+### Two instruments that could not go red
+
+Replacing the first suites turned up a second defect, in the grader rather than the cases.
+`expect_no_skill` was asserted as `skill not in top[:1] and best_score > 0`. Both halves
+were wrong. "This skill is not #1" is trivially true for 21 of the 22 suites carrying the
+same case, so the check could not fail; and `best_score > 0` *required* some skill to match,
+meaning a prompt that correctly matched nothing would have been reported as a failure.
+
+Empirically, "Write a Python script that renames files in a folder by their EXIF date"
+scored `typo3-v14-reference` at 3.44 — the collection firing on a non-TYPO3 task — and the
+eval built to catch exactly that reported a pass.
+
+The assertion is now *nothing may score like a real match*, with the floor derived rather
+than chosen: the weakest score any passing trigger-positive gives its own skill is 6.18 and
+the median is 13.6, so the floor sits at 6.0. Correcting it dropped the reviewed pass rate
+from 100% to 97%, because one signed-off case had been passing vacuously.
+
+That case is `typo3-rector-neg-04`, and it is not fixable by rewording: `typo3-batch` scores
+6.50 on *"Refactor this React component to use hooks"* via exactly two shared terms, `hook`
+and `refactor`, both of which genuinely belong in its description. A lexical grader cannot
+tell a React hook from a TYPO3 hook. It is now marked `known_limitation` — excluded from the
+rates, printed on its own line, and the build fails if it ever starts passing, so the
+annotation cannot outlive the problem.
+
+### The first replacement batch
+
+`typo3-accessibility` and `typo3-wcag22-aa-agentic`, the sharpest owned collision at 0.120.
+The boundary is build-vs-run, the same shape the collection already uses for
+`typo3-v14-reference` ↔ `typo3-upgrade-run`: one answers *what is the correct accessible
+markup*, the other scans a URL and produces reports, CI baselines and the Erklärung zur
+Barrierefreiheit.
+
+The 16 new cases scored **50%** on first run against the scaffold's 91% — the circularity
+detector firing on live data. Every failure was diagnostic:
+
+- *"Where do the skip link and landmark regions go?"* ranked **8th**, sharing **zero** terms
+  with its own skill.
+- *"Scan this URL for WCAG 2.2 AA"* lost to its own sibling, because `typo3-accessibility`'s
+  description opened with **"Audits…"** — the pattern reference had claimed the auditor's verb.
+- *"Tab through the nav, the focus outline vanishes"* lost by 0.25, because the description
+  said "focus states" and "keyboard support" where users type "tab" and "focus outline".
+
+The two descriptions had their verbs crossed. Rewriting **the descriptions, not the cases**
+took the batch to 94% and dropped the pair's overlap from 0.120 to 0.088.
+
+One case was the author's fault rather than the description's: *"300 contrast errors, which
+Fluid templates?"* lost fairly, since it named contrast and Fluid templates — the sibling's
+subject — while only implying the mapping step. It was reworded to lead with the axe report
+and the grouping operation, and the original wording is recorded in its note rather than
+quietly dropped.
+
+### What is left
+
+The remaining 22 suites are scaffold. Replacing them is per-skill work that cannot be
+automated: write what a user would actually send, measure, and fix whichever of the two —
+case or description — the failure indicts. Extending from real failures (S11) is the cheapest
+route, since every bug report is an eval case that has already failed once.

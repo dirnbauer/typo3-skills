@@ -1,17 +1,24 @@
 {
-  "recorded": "2026-07-25",
+  "recorded": "2026-07-26",
   "grader": "lexical (BM25 + light stemming, shared tokeniser)",
-  "note": "Offline router proxy, not a model test. A drop in reviewed_pass_rate means a description lost user vocabulary.",
+  "note": "Offline router proxy, not a model test. A drop in reviewed_pass_rate or proposed_pass_rate means a description lost user vocabulary. xfail cases are declared limitations of lexical matching and are excluded from every rate; an xfail that starts passing fails the build so the annotation cannot outlive the problem.",
   "summary": {
     "grader": "lexical",
     "trials": 1,
-    "cases": 169,
+    "cases": 173,
     "reviewed": 37,
-    "drafts": 132,
+    "proposed": 16,
+    "drafts": 120,
     "errors": 0,
+    "xfail": 1,
+    "xpass": 0,
     "reviewed_pass_rate": 1.0,
-    "draft_pass_rate": 0.886,
-    "overall_pass_rate": 0.911
+    "proposed_pass_rate": 1.0,
+    "draft_pass_rate": 0.908,
+    "overall_pass_rate": 0.936
   },
+  "known_limitations": [
+    "typo3-rector-neg-04: React hooks vs TYPO3 hooks-to-PSR-14 homonym"
+  ],
   "failing_reviewed": []
 }

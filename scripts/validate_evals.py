@@ -43,12 +43,16 @@ SKILL_TYPES = {"capability", "preference"}
 MIN_SUBSTRING_LEN = 12
 
 
-def is_lifted(prompt: str, skill_md: str) -> bool:
-    """True when the prompt appears verbatim inside the skill's own text."""
+def circularity_problem(prompt: str, skill_md: str) -> str | None:
+    """Why this prompt cannot test anything, or None if it is fine."""
     p = " ".join(prompt.lower().split()).rstrip(".?!")
     if len(p) < MIN_SUBSTRING_LEN:
-        return True  # too short to be a real prompt at all
-    return p in " ".join(skill_md.lower().split())
+        return (f"prompt is {len(p)} characters — too short to be something a user typed. "
+                f"The scaffolder produced fragments like 'Building' and 'Axe-core' this way.")
+    if p in " ".join(skill_md.lower().split()):
+        return ("prompt is lifted verbatim from SKILL.md — a case derived from the artefact "
+                "it tests can only pass. Write what a user would type.")
+    return None
 
 
 def vendored_skills() -> set[str]:
@@ -120,11 +124,10 @@ def validate_suite(name: str, suite: dict, min_cases: int, skill_md: str = "") -
         prompt = c.get("prompt")
         if not prompt:
             errors.append(f"{where}: missing prompt")
-        elif status in ("proposed", "reviewed") and skill_md and is_lifted(prompt, skill_md):
-            errors.append(
-                f"{where}: prompt is lifted verbatim from SKILL.md — a case derived from the "
-                f"artefact it tests can only pass. Write what a user would type."
-            )
+        elif status in ("proposed", "reviewed") and skill_md:
+            why = circularity_problem(prompt, skill_md)
+            if why:
+                errors.append(f"{where}: {why}")
 
         if kind == "trigger-negative":
             # A negative case is only meaningful if it names what SHOULD happen instead.

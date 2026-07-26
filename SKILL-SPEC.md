@@ -116,6 +116,20 @@ Three kinds, in priority order:
 Start at 10–20 cases drawn from **real usage**, not imagined usage. Negative cases are not
 optional: a skill that fires on everything is as broken as one that never fires.
 
+A negative case must say what should happen *instead*: either `expect_skill` naming the
+sibling that wins, or `expect_no_skill` meaning nothing should fire. `expect_no_skill` is
+checked as **nothing scores like a real match** — not merely "not this one". The earlier
+assertion was `skill not in top[:1] and best_score > 0`, which was wrong twice: "not #1" is
+trivially true for 21 of the 22 suites carrying the same case, and `best_score > 0` required
+*some* skill to match, so a prompt matching nothing would have failed. It reported green
+while a Python/EXIF task scored `typo3-v14-reference` at 3.44.
+
+Where a case fails for a reason the grader genuinely cannot see past — `typo3-batch` firing
+on "Refactor this React component to use hooks", because TYPO3 hooks and React hooks are the
+same token — mark it `known_limitation`. It is excluded from the rates and printed on its own
+line, and if it ever starts passing the build fails, so the annotation cannot outlive the
+problem it names.
+
 ## S5 — A generated eval is a draft until a human signs it off
 
 The talk's finding that human-authored skills outperform generated ones applies to their
@@ -124,10 +138,23 @@ evals too. An eval invented to fill a template tests the template.
 Every case carries `status`:
 
 - `draft` — scaffolded or generated. **Does not count as coverage.**
-- `reviewed` — a human confirmed it reflects real usage. Counts.
+- `proposed` — written against the skill's *subject matter*, awaiting a human signature.
+  **Does not count as coverage either.** It ratchets like a reviewed case, so it cannot rot
+  between authoring and sign-off, but only a person can sign.
+- `reviewed` — a human confirmed it reflects real usage. Counts. Requires `reviewed_by`.
 
-`validate_evals.py` reports reviewed coverage separately from total, so the number cannot
-flatter itself.
+`validate_evals.py` reports each separately, so the number cannot flatter itself.
+
+**Circularity is checked mechanically, not promised.** A prompt that appears verbatim inside
+its own `SKILL.md`, or is under 12 characters, is rejected for any case a human is asked to
+sign. This is not hypothetical: an audit of the 132 scaffolded cases found **all** of them
+degenerate — 88 verbatim substrings of their own skill (the scaffolder had split descriptions
+on commas, yielding "Building", "Content elements", "Axe-core"), 22 literal `TODO:`
+placeholders, and 22 copies of one Python/EXIF negative. The 89% draft pass rate they
+produced was not a measurement; it was `prompt in description`.
+
+The first 16 replacement cases scored **50%** against that scaffold's 91% — the circularity
+detector of §6.7 firing on real data. Fixing the *descriptions* took them to 100%.
 
 ## S6 — Instructions, not essays
 
@@ -227,8 +254,8 @@ The individual checks, for running one in isolation:
 ```bash
 python3 scripts/audit_skills.py                      # frontmatter, size, naming
 python3 scripts/validate_structure.py                # S6 directives, S7 disclosure + TOCs
-python3 scripts/validate_evals.py --min-cases 6      # eval structure and coverage
-python3 scripts/run_evals.py --grader lexical --fail-under 1.0
+python3 scripts/validate_evals.py --min-cases 6      # eval structure, coverage, circularity
+python3 scripts/run_evals.py --grader lexical --fail-under 1.0 --fail-under-proposed 1.0
 python3 scripts/trigger_collisions.py --threshold 0.13 --fail-over 2
 python3 scripts/check_attribution_guardrails.py      # vendored skills unmodified
 ```
@@ -245,8 +272,9 @@ Their evals, where we add them, live in the overlay and are marked as ours.
 ```
 26 owned skills (11 vendored, exempt)
 suites present  : 26/26
-human-reviewed  : 4/26   (49/181 cases)
-lexical grader  : reviewed 100%  ·  draft 89%
+human-reviewed  : 4/26   (49/185 cases)
+awaiting signature: 2/26   (16/185 cases, not yet coverage)
+lexical grader  : reviewed 100%  ·  proposed 100%  ·  draft 91%  ·  1 xfail
 ```
 
 `scripts/run_evals.py` grades every trigger case; `evals-baseline.json` pins the numbers and
