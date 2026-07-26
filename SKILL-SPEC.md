@@ -95,8 +95,10 @@ more obvious name belongs to the skill users most often want. In this collection
 `typo3-update` was the API reference while `typo3-14-update` did the upgrading. Renaming them
 to `typo3-v14-reference` and `typo3-upgrade-run` removed the pair entirely.
 
-Two pairs remain, both involving vendored skills we do not edit. They are documented rather
-than fixed, and pinned from the owned side with negative evals.
+One pair remains — `typo3-conformance` and `typo3-extension-upgrade`, both vendored, so
+neither can be reworded. It is documented rather than fixed, and pinned from the owned side
+with negative evals. The budget is ratcheted to exactly that one: a second pair fails the
+build.
 
 Lexical overlap is a signal, not the whole truth. Two skills can collide conceptually while
 sharing few words. The analyser finds the cheap cases; judgement covers the rest.

@@ -728,7 +728,9 @@ def audit_skill(skill_dir: Path, duplicate_names: dict[str, list[str]]) -> Skill
         description=description,
         source_owner=owner,
         source_url=source_url,
-        file_path=str(skill_dir / "SKILL.md"),
+        # Repo-relative: an absolute path bakes the author's home directory into a
+        # committed artefact, which then ships to anyone who clones the repository.
+        file_path=str((skill_dir / "SKILL.md").relative_to(ROOT)),
         line_count=line_count,
         frontmatter_keys=frontmatter_keys,
         pass_1=pass_1,

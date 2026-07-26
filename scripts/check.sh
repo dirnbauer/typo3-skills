@@ -75,9 +75,11 @@ run "eval structure and coverage (S4, S5)" \
 run "trigger evals actually pass (S2, S4)" \
     python3 scripts/run_evals.py --grader lexical --fail-under 1.0 --fail-under-proposed 1.0
 
-# Two pairs remain, both between vendored skills we cannot edit. A third is ours.
+# One pair remains, between two vendored skills we cannot edit. A second would be ours.
+# Ratcheted from 2 to 1 after the description pass resolved typo3-extension-upgrade <->
+# typo3-fractor; leaving slack in a ratchet is how a budget quietly becomes a target.
 run "trigger collisions within budget (S3)" \
-    python3 scripts/trigger_collisions.py --threshold 0.13 --fail-over 2
+    python3 scripts/trigger_collisions.py --threshold 0.13 --fail-over 1
 
 run "vendored skills unmodified" \
     python3 scripts/check_attribution_guardrails.py

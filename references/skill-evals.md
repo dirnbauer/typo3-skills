@@ -175,8 +175,9 @@ prescriptive part became a program, which is what the advice actually points at.
 26 owned skills (11 vendored, exempt)
 suites present    : 26/26
 human-reviewed    :  4/26   (49/185 cases)
-awaiting signature:  2/26   (16/185 cases — not coverage until signed)
-lexical grader    : reviewed 100%  ·  proposed 100%  ·  draft 91%  ·  1 xfail
+awaiting signature: 22/26   (136/185 cases — not coverage until signed)
+scaffold remaining:  0      (all 132 generated cases replaced)
+lexical grader    : reviewed 100%  ·  proposed 100%  ·  1 xfail
 ```
 
 The validator's first catch was the flagship. `typo3-upgrade-run` carried twelve carefully
