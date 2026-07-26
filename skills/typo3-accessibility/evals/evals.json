@@ -2,55 +2,71 @@
   "skill_name": "typo3-accessibility",
   "skill_type": "preference",
   "spec": "SKILL-SPEC.md",
-  "note": "Scaffold. Per SKILL-SPEC.md S5, draft cases do not count as coverage until a human marks them reviewed.",
+  "note": "The sibling is typo3-wcag22-aa-agentic, and the boundary is build-vs-run: this skill answers 'what is the correct accessible markup', the sibling runs Playwright/axe against a URL and produces reports, CI baselines and a legal accessibility statement. Same reference-vs-orchestrator split as typo3-v14-reference vs typo3-upgrade-run. Cases are written from the symptom a developer reports, not from this skill's description.",
   "evals": [
     {
       "id": "typo3-accessibility-trigger-pos-01",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Building",
+      "status": "proposed",
+      "prompt": "When I tab through our TYPO3 main navigation the focus outline vanishes on the dropdown items. What is the right way to fix that in the Fluid partial?",
       "expect_skill": "typo3-accessibility",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "Focus visibility, reported as a symptom. Names Fluid, not WCAG - a user with this bug usually does not know the SC number."
     },
     {
       "id": "typo3-accessibility-trigger-pos-02",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Reviewing TYPO3 templates",
+      "status": "proposed",
+      "prompt": "Our accordion content element is just nested divs with a click handler. NVDA does not announce it as expandable. What markup should it be?",
       "expect_skill": "typo3-accessibility",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "ARIA pattern question via a screen-reader symptom. Deliberately says NVDA rather than 'screen reader'."
     },
     {
       "id": "typo3-accessibility-trigger-pos-03",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Content elements",
+      "status": "proposed",
+      "prompt": "The error messages in our powermail form are not read out at all. How do I wire up the label and error association properly?",
       "expect_skill": "typo3-accessibility",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "Form semantics. Near typo3-powermail, which owns form building - this asks for accessible markup, not powermail configuration."
     },
     {
       "id": "typo3-accessibility-trigger-pos-04",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Extensions",
+      "status": "proposed",
+      "prompt": "We go live on Thursday. Give me the checklist of accessibility things to verify by hand before launch.",
       "expect_skill": "typo3-accessibility",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "The go-live gate section. Hard case on purpose: 'before launch' also pulls toward the agentic auditor, but the ask is a manual checklist, not a scan."
+    },
+    {
+      "id": "typo3-accessibility-trigger-pos-05",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "Where exactly should the skip link and the landmark regions go in our sitepackage layout?",
+      "expect_skill": "typo3-accessibility",
+      "note": "Structural markup in a template. No tooling implied."
     },
     {
       "id": "typo3-accessibility-trigger-neg-01",
       "kind": "trigger-negative",
-      "status": "draft",
-      "prompt": "Write a Python script that renames files in a folder by their EXIF date.",
-      "expect_no_skill": true,
-      "note": "Unrelated domain. No TYPO3 skill may fire."
+      "status": "proposed",
+      "prompt": "Run axe against https://staging.example.at and give me every WCAG 2.2 AA violation with the template it came from.",
+      "expect_skill": "typo3-wcag22-aa-agentic",
+      "note": "The core boundary: a URL plus a tool plus a report is the orchestrator, not the pattern reference."
     },
     {
       "id": "typo3-accessibility-trigger-neg-02",
       "kind": "trigger-negative",
-      "status": "draft",
-      "prompt": "TODO: a prompt that looks close to this skill but belongs to a sibling. Name the sibling in expect_skill.",
+      "status": "proposed",
+      "prompt": "We need an Erklaerung zur Barrierefreiheit for the EAA deadline. Can you draft one for our Austrian site?",
+      "expect_skill": "typo3-wcag22-aa-agentic",
+      "note": "The legal statement is an output of the audit orchestrator. Uses the German term a DACH client would actually write."
+    },
+    {
+      "id": "typo3-accessibility-trigger-neg-03",
+      "kind": "trigger-negative",
+      "status": "proposed",
+      "prompt": "Write a Python script that renames files in a folder by their EXIF date.",
       "expect_no_skill": true,
-      "note": "Replace with a real near-miss; see scripts/trigger_collisions.py."
+      "note": "Unrelated domain. No TYPO3 skill may fire."
     }
   ]
 }

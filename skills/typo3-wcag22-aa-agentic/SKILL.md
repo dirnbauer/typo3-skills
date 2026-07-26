@@ -1,6 +1,6 @@
 ---
 name: typo3-wcag22-aa-agentic
-description: Use this skill to audit, fix, and document accessibility for TYPO3 websites and Fluid sitepackages. It orchestrates Playwright, axe-core, optional Deque axe MCP, TYPO3 template mapping, manual/HITL checks, CI baselines, and DACH/EAA-aware accessibility statement drafts for WCAG 2.2 AA targets.
+description: "Runs automated accessibility audits against a live TYPO3 URL with Playwright and axe-core, maps every violation back to the Fluid template that produced it, installs a CI baseline so a pull request fails on new violations, drives the mandatory manual review for what scanners cannot see, and drafts the Erklaerung zur Barrierefreiheit / accessibility statement for EAA, EN 301 549 and DACH legal profiles. Use when there is a staging or DDEV site to scan, a violation report to produce, a CI gate to install, or a legal statement to file for WCAG 2.2 AA. For the correct markup itself: typo3-accessibility."
 license: MIT
 compatibility: >-
   Requires Node.js 20+, npm, Playwright browsers. Optional: Docker or npm axe

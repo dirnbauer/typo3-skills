@@ -236,14 +236,17 @@ def main() -> int:
         return (sum(1 for r in rows if r[key]) / len(rows)) if rows else 0.0
 
     reviewed = [r for r in results if r["status"] == "reviewed"]
+    proposed = [r for r in results if r["status"] == "proposed"]
     drafts = [r for r in results if r["status"] == "draft"]
     errors = [r for r in results if r["result"] == "error"]
 
     summary = {
         "grader": args.grader, "trials": trials,
-        "cases": len(results), "reviewed": len(reviewed), "drafts": len(drafts),
+        "cases": len(results), "reviewed": len(reviewed),
+        "proposed": len(proposed), "drafts": len(drafts),
         "errors": len(errors),
         "reviewed_pass_rate": round(rate(reviewed), 3),
+        "proposed_pass_rate": round(rate(proposed), 3),
         "draft_pass_rate": round(rate(drafts), 3),
         "overall_pass_rate": round(rate(results), 3),
     }
@@ -254,7 +257,7 @@ def main() -> int:
         print(f"grader={args.grader} trials={trials}  {len(results)} trigger case(s)\n")
         if errors:
             print(f"  {len(errors)} case(s) could not be graded: {errors[0]['why']}\n")
-        for group, rows in (("reviewed", reviewed), ("draft", drafts)):
+        for group, rows in (("reviewed", reviewed), ("proposed", proposed), ("draft", drafts)):
             if not rows:
                 continue
             failed = [r for r in rows if not r["pass_pow_k"] and r["result"] != "error"]
@@ -266,6 +269,8 @@ def main() -> int:
                 print(f"      … and {len(failed) - 12} more")
             print()
         print(f"  reviewed pass rate : {summary['reviewed_pass_rate']:.0%}")
+        if proposed:
+            print(f"  proposed pass rate : {summary['proposed_pass_rate']:.0%}  (awaiting signature)")
         print(f"  draft pass rate    : {summary['draft_pass_rate']:.0%}")
         if args.grader == "lexical":
             print("\n  NOTE: the lexical grader is a router proxy, not a model test. It shows whether a")

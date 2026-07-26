@@ -27,8 +27,28 @@ SKILLS = ROOT / "skills"
 VENDORED = ROOT / "VENDORED.md"
 
 KINDS = {"trigger-positive", "trigger-negative", "behaviour"}
-STATUSES = {"draft", "reviewed"}
+
+# draft    — scaffolded. Known-degenerate; does not count as coverage.
+# proposed — written against the skill's subject matter, not its description. Awaiting a
+#            human signature. Still does not count as coverage: only a person can sign.
+# reviewed — a human confirmed it reflects real usage. Counts. Requires reviewed_by.
+STATUSES = {"draft", "proposed", "reviewed"}
 SKILL_TYPES = {"capability", "preference"}
+
+# A prompt lifted verbatim out of the skill it tests is circular by construction: it checks a
+# description against its own vocabulary and can only pass. The scaffolder produced 88 of
+# these by splitting descriptions on commas ("Building", "Axe-core"), and they inflated the
+# draft pass rate to 89% while testing nothing. Drafts are grandfathered; anything a human
+# is asked to sign is not.
+MIN_SUBSTRING_LEN = 12
+
+
+def is_lifted(prompt: str, skill_md: str) -> bool:
+    """True when the prompt appears verbatim inside the skill's own text."""
+    p = " ".join(prompt.lower().split()).rstrip(".?!")
+    if len(p) < MIN_SUBSTRING_LEN:
+        return True  # too short to be a real prompt at all
+    return p in " ".join(skill_md.lower().split())
 
 
 def vendored_skills() -> set[str]:
@@ -48,10 +68,11 @@ def load_suite(path: Path) -> tuple[dict | None, list[str]]:
         return None, [f"evals.json is not valid JSON: {exc}"]
 
 
-def validate_suite(name: str, suite: dict, min_cases: int) -> tuple[list[str], dict]:
+def validate_suite(name: str, suite: dict, min_cases: int, skill_md: str = "") -> tuple[list[str], dict]:
     errors: list[str] = []
     counts = {k: 0 for k in KINDS}
     reviewed = {k: 0 for k in KINDS}
+    proposed = {k: 0 for k in KINDS}
 
     if suite.get("skill_name") != name:
         errors.append(f"skill_name is {suite.get('skill_name')!r}, expected {name!r}")
@@ -63,7 +84,8 @@ def validate_suite(name: str, suite: dict, min_cases: int) -> tuple[list[str], d
     cases = suite.get("evals")
     if not isinstance(cases, list) or not cases:
         errors.append("evals must be a non-empty array")
-        return errors, {"total": 0, "reviewed": 0, "by_kind": counts, "reviewed_by_kind": reviewed}
+        return errors, {"total": 0, "reviewed": 0, "proposed": 0,
+                        "by_kind": counts, "reviewed_by_kind": reviewed}
 
     seen_ids = set()
     for i, c in enumerate(cases):
@@ -92,9 +114,17 @@ def validate_suite(name: str, suite: dict, min_cases: int) -> tuple[list[str], d
                 errors.append(f"{where}: status reviewed requires reviewed_by")
             else:
                 reviewed[kind] += 1
+        elif status == "proposed":
+            proposed[kind] += 1
 
-        if not c.get("prompt"):
+        prompt = c.get("prompt")
+        if not prompt:
             errors.append(f"{where}: missing prompt")
+        elif status in ("proposed", "reviewed") and skill_md and is_lifted(prompt, skill_md):
+            errors.append(
+                f"{where}: prompt is lifted verbatim from SKILL.md — a case derived from the "
+                f"artefact it tests can only pass. Write what a user would type."
+            )
 
         if kind == "trigger-negative":
             # A negative case is only meaningful if it names what SHOULD happen instead.
@@ -120,6 +150,7 @@ def validate_suite(name: str, suite: dict, min_cases: int) -> tuple[list[str], d
     return errors, {
         "total": total,
         "reviewed": sum(reviewed.values()),
+        "proposed": sum(proposed.values()),
         "by_kind": counts,
         "reviewed_by_kind": reviewed,
     }
@@ -155,7 +186,8 @@ def main() -> int:
             report["skills"].append(entry)
             continue
 
-        errs, stats = validate_suite(name, suite, args.min_cases)
+        skill_md = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
+        errs, stats = validate_suite(name, suite, args.min_cases, skill_md)
         if args.require_reviewed and stats["reviewed"] == 0:
             errs.append("no reviewed cases (generated drafts do not count as coverage)")
         entry.update(status="ok" if not errs else "invalid", errors=errs, **stats)
@@ -174,6 +206,8 @@ def main() -> int:
         "with_reviewed_evals": len(with_reviewed),
         "cases_total": sum(s.get("total", 0) for s in owned),
         "cases_reviewed": sum(s.get("reviewed", 0) for s in owned),
+        "cases_proposed": sum(s.get("proposed", 0) for s in owned),
+        "awaiting_signature": len([s for s in owned if s.get("proposed", 0) > 0]),
         "invalid_or_missing": failures,
     }
 
@@ -186,7 +220,8 @@ def main() -> int:
             if e["vendored"]:
                 continue
             if e["status"] == "ok":
-                print(f"  ok       {e['skill']:34s} {e['total']:3d} cases, {e['reviewed']:3d} reviewed")
+                prop = f", {e['proposed']:3d} awaiting signature" if e.get("proposed") else ""
+                print(f"  ok       {e['skill']:34s} {e['total']:3d} cases, {e['reviewed']:3d} reviewed{prop}")
             elif e["status"] == "missing":
                 print(f"  MISSING  {e['skill']:34s} no evals/evals.json")
             else:
@@ -197,6 +232,9 @@ def main() -> int:
         print(f"  suites present : {s['with_evals']}/{s['owned']}")
         print(f"  human-reviewed : {s['with_reviewed_evals']}/{s['owned']}  "
               f"({s['cases_reviewed']}/{s['cases_total']} cases)")
+        if s["cases_proposed"]:
+            print(f"  awaiting sign  : {s['awaiting_signature']}/{s['owned']}  "
+                  f"({s['cases_proposed']}/{s['cases_total']} cases) — not coverage until signed")
         if failures:
             print(f"\n  {failures} skill(s) missing or invalid", file=sys.stderr)
 

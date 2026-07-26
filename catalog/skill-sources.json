@@ -66,7 +66,7 @@
   {
     "directory": "typo3-accessibility",
     "skill_name": "typo3-accessibility",
-    "description": "Audits and implements TYPO3 accessibility patterns for WCAG 2.2 AA, including Fluid templates, PHP helpers, JavaScript widgets, forms, focus states, ARIA, and go-live checks. Use when building or reviewing TYPO3 templates, content elements, extensions, or frontend code for accessibility, keyboard support, screen readers, WCAG, ARIA, or a11y readiness.",
+    "description": "Accessible markup patterns for TYPO3 v14: skip links, landmark regions, heading structure, keyboard and tab order, visible focus rings and outlines, ARIA for accordions, dropdowns and modals, accessible form labels and error messages, alt text and colour contrast, in Fluid templates, PHP helpers and vanilla JavaScript widgets - plus a manual go-live checklist to verify by hand before launch. Use when you need the correct markup for a keyboard, focus, screen-reader or WCAG 2.2 AA problem, or when reviewing template and content-element code. Companion skill for automated scanning: typo3-wcag22-aa-agentic.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "/Users/dirnbauer/projects/typo3-skills/skills/typo3-accessibility/SKILL.md",
@@ -569,7 +569,7 @@
   {
     "directory": "typo3-wcag22-aa-agentic",
     "skill_name": "typo3-wcag22-aa-agentic",
-    "description": "Use this skill to audit, fix, and document accessibility for TYPO3 websites and Fluid sitepackages. It orchestrates Playwright, axe-core, optional Deque axe MCP, TYPO3 template mapping, manual/HITL checks, CI baselines, and DACH/EAA-aware accessibility statement drafts for WCAG 2.2 AA targets.",
+    "description": "Runs automated accessibility audits against a live TYPO3 URL with Playwright and axe-core, maps every violation back to the Fluid template that produced it, installs a CI baseline so a pull request fails on new violations, drives the mandatory manual review for what scanners cannot see, and drafts the Erklaerung zur Barrierefreiheit / accessibility statement for EAA, EN 301 549 and DACH legal profiles. Use when there is a staging or DDEV site to scan, a violation report to produce, a CI gate to install, or a legal statement to file for WCAG 2.2 AA. For the correct markup itself: typo3-accessibility.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "/Users/dirnbauer/projects/typo3-skills/skills/typo3-wcag22-aa-agentic/SKILL.md",

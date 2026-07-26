@@ -1,56 +1,72 @@
 {
   "skill_name": "typo3-wcag22-aa-agentic",
-  "skill_type": "preference",
+  "skill_type": "capability",
   "spec": "SKILL-SPEC.md",
-  "note": "Scaffold. Per SKILL-SPEC.md S5, draft cases do not count as coverage until a human marks them reviewed.",
+  "note": "The sibling is typo3-accessibility, and the boundary is build-vs-run: this skill drives Playwright/axe against a URL and produces reports, CI baselines and a DACH/EAA accessibility statement; the sibling answers 'what is the correct accessible markup'. Cases lead with the artefacts only this skill produces - a scanned URL, a CI baseline, a legal statement. Classified capability, not preference: it wraps tooling the model cannot drive unaided, so it retires if that stops being true.",
   "evals": [
     {
       "id": "typo3-wcag22-aa-agentic-trigger-pos-01",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Use this skill to audit",
+      "status": "proposed",
+      "prompt": "Scan our DDEV site at https://acme.ddev.site and tell me everything that fails WCAG 2.2 AA, page by page.",
       "expect_skill": "typo3-wcag22-aa-agentic",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "The canonical case: a URL to crawl and a conformance target."
     },
     {
       "id": "typo3-wcag22-aa-agentic-trigger-pos-02",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "And document accessibility for TYPO3 websites and Fluid sitepackages",
+      "status": "proposed",
+      "prompt": "The client needs a signed accessibility statement for the European Accessibility Act. Can you audit the site first and then draft it?",
       "expect_skill": "typo3-wcag22-aa-agentic",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "Legal deliverable derived from a real audit. English phrasing of the Erklaerung case in the sibling suite."
     },
     {
       "id": "typo3-wcag22-aa-agentic-trigger-pos-03",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "It orchestrates Playwright",
+      "status": "proposed",
+      "prompt": "I want a pull request to fail if it introduces new accessibility violations. Set up a baseline we can compare against.",
       "expect_skill": "typo3-wcag22-aa-agentic",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "CI baseline. Says nothing about TYPO3 or WCAG by name - tests whether the skill routes on the workflow alone."
     },
     {
       "id": "typo3-wcag22-aa-agentic-trigger-pos-04",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Axe-core",
+      "status": "proposed",
+      "prompt": "I have an axe JSON report with 300 violations. Group them by the Fluid template each one comes from so I know where to start.",
       "expect_skill": "typo3-wcag22-aa-agentic",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "Template mapping - collapsing many findings back to the few files that cause them. Reworded after measurement: the first version ('300 colour contrast errors ... which Fluid templates do I touch?') lost to typo3-accessibility, and fairly so - it named contrast and Fluid templates, which are that skill's subject, while only implying the mapping step. This version leads with the artefact (an axe report) and the operation (group by template), which is the boundary actually declared in this suite's note."
+    },
+    {
+      "id": "typo3-wcag22-aa-agentic-trigger-pos-05",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "axe says the page is clean but I still cannot operate the cookie banner with a keyboard. What do we do about the things the scanner cannot see?",
+      "expect_skill": "typo3-wcag22-aa-agentic",
+      "note": "The HITL half of the workflow. Automated tools catching only part of the issues is the reason manual review is mandatory here."
     },
     {
       "id": "typo3-wcag22-aa-agentic-trigger-neg-01",
       "kind": "trigger-negative",
-      "status": "draft",
-      "prompt": "Write a Python script that renames files in a folder by their EXIF date.",
-      "expect_no_skill": true,
-      "note": "Unrelated domain. No TYPO3 skill may fire."
+      "status": "proposed",
+      "prompt": "What is the correct ARIA pattern for a disclosure widget in a Fluid partial?",
+      "expect_skill": "typo3-accessibility",
+      "note": "A markup question with no site, no URL and nothing to scan belongs to the pattern reference."
     },
     {
       "id": "typo3-wcag22-aa-agentic-trigger-neg-02",
       "kind": "trigger-negative",
-      "status": "draft",
-      "prompt": "TODO: a prompt that looks close to this skill but belongs to a sibling. Name the sibling in expect_skill.",
+      "status": "proposed",
+      "prompt": "How do I make the focus ring visible on buttons in our sitepackage CSS?",
+      "expect_skill": "typo3-accessibility",
+      "note": "Implementation detail, not an audit run. Mirrors pos-01 of the sibling so the pair is pinned from both sides."
+    },
+    {
+      "id": "typo3-wcag22-aa-agentic-trigger-neg-03",
+      "kind": "trigger-negative",
+      "status": "proposed",
+      "prompt": "Write a Python script that renames files in a folder by their EXIF date.",
       "expect_no_skill": true,
-      "note": "Replace with a real near-miss; see scripts/trigger_collisions.py."
+      "note": "Unrelated domain. No TYPO3 skill may fire."
     }
   ]
 }
