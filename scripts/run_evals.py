@@ -260,6 +260,20 @@ def main() -> int:
                 "why": runs[0].get("why"), "result": runs[0]["result"],
             })
 
+    # A grader that could not run must not produce a measurement-shaped result. Exit 2 is the
+    # harness-error code from the same contract the upgrade harness uses: 0 pass, 1 findings,
+    # 2 harness error. Without it, an expired token yields "0%" or a rate computed over the
+    # handful of cases that happened to answer, which reads as a finding about the skills.
+    graded = [r for r in results if r["result"] != "error"]
+    if results and not graded:
+        why = results[0].get("why", "unknown")
+        print(f"HARNESS ERROR: grader {args.grader!r} graded 0 of {len(results)} cases: {why}",
+              file=sys.stderr)
+        if args.grader == "claude":
+            print("  The claude CLI needs a live login. Run `claude` once interactively, or set "
+                  "ANTHROPIC_API_KEY.", file=sys.stderr)
+        return 2
+
     def rate(rows, key="pass_pow_k"):
         # xfail/xpass are declared limitations of the proxy, not measurements of the
         # descriptions. They are reported on their own line and kept out of the rates so a

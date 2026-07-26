@@ -2,7 +2,7 @@
   {
     "directory": "architecture-decision-records",
     "skill_name": "architecture-decision-records",
-    "description": "Creates and reviews architecture decision records (ADRs), decision logs, and supersession histories using established conventions and verifiable evidence. Use when users ask to write, reconstruct, audit, standardize, validate, or maintain ADRs, architecture decisions, decision logs, or ADR templates in Markdown or reStructuredText.",
+    "description": "Writes and maintains architecture decision records (ADRs) and decision logs: what was decided, why, which alternatives were considered and rejected, and what would make the team revisit it later. Use when the same argument keeps coming back every few months and nobody remembers the rationale, when you need to document a choice between two technologies together with its trade-offs, when a decision has been superseded and the old entry must stay intact rather than be deleted, or when an existing decision log needs auditing, standardizing or validating against a template. Markdown or reStructuredText.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "/Users/dirnbauer/projects/typo3-skills/skills/architecture-decision-records/SKILL.md",
@@ -66,7 +66,7 @@
   {
     "directory": "typo3-accessibility",
     "skill_name": "typo3-accessibility",
-    "description": "Accessible markup patterns for TYPO3 v14: skip links, landmark regions, heading structure, keyboard and tab order, visible focus rings and outlines, ARIA for accordions, dropdowns and modals, accessible form labels and error messages, alt text and colour contrast, in Fluid templates, PHP helpers and vanilla JavaScript widgets - plus a manual go-live checklist to verify by hand before launch. Use when you need the correct markup for a keyboard, focus, screen-reader or WCAG 2.2 AA problem, or when reviewing template and content-element code. Companion skill for automated scanning: typo3-wcag22-aa-agentic.",
+    "description": "Accessible markup patterns for TYPO3 v14: skip links, landmark regions, heading structure, keyboard and tab order, visible focus rings and outlines, ARIA for accordions, dropdowns and modals, accessible form labels and error messages, alt text and colour contrast, in Fluid templates, PHP helpers and vanilla JavaScript widgets - plus a manual go-live checklist to verify by hand before launch. Use when a screen reader such as NVDA or VoiceOver does not announce something as expandable, checked or invalid, when a keyboard or focus problem needs the correct markup, or when reviewing template and element code against WCAG 2.2 AA. Companion skill for automated scanning: typo3-wcag22-aa-agentic.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "/Users/dirnbauer/projects/typo3-skills/skills/typo3-accessibility/SKILL.md",
@@ -119,7 +119,7 @@
   {
     "directory": "typo3-content-blocks",
     "skill_name": "typo3-content-blocks",
-    "description": "Guides TYPO3 Content Blocks modeling for Content Elements, Record Types, Page Types, and File Types as the single source of truth. Use when creating, migrating, auditing, or debugging Content Blocks config.yaml files, make:content-block output, content elements, record types, page types, file types, collections, IRRE, labels, previews, or friendsoftypo3/content-blocks behavior.",
+    "description": "Defines what a TYPO3 block IS: its field definitions in config.yaml, and how fields nest into collections or repeatable children. Covers Content Blocks for elements, records, page types and file types as the single source of truth. Use when creating a new block, writing or debugging config.yaml and make:content-block output, migrating legacy fluid_styled_content to the new format, fixing a block preview that renders blank in the backend, or working with IRRE, labels and friendsoftypo3/content-blocks behaviour. For visual design of blocks: typo3-shadcn-content-elements.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "/Users/dirnbauer/projects/typo3-skills/skills/typo3-content-blocks/SKILL.md",
@@ -154,7 +154,7 @@
   {
     "directory": "typo3-datahandler",
     "skill_name": "typo3-datahandler",
-    "description": "Guides transactional TYPO3 record manipulation with DataHandler, including datamaps, cmdmaps, backend user context, reference index handling, workspace-aware operations, hooks, and PSR-14 events. Use when creating, updating, moving, localizing, deleting, or extending TYPO3 records, pages, content, categories, IRRE children, or backend data operations.",
+    "description": "Creates, updates, moves, localizes and deletes TYPO3 records programmatically from PHP - import scripts, CLI commands, data migrations - using DataHandler datamaps and cmdmaps. Use when writing hundreds of pages or records from JSON, CSV or another system and the parent references must stay intact, when the reference index goes stale after moving records, when imported records show up owned by nobody because the backend user context is wrong, when localizing an existing element into another language from code, or when extending record operations with hooks and PSR-14 events. Workspace-aware.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "/Users/dirnbauer/projects/typo3-skills/skills/typo3-datahandler/SKILL.md",
@@ -221,7 +221,7 @@
   {
     "directory": "typo3-fractor",
     "skill_name": "typo3-fractor",
-    "description": "Automates non-PHP TYPO3 upgrade migrations with Fractor for FlexForms, TypoScript, Fluid, YAML, XLIFF translation files, Htaccess, and composer.json changes. Use when running or configuring Fractor, upgrading non-PHP TYPO3 files, migrating FlexForms or TypoScript, modernizing Fluid templates, or combining Rector and Fractor for v14 work.",
+    "description": "Automatically rewrites the non-PHP files of a TYPO3 upgrade with Fractor: TypoScript conditions and syntax, FlexForm XML, Fluid .html templates carrying deprecated ViewHelper syntax, YAML, XLIFF, Htaccess and composer.json. Use when a tool should fix these files for you rather than editing them by hand, when Rector has finished and left every .typoscript, .yaml and .html file untouched, or when migrating FlexForms and TypoScript to v14. PHP source code is typo3-rector.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "/Users/dirnbauer/projects/typo3-skills/skills/typo3-fractor/SKILL.md",
@@ -259,7 +259,7 @@
   {
     "directory": "typo3-idea-extension-blog",
     "skill_name": "typo3-idea-extension-blog",
-    "description": "Evaluates external ideas for TYPO3 extension potential, builds the extension, and drafts the companion German webconsulting.at MDX article. Use when the user shares a link, product, article, paper, or concept and asks whether it can become a TYPO3 extension, wants a GitHub-ready implementation, or needs a publication-ready TYPO3 blog post.",
+    "description": "Evaluates whether an outside idea is worth building as a TYPO3 extension, checks whether someone has already done it, builds the extension, and writes it up as the companion German webconsulting.at MDX article for our site. Use when the user shares a link, product, article, paper or concept and asks whether it could become a TYPO3 extension, whether it is worth doing at all, or whether prior art exists - and when they want a GitHub-ready implementation plus a publication-ready blog post.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "/Users/dirnbauer/projects/typo3-skills/skills/typo3-idea-extension-blog/SKILL.md",
@@ -315,7 +315,7 @@
   {
     "directory": "typo3-powermail",
     "skill_name": "typo3-powermail",
-    "description": "Guides Powermail 13+ form development for TYPO3, including form setup, finishers, validators, spam protection, ViewHelpers, PSR-14 events, TypoScript, email templates, conditional visibility, and extension points. Use when creating, debugging, or extending powermail forms, mail handling, validation, finishers, powermail_cond behavior, or tx_powermail data.",
+    "description": "Builds and debugs Powermail 13+ contact and enquiry forms in TYPO3: form setup and validation, conditional fields that appear only when another answer has a particular value, finishers that pass a submission on to another system, spam protection, and email templates and delivery. Use when a confirmation or notification mail never arrives, when part of a form must show or hide depending on an earlier answer, when adding a custom finisher or validator, when spam still gets through, or when working with powermail_cond, ViewHelpers, TypoScript, PSR-14 events or tx_powermail data.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "/Users/dirnbauer/projects/typo3-skills/skills/typo3-powermail/SKILL.md",
@@ -333,7 +333,7 @@
   {
     "directory": "typo3-records-list-types",
     "skill_name": "typo3-records-list-types",
-    "description": "Configures TYPO3 v14 Records module list types and custom backend views, including grid, compact, teaser, kanban-style, timeline-style, TSconfig, Fluid templates, icons, and accessibility. Use when the user mentions records list types, backend record cards, custom Records module views, grid view, compact view, teaser view, or TSconfig-driven record presentation.",
+    "description": "Changes how records are presented in the TYPO3 v14 Records module: cards with thumbnails instead of a plain table of rows, a timeline, a board with columns, or grid, compact and teaser views - configured per record type through TSconfig with Fluid templates, icons and accessibility. Use when editors want to see something other than a table, when one record type needs its own layout in the backend, or when building custom Records module views.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "/Users/dirnbauer/projects/typo3-skills/skills/typo3-records-list-types/SKILL.md",
@@ -370,7 +370,7 @@
   {
     "directory": "typo3-security",
     "skill_name": "typo3-security",
-    "description": "Hardens TYPO3 v14 installations and extensions with secure configuration, trusted hosts, file permissions, Install Tool protection, backend user security, MFA, CSP, QueryBuilder usage, XSS defenses, and CSRF checks. Use when the user asks about TYPO3 security, hardening, permissions, authentication, CSP, SQL injection, XSS, CSRF, or go-live security readiness.",
+    "description": "Hardens TYPO3 v14 installations and extensions: secure configuration, trusted hosts, file permissions, locking down the Install Tool, backend user accounts and two-factor authentication, CSP, and safe database access. Use when user input is concatenated straight into an SQL query and should be written with QueryBuilder instead, when output needs escaping against XSS, when CSRF checks are missing, when the Install Tool may be reachable from outside, or when asking what must be locked down before an installation goes live.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "/Users/dirnbauer/projects/typo3-skills/skills/typo3-security/SKILL.md",
@@ -389,7 +389,7 @@
   {
     "directory": "typo3-seo",
     "skill_name": "typo3-seo",
-    "description": "Configures TYPO3 SEO for EXT:seo, metadata, hreflang, XML sitemaps, robots.txt, canonical URLs, structured data, Core Web Vitals, SEO extensions, and monitoring. Use when working on TYPO3 SEO, sitemap setup, meta tags, robots rules, Open Graph, schema.org, canonical URLs, hreflang, or search visibility.",
+    "description": "Makes TYPO3 pages show up correctly in search engines like Google: XML sitemaps, canonical URLs, hreflang across languages, meta tags, Open Graph, schema.org structured data and robots rules. Use when the wrong pages are indexed or the German and Italian versions get mixed up in the results, when the sitemap is empty or missing pages, when a staging site must be kept out of the index, or when adding social previews and structured data to articles. Search inside the site itself is typo3-solr.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "/Users/dirnbauer/projects/typo3-skills/skills/typo3-seo/SKILL.md",
@@ -446,7 +446,7 @@
   {
     "directory": "typo3-solr",
     "skill_name": "typo3-solr",
-    "description": "Configures and debugs Apache Solr search for TYPO3, including EXT:solr, configsets, indexing queues, Tika/file indexing, facets, suggest, routing, PSR-14 events, custom indexers, vector search, and frontend search UI. Use when the user mentions Solr, EXT:solr, indexing, facets, autocomplete, suggest, Tika, solrfal, search debugging, or vector search in TYPO3.",
+    "description": "Runs and debugs the site's own search with Apache Solr in TYPO3 (EXT:solr): what gets indexed and why results come back empty after adding a new page type, facets for category or year on the results page, autocomplete and suggest, PDF and file indexing through Tika, and an indexing queue that is stuck. Use when searching the site returns nothing or the wrong things, or when configuring configsets, custom indexers, routing, solrfal or vector search. Visibility in external search engines is typo3-seo.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "/Users/dirnbauer/projects/typo3-skills/skills/typo3-solr/SKILL.md",
@@ -481,7 +481,7 @@
   {
     "directory": "typo3-translations",
     "skill_name": "typo3-translations",
-    "description": "Guides TYPO3 13/14 localization with locallang.xlf, labels.xlf, XLIFF 1.2 and 2.0, ICU MessageFormat, LLL references, translation domains, Content Blocks labels, paths, namespaces, and migration checks. Use when the user mentions TYPO3 translations, localization, labels, XLIFF, ICU, LLL, missing keys, duplicate units, or v13-to-v14 translation migration.",
+    "description": "Fixes TYPO3 labels and localization: label files (locallang.xlf, labels.xlf) in XLIFF 1.2 and 2.0, singular and plural forms through ICU MessageFormat, LLL references, translation domains and Content Blocks labels. Use when an untranslated key appears on screen in place of its text, when trans-unit ids end up duplicated after merging two branches, when keys are missing, or when relocating localization files to the v14 directory conventions.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "/Users/dirnbauer/projects/typo3-skills/skills/typo3-translations/SKILL.md",
@@ -500,7 +500,7 @@
   {
     "directory": "typo3-upgrade-run",
     "skill_name": "typo3-upgrade-run",
-    "description": "Update or upgrade a whole TYPO3 site or project from v12 or v13 to 14.3 LTS, end to end, in a local DDEV clone, and prove nothing changed for visitors. Use when the user says update TYPO3, upgrade to v14, move to 14.3 LTS, migrate the site, do the whole upgrade, set up visual regression around an upgrade, make sure the site looks exactly the same after the update, prove nothing broke, or asks whether a pixel difference after the upgrade is acceptable. Owns the TYPO3 version constraint, the PHP target and the ext_emconf.php policy for a project. Runs the update as bounded loops against a baseline frozen before any change, with a snapshot to roll back to and a documented verdict per loop; approved performance, SEO, accessibility and security work starts only afterwards. Never deploys to staging or live.",
+    "description": "Update or upgrade a whole TYPO3 site or project from v12 or v13 to 14.3 LTS, end to end, in a local DDEV clone, and prove nothing changed for visitors. Use when the user says update TYPO3, upgrade to v14, move to 14.3 LTS, migrate the site, do the whole upgrade, set up visual regression around an upgrade, confirm visitors can see no difference after the update, prove nothing broke, or asks whether a pixel difference after the upgrade is acceptable. Owns the TYPO3 version constraint, the PHP target and the ext_emconf.php policy for the upgrade it runs. Runs the update as bounded loops against a baseline frozen before any change, with a snapshot to roll back to and a documented verdict per loop; approved performance, SEO, accessibility and security work starts only afterwards. Never deploys to staging or live.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "/Users/dirnbauer/projects/typo3-skills/skills/typo3-upgrade-run/SKILL.md",
@@ -516,7 +516,7 @@
   {
     "directory": "typo3-v14-reference",
     "skill_name": "typo3-v14-reference",
-    "description": "TYPO3 v14 API reference: how to write v14 code. Covers controllers, building a view with ViewFactory, Fluid templates, PSR-14 events that replaced old hooks, backend modules, TCA, QueryBuilder queries without SQL injection, CLI commands and tests. Use when the user asks what a v14 API looks like, which event replaced a hook, how to build or write a specific piece of v14 code, or which class or interface to use. Does NOT run upgrades or migrations: for a whole project or site upgrade use typo3-upgrade-run, which owns the version constraint, the PHP target and the process.",
+    "description": "TYPO3 v14 API reference: how to write v14 code. Covers controllers, building a view with ViewFactory, Fluid templates, PSR-14 events that replaced old hooks, backend modules, TCA, QueryBuilder queries without SQL injection, CLI commands and tests. Use when the user asks what a v14 API looks like, which event replaced a hook, how to build or write a specific piece of v14 code, or which class, interface or namespace to use. Does NOT run upgrades or migrations: for a whole project or site upgrade use typo3-upgrade-run, which owns the version constraint, the PHP target and the process.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "/Users/dirnbauer/projects/typo3-skills/skills/typo3-v14-reference/SKILL.md",
@@ -535,7 +535,7 @@
   {
     "directory": "typo3-visual-editor",
     "skill_name": "typo3-visual-editor",
-    "description": "Installs, configures, removes, and migrates TYPO3 sitepackages for FriendsOfTYPO3 Visual Editor, including inline editing, f:render.text, f:render.contentArea, f:mark.contentArea, record transformation, PAGEVIEW content areas, colPos migration, and template readiness. Use when the user mentions Visual Editor, inline editing, frontend editing, content areas, Fluid template migration, or visual editing readiness in TYPO3 13/14.",
+    "description": "Lets TYPO3 editors click into a page and type directly on the frontend instead of opening backend forms, using FriendsOfTYPO3 Visual Editor. Use when installing, configuring, removing or migrating a sitepackage for inline frontend editing, when opening part of a template for in-place editing, when migrating colPos to PAGEVIEW content areas, or when working with f:render.text, f:render.contentArea, f:mark.contentArea, record transformation or template readiness in TYPO3 13/14.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "/Users/dirnbauer/projects/typo3-skills/skills/typo3-visual-editor/SKILL.md",
@@ -604,7 +604,7 @@
   {
     "directory": "typo3-workspaces",
     "skill_name": "typo3-workspaces",
-    "description": "Guides TYPO3 Workspaces versioning, staging, publishing, overlays, workspace-aware queries, file limitations, permissions, frontend preview, diagnostics, repair, and tests. Use when the user works with TYPO3 workspaces, draft content, staged publishing, versioning, workspace overlays, review workflows, file collections, or workspace-specific bugs.",
+    "description": "Lets TYPO3 editors prepare and hold finished content before it goes live, then stage, review and publish it. Use when finished work must wait for a launch, when previewing unpublished work returns the already-published page, when publishing loses file references, when your own code must query records so drafts resolve correctly, or when working with workspace overlays, versioning, staging, permissions, review workflows and workspace-specific bugs.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "/Users/dirnbauer/projects/typo3-skills/skills/typo3-workspaces/SKILL.md",

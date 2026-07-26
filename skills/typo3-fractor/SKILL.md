@@ -1,6 +1,6 @@
 ---
 name: "typo3-fractor"
-description: "Automates non-PHP TYPO3 upgrade migrations with Fractor for FlexForms, TypoScript, Fluid, YAML, XLIFF translation files, Htaccess, and composer.json changes. Use when running or configuring Fractor, upgrading non-PHP TYPO3 files, migrating FlexForms or TypoScript, modernizing Fluid templates, or combining Rector and Fractor for v14 work."
+description: "Automatically rewrites the non-PHP files of a TYPO3 upgrade with Fractor: TypoScript conditions and syntax, FlexForm XML, Fluid .html templates carrying deprecated ViewHelper syntax, YAML, XLIFF, Htaccess and composer.json. Use when a tool should fix these files for you rather than editing them by hand, when Rector has finished and left every .typoscript, .yaml and .html file untouched, or when migrating FlexForms and TypoScript to v14. PHP source code is typo3-rector."
 compatibility: "TYPO3 14.x"
 metadata:
   version: "1.2.0"

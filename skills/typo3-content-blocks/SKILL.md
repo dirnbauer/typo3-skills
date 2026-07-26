@@ -1,6 +1,6 @@
 ---
 name: "typo3-content-blocks"
-description: "Guides TYPO3 Content Blocks modeling for Content Elements, Record Types, Page Types, and File Types as the single source of truth. Use when creating, migrating, auditing, or debugging Content Blocks config.yaml files, make:content-block output, content elements, record types, page types, file types, collections, IRRE, labels, previews, or friendsoftypo3/content-blocks behavior."
+description: "Defines what a TYPO3 block IS: its field definitions in config.yaml, and how fields nest into collections or repeatable children. Covers Content Blocks for elements, records, page types and file types as the single source of truth. Use when creating a new block, writing or debugging config.yaml and make:content-block output, migrating legacy fluid_styled_content to the new format, fixing a block preview that renders blank in the backend, or working with IRRE, labels and friendsoftypo3/content-blocks behaviour. For visual design of blocks: typo3-shadcn-content-elements."
 compatibility: "TYPO3 v14.3+ — `friendsoftypo3/content-blocks` 2.x (verify on [Packagist](https://packagist.org/packages/friendsoftypo3/content-blocks))"
 metadata:
   version: "1.5.0"

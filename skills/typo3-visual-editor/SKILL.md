@@ -1,6 +1,6 @@
 ---
 name: "typo3-visual-editor"
-description: "Installs, configures, removes, and migrates TYPO3 sitepackages for FriendsOfTYPO3 Visual Editor, including inline editing, f:render.text, f:render.contentArea, f:mark.contentArea, record transformation, PAGEVIEW content areas, colPos migration, and template readiness. Use when the user mentions Visual Editor, inline editing, frontend editing, content areas, Fluid template migration, or visual editing readiness in TYPO3 13/14."
+description: "Lets TYPO3 editors click into a page and type directly on the frontend instead of opening backend forms, using FriendsOfTYPO3 Visual Editor. Use when installing, configuring, removing or migrating a sitepackage for inline frontend editing, when opening part of a template for in-place editing, when migrating colPos to PAGEVIEW content areas, or when working with f:render.text, f:render.contentArea, f:mark.contentArea, record transformation or template readiness in TYPO3 13/14."
 metadata:
   origin: "webconsulting"
 license: "MIT / CC-BY-SA-4.0"

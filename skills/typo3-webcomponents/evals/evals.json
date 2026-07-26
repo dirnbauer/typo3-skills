@@ -2,55 +2,55 @@
   "skill_name": "typo3-webcomponents",
   "skill_type": "preference",
   "spec": "SKILL-SPEC.md",
-  "note": "Scaffold. Per SKILL-SPEC.md S5, draft cases do not count as coverage until a human marks them reviewed.",
+  "note": "Near the vendored typo3-vite (frontend build tooling) and typo3-icon14 (SVG, not JS). Cases lead with backend JavaScript that has to run inside TYPO3.",
   "evals": [
     {
       "id": "typo3-webcomponents-trigger-pos-01",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Migrate TYPO3 v14 backend Web Components with Lit",
+      "status": "proposed",
+      "prompt": "Build a reusable widget for the backend with Lit.",
       "expect_skill": "typo3-webcomponents",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "The canonical case."
     },
     {
       "id": "typo3-webcomponents-trigger-pos-02",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "ES module import maps",
+      "status": "proposed",
+      "prompt": "My ES module will not load in the backend. Is the import map wrong?",
       "expect_skill": "typo3-webcomponents",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "Import maps via the symptom."
     },
     {
       "id": "typo3-webcomponents-trigger-pos-03",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "AssetCollector/f:asset",
+      "status": "proposed",
+      "prompt": "How do I add a custom field renderer to FormEngine in JavaScript?",
       "expect_skill": "typo3-webcomponents",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "FormEngine integration."
     },
     {
       "id": "typo3-webcomponents-trigger-pos-04",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Backend modules",
+      "status": "proposed",
+      "prompt": "Our backend module JavaScript is a jQuery mess. Modernize it.",
       "expect_skill": "typo3-webcomponents",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "Migration of legacy backend JS."
     },
     {
       "id": "typo3-webcomponents-trigger-neg-01",
       "kind": "trigger-negative",
-      "status": "draft",
-      "prompt": "Write a Python script that renames files in a folder by their EXIF date.",
-      "expect_no_skill": true,
-      "note": "Unrelated domain. No TYPO3 skill may fire."
+      "status": "proposed",
+      "prompt": "Set up the Vite build for our sitepackage assets.",
+      "expect_skill": "typo3-vite",
+      "note": "Frontend build tooling, not backend components."
     },
     {
       "id": "typo3-webcomponents-trigger-neg-02",
       "kind": "trigger-negative",
-      "status": "draft",
-      "prompt": "TODO: a prompt that looks close to this skill but belongs to a sibling. Name the sibling in expect_skill.",
-      "expect_no_skill": true,
-      "note": "Replace with a real near-miss; see scripts/trigger_collisions.py."
+      "status": "proposed",
+      "prompt": "Redraw our extension icons in the v14 line style.",
+      "expect_skill": "typo3-icon14",
+      "note": "SVG design, not JavaScript."
     }
   ]
 }

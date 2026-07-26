@@ -506,6 +506,13 @@ sie maßen `prompt in description`. Damit wird der Detektor billiger als gedacht
 Ableitung wörtlich ist, genügt ein Teilstring-Test, und genau der läuft jetzt maschinell
 gegen jeden Fall, den ein Mensch unterschreiben soll.
 
+Beim vollständigen Austausch aller 132 Fälle trat ein Effekt hinzu, den nur die
+Gesamtmessung zeigt: **Beschreibungen sind nicht unabhängig.** Die IDF-Gewichtung wird über
+den gesamten Korpus berechnet, also verschob die Überarbeitung von dreizehn Beschreibungen
+die Werte unberührter Skills mit. Zwei bereits unterschriebene Fälle fielen dadurch aus,
+ohne dass an ihren Skills etwas geändert worden wäre. Eine Prüfung je Skill kann das nicht
+finden; nur der Lauf über die ganze Sammlung findet es.
+
 Der erste Ersatzstapel bestätigte die Vorhersage quantitativ. 16 neu geschriebene Fälle für
 ein Skillpaar erreichten im ersten Lauf **50 %**, während die entarteten Fälle desselben
 Bestands bei 91 % lagen. Jeder Fehlschlag war diagnostisch, und keiner lag am Fall: Eine
@@ -540,6 +547,16 @@ der einzige Punkt, an dem echte Unabhängigkeit ins Verfahren kommt.
 **Der Agent setzt die Schwellen.** Gegenmaßnahme ist die Ratsche: Schwellen stehen auf den
 gemessenen Werten, nicht auf Wunschwerten, sodass jede Verschlechterung ein Fehlschlag ist
 und kein langsames Abrutschen.
+
+Am deutlichsten wurde die Lehre, als der Zirkularitätswächter seinen eigenen Autor fasste.
+Beim Anreichern der Beschreibungen um Nutzervokabular geriet ein Satz wörtlich in eine
+Beschreibung, der zugleich als Eval-Prompt diente — die Beschreibung wurde auf den Test hin
+geschrieben. Die Wortlautregel fand einen Fall; eine anschließende Prüfung fand vier weitere
+Teilechos von sieben bis zehn Wörtern, darunter eines in einer bereits unterschriebenen
+Suite. Die Regel lautet jetzt: kein Lauf von mehr als sechs aufeinanderfolgenden Wörtern
+gemeinsam mit der eigenen `SKILL.md`, wobei die Sechs aus den Daten stammt — über 90
+handgeschriebene Fälle liegt der Median bei zwei Wörtern. Ein Wächter, der nur die grobe
+Form seines Fehlers kennt, übersieht die feine.
 
 Und, weil dieselbe Prüfung ein zweites Mal fündig wurde: Die Negativfälle waren als
 `skill not in top[:1] and best_score > 0` formuliert. Beide Hälften waren falsch. "Dieses

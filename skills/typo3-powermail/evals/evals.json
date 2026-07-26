@@ -2,55 +2,55 @@
   "skill_name": "typo3-powermail",
   "skill_type": "preference",
   "spec": "SKILL-SPEC.md",
-  "note": "Scaffold. Per SKILL-SPEC.md S5, draft cases do not count as coverage until a human marks them reviewed.",
+  "note": "Near typo3-accessibility (accessible form markup, not powermail behaviour) and typo3-webcomponents (backend form editor JS). Cases lead with form behaviour that is wrong.",
   "evals": [
     {
       "id": "typo3-powermail-trigger-pos-01",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Creating",
+      "status": "proposed",
+      "prompt": "The confirmation mail from our contact form never arrives. Where do I start?",
       "expect_skill": "typo3-powermail",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "Mail delivery, the most common report."
     },
     {
       "id": "typo3-powermail-trigger-pos-02",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Debugging",
+      "status": "proposed",
+      "prompt": "I need a field that only appears when another field is set to yes.",
       "expect_skill": "typo3-powermail",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "Conditional visibility."
     },
     {
       "id": "typo3-powermail-trigger-pos-03",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Extending powermail forms",
+      "status": "proposed",
+      "prompt": "How do I add a custom finisher that posts the submission to our CRM?",
       "expect_skill": "typo3-powermail",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "Finishers and extension points."
     },
     {
       "id": "typo3-powermail-trigger-pos-04",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Mail handling",
+      "status": "proposed",
+      "prompt": "We are getting spam through the form even with the honeypot on.",
       "expect_skill": "typo3-powermail",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "Spam protection."
     },
     {
       "id": "typo3-powermail-trigger-neg-01",
       "kind": "trigger-negative",
-      "status": "draft",
-      "prompt": "Write a Python script that renames files in a folder by their EXIF date.",
-      "expect_no_skill": true,
-      "note": "Unrelated domain. No TYPO3 skill may fire."
+      "status": "proposed",
+      "prompt": "The form error messages are never announced by the screen reader.",
+      "expect_skill": "typo3-accessibility",
+      "note": "Accessible markup, whatever built the form."
     },
     {
       "id": "typo3-powermail-trigger-neg-02",
       "kind": "trigger-negative",
-      "status": "draft",
-      "prompt": "TODO: a prompt that looks close to this skill but belongs to a sibling. Name the sibling in expect_skill.",
-      "expect_no_skill": true,
-      "note": "Replace with a real near-miss; see scripts/trigger_collisions.py."
+      "status": "proposed",
+      "prompt": "Build a Lit component for the backend form editor.",
+      "expect_skill": "typo3-webcomponents",
+      "note": "Backend JavaScript."
     }
   ]
 }

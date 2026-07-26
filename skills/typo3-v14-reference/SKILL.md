@@ -1,6 +1,6 @@
 ---
 name: "typo3-v14-reference"
-description: "TYPO3 v14 API reference: how to write v14 code. Covers controllers, building a view with ViewFactory, Fluid templates, PSR-14 events that replaced old hooks, backend modules, TCA, QueryBuilder queries without SQL injection, CLI commands and tests. Use when the user asks what a v14 API looks like, which event replaced a hook, how to build or write a specific piece of v14 code, or which class or interface to use. Does NOT run upgrades or migrations: for a whole project or site upgrade use typo3-upgrade-run, which owns the version constraint, the PHP target and the process."
+description: "TYPO3 v14 API reference: how to write v14 code. Covers controllers, building a view with ViewFactory, Fluid templates, PSR-14 events that replaced old hooks, backend modules, TCA, QueryBuilder queries without SQL injection, CLI commands and tests. Use when the user asks what a v14 API looks like, which event replaced a hook, how to build or write a specific piece of v14 code, or which class, interface or namespace to use. Does NOT run upgrades or migrations: for a whole project or site upgrade use typo3-upgrade-run, which owns the version constraint, the PHP target and the process."
 compatibility: "TYPO3 14.x"
 metadata:
   version: "2.0.0"

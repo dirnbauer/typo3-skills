@@ -1,6 +1,6 @@
 ---
 name: "typo3-translations"
-description: "Guides TYPO3 13/14 localization with locallang.xlf, labels.xlf, XLIFF 1.2 and 2.0, ICU MessageFormat, LLL references, translation domains, Content Blocks labels, paths, namespaces, and migration checks. Use when the user mentions TYPO3 translations, localization, labels, XLIFF, ICU, LLL, missing keys, duplicate units, or v13-to-v14 translation migration."
+description: "Fixes TYPO3 labels and localization: label files (locallang.xlf, labels.xlf) in XLIFF 1.2 and 2.0, singular and plural forms through ICU MessageFormat, LLL references, translation domains and Content Blocks labels. Use when an untranslated key appears on screen in place of its text, when trans-unit ids end up duplicated after merging two branches, when keys are missing, or when relocating localization files to the v14 directory conventions."
 compatibility: "TYPO3 13.4 and TYPO3 14.x; TYPO3 14 preferred"
 metadata:
   version: "2.1.0"

@@ -2,55 +2,55 @@
   "skill_name": "typo3-icon14",
   "skill_type": "capability",
   "spec": "SKILL-SPEC.md",
-  "note": "Scaffold. Per SKILL-SPEC.md S5, draft cases do not count as coverage until a human marks them reviewed.",
+  "note": "Near webconsulting-branding (brand visuals for the website, not backend module icons) and typo3-webcomponents (backend JavaScript, not SVG). Cases lead with how the icon looks or fails to appear.",
   "evals": [
     {
       "id": "typo3-icon14-trigger-pos-01",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "TYPO3 v14 icons",
+      "status": "proposed",
+      "prompt": "Our extension icons look heavy and filled next to the v14 core ones. Can you redraw them?",
       "expect_skill": "typo3-icon14",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "The v14 line-art style, described by contrast."
     },
     {
       "id": "typo3-icon14-trigger-pos-02",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Backend module icon migration",
+      "status": "proposed",
+      "prompt": "The backend module icon vanishes in dark mode.",
       "expect_skill": "typo3-icon14",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "Light/dark behaviour as a symptom."
     },
     {
       "id": "typo3-icon14-trigger-pos-03",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Extension icon modernization",
+      "status": "proposed",
+      "prompt": "How do I register an SVG so it actually shows up in the module menu?",
       "expect_skill": "typo3-icon14",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "IconRegistry naming."
     },
     {
       "id": "typo3-icon14-trigger-pos-04",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "SVG icon rules",
+      "status": "proposed",
+      "prompt": "These SVGs are full of embedded fills and inline styles. Clean them up.",
       "expect_skill": "typo3-icon14",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "Source cleanup."
     },
     {
       "id": "typo3-icon14-trigger-neg-01",
       "kind": "trigger-negative",
-      "status": "draft",
-      "prompt": "Write a Python script that renames files in a folder by their EXIF date.",
-      "expect_no_skill": true,
-      "note": "Unrelated domain. No TYPO3 skill may fire."
+      "status": "proposed",
+      "prompt": "Apply our teal palette and Hanken Grotesk to this page.",
+      "expect_skill": "webconsulting-branding",
+      "note": "Website brand system, not backend icons."
     },
     {
       "id": "typo3-icon14-trigger-neg-02",
       "kind": "trigger-negative",
-      "status": "draft",
-      "prompt": "TODO: a prompt that looks close to this skill but belongs to a sibling. Name the sibling in expect_skill.",
-      "expect_no_skill": true,
-      "note": "Replace with a real near-miss; see scripts/trigger_collisions.py."
+      "status": "proposed",
+      "prompt": "Build a Lit component for the backend form editor.",
+      "expect_skill": "typo3-webcomponents",
+      "note": "Backend JavaScript."
     }
   ]
 }

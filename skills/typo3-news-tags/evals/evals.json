@@ -2,55 +2,55 @@
   "skill_name": "typo3-news-tags",
   "skill_type": "preference",
   "spec": "SKILL-SPEC.md",
-  "note": "Scaffold. Per SKILL-SPEC.md S5, draft cases do not count as coverage until a human marks them reviewed.",
+  "note": "Distinct: bulk tag generation and assignment for EXT:news. Near typo3-solr (searching news, not tagging it) and typo3-datahandler (generic record writes). Cases name the corpus size, which is what makes this a batch job.",
   "evals": [
     {
       "id": "typo3-news-tags-trigger-pos-01",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Tagging large news corpora",
+      "status": "proposed",
+      "prompt": "We have 8000 news articles with no tags at all. Can we generate and assign them automatically?",
       "expect_skill": "typo3-news-tags",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "The canonical case: large corpus, no tags."
     },
     {
       "id": "typo3-news-tags-trigger-pos-02",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Defining a generic tag catalogue",
+      "status": "proposed",
+      "prompt": "Build a console command that matches keywords and writes the tag relations.",
       "expect_skill": "typo3-news-tags",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "The implementation shape."
     },
     {
       "id": "typo3-news-tags-trigger-pos-03",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "A Symfony console command for tag assignment",
+      "status": "proposed",
+      "prompt": "I need a sensible generic tag catalogue for our news archive before we start assigning.",
       "expect_skill": "typo3-news-tags",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "Catalogue definition, the step before assignment."
     },
     {
       "id": "typo3-news-tags-trigger-pos-04",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Tx_news_domain_model_tag / tx_news_domain_model_news_tag_mm",
+      "status": "proposed",
+      "prompt": "How do I bulk-assign tags to existing EXT:news records without touching them by hand?",
       "expect_skill": "typo3-news-tags",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "Names the extension explicitly."
     },
     {
       "id": "typo3-news-tags-trigger-neg-01",
       "kind": "trigger-negative",
-      "status": "draft",
-      "prompt": "Write a Python script that renames files in a folder by their EXIF date.",
-      "expect_no_skill": true,
-      "note": "Unrelated domain. No TYPO3 skill may fire."
+      "status": "proposed",
+      "prompt": "Set up faceted search over our news with autocomplete.",
+      "expect_skill": "typo3-solr",
+      "note": "Search, not tagging - though facets often use tags."
     },
     {
       "id": "typo3-news-tags-trigger-neg-02",
       "kind": "trigger-negative",
-      "status": "draft",
-      "prompt": "TODO: a prompt that looks close to this skill but belongs to a sibling. Name the sibling in expect_skill.",
-      "expect_no_skill": true,
-      "note": "Replace with a real near-miss; see scripts/trigger_collisions.py."
+      "status": "proposed",
+      "prompt": "Import 500 pages from JSON with correct parent references.",
+      "expect_skill": "typo3-datahandler",
+      "note": "Generic record writing."
     }
   ]
 }

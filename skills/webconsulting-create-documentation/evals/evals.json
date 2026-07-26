@@ -2,55 +2,55 @@
   "skill_name": "webconsulting-create-documentation",
   "skill_type": "preference",
   "spec": "SKILL-SPEC.md",
-  "note": "Scaffold. Per SKILL-SPEC.md S5, draft cases do not count as coverage until a human marks them reviewed.",
+  "note": "Near the vendored typo3-docs (reStructuredText for docs.typo3.org) - this one produces help pages, screenshots and narrated video. Cases lead with the deliverable.",
   "evals": [
     {
       "id": "webconsulting-create-documentation-trigger-pos-01",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Product docs",
+      "status": "proposed",
+      "prompt": "We need help pages and a narrated walkthrough video for the new product.",
       "expect_skill": "webconsulting-create-documentation",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "The canonical case: pages plus video."
     },
     {
       "id": "webconsulting-create-documentation-trigger-pos-02",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Help pages",
+      "status": "proposed",
+      "prompt": "Generate the screenshots and a product tour for our app.",
       "expect_skill": "webconsulting-create-documentation",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "Screenshots and Remotion tour."
     },
     {
       "id": "webconsulting-create-documentation-trigger-pos-03",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Documentation videos",
+      "status": "proposed",
+      "prompt": "Write the narration script, then add voice and background music.",
       "expect_skill": "webconsulting-create-documentation",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "TTS and audio."
     },
     {
       "id": "webconsulting-create-documentation-trigger-pos-04",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Narrated tours",
+      "status": "proposed",
+      "prompt": "Our README has no visuals at all. Can you produce some?",
       "expect_skill": "webconsulting-create-documentation",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "README visuals."
     },
     {
       "id": "webconsulting-create-documentation-trigger-neg-01",
       "kind": "trigger-negative",
-      "status": "draft",
-      "prompt": "Write a Python script that renames files in a folder by their EXIF date.",
-      "expect_no_skill": true,
-      "note": "Unrelated domain. No TYPO3 skill may fire."
+      "status": "proposed",
+      "prompt": "Write the reStructuredText documentation for our extension for docs.typo3.org.",
+      "expect_skill": "typo3-docs",
+      "note": "TYPO3's own documentation toolchain."
     },
     {
       "id": "webconsulting-create-documentation-trigger-neg-02",
       "kind": "trigger-negative",
-      "status": "draft",
-      "prompt": "TODO: a prompt that looks close to this skill but belongs to a sibling. Name the sibling in expect_skill.",
-      "expect_no_skill": true,
-      "note": "Replace with a real near-miss; see scripts/trigger_collisions.py."
+      "status": "proposed",
+      "prompt": "Record the architecture decision and the alternatives we rejected.",
+      "expect_skill": "architecture-decision-records",
+      "note": "A decision record, not product documentation."
     }
   ]
 }

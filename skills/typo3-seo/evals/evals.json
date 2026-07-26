@@ -2,55 +2,55 @@
   "skill_name": "typo3-seo",
   "skill_type": "preference",
   "spec": "SKILL-SPEC.md",
-  "note": "Scaffold. Per SKILL-SPEC.md S5, draft cases do not count as coverage until a human marks them reviewed.",
+  "note": "Near typo3-solr (site search, not search engines) and typo3-wcag22-aa-agentic. Cases lead with visibility symptoms in Google rather than the phrase SEO.",
   "evals": [
     {
       "id": "typo3-seo-trigger-pos-01",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Working on TYPO3 SEO",
+      "status": "proposed",
+      "prompt": "Google is mixing up our German and Italian pages in the results. Is hreflang set up right?",
       "expect_skill": "typo3-seo",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "hreflang via the symptom."
     },
     {
       "id": "typo3-seo-trigger-pos-02",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Sitemap setup",
+      "status": "proposed",
+      "prompt": "Our XML sitemap only contains the homepage.",
       "expect_skill": "typo3-seo",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "Sitemap generation broken."
     },
     {
       "id": "typo3-seo-trigger-pos-03",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Meta tags",
+      "status": "proposed",
+      "prompt": "Add Open Graph tags and structured data to the article pages.",
       "expect_skill": "typo3-seo",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "Metadata and schema.org."
     },
     {
       "id": "typo3-seo-trigger-pos-04",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Robots rules",
+      "status": "proposed",
+      "prompt": "How do I stop the staging site from being indexed?",
       "expect_skill": "typo3-seo",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "robots rules."
     },
     {
       "id": "typo3-seo-trigger-neg-01",
       "kind": "trigger-negative",
-      "status": "draft",
-      "prompt": "Write a Python script that renames files in a folder by their EXIF date.",
-      "expect_no_skill": true,
-      "note": "Unrelated domain. No TYPO3 skill may fire."
+      "status": "proposed",
+      "prompt": "Set up faceted search with autocomplete on our own site.",
+      "expect_skill": "typo3-solr",
+      "note": "On-site search, not search engines - the classic confusion."
     },
     {
       "id": "typo3-seo-trigger-neg-02",
       "kind": "trigger-negative",
-      "status": "draft",
-      "prompt": "TODO: a prompt that looks close to this skill but belongs to a sibling. Name the sibling in expect_skill.",
-      "expect_no_skill": true,
-      "note": "Replace with a real near-miss; see scripts/trigger_collisions.py."
+      "status": "proposed",
+      "prompt": "Draft the accessibility statement for the EAA deadline.",
+      "expect_skill": "typo3-wcag22-aa-agentic",
+      "note": "A different compliance regime."
     }
   ]
 }

@@ -63,17 +63,26 @@ def stem(word: str) -> str:
     version returned early from the plural branches, leaving "upgrades" -> upgrade while
     "upgrade" -> upgrad; a stemmer inconsistent with itself is worse than none.
 
-    A trailing-'e' step was tried and dropped: it unified "removed"/"remove" but
-    over-stemmed discriminative terms and measured worse. Known limitation: -ed forms do
-    not meet their -e base.
+    A blanket trailing-'e' step was tried and dropped: it over-stemmed discriminative terms
+    and measured worse. The -ize family is handled explicitly instead, because it is regular
+    and common here (localize, modernize, optimize) and because the generic rules got it
+    wrong in both directions: "localizes" matched the "zes" branch meant for buzz/buzzes and
+    lost two characters, while "localize" kept its 'e'. A description saying "localizes"
+    therefore scored zero against a user typing "localize".
     """
     if len(word) <= 3 or any(c.isdigit() for c in word):
         return word
 
+    # -ize/-izes/-ized/-izing all collapse to -iz. Checked before the general rules, which
+    # split this family three ways.
+    for suffix in ("izing", "ized", "izes", "ize"):
+        if word.endswith(suffix) and len(word) - len(suffix) >= 3:
+            return word[: -len(suffix)] + "iz"
+
     base = word
     if word.endswith("ies") and len(word) > 4:
         base = word[:-3] + "y"
-    elif word.endswith("sses") or word.endswith(("ches", "shes", "xes", "zes")):
+    elif word.endswith("sses") or word.endswith(("ches", "shes", "xes", "zzes")):
         base = word[:-2]
     elif word.endswith("es") and len(word) > 4:
         base = word[:-1]

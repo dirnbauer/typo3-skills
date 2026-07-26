@@ -2,55 +2,55 @@
   "skill_name": "typo3-translations",
   "skill_type": "preference",
   "spec": "SKILL-SPEC.md",
-  "note": "Scaffold. Per SKILL-SPEC.md S5, draft cases do not count as coverage until a human marks them reviewed.",
+  "note": "Near typo3-fractor (which also touches XLIFF files, but as an automated migration) and typo3-seo (hreflang is page routing, not labels). Cases lead with a label that is wrong on screen.",
   "evals": [
     {
       "id": "typo3-translations-trigger-pos-01",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "TYPO3 translations",
+      "status": "proposed",
+      "prompt": "The backend shows the raw label key instead of the actual text.",
       "expect_skill": "typo3-translations",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "The most common symptom, stated as what is on screen."
     },
     {
       "id": "typo3-translations-trigger-pos-02",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Localization",
+      "status": "proposed",
+      "prompt": "How do I handle singular and plural properly in our label files?",
       "expect_skill": "typo3-translations",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "ICU MessageFormat without naming it."
     },
     {
       "id": "typo3-translations-trigger-pos-03",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Missing keys",
+      "status": "proposed",
+      "prompt": "We have duplicate trans-unit ids after merging two branches.",
       "expect_skill": "typo3-translations",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "XLIFF hygiene."
     },
     {
       "id": "typo3-translations-trigger-pos-04",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Duplicate units",
+      "status": "proposed",
+      "prompt": "Move our label files from the v13 layout to the v14 structure.",
       "expect_skill": "typo3-translations",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "Migration between versions."
     },
     {
       "id": "typo3-translations-trigger-neg-01",
       "kind": "trigger-negative",
-      "status": "draft",
-      "prompt": "Write a Python script that renames files in a folder by their EXIF date.",
-      "expect_no_skill": true,
-      "note": "Unrelated domain. No TYPO3 skill may fire."
+      "status": "proposed",
+      "prompt": "Rewrite our old TypoScript conditions to the new syntax automatically.",
+      "expect_skill": "typo3-fractor",
+      "note": "Automated file migration is Fractor's, even for non-PHP files."
     },
     {
       "id": "typo3-translations-trigger-neg-02",
       "kind": "trigger-negative",
-      "status": "draft",
-      "prompt": "TODO: a prompt that looks close to this skill but belongs to a sibling. Name the sibling in expect_skill.",
-      "expect_no_skill": true,
-      "note": "Replace with a real near-miss; see scripts/trigger_collisions.py."
+      "status": "proposed",
+      "prompt": "Add hreflang so Google separates our German and Italian pages.",
+      "expect_skill": "typo3-seo",
+      "note": "Language routing for search engines, not label content."
     }
   ]
 }

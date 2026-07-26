@@ -1,6 +1,6 @@
 ---
 name: "typo3-solr"
-description: "Configures and debugs Apache Solr search for TYPO3, including EXT:solr, configsets, indexing queues, Tika/file indexing, facets, suggest, routing, PSR-14 events, custom indexers, vector search, and frontend search UI. Use when the user mentions Solr, EXT:solr, indexing, facets, autocomplete, suggest, Tika, solrfal, search debugging, or vector search in TYPO3."
+description: "Runs and debugs the site's own search with Apache Solr in TYPO3 (EXT:solr): what gets indexed and why results come back empty after adding a new page type, facets for category or year on the results page, autocomplete and suggest, PDF and file indexing through Tika, and an indexing queue that is stuck. Use when searching the site returns nothing or the wrong things, or when configuring configsets, custom indexers, routing, solrfal or vector search. Visibility in external search engines is typo3-seo."
 compatibility: "TYPO3 14.x"
 metadata:
   version: "1.0.0"

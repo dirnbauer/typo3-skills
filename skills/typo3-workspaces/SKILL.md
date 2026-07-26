@@ -1,6 +1,6 @@
 ---
 name: "typo3-workspaces"
-description: "Guides TYPO3 Workspaces versioning, staging, publishing, overlays, workspace-aware queries, file limitations, permissions, frontend preview, diagnostics, repair, and tests. Use when the user works with TYPO3 workspaces, draft content, staged publishing, versioning, workspace overlays, review workflows, file collections, or workspace-specific bugs."
+description: "Lets TYPO3 editors prepare and hold finished content before it goes live, then stage, review and publish it. Use when finished work must wait for a launch, when previewing unpublished work returns the already-published page, when publishing loses file references, when your own code must query records so drafts resolve correctly, or when working with workspace overlays, versioning, staging, permissions, review workflows and workspace-specific bugs."
 compatibility: "TYPO3 14.x"
 metadata:
   version: "2.0.0"

@@ -2,55 +2,55 @@
   "skill_name": "typo3-idea-extension-blog",
   "skill_type": "preference",
   "spec": "SKILL-SPEC.md",
-  "note": "Scaffold. Per SKILL-SPEC.md S5, draft cases do not count as coverage until a human marks them reviewed.",
+  "note": "Near typo3-initial-release (ships a finished extension; this decides whether to build one at all). Cases lead with an external artefact the user is holding - a link, a paper, a product.",
   "evals": [
     {
       "id": "typo3-idea-extension-blog-trigger-pos-01",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "The user shares a link",
+      "status": "proposed",
+      "prompt": "Here is a link to a tool we saw. Could that work as a TYPO3 extension?",
       "expect_skill": "typo3-idea-extension-blog",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "The canonical case: external input, evaluate potential."
     },
     {
       "id": "typo3-idea-extension-blog-trigger-pos-02",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Concept and asks whether it can become a TYPO3 extension",
+      "status": "proposed",
+      "prompt": "I read a paper on content scheduling. Build it and write it up for our site.",
       "expect_skill": "typo3-idea-extension-blog",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "Evaluate, build, and the German article in one ask."
     },
     {
       "id": "typo3-idea-extension-blog-trigger-pos-03",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Wants a GitHub-ready implementation",
+      "status": "proposed",
+      "prompt": "Turn this product idea into something GitHub-ready plus an article for webconsulting.at.",
       "expect_skill": "typo3-idea-extension-blog",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "Names both deliverables."
     },
     {
       "id": "typo3-idea-extension-blog-trigger-pos-04",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Needs a publication-ready TYPO3 blog post",
+      "status": "proposed",
+      "prompt": "Someone sent me this tool as a link. Is there anything worth building here as an extension, or has it been done already?",
       "expect_skill": "typo3-idea-extension-blog",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "Prior-art half of the evaluation. Reworded after measurement: the first version ('Is there anything worth building here, or has someone already done it?') named no artefact and no domain at all, so nothing could identify it - a bad case rather than a bad description."
     },
     {
       "id": "typo3-idea-extension-blog-trigger-neg-01",
       "kind": "trigger-negative",
-      "status": "draft",
-      "prompt": "Write a Python script that renames files in a folder by their EXIF date.",
-      "expect_no_skill": true,
-      "note": "Unrelated domain. No TYPO3 skill may fire."
+      "status": "proposed",
+      "prompt": "The extension is finished. Tag 1.0.0 and prepare the TER release.",
+      "expect_skill": "typo3-initial-release",
+      "note": "End of the lifecycle, not the start."
     },
     {
       "id": "typo3-idea-extension-blog-trigger-neg-02",
       "kind": "trigger-negative",
-      "status": "draft",
-      "prompt": "TODO: a prompt that looks close to this skill but belongs to a sibling. Name the sibling in expect_skill.",
-      "expect_no_skill": true,
-      "note": "Replace with a real near-miss; see scripts/trigger_collisions.py."
+      "status": "proposed",
+      "prompt": "Write the help pages and a narrated product tour.",
+      "expect_skill": "webconsulting-create-documentation",
+      "note": "Product documentation, not an extension write-up."
     }
   ]
 }

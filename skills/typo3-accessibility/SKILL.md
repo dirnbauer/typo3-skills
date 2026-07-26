@@ -1,6 +1,6 @@
 ---
 name: "typo3-accessibility"
-description: "Accessible markup patterns for TYPO3 v14: skip links, landmark regions, heading structure, keyboard and tab order, visible focus rings and outlines, ARIA for accordions, dropdowns and modals, accessible form labels and error messages, alt text and colour contrast, in Fluid templates, PHP helpers and vanilla JavaScript widgets - plus a manual go-live checklist to verify by hand before launch. Use when you need the correct markup for a keyboard, focus, screen-reader or WCAG 2.2 AA problem, or when reviewing template and content-element code. Companion skill for automated scanning: typo3-wcag22-aa-agentic."
+description: "Accessible markup patterns for TYPO3 v14: skip links, landmark regions, heading structure, keyboard and tab order, visible focus rings and outlines, ARIA for accordions, dropdowns and modals, accessible form labels and error messages, alt text and colour contrast, in Fluid templates, PHP helpers and vanilla JavaScript widgets - plus a manual go-live checklist to verify by hand before launch. Use when a screen reader such as NVDA or VoiceOver does not announce something as expandable, checked or invalid, when a keyboard or focus problem needs the correct markup, or when reviewing template and element code against WCAG 2.2 AA. Companion skill for automated scanning: typo3-wcag22-aa-agentic."
 metadata:
   version: "1.0.0"
   origin: "webconsulting"

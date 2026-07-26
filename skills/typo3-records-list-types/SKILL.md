@@ -1,6 +1,6 @@
 ---
 name: "typo3-records-list-types"
-description: "Configures TYPO3 v14 Records module list types and custom backend views, including grid, compact, teaser, kanban-style, timeline-style, TSconfig, Fluid templates, icons, and accessibility. Use when the user mentions records list types, backend record cards, custom Records module views, grid view, compact view, teaser view, or TSconfig-driven record presentation."
+description: "Changes how records are presented in the TYPO3 v14 Records module: cards with thumbnails instead of a plain table of rows, a timeline, a board with columns, or grid, compact and teaser views - configured per record type through TSconfig with Fluid templates, icons and accessibility. Use when editors want to see something other than a table, when one record type needs its own layout in the backend, or when building custom Records module views."
 metadata:
   version: "1.0.0"
   origin: "webconsulting"

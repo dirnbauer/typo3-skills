@@ -2,55 +2,55 @@
   "skill_name": "typo3-visual-editor",
   "skill_type": "preference",
   "spec": "SKILL-SPEC.md",
-  "note": "Scaffold. Per SKILL-SPEC.md S5, draft cases do not count as coverage until a human marks them reviewed.",
+  "note": "Near typo3-records-list-types (backend list views, not frontend editing) and typo3-shadcn-content-elements. Cases lead with editors wanting to edit on the page.",
   "evals": [
     {
       "id": "typo3-visual-editor-trigger-pos-01",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Visual Editor",
+      "status": "proposed",
+      "prompt": "Editors want to click into the page and type, instead of opening backend forms.",
       "expect_skill": "typo3-visual-editor",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "The canonical case, no product name given."
     },
     {
       "id": "typo3-visual-editor-trigger-pos-02",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Inline editing",
+      "status": "proposed",
+      "prompt": "Install the FriendsOfTYPO3 inline editing into our sitepackage.",
       "expect_skill": "typo3-visual-editor",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "Installation, product named."
     },
     {
       "id": "typo3-visual-editor-trigger-pos-03",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Frontend editing",
+      "status": "proposed",
+      "prompt": "Our templates still use colPos. What has to change for content areas?",
       "expect_skill": "typo3-visual-editor",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "colPos migration."
     },
     {
       "id": "typo3-visual-editor-trigger-pos-04",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Content areas",
+      "status": "proposed",
+      "prompt": "How do I mark a section of a Fluid template as an editable area?",
       "expect_skill": "typo3-visual-editor",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "Template readiness."
     },
     {
       "id": "typo3-visual-editor-trigger-neg-01",
       "kind": "trigger-negative",
-      "status": "draft",
-      "prompt": "Write a Python script that renames files in a folder by their EXIF date.",
-      "expect_no_skill": true,
-      "note": "Unrelated domain. No TYPO3 skill may fire."
+      "status": "proposed",
+      "prompt": "Give me cards instead of a plain table in the Records module.",
+      "expect_skill": "typo3-records-list-types",
+      "note": "Backend presentation, not frontend editing."
     },
     {
       "id": "typo3-visual-editor-trigger-neg-02",
       "kind": "trigger-negative",
-      "status": "draft",
-      "prompt": "TODO: a prompt that looks close to this skill but belongs to a sibling. Name the sibling in expect_skill.",
-      "expect_no_skill": true,
-      "note": "Replace with a real near-miss; see scripts/trigger_collisions.py."
+      "status": "proposed",
+      "prompt": "Restyle these elements with shadcn presets and semantic tokens.",
+      "expect_skill": "typo3-shadcn-content-elements",
+      "note": "Styling, not editability."
     }
   ]
 }

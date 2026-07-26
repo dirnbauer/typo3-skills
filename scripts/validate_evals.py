@@ -42,6 +42,28 @@ SKILL_TYPES = {"capability", "preference"}
 # is asked to sign is not.
 MIN_SUBSTRING_LEN = 12
 
+# The whole-prompt check above misses the softer version of the same mistake: writing the
+# description to contain the test. That happened here — a description gained the sentence
+# "when the frontend preview of a draft shows the live version instead" while an eval used
+# it verbatim as a prompt, and only the exact-match rule caught it. Partial echoes are the
+# same circularity, so a long shared run is rejected too. Across 90 hand-written cases the
+# median shared run is 2 words; 6 is three times that and well clear of ordinary phrasing
+# like "content element" or "in the backend".
+MAX_SHARED_RUN_WORDS = 6
+
+
+def longest_shared_run(prompt: str, skill_md: str) -> int:
+    """Longest run of consecutive prompt words appearing verbatim in the skill's own text."""
+    hay = " ".join(skill_md.lower().split())
+    words = prompt.lower().split()
+    best = 0
+    for i in range(len(words)):
+        for j in range(len(words), i + best, -1):
+            if " ".join(words[i:j]) in hay:
+                best = max(best, j - i)
+                break
+    return best
+
 
 def circularity_problem(prompt: str, skill_md: str) -> str | None:
     """Why this prompt cannot test anything, or None if it is fine."""
@@ -52,6 +74,11 @@ def circularity_problem(prompt: str, skill_md: str) -> str | None:
     if p in " ".join(skill_md.lower().split()):
         return ("prompt is lifted verbatim from SKILL.md — a case derived from the artefact "
                 "it tests can only pass. Write what a user would type.")
+    run = longest_shared_run(prompt, skill_md)
+    if run > MAX_SHARED_RUN_WORDS:
+        return (f"prompt shares a {run}-word run verbatim with its own SKILL.md (limit "
+                f"{MAX_SHARED_RUN_WORDS}) — the description was written to match the test. "
+                f"Reword the description, not the case.")
     return None
 
 

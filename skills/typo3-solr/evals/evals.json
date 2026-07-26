@@ -2,55 +2,55 @@
   "skill_name": "typo3-solr",
   "skill_type": "preference",
   "spec": "SKILL-SPEC.md",
-  "note": "Scaffold. Per SKILL-SPEC.md S5, draft cases do not count as coverage until a human marks them reviewed.",
+  "note": "Near typo3-seo (search engines, not site search) and typo3-news-tags. Cases lead with on-site search failing.",
   "evals": [
     {
       "id": "typo3-solr-trigger-pos-01",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "EXT:solr",
+      "status": "proposed",
+      "prompt": "Search returns nothing after we added a new page type.",
       "expect_skill": "typo3-solr",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "Indexing gap via the symptom."
     },
     {
       "id": "typo3-solr-trigger-pos-02",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Indexing",
+      "status": "proposed",
+      "prompt": "How do I add facets for category and year to the results page?",
       "expect_skill": "typo3-solr",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "Facets."
     },
     {
       "id": "typo3-solr-trigger-pos-03",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Autocomplete",
+      "status": "proposed",
+      "prompt": "PDF attachments are not searchable. Do we need Tika for that?",
       "expect_skill": "typo3-solr",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "File indexing."
     },
     {
       "id": "typo3-solr-trigger-pos-04",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Search debugging",
+      "status": "proposed",
+      "prompt": "The indexing queue has been stuck at 12000 items since yesterday.",
       "expect_skill": "typo3-solr",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "Queue debugging."
     },
     {
       "id": "typo3-solr-trigger-neg-01",
       "kind": "trigger-negative",
-      "status": "draft",
-      "prompt": "Write a Python script that renames files in a folder by their EXIF date.",
-      "expect_no_skill": true,
-      "note": "Unrelated domain. No TYPO3 skill may fire."
+      "status": "proposed",
+      "prompt": "Our sitemap and canonical tags need fixing so Google indexes us properly.",
+      "expect_skill": "typo3-seo",
+      "note": "Search engines, not site search."
     },
     {
       "id": "typo3-solr-trigger-neg-02",
       "kind": "trigger-negative",
-      "status": "draft",
-      "prompt": "TODO: a prompt that looks close to this skill but belongs to a sibling. Name the sibling in expect_skill.",
-      "expect_no_skill": true,
-      "note": "Replace with a real near-miss; see scripts/trigger_collisions.py."
+      "status": "proposed",
+      "prompt": "Bulk-tag 8000 news records by keyword.",
+      "expect_skill": "typo3-news-tags",
+      "note": "Tagging a corpus, not searching it."
     }
   ]
 }

@@ -1,6 +1,6 @@
 ---
 name: "typo3-seo"
-description: "Configures TYPO3 SEO for EXT:seo, metadata, hreflang, XML sitemaps, robots.txt, canonical URLs, structured data, Core Web Vitals, SEO extensions, and monitoring. Use when working on TYPO3 SEO, sitemap setup, meta tags, robots rules, Open Graph, schema.org, canonical URLs, hreflang, or search visibility."
+description: "Makes TYPO3 pages show up correctly in search engines like Google: XML sitemaps, canonical URLs, hreflang across languages, meta tags, Open Graph, schema.org structured data and robots rules. Use when the wrong pages are indexed or the German and Italian versions get mixed up in the results, when the sitemap is empty or missing pages, when a staging site must be kept out of the index, or when adding social previews and structured data to articles. Search inside the site itself is typo3-solr."
 compatibility: "TYPO3 14.x"
 metadata:
   version: "2.0.0"

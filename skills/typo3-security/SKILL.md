@@ -1,6 +1,6 @@
 ---
 name: "typo3-security"
-description: "Hardens TYPO3 v14 installations and extensions with secure configuration, trusted hosts, file permissions, Install Tool protection, backend user security, MFA, CSP, QueryBuilder usage, XSS defenses, and CSRF checks. Use when the user asks about TYPO3 security, hardening, permissions, authentication, CSP, SQL injection, XSS, CSRF, or go-live security readiness."
+description: "Hardens TYPO3 v14 installations and extensions: secure configuration, trusted hosts, file permissions, locking down the Install Tool, backend user accounts and two-factor authentication, CSP, and safe database access. Use when user input is concatenated straight into an SQL query and should be written with QueryBuilder instead, when output needs escaping against XSS, when CSRF checks are missing, when the Install Tool may be reachable from outside, or when asking what must be locked down before an installation goes live."
 compatibility: "TYPO3 14.x"
 metadata:
   version: "2.0.0"

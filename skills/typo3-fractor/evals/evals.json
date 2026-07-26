@@ -2,55 +2,55 @@
   "skill_name": "typo3-fractor",
   "skill_type": "preference",
   "spec": "SKILL-SPEC.md",
-  "note": "Scaffold. Per SKILL-SPEC.md S5, draft cases do not count as coverage until a human marks them reviewed.",
+  "note": "The sibling is typo3-rector: PHP is Rector, everything else is Fractor. Cases name the file types deliberately, since that is the entire boundary.",
   "evals": [
     {
       "id": "typo3-fractor-trigger-pos-01",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Configuring Fractor",
+      "status": "proposed",
+      "prompt": "Our TypoScript still uses the old condition syntax. Is there something that rewrites it automatically?",
       "expect_skill": "typo3-fractor",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "TypoScript - not PHP, so not Rector."
     },
     {
       "id": "typo3-fractor-trigger-pos-02",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Upgrading non-PHP TYPO3 files",
+      "status": "proposed",
+      "prompt": "Migrate all our FlexForm XML to the v14 format.",
       "expect_skill": "typo3-fractor",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "FlexForms."
     },
     {
       "id": "typo3-fractor-trigger-pos-03",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Migrating FlexForms",
+      "status": "proposed",
+      "prompt": "The .html templates use deprecated ViewHelper syntax. Can a tool fix the template files?",
       "expect_skill": "typo3-fractor",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "Fluid templates as files."
     },
     {
       "id": "typo3-fractor-trigger-pos-04",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "TypoScript",
+      "status": "proposed",
+      "prompt": "I ran Rector and it left every .yaml and .typoscript file untouched. What handles those?",
       "expect_skill": "typo3-fractor",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "The boundary stated by a user who already tried the sibling."
     },
     {
       "id": "typo3-fractor-trigger-neg-01",
       "kind": "trigger-negative",
-      "status": "draft",
-      "prompt": "Write a Python script that renames files in a folder by their EXIF date.",
-      "expect_no_skill": true,
-      "note": "Unrelated domain. No TYPO3 skill may fire."
+      "status": "proposed",
+      "prompt": "Fix the deprecated PHP API calls in our Extbase controllers.",
+      "expect_skill": "typo3-rector",
+      "note": "PHP is Rector's half of the split."
     },
     {
       "id": "typo3-fractor-trigger-neg-02",
       "kind": "trigger-negative",
-      "status": "draft",
-      "prompt": "TODO: a prompt that looks close to this skill but belongs to a sibling. Name the sibling in expect_skill.",
-      "expect_no_skill": true,
-      "note": "Replace with a real near-miss; see scripts/trigger_collisions.py."
+      "status": "proposed",
+      "prompt": "Our XLF files have duplicate trans-unit ids after a merge.",
+      "expect_skill": "typo3-translations",
+      "note": "Hard case: this skill lists XLIFF among its file types, but editing label content is the translations skill."
     }
   ]
 }

@@ -110,7 +110,7 @@ and keeps `SKILL.md` under 500 lines with detail in `references/`.
 
 A generated eval is a **draft**, a hand-written one **proposed**, and only a **reviewed** case
 signed by a person counts as coverage. Current: 26/26 owned skills have suites, 4/26
-human-reviewed, 2 more awaiting signature.
+human-reviewed, the other 22 awaiting signature. No scaffolded cases remain.
 
 ## Conventions
 

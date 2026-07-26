@@ -2,55 +2,55 @@
   "skill_name": "typo3-records-list-types",
   "skill_type": "preference",
   "spec": "SKILL-SPEC.md",
-  "note": "Scaffold. Per SKILL-SPEC.md S5, draft cases do not count as coverage until a human marks them reviewed.",
+  "note": "Near typo3-visual-editor (frontend inline editing, not backend list views) and typo3-content-blocks (defines the record; this presents it). Cases lead with what an editor sees in the Records module.",
   "evals": [
     {
       "id": "typo3-records-list-types-trigger-pos-01",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Records list types",
+      "status": "proposed",
+      "prompt": "The Records module shows a plain table. Can I get cards with thumbnails instead?",
       "expect_skill": "typo3-records-list-types",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "The canonical case, phrased as what is on screen."
     },
     {
       "id": "typo3-records-list-types-trigger-pos-02",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Backend record cards",
+      "status": "proposed",
+      "prompt": "I want our events shown as a timeline in the backend rather than rows.",
       "expect_skill": "typo3-records-list-types",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "A specific view style."
     },
     {
       "id": "typo3-records-list-types-trigger-pos-03",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Custom Records module views",
+      "status": "proposed",
+      "prompt": "How do I set a compact view for one record type only?",
       "expect_skill": "typo3-records-list-types",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "Per-type configuration via TSconfig."
     },
     {
       "id": "typo3-records-list-types-trigger-pos-04",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Grid view",
+      "status": "proposed",
+      "prompt": "Editors want a board with columns for our job postings in the backend.",
       "expect_skill": "typo3-records-list-types",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "Kanban-style, described without the word."
     },
     {
       "id": "typo3-records-list-types-trigger-neg-01",
       "kind": "trigger-negative",
-      "status": "draft",
-      "prompt": "Write a Python script that renames files in a folder by their EXIF date.",
-      "expect_no_skill": true,
-      "note": "Unrelated domain. No TYPO3 skill may fire."
+      "status": "proposed",
+      "prompt": "Let editors click into the page and edit the text directly on the frontend.",
+      "expect_skill": "typo3-visual-editor",
+      "note": "Frontend editing, not a backend list."
     },
     {
       "id": "typo3-records-list-types-trigger-neg-02",
       "kind": "trigger-negative",
-      "status": "draft",
-      "prompt": "TODO: a prompt that looks close to this skill but belongs to a sibling. Name the sibling in expect_skill.",
-      "expect_no_skill": true,
-      "note": "Replace with a real near-miss; see scripts/trigger_collisions.py."
+      "status": "proposed",
+      "prompt": "Define the fields for a new record type.",
+      "expect_skill": "typo3-content-blocks",
+      "note": "Modelling precedes presentation."
     }
   ]
 }

@@ -4,10 +4,10 @@ description: >-
   Update or upgrade a whole TYPO3 site or project from v12 or v13 to 14.3 LTS, end to end,
   in a local DDEV clone, and prove nothing changed for visitors. Use when the user says
   update TYPO3, upgrade to v14, move to 14.3 LTS, migrate the site, do the whole upgrade,
-  set up visual regression around an upgrade, make sure the site looks exactly the same
+  set up visual regression around an upgrade, confirm visitors can see no difference
   after the update, prove nothing broke, or asks whether a pixel difference after the
   upgrade is acceptable. Owns the TYPO3 version constraint, the PHP target and the
-  ext_emconf.php policy for a project. Runs the update as bounded loops against a baseline
+  ext_emconf.php policy for the upgrade it runs. Runs the update as bounded loops against a baseline
   frozen before any change, with a snapshot to roll back to and a documented verdict per
   loop; approved performance, SEO, accessibility and security work starts only afterwards.
   Never deploys to staging or live.

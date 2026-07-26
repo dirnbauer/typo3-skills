@@ -1,6 +1,6 @@
 ---
 name: "typo3-idea-extension-blog"
-description: "Evaluates external ideas for TYPO3 extension potential, builds the extension, and drafts the companion German webconsulting.at MDX article. Use when the user shares a link, product, article, paper, or concept and asks whether it can become a TYPO3 extension, wants a GitHub-ready implementation, or needs a publication-ready TYPO3 blog post."
+description: "Evaluates whether an outside idea is worth building as a TYPO3 extension, checks whether someone has already done it, builds the extension, and writes it up as the companion German webconsulting.at MDX article for our site. Use when the user shares a link, product, article, paper or concept and asks whether it could become a TYPO3 extension, whether it is worth doing at all, or whether prior art exists - and when they want a GitHub-ready implementation plus a publication-ready blog post."
 compatibility: "TYPO3 14.x preferred with TYPO3 13.4 fallback; PHP 8.2+; Git; network access for verification and push"
 metadata:
   version: "1.0.0"

@@ -2,55 +2,55 @@
   "skill_name": "architecture-decision-records",
   "skill_type": "preference",
   "spec": "SKILL-SPEC.md",
-  "note": "Scaffold. Per SKILL-SPEC.md S5, draft cases do not count as coverage until a human marks them reviewed.",
+  "note": "Distinct in this collection; the near neighbours are typo3-initial-release (shipping an artefact, not recording a choice) and any skill that produces documentation. Cases lead with the recurring-argument symptom that actually sends people to ADRs.",
   "evals": [
     {
       "id": "architecture-decision-records-trigger-pos-01",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Users ask to write",
+      "status": "proposed",
+      "prompt": "We keep re-arguing the same database choice every quarter and nobody remembers why we landed where we did. How do I write that down so it stops?",
       "expect_skill": "architecture-decision-records",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "The symptom that produces ADRs, stated without the acronym."
     },
     {
       "id": "architecture-decision-records-trigger-pos-02",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Reconstruct",
+      "status": "proposed",
+      "prompt": "Document why we picked Redis over Memcached, including the options we rejected and what would make us revisit it.",
       "expect_skill": "architecture-decision-records",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "Single decision with alternatives and reversal conditions."
     },
     {
       "id": "architecture-decision-records-trigger-pos-03",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Standardize",
+      "status": "proposed",
+      "prompt": "Our decision log has 40 entries and about half of them contradict each other. Can you audit it?",
       "expect_skill": "architecture-decision-records",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "Audit and supersession, the maintenance half of the skill."
     },
     {
       "id": "architecture-decision-records-trigger-pos-04",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Validate",
+      "status": "proposed",
+      "prompt": "We changed our mind about the queue system last month. How do I record that without deleting the old entry?",
       "expect_skill": "architecture-decision-records",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "Supersession specifically - the thing people get wrong by editing history."
     },
     {
       "id": "architecture-decision-records-trigger-neg-01",
       "kind": "trigger-negative",
-      "status": "draft",
-      "prompt": "Write a Python script that renames files in a folder by their EXIF date.",
-      "expect_no_skill": true,
-      "note": "Unrelated domain. No TYPO3 skill may fire."
+      "status": "proposed",
+      "prompt": "Our extension is finished. Tag 1.0.0 and prepare the TER upload.",
+      "expect_skill": "typo3-initial-release",
+      "note": "Shipping an artefact, not recording a choice."
     },
     {
       "id": "architecture-decision-records-trigger-neg-02",
       "kind": "trigger-negative",
-      "status": "draft",
-      "prompt": "TODO: a prompt that looks close to this skill but belongs to a sibling. Name the sibling in expect_skill.",
+      "status": "proposed",
+      "prompt": "Set up a Kubernetes ingress for our staging cluster.",
       "expect_no_skill": true,
-      "note": "Replace with a real near-miss; see scripts/trigger_collisions.py."
+      "note": "Infrastructure task outside this collection entirely."
     }
   ]
 }

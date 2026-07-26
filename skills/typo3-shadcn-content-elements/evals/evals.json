@@ -2,55 +2,55 @@
   "skill_name": "typo3-shadcn-content-elements",
   "skill_type": "capability",
   "spec": "SKILL-SPEC.md",
-  "note": "Scaffold. Per SKILL-SPEC.md S5, draft cases do not count as coverage until a human marks them reviewed.",
+  "note": "Near typo3-content-blocks (defines the element; this styles it) and webconsulting-branding (the website design system, not element presets). Cases lead with the visual result.",
   "evals": [
     {
       "id": "typo3-shadcn-content-elements-trigger-pos-01",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Preview TYPO3 Content Blocks with shadcn/ui",
+      "status": "proposed",
+      "prompt": "Restyle our content elements with the card and badge presets from the registry.",
       "expect_skill": "typo3-shadcn-content-elements",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "The canonical restyle case."
     },
     {
       "id": "typo3-shadcn-content-elements-trigger-pos-02",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Tailwind v4 tokens",
+      "status": "proposed",
+      "prompt": "These elements have hardcoded hex colours everywhere. Move them to semantic tokens.",
       "expect_skill": "typo3-shadcn-content-elements",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "The no-hardcoded-style rule via its symptom."
     },
     {
       "id": "typo3-shadcn-content-elements-trigger-pos-03",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "No-hardcoded-style rules",
+      "status": "proposed",
+      "prompt": "Add Tailwind v4 tokens and some seed data for the new hero element.",
       "expect_skill": "typo3-shadcn-content-elements",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "Tokens plus seed data."
     },
     {
       "id": "typo3-shadcn-content-elements-trigger-pos-04",
       "kind": "trigger-positive",
-      "status": "draft",
-      "prompt": "Local registry presets",
+      "status": "proposed",
+      "prompt": "Our elements look nothing like the shadcn registry. Overhaul them.",
       "expect_skill": "typo3-shadcn-content-elements",
-      "note": "Scaffolded from the skill's own description. Replace with a prompt from real usage before marking reviewed."
+      "note": "Open-ended overhaul."
     },
     {
       "id": "typo3-shadcn-content-elements-trigger-neg-01",
       "kind": "trigger-negative",
-      "status": "draft",
-      "prompt": "Write a Python script that renames files in a folder by their EXIF date.",
-      "expect_no_skill": true,
-      "note": "Unrelated domain. No TYPO3 skill may fire."
+      "status": "proposed",
+      "prompt": "Define the fields and structure for a new content element.",
+      "expect_skill": "typo3-content-blocks",
+      "note": "Modelling, not styling."
     },
     {
       "id": "typo3-shadcn-content-elements-trigger-neg-02",
       "kind": "trigger-negative",
-      "status": "draft",
-      "prompt": "TODO: a prompt that looks close to this skill but belongs to a sibling. Name the sibling in expect_skill.",
-      "expect_no_skill": true,
-      "note": "Replace with a real near-miss; see scripts/trigger_collisions.py."
+      "status": "proposed",
+      "prompt": "Apply the webconsulting.at brand typography and teal palette to this page.",
+      "expect_skill": "webconsulting-branding",
+      "note": "Both are shadcn-adjacent; the brand system is a different target."
     }
   ]
 }

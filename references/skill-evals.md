@@ -236,27 +236,70 @@ markup*, the other scans a URL and produces reports, CI baselines and the Erklä
 Barrierefreiheit.
 
 The 16 new cases scored **50%** on first run against the scaffold's 91% — the circularity
-detector firing on live data. Every failure was diagnostic:
+detector firing on live data. The two descriptions had their verbs crossed: the pattern
+reference opened with *"Audits…"*, so it won *"scan this URL for WCAG 2.2 AA"* from the
+skill that actually scans. Rewriting **the descriptions, not the cases** took the batch to
+100% and dropped the pair's overlap from 0.120 to 0.088.
 
-- *"Where do the skip link and landmark regions go?"* ranked **8th**, sharing **zero** terms
-  with its own skill.
-- *"Scan this URL for WCAG 2.2 AA"* lost to its own sibling, because `typo3-accessibility`'s
-  description opened with **"Audits…"** — the pattern reference had claimed the auditor's verb.
-- *"Tab through the nav, the focus outline vanishes"* lost by 0.25, because the description
-  said "focus states" and "keyboard support" where users type "tab" and "focus outline".
+### Replacing the remaining twenty
 
-The two descriptions had their verbs crossed. Rewriting **the descriptions, not the cases**
-took the batch to 94% and dropped the pair's overlap from 0.120 to 0.088.
+The other 20 suites went the same way: 120 cases written from the symptom a user reports,
+scoring **80%** on first run. All 26 failures were diagnostic, and almost none were the
+cases' fault. Three descriptions scored **exactly zero** on questions squarely in their own
+subject:
 
-One case was the author's fault rather than the description's: *"300 contrast errors, which
-Fluid templates?"* lost fairly, since it named contrast and Fluid templates — the sibling's
-subject — while only implying the mapping step. It was reworded to lead with the axe report
-and the grouping operation, and the original wording is recorded in its note rather than
-quietly dropped.
+| Skill | Prompt it scored 0.00 on | What the description lacked |
+|---|---|---|
+| `architecture-decision-records` | "Document **why** we picked Redis over Memcached, and what we **rejected**" | "why", "rejected", "alternatives" |
+| `typo3-powermail` | "a **field** that only appears when another field is set to yes" | "field" |
+| `typo3-seo` | "stop the staging site from being **indexed**" | "index", "staging" |
+
+Every one of these was a feature list in API vocabulary — `datamaps`, `cmdmaps`,
+`f:mark.contentArea`, `powermail_cond` — naming the machinery but never the problem. Thirteen
+descriptions were rewritten to lead with the symptom while keeping the precise terms, taking
+the batch to 97%.
+
+### Three findings that only appear at collection scale
+
+**Descriptions are not independent.** BM25 idf is computed over the whole corpus, so editing
+thirteen descriptions changed the scores of skills that were not touched. Two *reviewed*
+cases regressed that way — `typo3-v14-reference-pos-03` and `typo3-upgrade-run-neg-04` — with
+no edit to either skill. Per-skill review cannot catch this; only running the whole suite can.
+
+**A description can become an attractor.** Rewriting `typo3-content-blocks` to name its
+fields — "headline, image, link, text" — pushed "content" to 6 occurrences and "block" to 6,
+and it began winning accessibility and DataHandler questions that merely contained the phrase
+"content element". Generic vocabulary belongs to whoever the question is actually about.
+
+**A third stemmer bug, same class as the first two.** `localizes` matched the `zes` branch
+meant for *buzz → buzzes* and lost two characters, while `localize` kept its trailing `e`:
+
+```
+localize  -> localize      localizes  -> localiz      localizing -> localiz
+```
+
+So a description saying "localizes" scored zero against a user typing "localize". The `-ize`
+family is now handled explicitly and `zes` narrowed to `zzes`; A/B measured, it moved the
+batch from 98.5% to 100%, and `size`/`prize` stay protected by the length guard. A blanket
+trailing-`e` rule had been tried earlier and correctly rejected for measuring worse — the
+narrow fix is the one that works.
+
+### The guard caught its author
+
+Rewriting descriptions to carry user vocabulary produced exactly the failure the guard exists
+to prevent: a description gained the sentence *"when the frontend preview of a draft shows the
+live version instead"* while an eval used that sentence verbatim as its prompt. The
+whole-prompt rule caught it — and an audit then found four more partial echoes of 7 to 10
+words that it had missed, one of them in a **reviewed** suite signed off earlier.
+
+The rule is now "no run longer than six consecutive words shared with your own SKILL.md",
+with six derived from the data: across 90 hand-written cases the median shared run is two
+words. Fixing those five meant rewording the descriptions, not the cases, and it cost pass
+rate before it recovered it — which is the correct direction for that trade.
 
 ### What is left
 
-The remaining 22 suites are scaffold. Replacing them is per-skill work that cannot be
-automated: write what a user would actually send, measure, and fix whichever of the two —
-case or description — the failure indicts. Extending from real failures (S11) is the cheapest
-route, since every bug report is an eval case that has already failed once.
+Every scaffolded case is gone; 136 cases across 22 skills are written and measured, and wait
+only on a human signature. The remaining honest gap is the grader: everything above is the
+**lexical proxy**. `--grader claude` needs a live login, and `run_evals.py` now exits 2 —
+harness error — rather than reporting rates computed from nothing when it cannot run.

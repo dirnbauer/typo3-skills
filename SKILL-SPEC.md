@@ -145,9 +145,13 @@ Every case carries `status`:
 
 `validate_evals.py` reports each separately, so the number cannot flatter itself.
 
-**Circularity is checked mechanically, not promised.** A prompt that appears verbatim inside
-its own `SKILL.md`, or is under 12 characters, is rejected for any case a human is asked to
-sign. This is not hypothetical: an audit of the 132 scaffolded cases found **all** of them
+**Circularity is checked mechanically, not promised.** For any case a human is asked to
+sign, `validate_evals.py` rejects a prompt that appears verbatim inside its own `SKILL.md`,
+that is under 12 characters, or that shares a run of more than six consecutive words with
+it. The last rule exists because the first two missed the softer version of the same
+mistake — writing the *description* to contain the test. That happened here, and the exact
+match caught only one of five instances. Across 90 hand-written cases the median shared run
+is two words, so six is three times normal phrasing. This is not hypothetical: an audit of the 132 scaffolded cases found **all** of them
 degenerate — 88 verbatim substrings of their own skill (the scaffolder had split descriptions
 on commas, yielding "Building", "Content elements", "Axe-core"), 22 literal `TODO:`
 placeholders, and 22 copies of one Python/EXIF negative. The 89% draft pass rate they
@@ -271,10 +275,11 @@ Their evals, where we add them, live in the overlay and are marked as ours.
 
 ```
 26 owned skills (11 vendored, exempt)
-suites present  : 26/26
-human-reviewed  : 4/26   (49/185 cases)
-awaiting signature: 2/26   (16/185 cases, not yet coverage)
-lexical grader  : reviewed 100%  ·  proposed 100%  ·  draft 91%  ·  1 xfail
+suites present    : 26/26
+human-reviewed    :  4/26   (49/185 cases)
+awaiting signature: 22/26   (136/185 cases — not coverage until signed)
+scaffold remaining: 0      (all 132 generated cases replaced)
+lexical grader    : reviewed 100%  ·  proposed 100%  ·  1 xfail
 ```
 
 `scripts/run_evals.py` grades every trigger case; `evals-baseline.json` pins the numbers and
