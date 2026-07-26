@@ -411,6 +411,56 @@ Gefunden hat das kein Werkzeug, sondern Nachdenken. Das Werkzeug fand die billig
 und machte damit den Kopf frei fuer den teuren.
 
 
+## Zweiter Nachtrag: als wir unsere eigenen Tests nachgerechnet haben
+
+Der erste Nachtrag endete mit einer Hausaufgabe: Jeder Skill braucht Tests, die pruefen, ob er
+ueberhaupt anspringt, wenn jemand ihn braucht. Wir haben sie geschrieben - und dann nachgerechnet,
+was sie wirklich messen.
+
+Das Ergebnis war unangenehm. Von 132 automatisch erzeugten Testfaellen waren **alle 132 wertlos**.
+Der Generator hatte die Beschreibung jedes Skills an den Kommata zerschnitten und die Bruchstuecke
+als Testfragen verwendet. Ein Testfall lautete woertlich „Building". Ein anderer „Axe-core". Die
+Bestehensquote von 89 Prozent mass nichts anderes als: Steht dieser Satzteil in dem Text, aus dem
+er stammt?
+
+Wir haben alle 132 ersetzt - durch 136 Fragen, wie sie tatsaechlich bei uns eintreffen. Im ersten
+Lauf bestanden sie nur **50 Prozent**. Die schlechteren Fragen waren die ehrlicheren.
+
+### Drei Beschreibungen, die bei ihrem eigenen Thema null Punkte holten
+
+Fast alle Fehlschlaege lagen nicht an den Fragen, sondern an den Beschreibungen. Drei erreichten
+**exakt null Punkte** bei einer Frage aus ihrem Kerngebiet:
+
+- Der Skill fuer **Architekturentscheidungen** verstand die Frage „Dokumentiere, *warum* wir uns so
+  entschieden und was wir *verworfen* haben" nicht. In seiner Beschreibung kamen weder „warum" noch
+  „verworfen" vor.
+- Der Skill fuer **Formulare** verstand eine Frage nach einem *Feld* nicht. Das Wort „Feld" stand
+  nicht in seiner Beschreibung.
+- Der Skill fuer **Suchmaschinen-Sichtbarkeit** verstand „verhindern, dass die Staging-Seite
+  *indexiert* wird" nicht. Weder „Index" noch „Staging" kamen vor.
+
+Alle drei Beschreibungen waren technisch korrekt und vollstaendig. Sie zaehlten Schnittstellen und
+Fachbegriffe auf - und benannten nie das Problem, das jemand tatsaechlich hat. Wir haben sechzehn
+Beschreibungen umgeschrieben, nicht die Tests. Danach: 100 Prozent.
+
+> Eine Beschreibung ist kein Datenblatt. Sie ist die einzige Zeile, an der entschieden wird, ob
+> dieses Werkzeug ueberhaupt geholt wird.
+
+### Und dann hat die Pruefung ihren eigenen Autor erwischt
+
+Beim Anreichern der Beschreibungen ist genau das passiert, wogegen die Pruefung gebaut war: Ein
+Satz wanderte woertlich in eine Beschreibung, der zugleich als Testfrage diente. Die Beschreibung
+wurde auf den Test hin geschrieben - der Test konnte danach gar nicht mehr scheitern.
+
+Die Regel fand einen Fall. Eine Nachkontrolle fand vier weitere, darunter einen in einem bereits
+freigegebenen Test. Heute gilt: kein Textabschnitt von mehr als sechs Woertern darf woertlich in
+beiden stehen. Die Sechs ist keine Geschmacksfrage - ueber 90 handgeschriebene Faelle liegt der
+uebliche Wert bei zwei.
+
+Das ist dieselbe Lehre wie im ersten Nachtrag, nur naeher am Knochen: Wir haben die Pruefung
+gebaut, wir haben sie ernst genommen, und wir sind trotzdem hineingelaufen. Der Unterschied ist
+allein, dass sie diesmal gemeckert hat.
+
 ## Fazit
 
 Unser Skill hatte von Anfang an gutes TYPO3-Wissen, eine saubere Prozessarchitektur und eine

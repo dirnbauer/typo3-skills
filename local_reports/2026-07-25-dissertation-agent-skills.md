@@ -15,7 +15,8 @@ Agentengesteuerte Softwaremigrationen leiden an einem strukturellen Problem: Der
 derselben Kette abhängt wie die Änderung, ist ein grünes Ergebnis kein Beweis, sondern eine
 Behauptung.
 
-Diese Arbeit untersucht den Agent Skill `typo3-14-update` — einen Skill zur Migration von TYPO3 v12
+Diese Arbeit untersucht den Agent Skill `typo3-14-update` (im Verlauf der Arbeit zu
+`typo3-upgrade-run` umbenannt, siehe Kapitel 11) — einen Skill zur Migration von TYPO3 v12
 und v13 auf 14.3 LTS — und entwickelt aus seiner Analyse ein übertragbares Modell. Ausgangspunkt
 ist eine externe statische Tiefenanalyse, die dem Skill hohe fachliche Qualität, aber gravierende
 Mängel in Sicherheit, Reproduzierbarkeit und Prompt-Injection-Abwehr attestierte.
@@ -911,6 +912,9 @@ das **im ersten Absatz**.
 | Persistenter Zustand | keiner | `state.json` + Journal + Schemata |
 | Schleifenzähler / Abbruch | keine | 7 Abbruchbedingungen |
 | Behavioural Evals | 0 | 12 |
+| Trigger-Evals (Sammlung) | 0 | 173, davon 0 generiert |
+| Skills mit Eval-Suite | 4 von 26 | 26 von 26 |
+| Kollidierende Paare (≥ 0,13) | 3 | 1, beide Seiten vendiert |
 | Agentenregeln (repoweit) | 0 | 3 |
 
 ### 12.2 Was die Evals prüfen
@@ -924,9 +928,38 @@ den PHP-8.5-Versuch überspringen, eine Extension ohne Messung entfernen.
 
 Jede beschreibt ein Versagen, das einen Lauf **stillschweigend** entwertet.
 
-### 12.3 Was nicht evaluiert wurde
+### 12.3 Was die Trigger-Evals ergaben
 
-Die Evals sind formuliert, aber nicht gegen ein Modell ausgeführt. Die Sicherheitsmodule sind durch
+Die Trigger-Evals wurden ausgeführt, und der Lauf war die härteste Kontrolle dieser Arbeit.
+
+Ausgangslage waren 132 generierte Fälle mit einer Bestehensquote von 89 %. Eine Prüfung des
+Bestands zeigte, dass **alle 132 entartet** waren: 88 wörtliche Teilzeichenketten der eigenen
+`SKILL.md`, 22 unausgefüllte Platzhalter, 22 Kopien derselben Negativprobe. Die 89 % maßen
+`prompt in description`.
+
+Die 136 handgeschriebenen Ersatzfälle erreichten im ersten Lauf **50 % beziehungsweise
+80 %** — deutlich unter den entarteten. Fast alle Fehlschläge lagen an den Beschreibungen,
+nicht an den Fällen. Drei erreichten **exakt null** bei Fragen aus ihrem eigenen Kerngebiet:
+
+| Skill | Frage mit Score 0,00 | Was der Beschreibung fehlte |
+|---|---|---|
+| `architecture-decision-records` | „Dokumentiere, **warum** wir Redis gewählt und was wir **verworfen** haben" | *warum*, *verworfen*, *Alternativen* |
+| `typo3-powermail` | „ein **Feld**, das nur erscheint, wenn ein anderes gesetzt ist" | *Feld* |
+| `typo3-seo` | „verhindern, dass die Staging-Seite **indexiert** wird" | *Index*, *Staging* |
+
+Alle drei waren Merkmallisten in API-Vokabular — `datamaps`, `cmdmaps`, `f:mark.contentArea`
+—, die die Maschinerie benennen und nie das Problem. Nach Überarbeitung von sechzehn
+Beschreibungen: 100 % bei unterschriebenen wie bei vorgeschlagenen Fällen, ein deklarierter
+`xfail`, und die kollidierenden Paare fielen von drei auf eines.
+
+### 12.4 Was nicht evaluiert wurde
+
+Die Trigger-Evals sind gegen einen **lexikalischen Stellvertreter** gemessen, nicht gegen ein
+Modell. Er zeigt, ob eine Beschreibung das Vokabular trägt, das ein Nutzer tippt; er sagt
+nichts darüber, wie ein Router tatsächlich entscheidet. Der Modell-Grader erfordert eine
+gültige Anmeldung, die zum Zeitpunkt dieser Arbeit fehlte; `run_evals.py` endet in diesem
+Fall mit Exit-Code 2 statt Quoten aus dem Nichts zu berichten. Die zwölf Behaviour-Evals
+sind formuliert, aber nicht ausgeführt — sie brauchen denselben Grader. Die Sicherheitsmodule sind durch
 Unit-Tests abgedeckt; die Schleifenmechanik ist es nicht. Der vollständige Harness v2 ist zum
 Zeitpunkt dieser Arbeit teilweise implementiert: Sicherheitskern und Hilfsmodule sind fertig und
 getestet, die Aufnahme- und Vergleichspfade laufen weiterhin über die v1-Skripte, deren kritische
@@ -1077,7 +1110,7 @@ Zwei Grenzen bleiben. Die Schwelle 0,13 ist eine Konvention, keine Messung. Und 
 Analysator sieht weiterhin weder Namen noch konzeptuelle Überschneidung.
 
 **Wo wir bewusst abweichen.** Die Quellen empfehlen kleine, komponierbare Skills und warnen
-vor Überspezifikation. `typo3-14-update` ist erklärtermaßen ein Prozess-Orchestrator mit
+vor Überspezifikation. `typo3-upgrade-run` ist erklärtermaßen ein Prozess-Orchestrator mit
 fester Phasenreihenfolge, weil die Reihenfolge **die** Sicherheitseigenschaft ist. Der
 Widerspruch löst sich über die Regel „Ergebnisse einschränken, Prozeduren in Skripte":
 Vertrag, Verbote und Gates stehen im Skill, die exakte Befehlsfolge in `scripts/t3u.mjs`.
@@ -1151,21 +1184,29 @@ Schleifenzahl kippt der Nutzen?
 tragfähiger Template-Proxy ist, ist plausibel und ungeprüft. Falsche Cluster-Bildung erzeugt genau
 die Blindstelle, die die gestufte Abdeckung vermeiden soll.
 
-**Evals ausführen.** Formuliert, aber nicht gemessen.
+**Behaviour-Evals ausführen.** Die zwölf Fälle sind formuliert, aber nicht gemessen; sie
+brauchen denselben Modell-Grader, den inzwischen auch die Trigger-Evals fordern.
 
 **Regelebene evaluieren.** Werden `appliesTo`-gematchte Regeln von Agenten tatsächlich befolgt, oder
 brauchen sie Verstärkung im Skill-Dokument?
 
-**Trigger-Evals tatsächlich ausführen.** Die 170 Fälle sind formuliert, aber nicht gegen ein
-Modell gemessen. Der Schritt von „Suite vorhanden" zu „Suite grün" ist ungetan, und erst
-dieser Schritt belegt, dass die 22 Entwurfssuiten überhaupt etwas prüfen.
+**Trigger-Evals gegen ein Modell messen.** Der Schritt von „Suite vorhanden" zu „Suite grün"
+ist getan — 173 Fälle, keiner generiert, 100 % unter dem lexikalischen Stellvertreter. Offen
+ist der Schritt von „grün beim Stellvertreter" zu „grün beim Router". Erst er belegt, dass
+die Beschreibungen ein Modell tatsächlich richtig leiten; bis dahin ist jede Zahl eine
+Aussage über Vokabular, nicht über Verhalten.
 
-**Kollisionsschwelle empirisch bestimmen.** 0,13 ist gesetzt, nicht gemessen. Sinnvoll wäre,
-tatsächliche Fehlaktivierungen zu protokollieren und die Schwelle daran zu kalibrieren.
+**Kollisionsschwelle empirisch bestimmen.** 0,13 ist weiterhin gesetzt, nicht gemessen —
+anders als die Treffer-Untergrenze von 6,0, die aus dem schwächsten echten Treffer (6,18)
+abgeleitet wurde. Dieselbe Methode ließe sich auf die Kollisionsschwelle anwenden, sobald
+genügend protokollierte Fehlaktivierungen vorliegen.
 
-**Konzeptuelle Kollision erfassen.** Der lexikalische Ansatz übersieht `typo3-update` gegen
-`typo3-14-update`. Ein Embedding-basiertes Maß über Beschreibungen könnte das schließen, ist
-aber teurer und schwerer zu erklären — die Abwägung ist offen.
+**Konzeptuelle Kollision erfassen.** Der lexikalische Ansatz übersah das Paar, das später zu
+`typo3-v14-reference` und `typo3-upgrade-run` umbenannt wurde: Die Beschreibungen
+divergierten, die *Namen* nicht. Er übersieht ebenso Homonyme — `typo3-batch` feuert auf
+„Refactor this React component to use hooks", weil TYPO3-Hooks und React-Hooks dasselbe
+Token sind; der Fall ist als `known_limitation` festgehalten. Ein Embedding-basiertes Maß
+könnte beides schließen, ist aber teurer und schwerer zu erklären — die Abwägung ist offen.
 
 ---
 
