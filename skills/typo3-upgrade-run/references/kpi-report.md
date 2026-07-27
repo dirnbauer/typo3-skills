@@ -1,8 +1,36 @@
 # The KPI report
 
-A Word document in the webconsulting corporate design, produced in phase P15 using
-`webconsulting-branding` and the available docx-generation skill. Written in the language recorded in
-`config/run.yml` (`reporting.language`, default German).
+A Word document in the webconsulting corporate design, produced in phase P15. Written in the
+language recorded in `config/run.yml` (`reporting.language`, default German).
+
+Write the report as Markdown first — it stays the single source of truth and is what gets reviewed
+— then render it:
+
+```bash
+python3 scripts/md2docx-webconsulting.py \
+  .typo3-update/report/KPI-REPORT.md \
+  .typo3-update/report/TYPO3-14-Update-Bericht.docx \
+  "<Kunde> · Run <run_id>"
+```
+
+The renderer applies the `webconsulting-branding` tokens directly (primary `#1b7a95`, accent
+`#66c4e1`, ink `#171a1d`, muted `#5e6870`, Hanken Grotesk, borderless square surfaces, brand
+notice in the header only, quiet footer). It needs `python-docx`; the `document-processing` skill
+covers the wider DOCX/PDF/XLSX toolkit if a task needs more than this.
+
+**Check the output, do not assume it.** Re-read the generated file and assert no raw Markdown
+survived — nested inline spans (`` **`code`** ``, ``[`label`](path)``) and soft-wrapped bold are
+the constructs that leak:
+
+```bash
+python3 - <<'EOF'
+from docx import Document
+d = Document('.typo3-update/report/TYPO3-14-Update-Bericht.docx')
+bad = [p.text for p in d.paragraphs if '**' in p.text or '`' in p.text]
+bad += [c.text for t in d.tables for r in t.rows for c in r.cells if '**' in c.text]
+print('stray markdown:', len(bad))
+EOF
+```
 
 ## The single rule
 
