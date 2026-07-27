@@ -14,7 +14,8 @@ matching symptom with a different cause is exactly how a wrong fix gets applied 
 - [Composer refuses every version of the target](#composer-refuses-every-version-of-the-target)
 - [Composer cannot resolve the target at all](#composer-cannot-resolve-the-target-at-all)
 - [A required package no longer exists](#a-required-package-no-longer-exists)
-- [axe reports html-has-lang on every page](#axe-reports-html-has-lang-on-every-page)
+- [The `<html>` language attributes are wrong, missing or contradictory](#the-html-language-attributes-are-wrong-missing-or-contradictory)
+- [Forms lose their styling: inputs collapse to browser-default width](#forms-lose-their-styling-inputs-collapse-to-browser-default-width)
 - [Editors lose their modules, or gain all of them](#editors-lose-their-modules-or-gain-all-of-them)
 - [Every CLI command dies in alias-loader-include.php](#every-cli-command-dies-in-alias-loader-includephp)
 - [extension:setup fails inside a sitepackage's ext_localconf.php](#extensionsetup-fails-inside-a-sitepackages-ext_localconfphp)
@@ -133,15 +134,94 @@ the only one.
 
 ---
 
-## axe reports html-has-lang on every page
+## The `<html>` language attributes are wrong, missing or contradictory
 
-**Symptom.** `html-has-lang` fails site-wide although the site configuration declares a language.
+**This is the first thing to check on the opening tag, and the most common thing to get wrong.**
+Three separate faults hide here, and an upgrade surfaces all three at once.
 
-**Cause.** `config.doctype` is an XHTML variant, which emits `xml:lang` and no `lang`.
+**Symptom A — missing.** axe reports `html-has-lang` on every page although the site configuration
+declares a language. Cause: `config.doctype` is an XHTML variant, which emits `xml:lang` and no
+`lang`. Screen readers keyed to `lang` get nothing.
 
-**Fix now, cheaply:** `config.htmlTag.attributes.lang = <code>`. Zero rendering change.
-**Fix properly in P08:** migrate the doctype to HTML5, which makes the explicit attribute redundant.
-Do not defer the cheap fix waiting for the doctype change.
+**Symptom B — changed by the upgrade.** Every page differs at the `<html>` tag after the v14 rung:
+`xml:lang="de"` became `xml:lang="de-DE"`. Cause: v14 emits the **full locale** from the site
+language configuration where v13 emitted the short code. Nothing is broken — but it is a change on
+every page, so it needs classifying rather than waving through.
+
+**Symptom C — contradictory.** The tag carries two different values, e.g.
+`<html xml:lang="de-DE" lang="de">`. This is usually self-inflicted: somebody added
+`config.htmlTag.attributes.lang` to fix Symptom A while the doctype kept deriving `xml:lang` from
+the locale. **Two disagreeing language declarations are worse than one missing one** — consumers
+pick different attributes, and now they disagree about the page.
+
+### Getting it right
+
+1. **One source of truth: the site language configuration.** `locale`, `hreflang` and
+   `iso-639-1` in `config/sites/<id>/config.yaml` are what TYPO3 derives the tag from. Fix the value
+   there rather than overriding the rendered output.
+2. **Choose the region deliberately.** `de-AT`, `de-DE` and `de-CH` are different languages to a
+   search engine, a screen reader's pronunciation and a date or currency formatter. An Austrian
+   organisation's site set to `de_DE.UTF-8` is *wrong* — and it stays invisible on v13, which emits
+   only `de`, until v14 prints the region on every page. **When the upgrade surfaces a locale, check
+   that the locale is actually correct** instead of just accepting the new string.
+3. **Do not hardcode `lang` alongside a doctype that emits it.** Use
+   `config.htmlTag.attributes.lang` only while the doctype cannot produce `lang` at all — an XHTML
+   doctype — and make its value **identical** to the locale-derived `xml:lang`. Remove the override
+   in the same commit that migrates the doctype to HTML5.
+4. **Verify the rendered tag, not the configuration.** One `curl` settles it:
+
+   ```bash
+   curl -s https://site.ddev.site/ | grep -oE '<html[^>]*>'
+   ```
+
+   Expect exactly one language value, in BCP 47 form (`de-AT`), matching the site's `hreflang`.
+
+5. **Multi-language sites: check every language**, not just the default. A fallback language
+   frequently inherits the default's locale and then announces the wrong one.
+---
+
+## Forms lose their styling: inputs collapse to browser-default width
+
+**Symptom.** After the v14 rung every EXT:form form renders with narrow, unstyled inputs and a
+tighter vertical rhythm. The page height shrinks, so the visual gate reports a difference, but
+nothing 500s and no error is logged. On a screenshot it reads as "the form got smaller".
+
+**Cause.** **v14 ships Bootstrap-5 EXT:form templates.** The markup changed shape:
+
+| | v12 / v13 | v14 |
+|---|---|---|
+| wrapper | `<div class="form-group">` | `<div class="form-element form-element-<type> mb-3">` |
+| inner wrapper | `<div class="input">` | *removed* |
+| select | `class="form-control"` | `class="form-select"` |
+
+Any site CSS written against `.form-group` or `.input` — which is most sitepackages of that
+generation — stops matching. The rules are not overridden, they are **dead**, so inputs fall back
+to the browser default width and to whatever generic `#content input` rule the stylesheet has.
+
+**Confirm it before fixing it.** The markup is the evidence:
+
+```bash
+curl -s https://site.ddev.site/<form-page> | grep -oE 'class="(form-element[^"]*|form-control|form-select)"' | sort | uniq -c
+grep -rnE '\.form-group|div\.input' packages/*/Resources/Public/css/
+```
+
+**Fix — pick one deliberately, they are different contracts.**
+
+- *Contract A, invariance.* Teach the existing rules the new wrapper: `.form-group X, .form-element X`.
+  Restores the previous rendering exactly. Correct when the run must prove nothing changed.
+- *Contract B, elevation.* Ship a small self-contained stylesheet for the new markup and let the
+  form look like a form. Usually the better answer: the old rendering is typically 10px Verdana
+  inputs with a background-colour-only focus cue, which fails WCAG 2.4.7 anyway. Define `.mb-3`
+  yourself if the site ships no Bootstrap — the templates emit it and nothing defines it.
+
+Whichever you choose, **check the submit button separately**. Legacy stylesheets frequently carry
+`.actions button { background-color: … !important }`, which silently beats a new rule. `.actions`
+is only emitted by EXT:form, so dropping the `!important` is safe and better than answering it
+with another `!important`.
+
+**Why it matters more than it looks.** Contact and registration forms are the site's conversion
+path. This is a rendering regression on exactly the pages that earn money, and it is invisible to
+every check except a visual one — the HTTP status is 200 and the DOM still contains every field.
 
 ---
 

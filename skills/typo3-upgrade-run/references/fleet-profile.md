@@ -46,6 +46,9 @@ inventories.
 | **jQuery 1.5.1 and `cufon.js`** | 2011-era libraries still shipped to visitors, with published vulnerabilities. Not an invariance item: replacing them changes what visitors receive, so it is Contract B with its own approval — but it must reach the report, not be silently tolerated. |
 | **A custom jQuery header rotator** | Fading headers driven by `setInterval` with no library class names, so carousel pinning does not match them. If the self-test shows differences confined to one image box, this is the first thing to look at. |
 | **`config.doctype = xhtml_trans`** | Defeats `html-has-lang` site-wide and is itself a P08 migration item. |
+| **Sitepackage CSS written against `.form-group` / `div.input`** | v14's Bootstrap-5 EXT:form templates drop both, so form styling dies silently — inputs collapse to browser-default width on the contact and registration pages. Grep the CSS at P00; see `known-problems.md`. |
+| **Two meta tags in the whole `<head>`** | `generator` and whatever EXT:seo emits by default, with `pages.description` empty on ~95% of rows and `websiteTitle` still the project slug. Cheap to audit, always a finding — see `metadata-and-social.md`. |
+| **An `.actions button { … !important }` rule** | Legacy stylesheets pin the submit button colour with `!important`, which silently beats any new form styling. `.actions` is only emitted by EXT:form, so removing it is safe. |
 | **TSconfig loaded from `ext_localconf.php`** | The house sitepackage reads `Configuration/TsConfig/{page,user}.tsconfig` with `file_get_contents()` and passes it to `ExtensionManagementUtility::addPageTSConfig()`. Both methods are gone in v14; move the files to the package root and delete the calls. Expect this in every sitepackage of that generation. |
 
 ## Content and structure

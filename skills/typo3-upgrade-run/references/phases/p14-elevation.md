@@ -11,12 +11,19 @@ Each track has its own approval and its own derived baseline `B-<n>`.
 | Loop | Track |
 |---|---|
 | 500 | performance and Core Web Vitals |
-| 510 | technical SEO and structured data |
+| 510 | technical SEO and structured data — see `references/metadata-and-social.md` |
 | 520 | accessibility beyond automated-green |
 | 530 | security posture |
 | 540 | media and cache |
 | 550 | code quality |
 | 560 | information architecture and content — **recommendation-only by default** |
+
+## Loop 510 always includes the `<head>` audit
+The minimum metadata set, a generated Open Graph card and the Impressum check live in
+[`references/metadata-and-social.md`](../metadata-and-social.md). Run the two audit commands at the
+top of that file early — they are cheap, and on a v12-era site they usually reveal that the site
+ships two meta tags and that 95% of `pages.description` is empty. That measurement is what the
+approval for this loop is argued from.
 
 ## Rules that still apply
 - Each loop measures against **its own** `B-<n>` baseline. `A-original` is never touched, never
