@@ -439,6 +439,7 @@ incomplete rather than claiming success. A gate that does not apply needs an exp
 | `references/phases/p00-…p15-….md` | the phase you are in |
 | `references/determinism-stabilization.md` | loop 000 not reaching zero |
 | `references/rollback.md` | restoring an anchor — database, code and files together |
+| `references/known-problems.md` | **a 500, a warning or a Composer refusal you have not seen before** |
 | `scripts/sitemap-audit.mjs` | proving the sitemap across every site and language (loop 010) |
 | `references/quality-bars.md`, `references/measurement-recipes.md` | Contract B |
 | `references/extension-strategy.md` | classifying or routing an extension; forking one into `packages/` |
