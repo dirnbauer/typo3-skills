@@ -87,10 +87,16 @@ async function collectDatabase({ ddevProject, tables, runner }) {
 }
 
 async function ddevSql(sql, project) {
-  const args = ['mysql', '--no-tablespaces'];
+  // Two bugs lived here and both made every content fingerprint report "the database
+  // could not be queried", which surfaces as INVALID for a reason that was never the
+  // database: `--no-tablespaces` is a mysqldump flag the mysql client rejects outright,
+  // and promisified execFile has no `input` option (that belongs to execFileSync), so
+  // the statement was never delivered to stdin. Pass the SQL with -e instead.
+  const args = ['mysql'];
   if (project) args.push('--project', project);
+  args.push('-e', `${sql};`);
   try {
-    const { stdout } = await exec('ddev', args, { input: `${sql};`, timeout: 20000, encoding: 'utf8' });
+    const { stdout } = await exec('ddev', args, { timeout: 20000, encoding: 'utf8' });
     const lines = String(stdout).trim().split('\n');
     if (lines.length < 2) return null;
     return lines[1].split('\t');
