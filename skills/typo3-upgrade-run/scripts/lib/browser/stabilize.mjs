@@ -106,6 +106,24 @@ export function settleScript() {
   }));
   report.decoded = imgs.length;
 
+  // jQuery animations: switch them off and settle whatever is already running.
+  //
+  // CSS transition/animation overrides do not touch jQuery .fadeIn/.animate, which drive
+  // most rotating headers and sliders on older sites. A fade caught mid-flight leaves the
+  // element at an arbitrary opacity, so two passes differ by a scatter of pixels inside one
+  // image box — the signature is a diff confined to exactly one element's rectangle.
+  // fx.off makes future animations instant; finish() jumps running ones to their end state.
+  report.jqueryAnimations = null;
+  try {
+    const jq = globalThis.jQuery || globalThis.$;
+    if (jq && jq.fx) {
+      const running = jq(':animated').length;
+      jq.fx.off = true;
+      jq(':animated').finish();
+      report.jqueryAnimations = { version: jq.fn && jq.fn.jquery ? jq.fn.jquery : 'unknown', settled: running };
+    }
+  } catch {}
+
   // Consent overlays: seeding is the primary mechanism, this is the backstop.
   //
   // A banner that survives seeding covers the page and every screenshot behind it becomes a

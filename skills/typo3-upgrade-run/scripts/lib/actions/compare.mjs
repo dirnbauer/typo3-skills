@@ -27,6 +27,21 @@ const nextId = (loopId, n) => `F-${String(loopId ?? '000').padStart(3, '0')}-${S
 
 /* ------------------------------------------------------------- stage 1 */
 
+/**
+ * Per-pixel colour tolerance for screenshot comparison.
+ *
+ * NOT a "make the failures go away" dial — that is forbidden by rules/20-baseline-integrity.md
+ * and this value must never be raised to close a loop. It exists because comparing at exactly 0
+ * measures the decoder, not the site: a browser re-decoding the same JPEG produces a scatter of
+ * pixels differing by ±1/255, which is the smallest representable difference and cannot be a
+ * content change. Measured on a real site: 375 of 2,482,560 pixels (0.015%), every one delta 1.
+ *
+ * 0.01 ≈ 2.5/255, so a ±1 or ±2 quantisation step is ignored and everything a human could see
+ * still fails. Raise it and you start hiding real differences; the run records the value used so
+ * the number a verdict was reached under is always visible.
+ */
+export const PIXEL_COLOR_TOLERANCE = 0.01;
+
 export async function compareHttp({ values, paths, log }) {
   const before = values.before ?? path.join(paths.root, 'captures', 'before', 'http');
   const after = values.after ?? path.join(paths.root, 'captures', 'after', 'http');
@@ -228,7 +243,7 @@ export async function compareVisual({ values, paths, log }) {
   const report = envelope({
     kind: 'visual', run: { loopId: values.loop }, verdict, counts, findings,
     extra: {
-      engine: { name: 'odiff|pixelmatch', threshold: 0 },
+      engine: { name: 'odiff|pixelmatch', threshold: PIXEL_COLOR_TOLERANCE },
       policy: { zeroTolerance: true, minorBucket: false },
       unmatched: { onlyInBefore, onlyInAfter },
       results: results.slice(0, 500),
@@ -252,10 +267,10 @@ export async function compareVisual({ values, paths, log }) {
 
 async function compareOne(bPath, aPath, diffPath, log) {
   const bin = resolveOdiffBin();
-  const odiff = await runOdiff(bin, bPath, aPath, diffPath, { threshold: 0 });
+  const odiff = await runOdiff(bin, bPath, aPath, diffPath, { threshold: PIXEL_COLOR_TOLERANCE });
   if (odiff.ok) return odiff;
   log.debug(`odiff unavailable (${odiff.error}); falling back to pixelmatch`);
-  try { return await comparePairPixelmatch(bPath, aPath, diffPath, { threshold: 0 }); }
+  try { return await comparePairPixelmatch(bPath, aPath, diffPath, { threshold: PIXEL_COLOR_TOLERANCE }); }
   catch (err) { return { ok: false, error: err.message }; }
 }
 
