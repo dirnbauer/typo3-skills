@@ -35,7 +35,16 @@ export async function capture({ values, paths, log, journal }) {
     throw new InvalidRunError('The URL manifest hash does not match its content — it has been edited.', check);
   }
 
-  const outRoot = values.out ?? path.join(paths.root, 'captures', label);
+  // `--out` is a PATH, not a capture name. A bare name like `--out after-final` would
+  // otherwise resolve against the process cwd and write a full capture set outside the
+  // run directory — silently bypassing the guard that keeps run data together, and
+  // leaving `captures/` empty while the command reports success. Treat a bare name as
+  // what the caller plainly meant: a sibling of the other capture sets.
+  const outRoot = values.out
+    ? (path.isAbsolute(values.out) || values.out.includes(path.sep)
+        ? path.resolve(values.out)
+        : path.join(paths.root, 'captures', values.out))
+    : path.join(paths.root, 'captures', label);
   const stages = new Set(listOpt(values, 'stages', ['http', 'dom', 'visual']));
   const guard = await UrlGuard.create({ allowedOrigins: manifest.allowedOrigins });
 
