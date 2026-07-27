@@ -3,6 +3,36 @@
 Track `invariance`.
 
 ## Loop 310 — backend and operations
+
+### A disposable backend user
+
+The sweep and the write round-trip both need a real login. Do not reuse a client's account and
+do not guess one — create a throwaway admin at the start of the loop and **delete it when the
+loop closes**:
+
+```bash
+# create
+ddev typo3 backend:user:create --username=_t3u_upgrade_probe \
+  --password="$(openssl rand -base64 24)" --email=probe@example.invalid \
+  --admin --no-interaction
+
+# … run the sweep and the write round-trip …
+
+# delete — this is part of the loop, not an afterthought
+ddev mysql -e "DELETE FROM be_users WHERE username='_t3u_upgrade_probe';"
+```
+
+Keep the password out of shell history (a leading space in `bash`/`zsh`, or read it from a
+`600` file) and destroy the file afterwards. On the older `TYPO3_BE_USER_*` environment-variable
+form: it is documented in `--help` but is **not accepted on every 14.x build** — if the command
+answers with its usage block and exit 255, pass `--username/--password` explicitly instead.
+
+Verify the teardown rather than assuming it:
+
+```bash
+ddev mysql -N -e "SELECT COUNT(*) FROM be_users WHERE username='_t3u_upgrade_probe';"   # 0
+```
+
 - **Backend module sweep**: every module opens without exception output, server errors or severe
   console errors. **100% coverage is required** — module *groups* are distinguished from real
   modules, and an unexpected skip fails the run. A sweep that reports "12 ok, 3 skipped" and exits 0
@@ -10,9 +40,32 @@ Track `invariance`.
 - **Backend write round-trip**: opening a module proves almost nothing. The breakages editors hit
   on day one — a FormEngine exception on save, a broken FAL upload after a storage or driver change,
   a DataHandler hook that now throws, an RTE that strips markup — all happen in modules that open
-  perfectly. So actually do it: create a content element, edit and save it, upload a file and
-  reference it, translate a record, then delete what you made. A run that closes green while nobody
-  can edit has proven the wrong thing.
+  perfectly. A run that closes green while nobody can edit has proven the wrong thing.
+
+  ```bash
+  BE_USER=_t3u_upgrade_probe BE_PASSWORD="…" node scripts/backend-write-roundtrip.mjs \
+    --base-url https://site.ddev.site --ddev-dir . --parent 1 \
+    --report .typo3-update/report.backend-write.json
+  ```
+
+  It creates a page, adds a `textmedia` element, attaches an image, asserts the **frontend renders
+  an `<img>`**, translates when a second language exists, then deletes everything and verifies
+  nothing is left — including after a failure.
+
+  Three things this taught, all of which cost a debugging round:
+  - **FormEngine lives in the `list_frame` iframe.** Selectors run against the main frame find
+    nothing and the form looks empty. TYPO3 mints the CSRF token itself when the outer
+    `/typo3/record/edit?…` URL is opened, so there is no token to forge.
+  - **A new content element defaults to `CType=text`, which has no image field.** Pass
+    `&defVals[tt_content][CType]=textmedia` — the same mechanism the new-content wizard uses —
+    or the FAL control never renders and the image half of the test is silently skipped.
+  - **`sys_file_reference.table_local` was dropped in v14.** An insert naming it fails outright.
+
+  The v14 file picker is a JS tree whose folder navigation does not drive reliably by selector. The
+  script therefore asserts that **the element browser opens**, and attaches the file with a direct
+  `sys_file_reference` insert. That is a deliberate trade: a flaky step in a gate is worse than an
+  honest one, and the assertion that matters — the frontend resolving the reference — is unaffected.
+  Say which method was used in the report; never let a reader infer more coverage than exists.
 - Scheduler: enumerate **every** row in `tx_scheduler_task`, resolve each task's PHP class, and
   force-execute one instance of each. On a fresh clone almost nothing is due, so "run due tasks"
   passes vacuously; tasks whose class came from a removed or renamed extension are unrunnable rows
@@ -25,9 +78,25 @@ Track `invariance`.
 - Editorial configuration: page and user TSconfig, `be_groups` module access and permissions, DB and
   file mounts, and backend layouts still apply as before. v14's module-parent renames make old
   identifiers no-ops, which silently either hides every module or exposes all of them.
-- Site search: with Solr, loop 200 covers it. With `EXT:indexed_search`, the index must be rebuilt
-  by a scheduler task — see above — or the smoke test passes on an empty index because the result
-  page renders fine.
+- **Site search.** With Solr, loop 200 covers it. With `EXT:indexed_search` the index must be
+  rebuilt, or the smoke test passes on an empty index because the result page renders perfectly.
+
+  ```bash
+  node scripts/indexed-search-check.mjs --base-url https://site.ddev.site --ddev-dir . \
+    --count 50 --language 0 --report .typo3-update/report.indexed-search.json
+  ```
+
+  It truncates the index tables, requests N pages, and then proves search actually returns
+  something. **Always rebuild from empty** — a stale index makes a broken indexer look healthy.
+
+  - `indexed_search` indexes during page **generation**, not on request, so flush the cache first
+    and bust it per URL. Skip that and it reports "nothing indexed" on a working installation.
+  - Pass the **language** explicitly and select pages by `sys_language_uid`; indexing the default
+    language and searching another returns nothing, which reads exactly like a broken index.
+  - Do not hand-pick the search term. Take the **most frequent indexed word** — if the commonest
+    word on the site cannot be found, search is broken, not the query.
+  - Expect slightly fewer indexed rows than pages requested: `no_search` pages and identical
+    content hashes are skipped. Report the gap rather than treating it as a failure.
 - Forms: submit one. Assert it persisted **and** that the finisher mail arrived in Mailpit. v14
   replaced ten EXT:form hooks with PSR-14 events, so a form can render pixel-identical while its
   email finisher silently stops sending.

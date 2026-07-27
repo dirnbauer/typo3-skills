@@ -449,6 +449,7 @@ incomplete rather than claiming success. A gate that does not apply needs an exp
 | `references/metadata-and-social.md` | the `<head>` audit: minimum metadata, generated OG card, Impressum |
 | `references/harness-contract.md`, `references/visual-regression.md` | running the harness |
 | `references/kpi-report.md` | the final report |
+| `scripts/backend-write-roundtrip.mjs`, `scripts/indexed-search-check.mjs`, `scripts/lighthouse-sample.mjs` | loop 310 write test, search index, loop 500 performance |
 | `architecture-decision-records` skill | writing an ADR into `decisions/` |
 
 ## Verification sources

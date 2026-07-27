@@ -96,7 +96,21 @@ export async function backendSweep({ values, paths, log, journal }) {
     report.realModules = entries.filter((e) => e.kind === 'module').length;
     const settle = intOpt(values, 'settle', 1500);
 
+    // Record the status of each module's own document response. Sub-resources are
+    // ignored: a missing icon is not a broken module, and counting it as one is how a
+    // sweep ends up ignored.
+    let currentModule = null;
+    const moduleStatus = new Map();
+    page.on('response', (res) => {
+      if (!currentModule) return;
+      const req = res.request();
+      if (req.resourceType() !== 'document') return;
+      moduleStatus.set(currentModule, res.status());
+    });
+    const statusFor = (id) => moduleStatus.get(id);
+
     for (const entry of entries) {
+      currentModule = entry.identifier;
       const row = {
         identifier: entry.identifier, kind: entry.kind,
         untrustedLabel: untrusted(entry.untrustedLabel),
@@ -123,15 +137,31 @@ export async function backendSweep({ values, paths, log, journal }) {
 
         const frame = page.frames().find((f) => f.name() === 'list_frame') ?? page.mainFrame();
         const text = (await frame.evaluate(() => document.body?.innerText ?? '').catch(() => '')).slice(0, 5000);
-        const hit = ERROR_MARKERS.find((m) => text.includes(m));
 
-        if (hit) {
+        // A server error is the only unambiguous signal. Text markers alone are not:
+        // the Log and Reports modules exist to DISPLAY log entries, so a historical
+        // "Uncaught TYPO3 Exception" from an earlier failed upgrade is legitimate
+        // content there, and matching it anywhere in the body fails a module that
+        // rendered perfectly. That false positive is worse than a missed marker,
+        // because it trains the reader to wave the sweep's findings through.
+        //
+        // TYPO3's exception page REPLACES the module with an error document, so when
+        // the response status does not give it away the marker still has to appear at
+        // the very top of the document rather than buried in a table of log rows.
+        const status = statusFor(entry.identifier);
+        const head = text.slice(0, 300);
+        const hit = ERROR_MARKERS.find((m) => head.includes(m));
+        const serverError = typeof status === 'number' && status >= 500;
+
+        if (serverError || hit) {
           row.status = 'fail';
-          row.reasons.push(`error marker: ${hit}`);
-          row.untrustedExcerpt = untrusted(text.slice(0, 300));
+          if (serverError) row.reasons.push(`http ${status}`);
+          if (hit) row.reasons.push(`error marker: ${hit}`);
+          row.untrustedExcerpt = untrusted(head);
           report.failed += 1;
         } else {
           row.status = 'ok';
+          if (typeof status === 'number') row.httpStatus = status;
           report.opened += 1;
         }
       } catch (err) {
