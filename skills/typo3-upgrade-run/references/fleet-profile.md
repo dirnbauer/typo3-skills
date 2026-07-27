@@ -46,6 +46,7 @@ inventories.
 | **jQuery 1.5.1 and `cufon.js`** | 2011-era libraries still shipped to visitors, with published vulnerabilities. Not an invariance item: replacing them changes what visitors receive, so it is Contract B with its own approval — but it must reach the report, not be silently tolerated. |
 | **A custom jQuery header rotator** | Fading headers driven by `setInterval` with no library class names, so carousel pinning does not match them. If the self-test shows differences confined to one image box, this is the first thing to look at. |
 | **`config.doctype = xhtml_trans`** | Defeats `html-has-lang` site-wide and is itself a P08 migration item. |
+| **TSconfig loaded from `ext_localconf.php`** | The house sitepackage reads `Configuration/TsConfig/{page,user}.tsconfig` with `file_get_contents()` and passes it to `ExtensionManagementUtility::addPageTSConfig()`. Both methods are gone in v14; move the files to the package root and delete the calls. Expect this in every sitepackage of that generation. |
 
 ## Content and structure
 

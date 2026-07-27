@@ -16,6 +16,8 @@ matching symptom with a different cause is exactly how a wrong fix gets applied 
 - [A required package no longer exists](#a-required-package-no-longer-exists)
 - [axe reports html-has-lang on every page](#axe-reports-html-has-lang-on-every-page)
 - [Editors lose their modules, or gain all of them](#editors-lose-their-modules-or-gain-all-of-them)
+- [Every CLI command dies in alias-loader-include.php](#every-cli-command-dies-in-alias-loader-includephp)
+- [extension:setup fails inside a sitepackage's ext_localconf.php](#extensionsetup-fails-inside-a-sitepackages-ext_localconfphp)
 
 ---
 
@@ -156,3 +158,51 @@ permission naming an old identifier silently stops applying.
 **It is invisible to the invariance gate.** Nothing about it shows in the frontend, and a permission
 model that quietly widened is a security regression a pixel comparison cannot see. Only the backend
 sweep and a real permission review catch it.
+
+
+---
+
+## Every CLI command dies in alias-loader-include.php
+
+**Symptom.** Immediately after the core jumps to 14.3, every `ddev typo3 …` call — even
+`--version` — dies with
+`Call to undefined method TYPO3\ClassAliasLoader\ClassAliasLoader::setCaseSensitiveClassLoading()`
+in `vendor/typo3/alias-loader-include.php`.
+
+**Cause.** That file is *generated*. TYPO3 14 requires `typo3/class-alias-loader` ^2, which dropped
+the method, but the include still on disk was written by v1. The autoloader is loading stale
+generated code, so nothing that boots PHP can run — including the commands you would use to fix it.
+
+**Fix.**
+
+```bash
+ddev composer dump-autoload
+```
+
+**Generalise it.** After any major jump, a failure inside `vendor/composer/` or `vendor/typo3/`
+generated files is a regeneration problem, not a code problem. Dump the autoloader before
+diagnosing anything further — it is cheap and rules out the whole class.
+
+---
+
+## extension:setup fails inside a sitepackage's ext_localconf.php
+
+**Symptom.** `extension:setup` aborts with
+`Call to undefined method ExtensionManagementUtility::addPageTSConfig()` (or `addUserTSConfig()`),
+pointing at a line in your own sitepackage.
+
+**Cause.** Both methods were removed in v14 (#105377). The common sitepackage idiom is to
+`file_get_contents()` a TSconfig file and hand it to those methods from `ext_localconf.php`.
+
+**Fix.** Delete the calls and let TYPO3 load the files itself. `TsConfigTreeBuilder` picks up
+`Configuration/page.tsconfig` and `Configuration/user.tsconfig` from every package root
+automatically — note the path is the package root, not a `TsConfig/` subdirectory:
+
+```bash
+git mv Configuration/TsConfig/page.tsconfig Configuration/page.tsconfig
+git mv Configuration/TsConfig/user.tsconfig Configuration/user.tsconfig
+# then remove the file_get_contents + add*TSConfig block from ext_localconf.php
+```
+
+Verify the load path in the installed `TsConfigTreeBuilder` rather than trusting the filename — it
+is the code that decides.
