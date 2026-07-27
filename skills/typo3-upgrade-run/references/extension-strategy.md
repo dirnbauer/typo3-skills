@@ -80,6 +80,21 @@ A fork needs an approval (matrix #13) and an ADR: it is a maintenance commitment
 
 Resolution: `forked` or `replaced`.
 
+## Known blockers with a standing answer
+
+Some packages come up on nearly every v12/v13 project and already have a decided outcome. Check
+current metadata anyway — this list is a head start, not a substitute for looking:
+
+| Package | Outcome | Why |
+|---|---|---|
+| `ichhabrecht/filefill` | **remove** | A development convenience that fills missing files from a remote source. Its newest release (5.0.0) is `^13.4`-only, so it blocks the 14.3 rung, and it is a dev dependency with no production role. Remove it rather than holding the whole upgrade for a helper. |
+| `wapplersystems/core-upgrader` | **remove** | A tool for performing a major jump, not a runtime dependency. Once the jump is done it has no reason to stay, and its own versions trail the core it upgrades. Frequently sits in `require-dev` of a project meta-package rather than the root, so `composer remove` needs `--dev`. |
+| `in2code/powermail` | fork or remove | No v14 release upstream. Fork per branch 3 when forms are genuinely in use — but **check first**: a site can carry powermail in `composer.json` with zero forms, zero fields and zero mails in the database because its forms were built with Core `EXT:form`. Removing beats forking when nothing uses it. |
+
+The general lesson under that last row: an extension appearing in `composer.json` proves it was
+installed once, not that anything uses it. Count the records and the content elements before
+committing to migrate or fork something.
+
 ## 4. Still broken after migration attempts
 
 Measure before deciding. Take a fresh `ddev snapshot`, then `ddev composer remove` the extension and
