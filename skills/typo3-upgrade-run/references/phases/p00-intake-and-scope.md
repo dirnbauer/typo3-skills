@@ -50,13 +50,19 @@ Read-only inspection. Creating `.typo3-update/` from `templates/run-directory/`.
    the plan, with what it provides and who depends on it. An extension with no v14 release blocks
    the whole install and can change the project's cost and shape, so it is intake output, not a
    mid-run discovery. See `references/extension-strategy.md`.
-9. **Ask about commercially licensed extensions.** Paid extensions usually need a new licence for a
+9. **Sweep the database for TypoScript that only exists there.** Automated tooling processes
+   files; on sites of this generation the interesting TypoScript lives in `sys_template` and in
+   `TSconfig` columns, edited through the backend and never on disk. `<INCLUDE_TYPOSCRIPT:>` is
+   the sharpest example — removed in v14 and discarded *silently* — but the same blind spot
+   applies to anything a file-based migration tool is expected to catch. Run the detection query
+   in `known-problems.md` and record the count, including zero.
+10. **Ask about commercially licensed extensions.** Paid extensions usually need a new licence for a
    new major, served from a private repository. That is a purchase with lead time, not a dependency
    problem, and it surfaces mid-P05 as an opaque 403. Identify them now.
-10. Create the run directory and fill `config/run.yml`: trusted origin (scheme included), every site,
+11. Create the run directory and fill `config/run.yml`: trusted origin (scheme included), every site,
    languages as the site's real prefixes, golden paths, budgets.
-11. Ask once whether the run directory should be committed, and record the answer.
-12. Write `ADR-001-scope.md`.
+12. Ask once whether the run directory should be committed, and record the answer.
+13. Write `ADR-001-scope.md`.
 
 ## Evidence
 `state.json` initialised · `config/run.yml` · `decisions/ADR-001-scope.md`

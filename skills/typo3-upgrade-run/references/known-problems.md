@@ -17,6 +17,7 @@ matching symptom with a different cause is exactly how a wrong fix gets applied 
 - [The `<html>` language attributes are wrong, missing or contradictory](#the-html-language-attributes-are-wrong-missing-or-contradictory)
 - [Forms lose their styling: inputs collapse to browser-default width](#forms-lose-their-styling-inputs-collapse-to-browser-default-width)
 - [Content tables lose their padding and the page gets shorter](#content-tables-lose-their-padding-and-the-page-gets-shorter)
+- [TypoScript silently stops loading after the v14 rung](#typoscript-silently-stops-loading-after-the-v14-rung)
 - [Image optimisation configured, nothing got smaller](#image-optimisation-configured-nothing-got-smaller)
 - [A correct HTML fix silently moves the layout](#a-correct-html-fix-silently-moves-the-layout)
 - [Shared links show no preview image](#shared-links-show-no-preview-image)
@@ -268,6 +269,86 @@ emitting a class the site's CSS depends on.** When a visual finding shows a heig
 no colour change and no error, diff the *class attributes* of the captured DOM before assuming
 a styling bug. Grep the stylesheet for class names Core used to supply — `contenttable`,
 `form-group`, `csc-*`, `bodytext` — and check each is still emitted.
+
+---
+
+## TypoScript silently stops loading after the v14 rung
+
+**Symptom.** After the 14.x rung, configuration that used to apply is simply gone. A menu renders
+unstyled, a plugin loses its settings, a whole library of TypoScript behaves as if it was never
+written. **Nothing is logged** — no error, no warning, no deprecation entry. Status codes stay
+200 and the page renders, just wrong.
+
+**Cause.** `<INCLUDE_TYPOSCRIPT: ...>` was **removed in v14** (deprecated in #105171, removed
+with #105377). It was replaced by `@import` back in v9, but the old construct kept working for
+five majors, so plenty of projects never migrated.
+
+What makes this dangerous is the failure mode. The v14 tokenizer still recognises the line and
+then deliberately discards it:
+
+```php
+} elseif (str_starts_with($this->currentLineString, '<INCLUDE_TYPOSCRIPT:')) {
+    // @todo: Do nothing. This creates an InvalidLine in LossyTokenizer.
+}
+```
+
+The include is not an error — it is a no-op. Everything it would have pulled in never loads.
+
+**Fractor covers this — for files.** Do not skip the tool on hearsay: `a9f/typo3-fractor` ships
+`MigrateIncludeTypoScriptSyntaxFractor` in the TYPO3v13 set, and it handles every form. Verified
+against the installed version:
+
+```diff
+-<INCLUDE_TYPOSCRIPT: source="FILE:EXT:my_ext/Configuration/TypoScript/menu.typoscript">
+-<INCLUDE_TYPOSCRIPT: source="DIR:EXT:my_ext/Configuration/TypoScript/" extensions="txt">
+-<INCLUDE_TYPOSCRIPT: source="FILE:fileadmin/templates/legacy.txt">
++@import 'EXT:my_ext/Configuration/TypoScript/menu.typoscript'
++@import 'EXT:my_ext/Configuration/TypoScript/*.txt'
++@import 'fileadmin/templates/legacy.txt'
+```
+
+**The gap is the database, and it is the common case.** Fractor is a file processor: it walks the
+paths given to `withPaths()`. On sites of this generation the includes overwhelmingly live in
+**`sys_template.config` / `constants`**, edited through the backend and never present on disk.
+Fractor cannot see them, reports nothing, and the run looks clean.
+
+**Find them everywhere before trusting a green Fractor run:**
+
+```bash
+ddev mysql -N -e "
+SELECT 'sys_template.config' AS loc, uid, LEFT(title,30) FROM sys_template
+  WHERE deleted=0 AND config LIKE '%INCLUDE_TYPOSCRIPT%'
+UNION ALL SELECT 'sys_template.constants', uid, LEFT(title,30) FROM sys_template
+  WHERE deleted=0 AND constants LIKE '%INCLUDE_TYPOSCRIPT%'
+UNION ALL SELECT 'pages.TSconfig', uid, LEFT(title,30) FROM pages
+  WHERE deleted=0 AND TSconfig LIKE '%INCLUDE_TYPOSCRIPT%'
+UNION ALL SELECT 'be_groups.TSconfig', uid, LEFT(title,30) FROM be_groups
+  WHERE deleted=0 AND TSconfig LIKE '%INCLUDE_TYPOSCRIPT%';"
+
+grep -rn 'INCLUDE_TYPOSCRIPT' packages/ config/ fileadmin/
+```
+
+Convert the database hits by hand — same syntax Fractor produces — and re-run both checks until
+each returns nothing.
+
+**Two details that bite during the conversion.**
+
+- A `DIR:` include with `extensions="txt"` becomes a glob (`.../*.txt`), and **`@import` sorts its
+  matches**, so files that relied on the old traversal order can end up applied in a different
+  sequence. Where order matters, list the files explicitly instead of globbing.
+- `INCLUDE_TYPOSCRIPT` accepted a `condition` attribute (#16525). `@import` has no equivalent —
+  wrap the import in a normal TypoScript condition block instead.
+
+**Verify by behaviour, not by grep.** The whole point is that the construct fails silently, so
+prove the configuration still arrives:
+
+```bash
+ddev typo3 typoscript:show config.doctype        # or any key the include was responsible for
+```
+
+Because it is invisible to logs, this belongs in the invariance comparison as well: a DOM or
+visual diff on pages that share a template is often the only signal that an include stopped
+loading.
 
 ---
 
