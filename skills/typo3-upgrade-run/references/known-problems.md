@@ -16,6 +16,7 @@ matching symptom with a different cause is exactly how a wrong fix gets applied 
 - [A required package no longer exists](#a-required-package-no-longer-exists)
 - [The `<html>` language attributes are wrong, missing or contradictory](#the-html-language-attributes-are-wrong-missing-or-contradictory)
 - [Forms lose their styling: inputs collapse to browser-default width](#forms-lose-their-styling-inputs-collapse-to-browser-default-width)
+- [Content tables lose their padding and the page gets shorter](#content-tables-lose-their-padding-and-the-page-gets-shorter)
 - [Editors lose their modules, or gain all of them](#editors-lose-their-modules-or-gain-all-of-them)
 - [Every CLI command dies in alias-loader-include.php](#every-cli-command-dies-in-alias-loader-includephp)
 - [extension:setup fails inside a sitepackage's ext_localconf.php](#extensionsetup-fails-inside-a-sitepackages-ext_localconfphp)
@@ -222,6 +223,48 @@ with another `!important`.
 **Why it matters more than it looks.** Contact and registration forms are the site's conversion
 path. This is a rendering regression on exactly the pages that earn money, and it is invisible to
 every check except a visual one — the HTTP status is 200 and the DOM still contains every field.
+
+---
+
+## Content tables lose their padding and the page gets shorter
+
+**Symptom.** Pages containing an RTE table render with the cell padding, background and row
+spacing gone. The page is measurably shorter — around 117px on a ten-row table — so the visual
+gate flags it. No error, no warning, HTTP 200, every word still present.
+
+**Cause.** v14's `fluid_styled_content` **no longer sets the `contenttable` class** on RTE
+tables. The `fixAttrib.class` configuration was dropped from Core's `lib.parseFunc_RTE`
+entirely, so `<table class="contenttable">` became a bare `<table>` and every `.contenttable`
+rule in the site's stylesheet stopped matching.
+
+Sitepackages of this generation frequently make it worse by clearing the allowed class *list*
+and relying on the Core default to supply the class:
+
+```typoscript
+lib.parseFunc_RTE.externalBlocks.table.stdWrap.HTMLparser.tags.table.fixAttrib.class.list >
+```
+
+That line reads as "keep an author's class if there is one" — and silently means "no class at
+all" once the default is gone.
+
+**Confirm it in the captured DOM**, before and after, rather than in the browser:
+
+```bash
+grep -o '<table[^>]*>' <before>/dom/<page>.html
+grep -o '<table[^>]*>' <after>/dom/<page>.html
+```
+
+**Fix.** Restore the default explicitly — it is one line, and it keeps the markup identical:
+
+```typoscript
+lib.parseFunc_RTE.externalBlocks.table.stdWrap.HTMLparser.tags.table.fixAttrib.class.default = contenttable
+```
+
+**Generalise it.** This and the EXT:form regression above are the same failure: **v14 stopped
+emitting a class the site's CSS depends on.** When a visual finding shows a height change with
+no colour change and no error, diff the *class attributes* of the captured DOM before assuming
+a styling bug. Grep the stylesheet for class names Core used to supply — `contenttable`,
+`form-group`, `csc-*`, `bodytext` — and check each is still emitted.
 
 ---
 
