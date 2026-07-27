@@ -10,6 +10,11 @@ No loop. This phase decides what is being updated and creates the run directory.
 Read-only inspection. Creating `.typo3-update/` from `templates/run-directory/`. Asking questions.
 
 ## Steps
+0. **Read [`references/fleet-profile.md`](../fleet-profile.md) and work down it.** These projects
+   repeat themselves, and most of its checks take seconds. Record every answer in the intake,
+   including the negatives — "checked, not present" is what stops the next run re-checking it.
+   Confirm each item against this project: it is a list of likely findings, not a description of
+   any particular site.
 1. Determine the target: **project**, **sitepackage**, or **extension**. For a standalone extension
    with no host project, create a disposable TYPO3 14.3 DDEV installation to prove installation and
    behaviour.
