@@ -15,10 +15,50 @@ description: >-
 
 # TYPO3 14 update
 
-> Source: https://github.com/dirnbauer/webconsulting-skills
+> Source: https://github.com/dirnbauer/typo3-skills
 
 Update a project, sitepackage, or extension from TYPO3 v12/v13 to supported TYPO3 14.3 LTS,
 inside a local DDEV clone. Produce v14-only code — no v12/v13 compatibility branches or shims.
+
+## Start here
+
+The whole method in one screen. Everything below this section explains *why* these steps are
+in this order and what to do when one of them goes red.
+
+```bash
+# once per machine — harness + in-container browsers
+cd skills/typo3-upgrade-run/scripts && npm ci && npm test
+ddev add-on get codingsasi/ddev-playwright && ddev restart && ddev install-playwright
+
+# 1. freeze what "before" means
+t3u init --base-url "https://acme.ddev.site" --languages de,en
+t3u doctor                              # environment can run the harness
+t3u env-fingerprint --write-baseline
+t3u content-fingerprint --write-baseline
+t3u discover-urls --seed "acme-2026"    # seeded — the same sample re-runs later
+t3u selftest-determinism                # shoot twice, require zero diff. Not optional.
+t3u capture --label before
+t3u seal-baseline --id A-original       # immutable from here
+
+# 2. do the update  (Phases P04–P10 — ddev snapshot before each schema step)
+
+# 3. prove nothing changed for visitors
+t3u capture --label after
+t3u compare-http && t3u compare-dom && t3u compare-visual
+t3u backend-sweep --base-url "https://acme.ddev.site"
+t3u gate --loop 300-invariance-closure
+t3u report --loop 300-invariance-closure
+```
+
+Read the exit code, not the log: **0** pass · **1** fix the site · **2** fix the harness ·
+**3** stop, the run cannot be judged · **4** precondition missing · **5** a guard refused.
+
+`t3u status` prints where the run stands at any time. Every step writes to `.typo3-update/`,
+so a resumed session reads state from disk rather than from the conversation.
+
+Three rules that decide most questions: the baseline is sealed before any change and never
+refreshed to make a diff go away; a difference is either repaired or approved as a declared
+change, never explained away; and nothing is deployed anywhere, ever.
 
 ## Scope
 
