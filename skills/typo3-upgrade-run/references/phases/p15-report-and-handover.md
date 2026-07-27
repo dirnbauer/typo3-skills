@@ -13,7 +13,11 @@ P13 closed. All approved Contract B tracks green or explicitly stopped.
 3. Add a `CHANGELOG.md` entry: the 14.3-only requirement, dropped versions, dependency changes,
    workspace support, migrations. **Do not invent a release date or tag.**
 4. Write `report/contract-b-summary.md`.
-5. Generate the KPI document per `references/kpi-report.md`.
+5. Generate the KPI document per `references/kpi-report.md`, **including the run-statistics
+   section**: loops run, iterations per loop, aborts and their triggers, self-test re-runs,
+   wall-clock per phase, repaired against approved findings, and everything the run did not cover.
+   Assemble it from `journal.jsonl` and the per-loop `report.json` files — a number nobody can
+   trace back to a recorded entry does not belong in the report.
 6. Write `report/handover-deployment.md`.
 
 ## The handover is information only
