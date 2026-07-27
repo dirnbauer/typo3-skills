@@ -125,3 +125,37 @@ Fixtures cover cyclic and deep sitemaps, internal-IP and cloud-metadata entries,
 billion-laughs, oversized responses, cross-origin redirects with credential assertions, tampered
 manifests and baselines, prompt injection in HTML, console output and package metadata, and
 incomplete backend module coverage.
+
+
+## Sampling scope: cheap in the loops, exhaustive at the end
+
+An intermediate loop runs many times and exists to catch a fault fast. The closing comparison runs
+once and is what the invariance claim rests on. They should not sample the same way.
+
+```bash
+t3u capture --label after --scope intermediate   # seeded 10% slice
+t3u capture --label after                        # final: everything (default)
+```
+
+| Scope | Takes | Why |
+|---|---|---|
+| `intermediate` | seeded 10%, never fewer than **20**, never more than **100** | A loop iteration has to fit in its time budget. The floor matters more than the percentage — 10% of 40 URLs is 4, which proves nothing. |
+| `final` (default) | **all URLs** up to **1000** | A claim proven on a sample is a claim about the sample. The closing comparison is the evidence, so it takes everything. |
+| `final` above 1000 | seeded 1000, omission declared | A stop, not a target. Still reproducible, and the report names how many URLs were not captured and why. |
+
+Sampling is seeded from the manifest, so an intermediate slice re-runs identically before and after
+a change — the same URLs are compared, not a fresh random set each time. Every selection writes
+`selection: { scope, total, captured, omitted, reason }` into the capture index, and a run that
+omitted anything says so in the log rather than reporting a bare count.
+
+**Above 1000 URLs, capturing everything must be asked for and confirmed twice.**
+
+```bash
+t3u capture --label after --all-urls
+```
+
+The flag exists because sometimes it is the right call — a relaunch, a site where the tail pages
+carry the value. It is gated because on a large site it can turn a ten-minute close into an
+overnight one, and because an agent should never quietly commit someone else's afternoon. Ask,
+state the URL count and the rough time, and ask again. If the answer is anything other than an
+explicit second yes, take the seeded 1000 and declare the omission.

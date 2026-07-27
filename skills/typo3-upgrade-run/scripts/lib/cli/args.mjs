@@ -53,6 +53,11 @@ export const COMMANDS = {
     viewports: { type: 'string' }, only: { type: 'string' },
     resume: { type: 'boolean', default: false }, warmup: { type: 'boolean', default: true },
     stages: { type: 'string', default: 'http,dom,visual' },
+    // 'intermediate' = seeded 10% slice (min 20, max 100) for loop iterations;
+    // 'final' = everything, or a seeded 1000 above the hard cap. --all-urls lifts the cap and
+    // must be asked for and confirmed twice, because it can turn a short close into a long one.
+    scope: { type: 'string', default: 'final' },
+    'all-urls': { type: 'boolean', default: false },
   }},
   'selftest-determinism': { summary: 'Shoot the untouched site twice; require zero differences', options: {
     repeats: { type: 'string', default: '2' }, 'fresh-browser': { type: 'boolean', default: true },

@@ -101,6 +101,10 @@ Full text in [`rules/00-scope-and-prohibitions.md`](rules/00-scope-and-prohibiti
   DNS, CDN, proxies, or hosting panels; never change remote infrastructure or remote data.
 - **Never** overwrite, edit, or delete `baseline/A-original/`.
 - **Never** raise a threshold, shrink the sample, or exclude a page to make a comparison pass.
+- Loop iterations sample (seeded 10%, floor 20, ceiling 100); the **closing comparison takes every
+  URL** up to 1000. Above that it samples 1000 and declares the omission — capturing everything
+  needs an explicit request confirmed **twice**, because it can turn a short close into an
+  overnight one. See `references/harness-contract.md`.
 - **Never** commit credentials, dumps, or `.env` values.
 - **Never** claim a command, test, or browser flow passed unless it ran and succeeded.
 - Snapshot before every schema change, wizard run, data migration, and state-changing loop.

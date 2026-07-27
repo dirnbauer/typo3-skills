@@ -8,6 +8,7 @@
 
 import { mkdir, writeFile, readFile, access } from 'node:fs/promises';
 import path from 'node:path';
+import { sample } from '../util/rng.mjs';
 import { EXIT, HarnessError, PreconditionError } from '../cli/exit-codes.mjs';
 import { UrlGuard } from '../net/url-guard.mjs';
 import { safeFetch } from '../net/safe-fetch.mjs';
@@ -41,6 +42,8 @@ export async function capture({ values, paths, log, journal }) {
   const result = await captureAll({
     manifest, guard, outRoot, stages, log, journal,
     resume: values.resume, warmup: values.warmup !== false,
+    scope: values.scope === 'intermediate' ? 'intermediate' : 'final',
+    allowAll: values['all-urls'] === true,
   });
 
   await writeFile(
@@ -65,12 +68,63 @@ export async function capture({ values, paths, log, journal }) {
 }
 
 /** Exported so selftest can run two passes without shelling out. */
-export async function captureAll({ manifest, guard, outRoot, stages, log, journal, resume = false, warmup = true }) {
+/**
+ * Sampling policy: cheap in the loops, exhaustive at the end.
+ *
+ * An intermediate loop runs many times and exists to catch a fault fast, so it takes a seeded
+ * 10% slice. The closing comparison runs once and is what the invariance claim rests on, so it
+ * takes everything — a claim proven on a sample is a claim about the sample.
+ *
+ * The floor matters more than the percentage: 10% of 40 URLs is 4, which proves nothing, so the
+ * slice never drops below 20 (or the whole set, if smaller). The ceiling keeps a loop iteration
+ * inside its time budget on a large site.
+ *
+ * FINAL_HARD_CAP is a stop, not a target. Above it the final comparison still samples — seeded,
+ * so it is reproducible — and the report must say so. Capturing every URL beyond that point is
+ * possible but has to be asked for explicitly, and confirmed twice, because it can turn a
+ * ten-minute close into an overnight one.
+ */
+export const SAMPLING = Object.freeze({
+  INTERMEDIATE_PERCENT: 0.10,
+  INTERMEDIATE_MIN: 20,
+  INTERMEDIATE_MAX: 100,
+  FINAL_HARD_CAP: 1000,
+});
+
+/** Returns the URL entries to capture, plus a declaration of what was left out. */
+export function selectUrls(allUrls, { scope = 'final', seed = 'sample', allowAll = false } = {}) {
+  const total = allUrls.length;
+  if (scope === 'intermediate') {
+    const want = Math.min(
+      SAMPLING.INTERMEDIATE_MAX,
+      Math.max(SAMPLING.INTERMEDIATE_MIN, Math.ceil(total * SAMPLING.INTERMEDIATE_PERCENT)),
+    );
+    if (want >= total) return { urls: allUrls, scope, total, captured: total, omitted: 0, reason: null };
+    const picked = sample(allUrls, want, seed);
+    return { urls: picked, scope, total, captured: picked.length, omitted: total - picked.length,
+      reason: 'intermediate-loop-sample' };
+  }
+  // final
+  if (total <= SAMPLING.FINAL_HARD_CAP || allowAll) {
+    return { urls: allUrls, scope, total, captured: total, omitted: 0, reason: null };
+  }
+  const picked = sample(allUrls, SAMPLING.FINAL_HARD_CAP, seed);
+  return { urls: picked, scope, total, captured: picked.length, omitted: total - picked.length,
+    reason: 'above-final-hard-cap' };
+}
+
+export async function captureAll({ manifest, guard, outRoot, stages, log, journal, resume = false, warmup = true, scope = 'final', allowAll = false }) {
   await mkdir(outRoot, { recursive: true });
   for (const kind of ['http', 'dom', 'shots']) await mkdir(path.join(outRoot, kind), { recursive: true });
 
   const index = { http: 0, dom: 0, shots: 0, errors: [], signatures: {}, states: {} };
-  const urls = manifest.allUrls.map((u) => u.url);
+  const selection = selectUrls(manifest.allUrls, { scope, seed: manifest.seed ?? 'sample', allowAll });
+  const urls = selection.urls.map((u) => u.url);
+  index.selection = selection && { scope: selection.scope, total: selection.total,
+    captured: selection.captured, omitted: selection.omitted, reason: selection.reason };
+  if (selection.omitted) {
+    log.info(`scope ${selection.scope}: ${selection.captured} of ${selection.total} URLs (${selection.omitted} not captured — ${selection.reason})`);
+  }
 
   /* ---- stage 1 + 2: every URL, over plain HTTP. No browser needed, so it scales. ---- */
   if (stages.has('http') || stages.has('dom')) {
