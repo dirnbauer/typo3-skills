@@ -117,3 +117,17 @@ version first, keeping it one the current core supports. The database engine is 
 floor and the owner will not accept an engine migration: without it the target cannot run, so this
 is a project decision, not something to work around.
 
+## Image processor capabilities
+
+Record what the processor can **write**, not just read — it decides the output format for the
+whole run and is cheap to check now, expensive to discover later:
+
+```bash
+ddev exec convert -list format | grep -iE '^ *(AVIF|WEBP)'   # need rw+, not r--
+ddev typo3 configuration:show GFX/imagefile_ext              # must list avif and webp
+```
+
+Pick the format from that evidence — **AVIF if writable, else WebP, else leave JPEG/PNG and say
+why** — and write the answer into the run notes. See
+[`references/image-formats.md`](../image-formats.md).
+

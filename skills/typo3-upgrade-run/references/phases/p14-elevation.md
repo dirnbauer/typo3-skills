@@ -42,6 +42,12 @@ Two traps:
   chrome-launcher` in the harness before the first run; the `t3u lighthouse` subcommand is
   registered in `--help` but is a stub and fails at runtime.
 
+**The largest single win is almost always the image format.** Before tuning anything else, check
+whether images are being re-encoded at all: a source already at the requested dimensions is passed
+through untouched, so an unoptimised upload stays unoptimised however the quality is configured.
+See [`references/image-formats.md`](../image-formats.md) — on a real run this took performance
+89 → 100 and LCP 3.8s → 1.8s by moving two header images to AVIF, with no element moving.
+
 Report **medians with min–max**, never a single run, and carry the caveat next to the number:
 these are loopback network, warm cache, laptop CPU. The absolute score is indicative; the
 before/after delta on the same machine is the evidence. TBT is a lab **proxy** for INP.
