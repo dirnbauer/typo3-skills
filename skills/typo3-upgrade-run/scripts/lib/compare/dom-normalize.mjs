@@ -30,15 +30,20 @@ export const RULES = Object.freeze([
   { id: 'iso-timestamp', why: 'render time', re: /\b\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?/g, to: '<TS>' },
   { id: 'epoch-ms', why: 'render time in milliseconds', re: /\b1[6-9]\d{11}\b/g, to: '<EPOCH>' },
   { id: 'debug-comment', why: 'parse-time debug output', re: /<!--\s*(?:parsetime|generated|cached|debug)[^>]*-->/gi, to: '<!--<D>-->' },
-  // EXT:form regenerates these per request BY DESIGN: a predictable honeypot name would be
-  // useless against spam bots, and __trustedProperties carries an HMAC over the field list.
-  // The markup is entity-encoded, hence &quot; rather than ". Only the random name and the
-  // hash are masked — the field list itself still compares, so adding, removing or renaming a
-  // real field is still a difference. The mixed-case lookahead keeps these off real tokens:
-  // autocomplete values like "given-name" are lowercase and hyphenated, honeypot names are not.
-  { id: 'typo3-form-trusted-hmac', why: 'EXT:form HMAC over the field list, per request', re: /(\}\})[a-f0-9]{32,}/g, to: '$1<HMAC>' },
-  { id: 'typo3-form-honeypot-key', why: 'EXT:form honeypot name, random per request', re: /(&quot;)((?=[A-Za-z0-9]*[A-Z])(?=[A-Za-z0-9]*[a-z])[A-Za-z0-9]{9,25})(&quot;:1)/g, to: '$1<HONEYPOT>$3' },
-  { id: 'typo3-form-honeypot-attr', why: 'EXT:form honeypot name in autocomplete/id/name', re: /((?:autocomplete=["']|\]\[|-)?)((?=[A-Za-z0-9]*[A-Z])(?=[A-Za-z0-9]*[a-z])[A-Za-z0-9]{9,25})(?=["'\]])/g, to: '$1<HONEYPOT>' },
+  // EXT:form regenerates three things per request BY DESIGN, and a predictable honeypot
+  // would be useless against spam bots: the honeypot's field NAME, its LENGTH (5-25 chars),
+  // and its POSITION in the __trustedProperties field list. Masking the name alone therefore
+  // does not converge — the list order still differs. So the whole __trustedProperties value
+  // is replaced: it is an HMAC-protected serialisation that regenerates every request and
+  // carries no information a regression test should compare. The real form structure is still
+  // compared through the rendered inputs and labels, so adding, removing or renaming a field
+  // remains a difference.
+  { id: 'typo3-form-trusted-properties', why: 'EXT:form per-request HMAC and field-list serialisation', re: /(\[__trustedProperties\]"[^>]*?\svalue=")[^"]*(")/gi, to: '$1<TRUSTED>$2' },
+  // Removed, not masked: EXT:form also inserts the honeypot at a random POSITION among the
+  // fields, so replacing it in place still leaves two different documents. It is an
+  // aria-hidden anti-spam input with no visible content, and it is removed from both sides,
+  // so nothing a visitor can see is affected.
+  { id: 'typo3-form-honeypot-input', why: 'EXT:form honeypot input: random name, id, autocomplete AND position per request', re: /<input\b(?=[^>]*\baria-hidden="true")(?=[^>]*tx_form_formframework)[^>]*>/gi, to: '' },
 ]);
 
 /** Attributes and structures that must NEVER be normalised. Used by the guard below. */

@@ -461,6 +461,75 @@ Das ist dieselbe Lehre wie im ersten Nachtrag, nur naeher am Knochen: Wir haben 
 gebaut, wir haben sie ernst genommen, und wir sind trotzdem hineingelaufen. Der Unterschied ist
 allein, dass sie diesmal gemeckert hat.
 
+## Dritter Nachtrag: der erste Lauf auf einer echten Kundenseite
+
+Die ersten beiden Nachtraege entstanden am Schreibtisch. Dieser entstand an einem Vereinsauftritt
+mit 145 Seiten, TYPO3 12.4, gewachsen ueber Jahre. Der Selbsttest - zwei Aufnahmen derselben,
+unveraenderten Seite - meldete **49 von 270 Aufnahmen als instabil**.
+
+Ohne dieses Tor waeren daraus 49 Phantom-Regressionen geworden: Unterschiede, die nach kaputtem
+Update aussehen, und hinter denen jemand tagelang eine Ursache sucht, die es nie gab.
+
+### Vier Hypothesen, keine davon richtig
+
+Wir haben nacheinander vier Erklaerungen gebaut und behoben: Bilder, die beim Schuss noch nicht
+fertig dekodiert waren. Karussells, die auf `setInterval` weiterlaufen, wenn man nur
+Animationsframes abbestellt. Karussells, die eingefroren an zufaelliger Stelle stehenbleiben.
+jQuery-Ueberblendungen, die von CSS-Regeln gar nicht erfasst werden.
+
+Alle vier sind echte Probleme. Alle vier sind heute behoben. **Keine davon war dieser Fehler.**
+Die Zahl blieb bei 49.
+
+Was schliesslich half, war kein Gedanke, sondern eine Messung. Ein Histogramm der Abweichungen pro
+Bildpunkt ergab: 375 von 2.482.560 Bildpunkten unterschiedlich - **jeder einzelne um exakt 1 von
+255**. Nebeneinandergelegt sind die Aufnahmen ununterscheidbar; ein 24-fach verstaerkter
+Differenzbild ist fast schwarz.
+
+Kein Inhalt der Welt aendert sich um gleichmaessig genau einen Wert. Das ist der JPEG-Dekoder des
+Browsers. Die Seite war die ganze Zeit stabil - **das Messgeraet war falsch eingestellt.**
+
+### Der Unterschied zwischen Kalibrieren und Wegschauen
+
+Bei exakt null Toleranz misst man den Dekoder, nicht die Seite. Wir vergleichen jetzt mit einer
+Farbtoleranz von etwa 2,5 von 255: Ein Quantisierungsschritt faellt raus, alles, was ein Mensch
+sehen koennte, faellt weiterhin auf.
+
+Das ist gefaehrlich nah an der Ausrede, gegen die dieser ganze Text geschrieben ist. Deshalb steht
+die Begruendung als Messwert im Quelltext, der Wert steht in jedem Bericht, und daneben steht der
+Satz, dass er nie erhoeht werden darf, um eine Schleife zu schliessen. **Ein Messgeraet auf sein
+Medium einstellen ist nicht dasselbe wie die Messlatte verschieben, bis nichts mehr auffaellt.**
+Der bequeme Weg waere gewesen, die betroffenen Seiten als „instabil" auszuschliessen - und damit
+alle Fotos der Seite dauerhaft aus der Pruefung zu nehmen.
+
+### Und dann haben wir die Pruefung selbst kaputtgemacht
+
+Blieb ein Fall: ein Anmeldeformular. TYPO3 wuerfelt dort pro Aufruf den Namen des Honeypot-Feldes
+neu - absichtlich, ein vorhersagbarer Honeypot waere nutzlos. Also eine Normalisierungsregel.
+
+Die Regel war zu weit gefasst. Sie traf nicht nur den Zufallsnamen, sondern auch das Wort
+`trustedProperties` - gemischte Gross- und Kleinschreibung, 17 Zeichen, gefolgt von einer Klammer.
+Sie hat den Attributnamen ueberschrieben und damit jede Aufnahme beschaedigt, die sie anfasste.
+Der Selbsttest wurde danach **schlechter**, nicht besser: von 1 auf 3.
+
+Die Normalisierung, die Unterschiede wegraeumen soll, war selbst zur Quelle von Unterschieden
+geworden. Genau davor warnt die Ueberdehnungs-Pruefung im selben Modul - und wir sind trotzdem
+hineingelaufen.
+
+### Was wir uns fuer das naechste Mal aufgeschrieben haben
+
+Dreimal in diesem Lauf haben wir eine Korrektur als erledigt gemeldet, bevor sie bewiesen war.
+Zweimal war sie wirkungslos, einmal war sie schaedlich. Das Muster ist immer dasselbe:
+
+- Wir haben gegen **abgeleitete Artefakte** geprueft statt gegen die Quelle - gegen bereits
+  normalisierte Aufnahmen, in denen der Fehler schon steckte.
+- Wir haben **Ursachen erschlossen statt gemessen**. Vier Hypothesen kosteten vier Durchlaeufe zu
+  je sieben Minuten. Das Histogramm kostete Sekunden und beantwortete die Frage.
+
+Beide Erkenntnisse stehen heute im Skill, nicht in einem Merkzettel: gegen frische Quelldaten
+pruefen, und bei einem Pixelunterschied zuerst die Groessenordnung messen, bevor man eine Ursache
+vermutet. Ein Werkzeug, das seinen eigenen Autor korrigiert, ist mehr wert als eines, das ihm
+recht gibt.
+
 ## Fazit
 
 Unser Skill hatte von Anfang an gutes TYPO3-Wissen, eine saubere Prozessarchitektur und eine
