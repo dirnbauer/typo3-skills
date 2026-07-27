@@ -87,7 +87,11 @@ async function fetchDoc(url) {
 }
 
 const isXml = (ct) => /xml/i.test(ct);
-const locs = (xml) => [...xml.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/gi)].map((m) => m[1]);
+// <loc> values are XML-escaped: a sitemap index child carries &amp; in its query string, and
+// fetching that literally drops the parameters and returns an empty document.
+const unescapeXml = (s) => s.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+  .replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&#(\d+);/g, (_, d) => String.fromCharCode(Number(d)));
+const locs = (xml) => [...xml.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/gi)].map((m) => unescapeXml(m[1]));
 const isIndex = (xml) => /<sitemapindex[\s>]/i.test(xml);
 
 /* ---------------------------------------------------------------- 3. DATABASE */
@@ -175,7 +179,9 @@ async function main() {
           findings.push({ site: site.id, languageId: lang.languageId, check: 'language-purity',
             detail: `${wrong.length} entr(y|ies) not under this language, e.g. ${wrong[0]}`, url });
         }
-        // Cross-check 2: entries must be canonical, not parameter chains.
+        // Cross-check 2: page entries must be canonical. Index children are exempt — TYPO3
+        // addresses its per-provider documents with ?sitemap=…&cHash=… by design, and that is
+        // not the URL a search engine indexes.
         const ugly = entries.filter((u) => /[?&](tx_|id=|cHash=)/.test(u));
         if (ugly.length) {
           findings.push({ site: site.id, languageId: lang.languageId, check: 'canonical-urls',
@@ -207,8 +213,20 @@ async function main() {
     findings.push({ check: 'robots-advertises-sitemap', detail: 'robots.txt names no Sitemap:' });
   }
   for (const a of advertised) {
-    const r = await fetchDoc(a);
-    if (r.status !== 200) findings.push({ check: 'robots-sitemap-resolves', detail: `robots.txt points at ${a} → HTTP ${r.status}` });
+    // robots.txt should carry the PRODUCTION url, which by definition does not answer on a local
+    // clone. Resolve its path against the audited origin instead, and note the host difference
+    // rather than reporting the correct production value as a defect.
+    let probe = a, foreign = false;
+    try {
+      const u = new URL(a);
+      if (u.origin !== new URL(baseUrl).origin) { probe = `${baseUrl}${u.pathname}`; foreign = true; }
+    } catch { /* relative value: leave as-is */ }
+    const r = await fetchDoc(probe);
+    if (r.status !== 200) {
+      findings.push({ check: 'robots-sitemap-resolves', detail: `robots.txt points at ${a}; ${probe} → HTTP ${r.status}` });
+    } else if (foreign) {
+      console.log(`    note: robots.txt advertises ${a} (production); its path resolves here`);
+    }
   }
   console.log(`  robots.txt: ${advertised.length} sitemap reference(s)${advertised.length ? ` (${advertised.join(', ')})` : ''}`);
 

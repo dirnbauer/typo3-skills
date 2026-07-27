@@ -164,10 +164,17 @@ export async function captureAll({ manifest, guard, outRoot, stages, log, journa
   }
 
   /* ---- stage 3: screenshots for the manifest capture set only ---- */
-  if (stages.has('visual') && manifest.captures.length) {
+  // Restrict to the sampled URLs too. Sampling stage 1+2 while stage 3 shot everything meant an
+  // "intermediate" run still paid the full screenshot cost — which is the only expensive part.
+  // Captures reference the manifest by urlId, not by url.
+  const sampledIds = new Set(selection.urls.map((u) => u.id));
+  const captureSet = selection.omitted
+    ? manifest.captures.filter((c) => sampledIds.has(c.urlId))
+    : manifest.captures;
+  if (stages.has('visual') && captureSet.length) {
     const { browser } = await launchBrowser({ log });
     try {
-      const byViewport = groupBy(manifest.captures, (c) => c.viewport);
+      const byViewport = groupBy(captureSet, (c) => c.viewport);
       for (const [viewport, caps] of byViewport) {
         if (!VIEWPORTS[viewport]) { log.warn(`unknown viewport ${viewport}, skipped`); continue; }
         const context = await newContext(browser, { viewport });

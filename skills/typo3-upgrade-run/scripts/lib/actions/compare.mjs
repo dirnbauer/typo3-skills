@@ -67,17 +67,25 @@ export async function compareHttp({ values, paths, log }) {
 
   const { pairsChecked, findings, missing } = await compareRecordDirs(before, after, values.loop, log);
 
-  const counts = { urls: pairsChecked, identical: pairsChecked - findings.length, different: findings.length, missing: missing.length };
-  const verdict = findings.length || missing.length ? 'findings' : 'pass';
+  // On an intermediate loop the after-set is a deliberate sample, so a baseline record with no
+  // counterpart is missing COVERAGE, not a difference. Declared, never silently dropped — and it
+  // only counts as coverage when something actually was compared.
+  const sampled = pairsChecked > 0 && missing.length > 0;
+  const notCaptured = sampled ? missing : [];
+  const realMissing = sampled ? [] : missing;
+
+  const counts = { urls: pairsChecked, identical: pairsChecked - findings.length,
+    different: findings.length, missing: realMissing.length, notCaptured: notCaptured.length };
+  const verdict = findings.length || realMissing.length ? 'findings' : 'pass';
 
   const report = envelope({
     kind: 'http', run: { loopId: values.loop }, verdict, counts, findings,
-    extra: { comparedFields: 'see lib/compare/http-meta.mjs COMPARED_FIELDS', missing },
+    extra: { comparedFields: 'see lib/compare/http-meta.mjs COMPARED_FIELDS', missing: realMissing, notCaptured },
   });
   const written = await writeReport(reportPath, report, { profile: values['redaction-profile'], dryRun: values['dry-run'] });
 
   log[verdict === 'pass' ? 'success' : 'finding'](
-    `HTTP/metadata: ${counts.identical}/${counts.urls} identical, ${counts.different} different, ${counts.missing} missing`,
+    `HTTP/metadata: ${counts.identical}/${counts.urls} identical, ${counts.different} different, ${counts.missing} missing${counts.notCaptured ? `, ${counts.notCaptured} not captured (sampled scope)` : ''}`,
   );
   return {
     exitCode: verdict === 'pass' ? EXIT.PASS : EXIT.FINDINGS,
@@ -210,8 +218,17 @@ export async function compareVisual({ values, paths, log }) {
   let n = 0;
   let match = 0;
 
+  // A capture present in the baseline but absent from the after-set is NOT a difference: on an
+  // intermediate loop the after-set is a deliberate sample, and calling every un-sampled capture
+  // a blocker manufactures hundreds of phantom regressions. It is missing coverage, and it is
+  // declared as such. A capture that appears only in the AFTER set is still a finding — the site
+  // grew something the baseline never saw.
+  const sampledAfter = pairs.some((p) => p.status === 'pair');
+  const notCaptured = [];
+
   for (const p of pairs) {
     if (p.status !== 'pair') {
+      if (p.status === STATUS.MISSING_AFTER && sampledAfter) { notCaptured.push(p.file); continue; }
       n += 1;
       findings.push({
         id: nextId(values.loop, n), target: p.file,
@@ -254,6 +271,7 @@ export async function compareVisual({ values, paths, log }) {
     different: findings.filter((f) => f.class === 'regression' && f.stage === 'visual').length,
     error: findings.filter((f) => f.class === 'harness-noise').length,
     onlyInBefore: onlyInBefore.length,
+    notCaptured: notCaptured.length,
     onlyInAfter: onlyInAfter.length,
   };
   const verdict = findings.length ? 'findings' : 'pass';
