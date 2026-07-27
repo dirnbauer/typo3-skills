@@ -48,6 +48,22 @@
     "pass_3": []
   },
   {
+    "directory": "postgres-best-practices",
+    "skill_name": "postgres-best-practices",
+    "description": "Postgres performance optimization and best practices from Supabase. Use this skill when writing, reviewing, or optimizing Postgres queries, schema designs, or database configurations.",
+    "source_owner": "Supabase",
+    "source_url": "https://github.com/supabase/agent-skills",
+    "file_path": "skills/postgres-best-practices/SKILL.md",
+    "line_count": 70,
+    "frontmatter_keys": [
+      "name",
+      "description"
+    ],
+    "pass_1": [],
+    "pass_2": [],
+    "pass_3": []
+  },
+  {
     "directory": "security-audit",
     "skill_name": "security-audit",
     "description": "Use when conducting security assessments \\u2014 OWASP Top 10 / API / LLM, CWE Top 25, CVSS scoring \\u2014 auditing PHP/TYPO3, APIs, frontend, Terraform/K8s/Docker IaC, AWS cloud, AI agent configs, or scanning dependencies.",
@@ -502,9 +518,9 @@
     "skill_name": "typo3-upgrade-run",
     "description": "Update or upgrade a whole TYPO3 site or project from v12 or v13 to 14.3 LTS, end to end, in a local DDEV clone, and prove nothing changed for visitors. Use when the user says update TYPO3, upgrade to v14, move to 14.3 LTS, migrate the site, do the whole upgrade, set up visual regression around an upgrade, confirm visitors can see no difference after the update, prove nothing broke, or asks whether a pixel difference after the upgrade is acceptable. Owns the TYPO3 version constraint, the PHP target and the ext_emconf.php policy for the upgrade it runs. Runs the update as bounded loops against a baseline frozen before any change, with a snapshot to roll back to and a documented verdict per loop; approved performance, SEO, accessibility and security work starts only afterwards. Never deploys to staging or live.",
     "source_owner": "webconsulting",
-    "source_url": "https://github.com/dirnbauer/webconsulting-skills",
+    "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-upgrade-run/SKILL.md",
-    "line_count": 403,
+    "line_count": 443,
     "frontmatter_keys": [
       "name",
       "description"

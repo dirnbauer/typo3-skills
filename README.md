@@ -144,6 +144,7 @@ the upstream state recorded in [VENDORED.md](VENDORED.md).
 |---|---|---|
 | `enterprise-readiness` | Use when evaluating projects for production or enterprise readiness, implementing supply chain … | Netresearch |
 | `php-modernization` | Use when modernizing PHP code: PHP 8.1-8.5 features, PSR/PHP-FIG/PER-CS compliance, PHPStan/Rec… | Netresearch |
+| `postgres-best-practices` | Postgres performance optimization and best practices: indexes, locks, schema, batch writes, mon… | Supabase |
 | `security-audit` | Use when conducting security assessments — OWASP Top 10 / API / LLM, CWE Top 25, CVSS scor… | Netresearch |
 | `typo3-conformance` | Use when assessing TYPO3 extension quality, conformance checking, standards compliance, moderni… | Netresearch |
 | `typo3-core-contributions` | Use when analyzing TYPO3 Forge issues, submitting patches to Gerrit, contributing core bug fixe… | Netresearch |
@@ -186,6 +187,7 @@ the upstream state recorded in [VENDORED.md](VENDORED.md).
 - https://github.com/netresearch/enterprise-readiness-skill
 - https://github.com/netresearch/php-modernization-skill
 - https://github.com/netresearch/security-audit-skill
+- https://github.com/supabase/agent-skills
 - https://github.com/netresearch/typo3-conformance-skill
 - https://github.com/netresearch/typo3-core-contributions-skill
 - https://github.com/netresearch/typo3-ddev-skill

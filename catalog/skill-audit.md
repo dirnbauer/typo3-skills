@@ -7,7 +7,7 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 2. Source attribution and provenance drift
 3. Repository optimization gaps
 
-- Skills audited: 37
+- Skills audited: 38
 - Total findings: 0
 - Skills with pass 1 findings: 0
 - Skills with pass 2 findings: 0
@@ -57,6 +57,22 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source URL: https://github.com/netresearch/php-modernization-skill
 - Frontmatter name: php-modernization
 - SKILL.md lines: 79
+
+**Pass 1: Structure**
+- No pass 1 issues found.
+
+**Pass 2: Source**
+- No pass 2 issues found.
+
+**Pass 3: Optimization**
+- No pass 3 issues found.
+
+## `postgres-best-practices`
+
+- Source owner: Supabase
+- Source URL: https://github.com/supabase/agent-skills
+- Frontmatter name: postgres-best-practices
+- SKILL.md lines: 70
 
 **Pass 1: Structure**
 - No pass 1 issues found.
@@ -470,9 +486,9 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 ## `typo3-upgrade-run`
 
 - Source owner: webconsulting
-- Source URL: https://github.com/dirnbauer/webconsulting-skills
+- Source URL: https://github.com/dirnbauer/typo3-skills
 - Frontmatter name: typo3-upgrade-run
-- SKILL.md lines: 403
+- SKILL.md lines: 443
 
 **Pass 1: Structure**
 - No pass 1 issues found.
