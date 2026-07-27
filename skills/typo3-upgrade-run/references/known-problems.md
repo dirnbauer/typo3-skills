@@ -17,6 +17,9 @@ matching symptom with a different cause is exactly how a wrong fix gets applied 
 - [The `<html>` language attributes are wrong, missing or contradictory](#the-html-language-attributes-are-wrong-missing-or-contradictory)
 - [Forms lose their styling: inputs collapse to browser-default width](#forms-lose-their-styling-inputs-collapse-to-browser-default-width)
 - [Content tables lose their padding and the page gets shorter](#content-tables-lose-their-padding-and-the-page-gets-shorter)
+- [Image optimisation configured, nothing got smaller](#image-optimisation-configured-nothing-got-smaller)
+- [A correct HTML fix silently moves the layout](#a-correct-html-fix-silently-moves-the-layout)
+- [Shared links show no preview image](#shared-links-show-no-preview-image)
 - [Editors lose their modules, or gain all of them](#editors-lose-their-modules-or-gain-all-of-them)
 - [Every CLI command dies in alias-loader-include.php](#every-cli-command-dies-in-alias-loader-includephp)
 - [extension:setup fails inside a sitepackage's ext_localconf.php](#extensionsetup-fails-inside-a-sitepackages-ext_localconfphp)
@@ -265,6 +268,135 @@ emitting a class the site's CSS depends on.** When a visual finding shows a heig
 no colour change and no error, diff the *class attributes* of the captured DOM before assuming
 a styling bug. Grep the stylesheet for class names Core used to supply — `contenttable`,
 `form-group`, `csc-*`, `bodytext` — and check each is still emitted.
+
+---
+
+## Image optimisation configured, nothing got smaller
+
+**Symptom.** A format and a quality are configured on an image, the page still ships the same
+bytes, and the rendered `<img src>` still points at a `.jpg`. No error, no warning, nothing in
+any log. The audit keeps reporting the same oversized image.
+
+**Two causes, and they stack — check both, because fixing one alone still changes nothing.**
+
+**Cause 1 — the property is `ext`, not `fileExtension`.**
+
+```typoscript
+file.ext = avif             # correct
+file.fileExtension = avif   # silently ignored
+```
+
+`ContentObjectRenderer` reads the TypoScript key **`ext`** and maps it to the processor's
+internal `fileExtension`. Writing `fileExtension` in TypoScript is not a syntax error and not a
+deprecation — it is simply never read. The image is emitted as JPEG and the only symptom is that
+nothing improved, which reads as "AVIF didn't help here" rather than "the setting did nothing".
+
+**Cause 2 — a source already at the target size is passed through untouched.**
+
+If the file is *already* exactly the requested dimensions, TYPO3 concludes there is no resize to
+perform and hands the original straight through. It is never re-encoded, so the configured
+quality never applies and a 250 KB upload stays a 250 KB download. Force it through the
+processor:
+
+```typoscript
+file.width = 742
+file.height = 362
+file.ext = avif
+file.params = -quality 82 -strip     # `params` is what forces the re-encode
+```
+
+**Confirm from the rendered markup, not the configuration.** The path tells you which of the two
+you are looking at:
+
+```bash
+curl -s https://site.ddev.site/<page> | grep -oE '<img[^>]*>' | head
+```
+
+`/fileadmin/…​.jpg` — never processed (cause 2, or cause 1, or both).
+`/fileadmin/_processed_/…​.jpg` — processed but still JPEG (cause 1).
+`/fileadmin/_processed_/…​.avif` — working.
+
+Full guidance in [`image-formats.md`](image-formats.md).
+
+---
+
+## A correct HTML fix silently moves the layout
+
+**Symptom.** An accessibility or markup fix that is unambiguously correct — removing a redundant
+wrapper, replacing a `<div>` with a `<nav>`, unnesting a list — and the visual gate lights up on
+pages that should not have changed at all.
+
+**Cause.** The old, wrong markup was **load-bearing for a CSS selector**. Descendant and child
+combinators count elements, so removing one level silently stops a rule matching.
+
+The case that produced this entry: a sidebar template wrapped its menu in a second, empty `<ul>`,
+so `#sidebar > ul` contained a `<ul>` instead of `<li>` elements — axe's `list` rule, on every
+page. Removing the wrapper is plainly the right fix. It would also have shifted **every top-level
+link 8px to the left**, because the stylesheet carried:
+
+```css
+#sidebar ul ul a { padding: 0 0 0 8px; }
+```
+
+and that empty wrapper *was* the second `ul`. Every link happened to sit inside two lists, so
+every link got the indent. Remove one level and only the submenu links keep it.
+
+**Fix.** Change the selector in the same commit as the markup — here `#sidebar ul ul a` becomes
+`#sidebar ul a`, which is exactly equivalent once the wrapper is gone.
+
+**How to catch it.** Before touching the markup, grep the stylesheet for the element you are
+about to remove a level of, and **measure**:
+
+```js
+[...document.querySelectorAll('#sidebar a')].map(a => {
+  const r = a.getBoundingClientRect();
+  return { t: a.innerText.trim(), x: Math.round(r.x), y: Math.round(r.y),
+           pl: getComputedStyle(a).paddingLeft };
+})
+```
+
+Run it before and after and diff. On the real fix: 13 links, **zero** position changes — which is
+what let the change ship inside an invariance run instead of needing a new baseline.
+
+**Generalise it.** "Structural fix" and "visually neutral" are not the same claim, and on a site
+whose CSS was written against whatever markup happened to exist, they are frequently opposites.
+Measure; do not reason about it.
+
+---
+
+## Shared links show no preview image
+
+**Symptom.** The page has a valid `og:image`, the URL returns 200, the image opens fine in a
+browser — and Facebook, LinkedIn, WhatsApp and Slack all render the link with no picture.
+
+**Cause.** The image is **AVIF or WebP**. Social scrapers are not browsers: they are fetchers with
+their own, much older image support, and most of them cannot decode AVIF at all. A modern-format
+share card is invisible to exactly the audience it exists for.
+
+This bites hardest right after an image-format migration, because the sweep that moved every
+processed image to AVIF also moved the share cards, and nothing in the site itself looks wrong.
+
+**Fix.** Pin the share card to **PNG or JPEG**, explicitly, and leave it pinned:
+
+```typoscript
+page.meta.og:image.cObject.file.format = png     # GIFBUILDER
+# or, for a processed file:  file.ext = jpg
+```
+
+**The same applies to** `twitter:image`, favicons and `apple-touch-icon` (consumed by the OS, not
+a browser), email templates, and anything destined for PDF or print. Browser support statistics
+are irrelevant for all of them.
+
+**Verify with a fetcher, not your browser.** Requesting the card with a normal browser proves
+nothing, because your browser *can* decode AVIF:
+
+```bash
+curl -sI "$(curl -s https://site.ddev.site/ \
+  | grep -oE '<meta property="og:image" content="[^"]*"' \
+  | sed 's/.*content="//;s/"$//')" | grep -i content-type
+```
+
+Expect `image/png` or `image/jpeg`.
 
 ---
 
