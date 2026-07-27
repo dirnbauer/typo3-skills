@@ -16,9 +16,30 @@ P04 green.
 5. Audit every required and dev package against current release metadata and route it through
    `references/extension-strategy.md`.
 6. Migrate extension metadata to `composer.json` per #108345.
-7. Update PHPStan to the newest release compatible with the resolved dependency set, including
+7. **Move environment-specific configuration and secrets into `.env`.** An upgrade is when this is
+   cheapest to fix, and most v12-era projects carry credentials in committed files — a sync script
+   with a production password, a hard-coded database block in `AdditionalConfiguration.php`, an API
+   key in TypoScript. Add [`helhum/dotenv-connector`](https://packagist.org/packages/helhum/dotenv-connector)
+   (a Composer plugin, not an extension, so it needs no TYPO3 constraint and works in v12, v13 and
+   v14 alike):
+
+   ```bash
+   ddev composer require helhum/dotenv-connector
+   ```
+
+   It hooks the Composer autoloader, so `.env` is loaded for every entry point — web, CLI, scheduler,
+   tests — before TYPO3 boots, and values arrive as ordinary `getenv()` / `$_ENV` reads. Then:
+   - keep `.env` out of git and commit a `.env.dist` documenting each key with a safe placeholder;
+   - read values in `config/system/additional.php` (or `AdditionalConfiguration.php`) instead of
+     literals — database, mail transport, `trustedHostsPattern`, API keys, feature switches;
+   - **rotate every credential that was ever committed.** Removing it from the working tree does not
+     remove it from history; treat a committed secret as disclosed.
+
+   Record the resulting key list in the handover: per-environment values are exactly what P15 has to
+   hand over, and a `.env.dist` is that list already written down.
+8. Update PHPStan to the newest release compatible with the resolved dependency set, including
    `saschaegerer/phpstan-typo3` through `phpstan/extension-installer`. Do not copy stale config.
-8. `ddev composer validate --strict`, update with the narrowest justified command, inspect the
+9. `ddev composer validate --strict`, update with the narrowest justified command, inspect the
    lockfile diff.
 
 ## Exit

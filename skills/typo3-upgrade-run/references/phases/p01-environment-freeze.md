@@ -54,6 +54,10 @@ P00 complete.
      CDN purge hooks. Composer-mode path changes (`typo3conf/ext/*` → `vendor/`) break cron lines
      that a green run never touches. Third-party origins are blocked during every capture, so these
      integrations are provably untested — they must reach the handover as named gaps.
+   - **Committed secrets** — grep the worktree *and* the history for passwords, API keys and SSH
+     targets: sync and deploy scripts, `AdditionalConfiguration.php`, TypoScript, CI files. A
+     credential in git is disclosed to everyone with repository access, and deleting the line does
+     not undo that. List what you find; P05 moves it to `.env` and the owner rotates it.
    - **Table sizes** — `sys_log`, `sys_history` and `cf_*` can reach multiple GB, which makes every
      snapshot take tens of minutes and dominates the run's wall clock. Truncating cache and log
      tables locally is safe **before** sealing; doing it afterwards changes the content fingerprint.

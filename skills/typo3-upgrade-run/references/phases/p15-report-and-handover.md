@@ -19,7 +19,10 @@ P13 closed. All approved Contract B tracks green or explicitly stopped.
 ## The handover is information only
 This skill executes none of it. It lists: the Composer, schema, wizard, reference-index, language and
 cache commands to repeat per environment; required PHP and database versions; configuration that
-changes outside DDEV (base URLs, mail transport, proxies, headers, CSP); reindexing needs such as
+changes outside DDEV (base URLs, mail transport, proxies, headers, CSP) — hand this over as a
+`.env.dist` key list where the project uses `helhum/dotenv-connector`, since that file is the
+per-environment contract already written down, and name any credential that was rotated during the
+run so the deploying party knows the old one is dead; reindexing needs such as
 Solr; and every gap DDEV could not close — HSTS meaningfulness, production proxy headers, third-party
 embeds absent locally.
 
