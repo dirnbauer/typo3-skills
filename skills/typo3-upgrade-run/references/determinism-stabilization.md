@@ -106,3 +106,56 @@ the URL is **excluded from the invariance claim** and named in the closure certi
 This is an escape hatch with a cost, and the cost must stay visible. It is not a way to silence an
 inconvenient regression: the test is whether the instability reproduces on the *untouched* site,
 which is exactly what loop 000 measures.
+
+
+## Consent banners: verify by hand, then seed and remove
+
+Two different jobs, and conflating them is why consent handling usually goes wrong.
+
+**Verification is a behaviour check, not a capture step.** Clicking the banner during captures is
+timing-dependent and is itself a flake source — the very thing stabilisation removes. So exercise it
+deliberately, once, outside the capture loop, and look at the result:
+
+1. Load a page with no consent cookie and confirm the banner appears.
+2. **Accept all** → banner closes, choice persists across a reload and a second page, and any
+   content it gates (embedded video, maps) now renders.
+3. Clear state, reload, **reject all** → banner closes, gated content stays blocked, and nothing
+   third-party loads. Check the network list, not just the page.
+4. Clear state, reload, use **settings / individual choice** → toggling one category persists that
+   category and only that one.
+5. On at least two of those runs, look at the banner itself at desktop and mobile width: is it
+   readable, are the buttons reachable, is it keyboard-operable, does it trap focus.
+
+Record the result. A banner that cannot be rejected, or whose rejection does not actually block
+third-party requests, is a legal finding as much as a technical one and belongs in the report.
+
+**Capture handling is separate: seed, never click.** Put the accepted state into cookies or
+localStorage via `consent_state` in `run.yml` so the banner never renders during a capture. The
+settle script then removes any known consent container that survived seeding as a backstop, restores
+scrolling that the library locked, and reports what it removed under `report.consent` — a removal
+that is not reported is indistinguishable from content that vanished on its own.
+
+## Carousels: pinned to slide 1, and slide 2+ is declared untested
+
+A rotating carousel is the worst single offender in visual regression. The same page shot twice
+lands on different slides, and the diff is a full-width image change that looks exactly like a real
+regression — so it burns an iteration of the one loop that matters.
+
+Freezing is not enough on its own. Two things are needed:
+
+- **Stop the motion.** Carousels advance on `setInterval` far more often than on
+  `requestAnimationFrame`, so cancelling frames leaves them running. The init script wraps
+  `setInterval` and clears every registered timer at freeze time.
+- **Reset the position.** Wherever the carousel happened to be when the timers stopped is arbitrary
+  and differs between passes, so each one is driven back to its first slide through its own library
+  API — Bootstrap, Swiper, Slick and Owl are handled, with a CSS-class fallback for Bootstrap markup
+  when the library object is absent.
+
+**The consequence is a real coverage limit: only slide 1 is ever compared.** A regression that
+exists exclusively on slide 3 will not be caught. The settle report carries
+`report.carousels.untestedSlides` for exactly this reason — it is the count of slides this run never
+looked at, and it belongs in the coverage declaration alongside URLs that were not captured. Pinning
+without declaring would be the dishonest version of this fix.
+
+If a carousel matters enough to need real coverage, give it explicit capture states rather than
+loosening the pinning: a state per slide, each deterministic.

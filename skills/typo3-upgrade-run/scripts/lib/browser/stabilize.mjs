@@ -51,9 +51,17 @@ export function initScript({ seed = 20260725, epoch = 1774425600000 } = {}) {
   if (raf) {
     globalThis.requestAnimationFrame = (cb) => { const id = raf(cb); globalThis.__t3uFrames.add(id); return id; };
   }
+  // Carousels advance on setInterval far more often than on rAF, so cancelling frames
+  // alone leaves the most common rotating element still moving between two passes.
+  const setIntervalOrig = globalThis.setInterval;
+  globalThis.__t3uTimers = new Set();
+  globalThis.setInterval = (...a) => { const id = setIntervalOrig(...a); globalThis.__t3uTimers.add(id); return id; };
+
   globalThis.__t3uFreeze = () => {
     for (const id of globalThis.__t3uFrames) { try { cancelAnimationFrame(id); } catch {} }
     globalThis.__t3uFrames.clear();
+    for (const id of globalThis.__t3uTimers) { try { clearInterval(id); } catch {} }
+    globalThis.__t3uTimers.clear();
     for (const v of document.querySelectorAll('video')) { try { v.pause(); v.currentTime = 0; } catch {} }
   };
 })();`;
@@ -87,6 +95,99 @@ export function settleScript() {
     setTimeout(r, 3000);
   }))));
   report.lazy = imgs.filter((i) => i.complete).length;
+
+  // img.complete only promises the bytes arrived - decoding can still be in flight, so a
+  // screenshot taken here catches a partially painted photo and the same page differs
+  // between two identical passes by a few hundred scattered pixels. decode() resolves
+  // when the frame is ready to paint, which is the guarantee we actually need.
+  await Promise.all(imgs.map((img) => {
+    if (typeof img.decode !== 'function') return null;
+    return img.decode().catch(() => {});
+  }));
+  report.decoded = imgs.length;
+
+  // Consent overlays: seeding is the primary mechanism, this is the backstop.
+  //
+  // A banner that survives seeding covers the page and every screenshot behind it becomes a
+  // picture of the banner. Remove only containers matching well-known consent implementations,
+  // and REPORT each removal — silently deleting page content would hide a real regression.
+  report.consent = { removed: 0, selectors: [] };
+  const CONSENT = [
+    '#CybotCookiebotDialog', '#usercentrics-root', '#uc-center-container', '#klaro',
+    '.cc-window', '.cmplz-cookiebanner', '#cookiescript_injected', '#onetrust-consent-sdk',
+    '#cookie-notice', '.cookie-consent-banner', '#cookieman-modal', '.tx-cookieman',
+  ];
+  for (const sel of CONSENT) {
+    for (const el of document.querySelectorAll(sel)) {
+      const cs = getComputedStyle(el);
+      if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+      el.remove();
+      report.consent.removed += 1;
+      if (!report.consent.selectors.includes(sel)) report.consent.selectors.push(sel);
+    }
+  }
+  // Consent libraries commonly lock scrolling while open; restore it after removal.
+  if (report.consent.removed) {
+    document.documentElement.style.overflow = '';
+    document.body.style.overflow = '';
+    document.body.classList.remove('cmplz-blocked', 'modal-open', 'no-scroll');
+  }
+
+  // Carousels: pin every one to its first slide and say so.
+  //
+  // A rotating carousel is the single worst offender in visual regression: the same page
+  // shot twice lands on different slides, and the diff is a full-width image change that
+  // looks exactly like a real regression. Freezing timers stops it moving, but wherever it
+  // happened to be when we froze is arbitrary, so it must also be RESET to slide 1.
+  //
+  // Slide 2+ is therefore NOT covered by this run. That is a real coverage limit and it is
+  // reported rather than left implicit — see report.carousels.
+  report.carousels = { found: 0, pinned: 0, byLibrary: {}, untestedSlides: 0 };
+  const note = (lib) => { report.carousels.byLibrary[lib] = (report.carousels.byLibrary[lib] || 0) + 1; };
+  const countSlides = (root, sel) => { try { return root.querySelectorAll(sel).length; } catch { return 0; } };
+
+  try {
+    // Bootstrap 4/5
+    for (const el of document.querySelectorAll('.carousel')) {
+      report.carousels.found += 1;
+      const slides = countSlides(el, '.carousel-item');
+      if (slides > 1) report.carousels.untestedSlides += slides - 1;
+      const B = globalThis.bootstrap;
+      const inst = B && B.Carousel ? (B.Carousel.getInstance(el) || new B.Carousel(el, { interval: false, ride: false })) : null;
+      if (inst) { try { inst.pause(); inst.to(0); report.carousels.pinned += 1; note('bootstrap'); } catch {} }
+      else {
+        const items = [...el.querySelectorAll('.carousel-item')];
+        if (items.length) {
+          items.forEach((s, i) => s.classList.toggle('active', i === 0));
+          report.carousels.pinned += 1; note('bootstrap-css');
+        }
+      }
+    }
+    // Swiper
+    for (const el of document.querySelectorAll('.swiper, .swiper-container')) {
+      report.carousels.found += 1;
+      const slides = countSlides(el, '.swiper-slide');
+      if (slides > 1) report.carousels.untestedSlides += slides - 1;
+      const sw = el.swiper;
+      if (sw) { try { sw.autoplay && sw.autoplay.stop(); sw.slideTo(0, 0, false); report.carousels.pinned += 1; note('swiper'); } catch {} }
+    }
+    // Slick / Owl, only when their jQuery plugin is actually present
+    const jq = globalThis.jQuery;
+    if (jq) {
+      jq('.slick-slider').each(function () {
+        report.carousels.found += 1;
+        const slides = countSlides(this, '.slick-slide:not(.slick-cloned)');
+        if (slides > 1) report.carousels.untestedSlides += slides - 1;
+        try { jq(this).slick('slickPause'); jq(this).slick('slickGoTo', 0, true); report.carousels.pinned += 1; note('slick'); } catch {}
+      });
+      jq('.owl-carousel').each(function () {
+        report.carousels.found += 1;
+        const slides = countSlides(this, '.owl-item:not(.cloned)');
+        if (slides > 1) report.carousels.untestedSlides += slides - 1;
+        try { jq(this).trigger('stop.owl.autoplay'); jq(this).trigger('to.owl.carousel', [0, 0, true]); report.carousels.pinned += 1; note('owl'); } catch {}
+      });
+    }
+  } catch {}
 
   for (const v of document.querySelectorAll('video')) { try { v.pause(); v.currentTime = 0; report.videos += 1; } catch {} }
   if (globalThis.__t3uFreeze) globalThis.__t3uFreeze();
