@@ -7,8 +7,30 @@ Track `invariance`.
   console errors. **100% coverage is required** — module *groups* are distinguished from real
   modules, and an unexpected skip fails the run. A sweep that reports "12 ok, 3 skipped" and exits 0
   is how unchecked modules ship.
-- Scheduler: run due tasks, confirm success, verify any mail in Mailpit.
-- Redirects: `EXT:redirects` entries resolve without loops or dead targets.
+- **Backend write round-trip**: opening a module proves almost nothing. The breakages editors hit
+  on day one — a FormEngine exception on save, a broken FAL upload after a storage or driver change,
+  a DataHandler hook that now throws, an RTE that strips markup — all happen in modules that open
+  perfectly. So actually do it: create a content element, edit and save it, upload a file and
+  reference it, translate a record, then delete what you made. A run that closes green while nobody
+  can edit has proven the wrong thing.
+- Scheduler: enumerate **every** row in `tx_scheduler_task`, resolve each task's PHP class, and
+  force-execute one instance of each. On a fresh clone almost nothing is due, so "run due tasks"
+  passes vacuously; tasks whose class came from a removed or renamed extension are unrunnable rows
+  that fail silently after deploy — nightly imports, newsletters, cache warmers.
+- Redirects: `EXT:redirects` entries resolve without loops or dead targets — and **request a real
+  sample of source paths**, before and after. Redirect sources are by definition not in a sitemap,
+  so no other stage in this run ever touches them; that table carries the SEO value of the last
+  relaunches, and a changed host match or a slug-wizard regeneration 404s top-traffic legacy URLs
+  while the certificate still says "invisible to visitors".
+- Editorial configuration: page and user TSconfig, `be_groups` module access and permissions, DB and
+  file mounts, and backend layouts still apply as before. v14's module-parent renames make old
+  identifiers no-ops, which silently either hides every module or exposes all of them.
+- Site search: with Solr, loop 200 covers it. With `EXT:indexed_search`, the index must be rebuilt
+  by a scheduler task — see above — or the smoke test passes on an empty index because the result
+  page renders fine.
+- Forms: submit one. Assert it persisted **and** that the finisher mail arrived in Mailpit. v14
+  replaced ten EXT:form hooks with PSR-14 events, so a form can render pixel-identical while its
+  email finisher silently stops sending.
 - Linkvalidator where installed; triage broken links.
 - Review `sys_log` and the deprecation log for entries raised since the update.
 - Smoke test: homepage, a standard content page, news or detail pages, search including empty and

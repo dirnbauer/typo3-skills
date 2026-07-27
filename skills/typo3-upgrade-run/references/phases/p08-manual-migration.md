@@ -13,12 +13,30 @@ with this skill.
    unused XLF keys and dead imports.
 3. **Keep legitimate DataHandler hooks where no real PSR-14 event exists.** Never replace a hook with
    a guessed event name — verify against the installed source.
-4. Make TCA and schema v14-compliant, preserve localisation and relations, and add upgrade wizards
+4. Work through the v14 changes that no tool closes. These are the ones that fail at *render* or
+   *runtime* rather than at boot, so an unbudgeted one surfaces during the invariance loop as a mass
+   regression with no owning phase — estimate them at P05, fix them here:
+   - **`$GLOBALS['TSFE']` / `TypoScriptFrontendController` is gone.** The single largest v14 break
+     for sitepackages and custom extensions, not covered by Rector, and each usage needs a different
+     `$request->getAttribute(...)` replacement. Look them up in `typo3-v14-reference`; do not guess.
+   - **Fluid 5 is strict.** String-for-int ViewHelper arguments are rejected, `_`-prefixed variables
+     are disallowed, CDATA is no longer stripped. These live in `.html` files Fractor does not fully
+     cover and fail on the specific templates that use them.
+   - **`$GLOBALS['TCA']` is read-only after boot.** An extension mutating TCA from `ext_tables.php`,
+     middleware or an event listener now fails — an architectural refactor, not a patch.
+   - **Doctrine DBAL and Symfony majors moved.** Custom queries using removed DBAL APIs fail at
+     runtime on the pages that run them; a Symfony major also breaks custom console commands and DI
+     wiring. Rector covers much of this, not all.
+5. **Migrate the site configuration, not just the code.** Apply the P01 site-YAML inventory: base
+   variants per environment, language fallback type and order, route enhancers, per-site error
+   handling, and site sets where the project uses them. A changed fallback silently changes which
+   language renders; an error handler pointing at a page uid passes locally and 404s after deploy.
+6. Make TCA and schema v14-compliant, preserve localisation and relations, and add upgrade wizards
    for persisted data changes. Test migrations with representative data.
-5. Make record reads, writes, previews, overlays, file handling and rendering workspace-aware. Add
+7. Make record reads, writes, previews, overlays, file handling and rendering workspace-aware. Add
    tests for create, edit, preview, publish, discard, localisation and relations. Account explicitly
    for FAL's workspace limitations.
-6. Preserve extension behaviour unless the user approved a breaking change. Add regression tests
+8. Preserve extension behaviour unless the user approved a breaking change. Add regression tests
    **before** risky rewrites, not after.
 
 ## Exit

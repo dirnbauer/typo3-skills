@@ -426,6 +426,7 @@ incomplete rather than claiming success. A gate that does not apply needs an exp
 | `references/run-directory.md`, `references/state-file.md` | the first write to the run directory |
 | `references/phases/p00-…p15-….md` | the phase you are in |
 | `references/determinism-stabilization.md` | loop 000 not reaching zero |
+| `references/rollback.md` | restoring an anchor — database, code and files together |
 | `references/quality-bars.md`, `references/measurement-recipes.md` | Contract B |
 | `references/extension-strategy.md` | classifying or routing an extension |
 | `references/typo3-14-constraints.md` | constraints, #108345, `providesPackages` |

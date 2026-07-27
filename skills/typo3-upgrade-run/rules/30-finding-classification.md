@@ -20,7 +20,7 @@ Classification is not bookkeeping. The class determines who fixes what, and wher
 
 Work top to bottom. The first match wins.
 
-1. **Did the content fingerprint change?** → `content-drift`. Stop. Do not classify anything else in this run until the drift is resolved; every other finding is suspect.
+1. **Did the content fingerprint change?** → `content-drift`. Stop. Do not classify anything else in this run until the drift is resolved; every other finding is suspect. See §30.7 for how to resolve it, because "escalate" alone leaves the run stuck.
 2. **Does it reproduce on an immediate re-shoot of the same URL?** If no → `harness-noise`. A difference that does not reproduce is a property of the measurement.
 3. **Does it reproduce against baseline A on the *unmodified* site?** If yes → `pre-existing`. It was already there.
 4. **Is there an approval record naming this exact difference class?** If yes → `declared-change`. If the approval is missing, it is **not** a declared change — it is a `regression` until the approval exists.
@@ -61,3 +61,31 @@ Status changes go into `04-findings.md` (current state) and `journal.jsonl` (his
 A loop may exit green with residual findings **only** in the non-blocking classes: `pre-existing`, `environment`, `improvement`. Each is listed in `06-exit.md` under `residual_findings[]` and carried into the final report.
 
 `regression`, `harness-noise`, `content-drift`, and unapproved `declared-change` findings never survive a green exit. If they cannot be resolved, the loop aborts and the user decides — the skill does not decide on its own that a regression is acceptable.
+
+## 30.7 Resolving `content-drift`
+
+A drift finding halts classification, so it needs an exit — otherwise the rule that protects the
+proof is also the rule that strands the run.
+
+First establish **where** the change happened, because the two cases have opposite answers:
+
+**Drift inside the local clone** — someone edited the local backend, a scheduler task or feed import
+wrote rows, or a migration touched data outside its declared scope. This is recoverable: restore the
+nearest anchor per [`references/rollback.md`](../references/rollback.md), re-verify the baseline, and
+resume. If the write was legitimate and must stay, it is a declared change and needs an approval
+plus a documented content-fingerprint reseal — never a silent one.
+
+**Drift on live, i.e. the clone is now stale** — editors kept publishing while the run progressed.
+Nothing local changed, so the fingerprint still holds; what aged is the claim. Importing a fresh
+dump would void `A-original`, and a baseline refresh is not grantable, so re-importing mid-run means
+starting the invariance work again. That is a decision with a cost, and it belongs to the people who
+own the site, not to the agent. Put the choice to them explicitly:
+
+1. **Finish against the frozen dataset.** The proof stands for the content as of the sync date; that
+   date goes in the closure certificate and the KPI report, stated plainly rather than implied.
+2. **Re-import and restart the invariance track.** Honest and expensive: new baseline, new loops.
+   Only worth it when the drift is large enough that a proof about the old dataset is not useful.
+
+Both are legitimate; pretending the question does not exist is not. This is also why P00 asks for a
+freeze window or a recorded staleness decision up front — resolving drift is much cheaper as a
+decision made before the run than as a surprise in loop 300.
