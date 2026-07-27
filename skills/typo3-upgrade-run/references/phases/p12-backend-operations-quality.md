@@ -32,7 +32,11 @@ Track `invariance`.
   replaced ten EXT:form hooks with PSR-14 events, so a form can render pixel-identical while its
   email finisher silently stops sending.
 - Linkvalidator where installed; triage broken links.
-- Review `sys_log` and the deprecation log for entries raised since the update.
+- **Final smoke test — no NEW errors.** `node scripts/smoke-log-check.mjs --base-url … --count 10`
+  requests a seeded random sample from the sitemap and reads the application log, `sys_log` and the
+  responses, reporting only what appeared *during* the requests. It must come back clean: a page
+  answering 200 is not the same as a page produced without error, and a warning that is harmless on
+  13.4 is frequently fatal on 14.3. See `references/harness-contract.md` for the log locations.
 - Smoke test: homepage, a standard content page, news or detail pages, search including empty and
   paginated results, login and password recovery, forms, the 404 response, `robots.txt`, every
   sitemap entry point. DDEV routes all mail to Mailpit (`ddev launch -m`), so no real recipient is

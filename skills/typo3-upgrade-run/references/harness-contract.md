@@ -159,3 +159,45 @@ carry the value. It is gated because on a large site it can turn a ten-minute cl
 overnight one, and because an agent should never quietly commit someone else's afternoon. Ask,
 state the URL count and the rough time, and ask again. If the answer is anything other than an
 explicit second yes, take the seeded 1000 and declare the omission.
+
+
+## Where the logs are, and why all three matter
+
+A page can answer 200 and still be broken: a swallowed exception, a deprecation, a query that failed
+inside a `try`. The status code says the response arrived, not that it was produced correctly. Read
+what the application wrote while producing it — from all three sources, because each catches
+something the others miss.
+
+| Source | Path | Catches |
+|---|---|---|
+| Application log | `var/log/typo3_<hash>.log` (Composer mode; `typo3temp/var/log/` in legacy layouts) | exceptions, deprecations, PHP warnings, the exception handler's own output |
+| `sys_log` table | database, `error > 0` | backend and DataHandler failures, and frontend PHP warnings that never reach the HTTP response |
+| HTTP response | the request itself | status codes, plus TYPO3's rendered exception page — which can also appear inside a 200 |
+
+The application log filename carries an install-specific hash, so match `typo3_*.log` rather than
+hardcoding it. On a project with several, take the largest.
+
+## Final smoke test: no NEW errors
+
+```bash
+node scripts/smoke-log-check.mjs --base-url "https://acme.ddev.site" \
+  --count 10 --seed "acme-2026" --json .typo3-update/report/smoke.json
+```
+
+The word that carries the weight is **new**. Every real project's log already contains entries, and
+a check that reports all of them says nothing. The script marks the log position and the `sys_log`
+error count *first*, then requests a seeded random sample of pages from the sitemap, then reads only
+what appeared in between. A pre-existing error stays pre-existing; anything the update introduced
+stands alone.
+
+**It must return no new errors.** Not "no new errors except the known ones" — the known ones are
+already below the mark. Exit 1 means the update introduced something, and the loop is not closed.
+
+Ten pages is deliberate: enough to cross several templates, cheap enough to run after every change
+rather than once at the end. Seed it so the same pages are checked before and after, and raise the
+count for the closing pass.
+
+Why this catches what the visual loop cannot: it caught a site where **all ten pages returned 200
+and all ten logged a PHP warning** for a property removed in v13. Pixel comparison saw nothing —
+the pages rendered correctly — and in v14 that same warning is a fatal error. A green screenshot is
+not a working page.
