@@ -164,61 +164,13 @@ Never expose these in `public/`:
 ❌ vendor/ (should be outside public)
 ```
 
-### .htaccess Security (Apache)
+### Web server rules and security headers
 
-```apache
-# public/.htaccess additions
-
-# Block access to hidden files
-<FilesMatch "^\.">
-    Require all denied
-</FilesMatch>
-
-# Block access to sensitive file types
-<FilesMatch "\.(sql|sqlite|bak|backup|log|sh)$">
-    Require all denied
-</FilesMatch>
-
-# Block PHP execution in upload directories
-<Directory "fileadmin">
-    <FilesMatch "\.php$">
-        Require all denied
-    </FilesMatch>
-</Directory>
-
-# Security headers
-<IfModule mod_headers.c>
-    Header always set X-Content-Type-Options "nosniff"
-    Header always set X-Frame-Options "SAMEORIGIN"
-    Header always set Referrer-Policy "strict-origin-when-cross-origin"
-    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
-</IfModule>
-```
-
-### Nginx Security
-
-```nginx
-# Block hidden files
-location ~ /\. {
-    deny all;
-}
-
-# Block sensitive directories
-location ~ ^/(config|var|vendor)/ {
-    deny all;
-}
-
-# Block PHP in upload directories
-location ~ ^/fileadmin/.*\.php$ {
-    deny all;
-}
-
-# Security headers
-add_header X-Content-Type-Options "nosniff" always;
-add_header X-Frame-Options "SAMEORIGIN" always;
-add_header Referrer-Policy "strict-origin-when-cross-origin" always;
-add_header Permissions-Policy "geolocation=(), microphone=(), camera=()" always;
-```
+Apache `.htaccess` and Nginx blocks that deny hidden files, sensitive file types, and PHP execution
+under `fileadmin`, plus the standard security headers, are in
+[references/web-server-hardening.md](references/web-server-hardening.md) — with the rule that matters
+most: set each header at **one** layer only, and verify with `curl -I` rather than trusting the
+config. `.htaccess` does not control Nginx; check which server serves the site first.
 
 ## 4. Install Tool Security
 

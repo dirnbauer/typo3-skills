@@ -376,7 +376,7 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source owner: webconsulting
 - Source URL: https://github.com/dirnbauer/webconsulting-skills
 - Frontmatter name: typo3-security
-- SKILL.md lines: 493
+- SKILL.md lines: 445
 
 **Pass 1: Structure**
 - No pass 1 issues found.
