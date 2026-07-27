@@ -10,6 +10,21 @@ against it.
 | 030 | `bootstrap-5-latest` | latest 5.x, in small verified steps |
 | 040 | `accessibility-automated-green` | axe-core to 0 serious/critical per language |
 
+## First: does the loop have a subject?
+
+Three of these four loops are frequently **inapplicable**, and running one anyway is not neutral —
+it changes a site that did not need changing, and every change then has to be proven invariant.
+Measure before deciding, and record the measurement:
+
+| Loop | Skip when | How to know |
+|---|---|---|
+| 020 Vite | the site uses no core concatenation or compression | `compressCss`, `compressJs`, `concatenateCss`, `concatenateJs` appear in no TypoScript file and no `sys_template` row. v14 removes those features — if they are unused, the removal breaks nothing and a build would be introduced solely to have one. |
+| 030 Bootstrap | Bootstrap is not used | zero Bootstrap class names or variables in the shipped CSS and templates. A `bootstrap*` entry in `package.json` proves nothing: unused npm dependencies outlive their use, and a **Bootstrap 3** package is not a Bootstrap 5 upgrade waiting to happen. |
+| 010 sitemap | never — the sitemap is the sampling source for every later loop | |
+
+Write the decision as an ADR with the evidence in it. "We skipped it" and "there was nothing to
+skip" read identically in a report six months later, and only one of them is defensible.
+
 ## Expectation per loop
 - **010 and 020 must be pixel-identical.** They change routing metadata and asset delivery, not
   rendering. Any difference is a `regression`.
@@ -106,6 +121,30 @@ Most fixes are visually neutral. Where one is not — a new focus indicator, for
 one interaction *state*, which is why states are captured separately. Name the permitted visible
 changes concretely, limit them to specific states, and get them approved. The default state of a page
 is never changed wholesale because an accessibility audit happens to be running.
+
+**Measure each fix separately, and be ready to revert it.** Whether a markup correction is visually
+neutral is a measurement, not a judgement — and the answer is regularly no for reasons that are
+invisible in the diff you are editing. A real case: a template wrapped a menu in a `<ul>` that
+already emitted its own `<ul>`, which axe flags as invalid nesting. Removing the redundant wrapper
+produced correct markup and changed **57 of 60 sampled captures**. Every finding carried
+`diffPixels: 0` — the pixels were identical and the page *height* was not, because the stylesheet
+used descendant selectors (`#sidebar ul`, `#sidebar ul li ul`) that applied twice under the nesting
+and once without it. Layout detection caught what a pixel threshold alone would have missed.
+
+That fix was reverted, not approved. A site-wide layout shift is not the "one interaction state"
+this loop is allowed to change, and accepting it mid-run costs more than the violation: after the
+migration, every question about that region would have had two possible causes instead of one.
+
+**A partial close is a legitimate outcome.** Fix what is genuinely neutral, defer what is not to
+Contract B with the measurement attached, and record the loop as *one rule fixed, two open* rather
+than dressing it up as green. A deferred violation with evidence is worth more than a closed loop
+that quietly moved the baseline.
+
+**Fix the cause where you can reach it.** `html-has-lang` failing site-wide usually means
+`config.doctype` is an XHTML variant, which emits `xml:lang` and no `lang`. Setting
+`config.htmlTag.attributes.lang` fixes it now at zero rendering cost; migrating the doctype to HTML5
+in P08 makes that explicit attribute redundant. Do the cheap fix now and note the real cause — do
+not depend on a doctype change that has not happened yet.
 
 ## Exit
 Compared against `A-original`: 0 unclassified findings, every `declared-change` carrying an approval,
