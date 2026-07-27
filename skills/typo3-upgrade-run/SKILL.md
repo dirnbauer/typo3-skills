@@ -104,6 +104,12 @@ Full text in [`rules/00-scope-and-prohibitions.md`](rules/00-scope-and-prohibiti
 - **Never** commit credentials, dumps, or `.env` values.
 - **Never** claim a command, test, or browser flow passed unless it ran and succeeded.
 - Snapshot before every schema change, wizard run, data migration, and state-changing loop.
+- **Name every extension without a v14 release at P00, at the top of the plan, before migrating
+  anything.** `ddev composer why-not typo3/cms-core "^14.3"` lists them. One such extension blocks
+  the whole install and can change the project's cost and shape, so it is an intake finding, never
+  a mid-run discovery. Every extension then ends with exactly one resolution — `unresolved` is not
+  an end state, and a feature is never dropped because its extension was awkward. See
+  `rules/upgrade/upgrade-every-extension-resolves-on-v14.md`.
 - Verify every class, method, event, attribute, config key, and CLI command against the 14.3
   documentation *and* the installed v14 source. Never invent a replacement API, and never
   replace a hook with a guessed event name.
@@ -259,7 +265,7 @@ freeze, so a loop relaxing its own preconditions is detectable.
 
 | Phase | Loops | Gate |
 |---|---|---|
-| P00 intake and scope lock | — | target, source version, sync freshness recorded |
+| P00 intake and scope lock | — | target, source version, sync freshness recorded; **v14 blockers named** |
 | P01 environment capture and freeze | — | both fingerprints sealed, `pre-update` snapshot + dump |
 | P02 determinism self-test | 000 | two consecutive double-shoots at zero |
 | P03 baseline A capture and seal | 001 | `MANIFEST.sha256` + `SEAL.md`; **no site change yet made** |
@@ -428,7 +434,7 @@ incomplete rather than claiming success. A gate that does not apply needs an exp
 | `references/determinism-stabilization.md` | loop 000 not reaching zero |
 | `references/rollback.md` | restoring an anchor — database, code and files together |
 | `references/quality-bars.md`, `references/measurement-recipes.md` | Contract B |
-| `references/extension-strategy.md` | classifying or routing an extension |
+| `references/extension-strategy.md` | classifying or routing an extension; forking one into `packages/` |
 | `references/typo3-14-constraints.md` | constraints, #108345, `providesPackages` |
 | `references/feature-upgrades.md` | Solr, Visual Editor, CKEditor, security headers |
 | `references/harness-contract.md`, `references/visual-regression.md` | running the harness |
