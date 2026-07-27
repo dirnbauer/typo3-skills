@@ -37,14 +37,16 @@ t3u env-fingerprint --write-baseline
 t3u content-fingerprint --write-baseline
 t3u discover-urls --seed "acme-2026"    # seeded — the same sample re-runs later
 t3u selftest-determinism                # shoot twice, require zero diff. Not optional.
-t3u capture --label before
+t3u capture --label before --out .typo3-update/baseline/A-original
 t3u seal-baseline --id A-original       # immutable from here
 
 # 2. do the update  (Phases P04–P10 — ddev snapshot before each schema step)
 
 # 3. prove nothing changed for visitors
 t3u capture --label after
-t3u compare-http && t3u compare-dom && t3u compare-visual
+t3u compare-http   --before .typo3-update/baseline/A-original/http
+t3u compare-dom    --before .typo3-update/baseline/A-original/dom
+t3u compare-visual --before .typo3-update/baseline/A-original/shots
 t3u backend-sweep --base-url "https://acme.ddev.site"
 t3u gate --loop 300-invariance-closure
 t3u report --loop 300-invariance-closure

@@ -25,13 +25,16 @@ t3u content-fingerprint --write-baseline
 t3u discover-urls --seed "acme-2026"
 
 t3u selftest-determinism          # loop 000 — MUST reach zero before anything else
-t3u capture --label before
+t3u capture --label before --out .typo3-update/baseline/A-original
 t3u seal-baseline --id A-original # immutable from here
 
 # … the update …
 
 t3u capture --label after
-t3u compare-http && t3u compare-dom && t3u compare-visual
+# compare-* default to captures/before; point them at the sealed baseline
+t3u compare-http   --before .typo3-update/baseline/A-original/http
+t3u compare-dom    --before .typo3-update/baseline/A-original/dom
+t3u compare-visual --before .typo3-update/baseline/A-original/shots
 t3u backend-sweep --base-url "https://acme.ddev.site"
 t3u gate --loop 300-invariance-closure
 t3u report --loop 300-invariance-closure

@@ -436,7 +436,11 @@ export async function sealBaselineAction({ values, paths, log }) {
   let sampleHash = null;
   try { sampleHash = `sha256:${sha256(await readFile(paths.samplePath, 'utf8'))}`; } catch { /* optional */ }
 
-  await writeFile(paths.baselineSeal(id), renderSeal(lock, {
+  // SEAL.md belongs next to the LOCK.json it describes. Honouring --dir for one and not the
+  // other wrote the lock into the capture directory and then failed opening a seal path that
+  // was never created — a half-sealed baseline is worse than an unsealed one.
+  const sealPath = values.dir ? path.join(values.dir, 'SEAL.md') : paths.baselineSeal(id);
+  await writeFile(sealPath, renderSeal(lock, {
     sampleHash,
     urls: manifest?.coverage?.discovered ?? null,
     captures: manifest?.captures?.length ?? null,
