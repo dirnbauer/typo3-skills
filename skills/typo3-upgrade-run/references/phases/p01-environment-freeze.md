@@ -21,12 +21,39 @@ P00 complete.
    or tag marking the code state, and a `fileadmin` (and other storages) archive, because wizards
    that move or rename FAL files are otherwise irreversible and mutating files after sealing voids
    the content fingerprint.
-3. **Assert the application context.** A freshly imported clone frequently runs `Development`,
+3. **Check the container against the target's minimums, not against what boots today.** A v12-era
+   DDEV project routinely runs a database the target cannot use, and the failure mode is nasty:
+   the update installs cleanly, the backend works, and the frontend returns 500 with an SQL
+   *syntax* error — because Doctrine has no platform class for that engine and emits DDL the
+   server cannot parse. Nothing says "your database is too old".
+
+   | | TYPO3 13.4 | TYPO3 14.3 | Note |
+   |---|---|---|---|
+   | PHP | 8.2 – 8.4 | 8.2 – 8.5, **8.4 is this collection's target** | `ddev config --php-version` |
+   | MariaDB | **10.4.3+** | **10.4.3+** | Doctrine DBAL 4 ships no platform below 10.4.3; 10.11 LTS is the safe choice |
+   | MySQL | 8.0+ | 8.0+ | |
+   | PostgreSQL | 10+ | 10+ | |
+
+   Read the current values from `ddev describe`, compare them against the row for the *target*, and
+   if the engine is below the floor migrate it here — before the baseline, not after a 500:
+
+   ```bash
+   ddev snapshot --name pre-db-engine-migration
+   ddev export-db --file=../<project>-pre-db-migration.sql.gz   # outside the container
+   ddev debug migrate-database mariadb:10.11
+   ```
+
+   `ddev debug migrate-database` dumps, recreates the service and re-imports in one step. Take the
+   snapshot and the external dump first anyway: it replaces the database container, and a failed
+   migration with no dump is an unrecoverable local state. Verify row counts afterwards — a
+   migration that silently truncated is worse than one that failed.
+
+4. **Assert the application context.** A freshly imported clone frequently runs `Development`,
    which emits debug comments, `displayErrors` output and admin-panel markup — identically before
    and after, so the comparison passes while proving nothing about how production renders. Set and
    record `Production` (or the exact context the site runs live), and record `displayErrors` and
    the log writer configuration in the environment fingerprint.
-4. Inventory: PHP, TCA, schema, Extbase, hooks and events, backend modules, commands, upgrade
+5. Inventory: PHP, TCA, schema, Extbase, hooks and events, backend modules, commands, upgrade
    wizards, Fluid, TypoScript, FlexForms, YAML, JavaScript and import maps, translations, Content
    Blocks, DataHandler and FAL usage, workspaces, third-party dependencies. Classify every extension
    per `references/extension-strategy.md` into `manifests/extensions.json`. Additionally inventory,
@@ -61,20 +88,20 @@ P00 complete.
    - **Table sizes** — `sys_log`, `sys_history` and `cf_*` can reach multiple GB, which makes every
      snapshot take tens of minutes and dominates the run's wall clock. Truncating cache and log
      tables locally is safe **before** sealing; doing it afterwards changes the content fingerprint.
-5. **Widen the content fingerprint to the tables this site actually renders from.** The default
+6. **Widen the content fingerprint to the tables this site actually renders from.** The default
    tracked set is core-only. On any news, blog, event or shop site most rendered content lives in
    extension tables, so an editor saving a news item or a feed import changing rows will not trip
    the drift check — the difference then gets misclassified as a regression and burns the one loop
    this skill exists for. Derive the tracked set from the installed TCA plus the inventory above,
    and record it in the manifest so the set itself is auditable.
-6. **Update the reference index before sealing.** An imported dump carries a stale `sys_refindex`;
+7. **Update the reference index before sealing.** An imported dump carries a stale `sys_refindex`;
    wizards that depend on it (file references, slugs) then migrate the wrong rows, and broken FAL
    references surface much later looking like an image-processing problem. Run
    `referenceindex:update` now, note how long it took, and budget that time for the reruns later.
-7. Run the repository's existing install, lint, static analysis and tests on the current branch.
+8. Run the repository's existing install, lint, static analysis and tests on the current branch.
    **Record pre-existing failures separately from regressions** — a failure that was already there is
    a `pre-existing` finding, not something this update caused.
-8. Seal the environment fingerprint and the content fingerprint.
+9. Seal the environment fingerprint and the content fingerprint.
 
 ## Evidence
 `manifests/environment.json` · `content-fingerprint.json` · `extensions.json` · `tooling.json` ·
@@ -86,5 +113,7 @@ recorded separately.
 
 ## Blocking
 DDEV will not boot. The installed core cannot run on the container PHP version — fix the container
-version first, keeping it one the current core supports.
+version first, keeping it one the current core supports. The database engine is below the target's
+floor and the owner will not accept an engine migration: without it the target cannot run, so this
+is a project decision, not something to work around.
 
