@@ -42,6 +42,24 @@ const nextId = (loopId, n) => `F-${String(loopId ?? '000').padStart(3, '0')}-${S
  */
 export const PIXEL_COLOR_TOLERANCE = 0.01;
 
+/**
+ * Minimum changed pixels before a capture counts as unstable.
+ *
+ * The second half of calibrating the instrument. Even with a colour tolerance, a real browser
+ * leaves a dust of isolated pixels at glyph and border edges: measured on a live site, the
+ * survivors were 1-24 pixels scattered across a 286x481 region with deltas of at most 8/255 —
+ * sub-perceptual, and a different scatter on every pass.
+ *
+ * A change a person can see is CONTIGUOUS and large: a missing button, a shifted heading and a
+ * wrong image are thousands of adjacent pixels. Two dozen isolated pixels are not a small
+ * regression, they are a different kind of thing.
+ *
+ * 25 is the measured floor plus one. Like the colour tolerance it is recorded in every report and
+ * must never be raised to close a loop — and unlike a percentage it does not scale with page
+ * size, so a big page cannot hide a big diff inside it.
+ */
+export const PIXEL_DUST_FLOOR = 25;
+
 export async function compareHttp({ values, paths, log }) {
   const before = values.before ?? path.join(paths.root, 'captures', 'before', 'http');
   const after = values.after ?? path.join(paths.root, 'captures', 'after', 'http');
@@ -298,6 +316,7 @@ export async function selftestDeterminism({ values, paths, log, journal }) {
   await captureAll({ manifest, guard, outRoot: rootB, stages, log, journal, warmup: false });
 
   const unstable = [];
+  const quarantined = [];
 
   const [aShots, bShots] = await Promise.all([listShots(path.join(rootA, 'shots')), listShots(path.join(rootB, 'shots'))]);
   const { pairs, onlyInBefore, onlyInAfter } = pairFiles(aShots, bShots);
@@ -307,7 +326,12 @@ export async function selftestDeterminism({ values, paths, log, journal }) {
     const ap = path.join(rootB, 'shots', p.file);
     if (await quickIdentical(bp, ap)) continue;
     const cmp = await compareOne(bp, ap, null, log);
-    if (!cmp.ok || (cmp.diffPixels ?? 1) > 0) {
+    const px = cmp.diffPixels ?? 1;
+    if (!cmp.ok || px > 0) {
+      // Below the dust floor the difference is sub-perceptual rasterisation noise, not the site.
+      // It is quarantined rather than ignored: the count is recorded so the number a green
+      // self-test was reached under is always visible.
+      if (cmp.ok && px < PIXEL_DUST_FLOOR) { quarantined.push({ capture: p.file, diffPixels: px }); continue; }
       unstable.push({
         capture: p.file, reason: 'pixels-differ',
         diffPixels: cmp.diffPixels ?? null,
@@ -330,11 +354,20 @@ export async function selftestDeterminism({ values, paths, log, journal }) {
   }
 
   const passed = unstable.length === 0;
+  if (quarantined.length) {
+    log.info(`${quarantined.length} capture(s) below the ${PIXEL_DUST_FLOOR}px dust floor — quarantined, not ignored; recorded in selftest.json`);
+  }
   const reportPath = path.join(paths.root, 'selftest.json');
   const report = envelope({
     kind: 'selftest', run: { loopId: values.loop ?? '000' },
     verdict: passed ? 'pass' : 'findings',
-    counts: { captures: pairs.length, unstable: unstable.length },
+    counts: { captures: pairs.length, unstable: unstable.length, quarantined: quarantined.length },
+    extra: {
+      quarantined,
+      // Recorded because a green verdict depends on them: the settings a run was judged under
+      // must be visible in the evidence, not only in the source.
+      calibration: { pixelColorTolerance: PIXEL_COLOR_TOLERANCE, pixelDustFloor: PIXEL_DUST_FLOOR },
+    },
     findings: unstable.map((u, i) => ({
       id: nextId('000', i + 1), target: u.capture,
       class: 'harness-noise', severity: 'major', status: 'open', ...u,
@@ -368,7 +401,7 @@ export async function selftestDeterminism({ values, paths, log, journal }) {
   };
   await writeFile(paths.selftestLock, `${JSON.stringify(lock, null, 2)}\n`, 'utf8');
   await new StateStore(paths).update((s) => {
-    s.selftest = { status: 'green', at: lock.passedAt, lock_hash: selftestHash, coverage: lock.coverage, quarantined_captures: [] };
+    s.selftest = { status: 'green', at: lock.passedAt, lock_hash: selftestHash, coverage: lock.coverage, quarantined_captures: quarantined };
     s.loops['000'] = 'green';
   });
 
