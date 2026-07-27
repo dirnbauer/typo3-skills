@@ -7,9 +7,9 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 2. Source attribution and provenance drift
 3. Repository optimization gaps
 
-- Skills audited: 38
-- Total findings: 0
-- Skills with pass 1 findings: 0
+- Skills audited: 42
+- Total findings: 1
+- Skills with pass 1 findings: 1
 - Skills with pass 2 findings: 0
 - Skills with pass 3 findings: 0
 
@@ -41,6 +41,22 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source URL: https://github.com/netresearch/enterprise-readiness-skill
 - Frontmatter name: enterprise-readiness
 - SKILL.md lines: 83
+
+**Pass 1: Structure**
+- No pass 1 issues found.
+
+**Pass 2: Source**
+- No pass 2 issues found.
+
+**Pass 3: Optimization**
+- No pass 3 issues found.
+
+## `legal-impressum`
+
+- Source owner: webconsulting
+- Source URL: https://github.com/dirnbauer/webconsulting-skills
+- Frontmatter name: legal-impressum
+- SKILL.md lines: 391
 
 **Pass 1: Structure**
 - No pass 1 issues found.
@@ -89,6 +105,22 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source URL: https://github.com/netresearch/security-audit-skill
 - Frontmatter name: security-audit
 - SKILL.md lines: 75
+
+**Pass 1: Structure**
+- No pass 1 issues found.
+
+**Pass 2: Source**
+- No pass 2 issues found.
+
+**Pass 3: Optimization**
+- No pass 3 issues found.
+
+## `security-incident-reporting`
+
+- Source owner: webconsulting
+- Source URL: https://github.com/dirnbauer/webconsulting-skills
+- Frontmatter name: security-incident-reporting
+- SKILL.md lines: 376
 
 **Pass 1: Structure**
 - No pass 1 issues found.
@@ -328,7 +360,7 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source owner: webconsulting
 - Source URL: https://github.com/dirnbauer/webconsulting-skills
 - Frontmatter name: typo3-powermail
-- SKILL.md lines: 262
+- SKILL.md lines: 297
 
 **Pass 1: Structure**
 - No pass 1 issues found.
@@ -588,6 +620,38 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 
 **Pass 1: Structure**
 - No pass 1 issues found.
+
+**Pass 2: Source**
+- No pass 2 issues found.
+
+**Pass 3: Optimization**
+- No pass 3 issues found.
+
+## `web-design-guidelines`
+
+- Source owner: Vercel
+- Source URL: https://github.com/vercel-labs/agent-skills
+- Frontmatter name: web-design-guidelines
+- SKILL.md lines: 48
+
+**Pass 1: Structure**
+- No pass 1 issues found.
+
+**Pass 2: Source**
+- No pass 2 issues found.
+
+**Pass 3: Optimization**
+- No pass 3 issues found.
+
+## `web-platform-design`
+
+- Source owner: ehmo
+- Source URL: https://github.com/ehmo/platform-design-skills
+- Frontmatter name: web-platform-design
+- SKILL.md lines: 1463
+
+**Pass 1: Structure**
+- SKILL.md is 1463 lines; skill-creator recommends keeping it under 500
 
 **Pass 2: Source**
 - No pass 2 issues found.

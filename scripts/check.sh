@@ -75,11 +75,19 @@ run "eval structure and coverage (S4, S5)" \
 run "trigger evals actually pass (S2, S4)" \
     python3 scripts/run_evals.py --grader lexical --fail-under 1.0 --fail-under-proposed 1.0
 
-# One pair remains, between two vendored skills we cannot edit. A second would be ours.
-# Ratcheted from 2 to 1 after the description pass resolved typo3-extension-upgrade <->
-# typo3-fractor; leaving slack in a ratchet is how a budget quietly becomes a target.
+# Budget 3, and every pair is between vendored skills whose descriptions we cannot edit:
+#   0.296  web-design-guidelines <-> web-platform-design   (Vercel / ehmo)
+#   0.170  typo3-conformance <-> typo3-extension-upgrade   (both Netresearch)
+#   0.133  postgres-best-practices <-> web-design-guidelines (Supabase / Vercel)
+# Raised from 1 to 3 when the general-web skills were brought back from the archived
+# repository. This is a deliberate, recorded loosening, not drift: the first pair are
+# genuinely adjacent skills — one is web design and accessibility guidance, the other
+# platform and WCAG patterns — and vendoring means the only honest fixes are to drop one
+# skill or to edit upstream text, neither of which we will do silently. If a *webconsulting*
+# skill ever appears in this list, that one is ours and must be reworded rather than
+# absorbed by the budget. Leaving slack in a ratchet is how a budget quietly becomes a target.
 run "trigger collisions within budget (S3)" \
-    python3 scripts/trigger_collisions.py --threshold 0.13 --fail-over 1
+    python3 scripts/trigger_collisions.py --threshold 0.13 --fail-over 3
 
 run "vendored skills unmodified" \
     python3 scripts/check_attribution_guardrails.py

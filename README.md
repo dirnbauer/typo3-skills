@@ -2,7 +2,7 @@
 
 **Agent Skills for TYPO3 v14 development, upgrades and operations.**
 
-38 skills, plus an always-on rules layer, for AI coding agents working on TYPO3 projects — Claude
+42 skills, plus an always-on rules layer, for AI coding agents working on TYPO3 projects — Claude
 Code, Cursor, Codex, Gemini CLI, Windsurf, and anything else that reads `SKILL.md` files.
 
 This is the active repository for TYPO3 skills. It began as a focused extraction from
@@ -64,6 +64,13 @@ documents itself in its own numbered directory.
 `postgres-best-practices` — indexes, locks, schema, batch writes and monitoring for the database
 under the site. TYPO3-specific database work belongs to `typo3-datahandler` and `typo3-ddev`.
 
+### Legal, incident response and general web
+
+`legal-impressum` (Austrian Impressum and disclosure) · `security-incident-reporting` (TYPO3
+forensics, vulnerability classification, Security Team communication) · `web-design-guidelines`
+(Vercel) · `web-platform-design` (ehmo) — the last two cover non-TYPO3 web and platform design;
+for TYPO3 accessibility use `typo3-accessibility` or `typo3-wcag22-aa-agentic`.
+
 ### Supporting
 
 `webconsulting-branding` · `webconsulting-create-documentation` · `typo3-idea-extension-blog` ·
@@ -108,7 +115,7 @@ A rule answers *is this change allowed?*. A skill answers *how do I build this?*
 
 ## Vendored skills
 
-11 of the 36 are not authored by webconsulting and are vendored **byte-identical** so they stay
+14 of the 42 are not authored by webconsulting and are vendored **byte-identical** so they stay
 re-syncable and their attribution stays intact. Improvements live in separate
 `references/webconsulting-additions.md` overlays that never silently override upstream behaviour.
 
@@ -161,6 +168,8 @@ the upstream state recorded in [VENDORED.md](VENDORED.md).
 | `enterprise-readiness` | Use when evaluating projects for production or enterprise readiness, implementing supply chain … | Netresearch |
 | `php-modernization` | Use when modernizing PHP code: PHP 8.1-8.5 features, PSR/PHP-FIG/PER-CS compliance, PHPStan/Rec… | Netresearch |
 | `postgres-best-practices` | Postgres performance optimization and best practices: indexes, locks, schema, batch writes, mon… | Supabase |
+| `web-design-guidelines` | General web design and accessibility audit guidance (non-TYPO3) | Vercel |
+| `web-platform-design` | WCAG 2.2, responsive design, forms and platform UI patterns | ehmo |
 | `security-audit` | Use when conducting security assessments — OWASP Top 10 / API / LLM, CWE Top 25, CVSS scor… | Netresearch |
 | `typo3-conformance` | Use when assessing TYPO3 extension quality, conformance checking, standards compliance, moderni… | Netresearch |
 | `typo3-core-contributions` | Use when analyzing TYPO3 Forge issues, submitting patches to Gerrit, contributing core bug fixe… | Netresearch |
@@ -204,6 +213,8 @@ the upstream state recorded in [VENDORED.md](VENDORED.md).
 - https://github.com/netresearch/php-modernization-skill
 - https://github.com/netresearch/security-audit-skill
 - https://github.com/supabase/agent-skills
+- https://github.com/vercel-labs/agent-skills
+- https://github.com/ehmo/platform-design-skills
 - https://github.com/netresearch/typo3-conformance-skill
 - https://github.com/netresearch/typo3-core-contributions-skill
 - https://github.com/netresearch/typo3-ddev-skill

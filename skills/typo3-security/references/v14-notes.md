@@ -22,5 +22,5 @@ Backend modals migrated from **Bootstrap Modal to native `<dialog>`** element (#
 
 ## Related Skills
 
-- `security-incident-reporting` - TYPO3 forensics, vulnerability classification, Security Team communication with PGP templates. Not in this collection; it lives in the archived webconsulting-skills repository.
+- [security-incident-reporting/TYPO3](../../security-incident-reporting/SKILL-TYPO3.md) - TYPO3 forensics, vulnerability classification, Security Team communication with PGP templates
 - [security-audit](../../security-audit/SKILL.md) - General security audit patterns, OWASP, CVSS scoring

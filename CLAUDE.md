@@ -1,6 +1,6 @@
 # TYPO3 Agent Skills
 
-38 Agent Skills for TYPO3 v14 development, upgrades and operations.
+42 Agent Skills for TYPO3 v14 development, upgrades and operations.
 
 ## Instructions
 

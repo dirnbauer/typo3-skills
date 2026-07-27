@@ -9,7 +9,7 @@ license: "MIT / CC-BY-SA-4.0"
 
 > Source: https://github.com/dirnbauer/webconsulting-skills
 
-> **Compatibility:** Powermail **13.x** currently targets **TYPO3 13.4** per Packagist — do **not** assume v14 until the package declares it. Examples use modern TYPO3 APIs where possible; adjust for your Core version.
+> **Compatibility:** Upstream Powermail **13.x** targets **TYPO3 13.4** and has no v14 release. For a 14.3 project install the maintained fork — see [Powermail on TYPO3 v14](#powermail-on-typo3-v14). Examples use modern TYPO3 APIs where possible; adjust for your Core version.
 > All examples use PHP 8.2+.
 
 > **TYPO3 API First:** Always use TYPO3's built-in APIs, core features, and established conventions before creating custom implementations. Do not reinvent what TYPO3 already provides. Always verify that the APIs and methods you use exist and are not deprecated in TYPO3 v14 by checking the official TYPO3 documentation.
@@ -30,6 +30,41 @@ These are **different systems**. Do not mix migration advice between them.
 | **This skill** | Documents Powermail APIs, finishers, validators, events **as shipped by in2code** | Only where **your** code also touches EXT:form (bridges, shared sites, dual form stacks) |
 
 Sections labeled **EXT:form** under [v14-Only Changes](#v14-only-changes) describe **Core** form-framework removals (hooks → PSR-14, storage adapters). They apply to custom code that hooks into **EXT:form**, not to ordinary Powermail-only projects—unless you explicitly integrate both.
+
+## Powermail on TYPO3 v14
+
+Upstream `in2code/powermail` has **no v14 release yet** — its newest line still requires
+`typo3/cms-core: ^13.4`, so a plain `composer require in2code/powermail` will not resolve in a
+14.3 project. Until upstream ships v14, install the maintained fork:
+
+```json
+{
+    "repositories": [
+        { "type": "vcs", "url": "https://github.com/dirnbauer/powermail" }
+    ],
+    "require": {
+        "in2code/powermail": "dev-typo3-v14"
+    }
+}
+```
+
+```bash
+ddev composer config repositories.powermail vcs https://github.com/dirnbauer/powermail
+ddev composer require in2code/powermail:dev-typo3-v14
+```
+
+The fork keeps the package name `in2code/powermail`, so it is a drop-in replacement — the VCS
+repository entry simply wins over Packagist for that package. Its `typo3-v14` branch declares
+`typo3/cms-core: ^14.3`; a `typo3-v13` branch also exists for sites still on v13.
+
+Two things to carry into any handover, because a `dev-` requirement is not a released version:
+
+- **It pins to a branch, not a tag.** `composer update` follows the branch, so a deploy can pick up
+  changes that were never reviewed. Commit `composer.lock` and treat an update of this package as a
+  change that needs re-testing, not a routine bump.
+- **Revisit it.** When upstream publishes a v14 release, drop the `repositories` entry and require
+  the released version instead. Record the fork in the deployment handover as technical debt with
+  that exit condition, so it is not still there in two years.
 
 ## 1. Architecture Overview
 
@@ -56,7 +91,7 @@ Mail (tx_powermail_domain_model_mail)
 composer require in2code/powermail
 ```
 
-Typical requirements (always confirm the **current** release on [Packagist](https://packagist.org/packages/in2code/powermail)): PHP **^8.2**, **`typo3/cms-core: ^13.4`** — the newest powermail line still targets v13.4 and has no v14 release, so this is a genuine blocker for a v14 project, not an oversight. Plus ext-json, ext-gd, ext-fileinfo, ext-curl. **Do not assume TYPO3 v14** until the package constraint is updated upstream.
+Typical requirements (always confirm the **current** release on [Packagist](https://packagist.org/packages/in2code/powermail)): PHP **^8.2**, **`typo3/cms-core: ^13.4`** — the newest *upstream* powermail line still targets v13.4 and has no v14 release, so this is a genuine blocker for a v14 project, not an oversight. See "Powermail on TYPO3 v14" below for what to install meanwhile. Plus ext-json, ext-gd, ext-fileinfo, ext-curl. **Do not assume TYPO3 v14** until the package constraint is updated upstream.
 
 ## 2. Field Types
 

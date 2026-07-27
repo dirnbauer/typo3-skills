@@ -32,6 +32,24 @@
     "pass_3": []
   },
   {
+    "directory": "legal-impressum",
+    "skill_name": "legal-impressum",
+    "description": "Creates and reviews Austrian Impressum and disclosure content for websites, including ECG, UGB, GewO, MedienG, Offenlegung, and company-form-specific templates. Use when the user mentions Impressum, legal notice, imprint, Austria, Oesterreich, Mediengesetz, Offenlegung, or website operator disclosure.",
+    "source_owner": "webconsulting",
+    "source_url": "https://github.com/dirnbauer/webconsulting-skills",
+    "file_path": "skills/legal-impressum/SKILL.md",
+    "line_count": 391,
+    "frontmatter_keys": [
+      "name",
+      "description",
+      "metadata",
+      "license"
+    ],
+    "pass_1": [],
+    "pass_2": [],
+    "pass_3": []
+  },
+  {
     "directory": "php-modernization",
     "skill_name": "php-modernization",
     "description": "Use when modernizing PHP code: PHP 8.1-8.5 features, PSR/PHP-FIG/PER-CS compliance, PHPStan/Rector/PHP-CS-Fixer/PHPat tooling, DTOs/enums/readonly/property hooks, type safety. Triggers: PHP modernization, type safety, PHPStan, Rector, PHP-CS-Fixer, enum, DTO, readonly, strict_types, property hooks, PHP 8.4, PHP 8.5.",
@@ -74,6 +92,24 @@
     "frontmatter_keys": [
       "name",
       "description"
+    ],
+    "pass_1": [],
+    "pass_2": [],
+    "pass_3": []
+  },
+  {
+    "directory": "security-incident-reporting",
+    "skill_name": "security-incident-reporting",
+    "description": "Builds security incident reports, DDoS post-mortems, timelines, IoC sections, CVE correlation, severity scoring, and blameless root cause analysis. Use when the user needs an incident report, post-mortem, forensics summary, security timeline, DDoS analysis, SIR, root cause analysis, or communication for a security event.",
+    "source_owner": "webconsulting",
+    "source_url": "https://github.com/dirnbauer/webconsulting-skills",
+    "file_path": "skills/security-incident-reporting/SKILL.md",
+    "line_count": 376,
+    "frontmatter_keys": [
+      "name",
+      "description",
+      "metadata",
+      "license"
     ],
     "pass_1": [],
     "pass_2": [],
@@ -335,7 +371,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-powermail/SKILL.md",
-    "line_count": 262,
+    "line_count": 297,
     "frontmatter_keys": [
       "name",
       "description",
@@ -633,6 +669,40 @@
       "license"
     ],
     "pass_1": [],
+    "pass_2": [],
+    "pass_3": []
+  },
+  {
+    "directory": "web-design-guidelines",
+    "skill_name": "web-design-guidelines",
+    "description": "Review UI code for Web Interface Guidelines compliance. Use when asked to \\\"review my UI\\\", \\\"check accessibility\\\", \\\"audit design\\\", \\\"review UX\\\", or \\\"check my site against best practices\\\".",
+    "source_owner": "Vercel",
+    "source_url": "https://github.com/vercel-labs/agent-skills",
+    "file_path": "skills/web-design-guidelines/SKILL.md",
+    "line_count": 48,
+    "frontmatter_keys": [
+      "name",
+      "description"
+    ],
+    "pass_1": [],
+    "pass_2": [],
+    "pass_3": []
+  },
+  {
+    "directory": "web-platform-design",
+    "skill_name": "web-platform-design",
+    "description": "Web platform design and accessibility guidelines. Use when building web interfaces, auditing accessibility, implementing responsive layouts, or reviewing web UI code. Triggers on tasks involving HTML, CSS, web components, WCAG compliance, responsive design, or web performance.",
+    "source_owner": "ehmo",
+    "source_url": "https://github.com/ehmo/platform-design-skills",
+    "file_path": "skills/web-platform-design/SKILL.md",
+    "line_count": 1463,
+    "frontmatter_keys": [
+      "name",
+      "description"
+    ],
+    "pass_1": [
+      "SKILL.md is 1463 lines; skill-creator recommends keeping it under 500"
+    ],
     "pass_2": [],
     "pass_3": []
   },

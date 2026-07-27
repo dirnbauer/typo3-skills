@@ -27,7 +27,7 @@ triggers:
 > - [SKILL-CONDITIONS.md](./SKILL-CONDITIONS.md) - Conditional fields
 > - [typo3-ddev](../typo3-ddev/SKILL.md) - DDEV local development
 > - [typo3-datahandler](../typo3-datahandler/SKILL.md) - DataHandler operations
-> - `legal-impressum` - Austrian Gesellschaftsformen (not in this collection; it lives in the archived webconsulting-skills repository)
+> - [legal-impressum](../legal-impressum/SKILL.md) - Austrian Gesellschaftsformen
 
 ---
 

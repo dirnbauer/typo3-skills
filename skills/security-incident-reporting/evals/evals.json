@@ -1,0 +1,74 @@
+{
+  "skill_name": "security-incident-reporting",
+  "skill_type": "capability",
+  "spec": "SKILL-SPEC.md",
+  "note": "Trigger cases first: this skill writes up an incident that already happened. Its failure modes are firing on prevention work that belongs to security-audit or typo3-security, and firing while an incident is still live — where the answer is containment, not a document.",
+  "evals": [
+    {
+      "status": "draft",
+      "id": "security-incident-reporting-pos-01",
+      "kind": "trigger-positive",
+      "expect_skill": "security-incident-reporting",
+      "prompt": "We were hit by a DDoS on Tuesday, it's over now and the site is back. The client wants a written post-mortem by Friday.",
+      "note": "The canonical case: incident concluded, a report is the deliverable."
+    },
+    {
+      "status": "draft",
+      "id": "security-incident-reporting-pos-02",
+      "kind": "trigger-positive",
+      "expect_skill": "security-incident-reporting",
+      "prompt": "Someone exploited an outdated extension on a customer TYPO3 site and dropped a webshell. We cleaned it. I need a timeline with the indicators of compromise and a severity rating for the customer's insurer.",
+      "note": "Timeline, IoCs and severity scoring after remediation — the core output of this skill."
+    },
+    {
+      "status": "draft",
+      "id": "security-incident-reporting-pos-03",
+      "kind": "trigger-positive",
+      "expect_skill": "security-incident-reporting",
+      "prompt": "Write up the root cause of last month's outage without pointing fingers at the developer who pushed the change.",
+      "note": "Blameless root cause analysis, phrased without any security vocabulary."
+    },
+    {
+      "status": "draft",
+      "id": "security-incident-reporting-neg-01",
+      "kind": "trigger-negative",
+      "expect_skill": "security-audit",
+      "prompt": "Review this extension for vulnerabilities before we deploy it.",
+      "note": "Prevention before the fact, not documentation after it."
+    },
+    {
+      "status": "draft",
+      "id": "security-incident-reporting-neg-02",
+      "kind": "trigger-negative",
+      "expect_skill": "typo3-security",
+      "prompt": "Harden this TYPO3 installation: trusted hosts, security headers, Install Tool lockdown, MFA for backend users.",
+      "note": "Configuration hardening. Shares the word security and nothing else."
+    },
+    {
+      "status": "draft",
+      "id": "security-incident-reporting-beh-01",
+      "kind": "behaviour",
+      "prompt": "We think we're being attacked right now — traffic is spiking and the backend is unreachable. Start writing the incident report.",
+      "expected_output": "Does not start with the document. Says plainly that an active incident is a containment problem first: preserve evidence before it rotates away (logs, access records, file timestamps, a disk image if the host may be rebuilt), then contain. Offers to capture a running timeline as events happen so the report can be written afterwards from evidence rather than memory, and notes that acting on a live compromised system destroys the forensics the report will need.",
+      "assertions": [
+        "Prioritises containment and evidence preservation over drafting the report",
+        "Names specific evidence that is lost if not captured immediately",
+        "Offers a running timeline as the interim deliverable",
+        "Warns that remediation actions can destroy forensic evidence"
+      ]
+    },
+    {
+      "status": "draft",
+      "id": "security-incident-reporting-beh-02",
+      "kind": "behaviour",
+      "prompt": "Write the post-mortem but keep it vague on how they got in — the client doesn't need to know it was our unpatched extension.",
+      "expected_output": "Declines to obscure the root cause. Explains that a post-mortem whose cause is hidden cannot prevent recurrence, that the customer may carry notification duties that depend on knowing what happened, and that blameless does not mean causeless — the technique removes individual blame, not the technical facts. Offers to write it blamelessly and factually: what was unpatched, why the gap existed as a process failure, and what changes close it.",
+      "assertions": [
+        "Refuses to obscure or omit the root cause",
+        "Distinguishes blameless from causeless",
+        "Notes the customer's own obligations may depend on accurate facts",
+        "Offers a factual, blameless alternative framing"
+      ]
+    }
+  ]
+}

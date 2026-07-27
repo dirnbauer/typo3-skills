@@ -46,7 +46,7 @@ Prefer TYPO3 v14.2+ and Core ViewHelpers:
 
 Use `f:mark.contentArea` only when the project cannot use the v14.2+ content-area pipeline yet, for example TYPO3 v13 compatibility or legacy content rendering with VHS/Flux/container loops.
 
-Always verify the package constraints before changing `composer.json`; current upstream (1.9.0) requires PHP 8.2+ and supports TYPO3 13.4.22+ or 14.3+ (`typo3/cms-core ^13.4.22 || ^14.3.0`; only early 1.0.x releases supported 14.2).
+**Always install the newest release**, and resolve which one that is at execution time rather than from any number written here — `ddev composer require friendsoftypo3/visual-editor` without a constraint takes the latest that fits the project, and [Packagist](https://packagist.org/packages/friendsoftypo3/visual-editor) shows what it requires. Verify the resolved package's own constraints before changing `composer.json`: the 1.x line requires PHP 8.2+ and supports TYPO3 13.4.22+ or 14.3+ (`typo3/cms-core ^13.4.22 || ^14.3.0`), and only the earliest 1.0.x releases supported 14.2. A version number pinned in documentation is stale the week after it is written; the constraint the installed package declares is not.
 
 ## How to install
 

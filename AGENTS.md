@@ -2,7 +2,7 @@
 
 Single source of truth for this collection: what each skill is for, when it triggers, and how they compose.
 
-**38 skills** · TYPO3 **14.3 LTS** target · PHP **8.4** standard (8.5 where it resolves)
+**42 skills** · TYPO3 **14.3 LTS** target · PHP **8.4** standard (8.5 where it resolves)
 
 ## Using a skill
 

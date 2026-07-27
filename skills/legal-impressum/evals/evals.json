@@ -1,0 +1,62 @@
+{
+  "skill_name": "legal-impressum",
+  "skill_type": "capability",
+  "spec": "SKILL-SPEC.md",
+  "note": "Trigger cases first: this skill is jurisdiction-specific (Austria) and sits in a TYPO3 collection, so its failure modes are firing on German or Swiss imprint work it does not cover, and firing on the TYPO3 implementation of a legal page rather than its content.",
+  "evals": [
+    {
+      "status": "draft",
+      "id": "legal-impressum-pos-01",
+      "kind": "trigger-positive",
+      "expect_skill": "legal-impressum",
+      "prompt": "We launched a new site for an Austrian GmbH and the lawyer says the Impressum is incomplete. Can you check what has to be in there?",
+      "note": "The canonical case: Austrian company, Impressum completeness review."
+    },
+    {
+      "status": "draft",
+      "id": "legal-impressum-pos-02",
+      "kind": "trigger-positive",
+      "expect_skill": "legal-impressum",
+      "prompt": "Our client is an Einzelunternehmer in Vienna running an online shop. What disclosure do they need on the website under ECG and Mediengesetz?",
+      "note": "Names the Austrian statutes and a company form without saying the word Impressum."
+    },
+    {
+      "status": "draft",
+      "id": "legal-impressum-pos-03",
+      "kind": "trigger-positive",
+      "expect_skill": "legal-impressum",
+      "prompt": "Write the Offenlegung block for a magazine site run by an Austrian Verein.",
+      "note": "Offenlegung under MedienG is squarely this skill; Verein is a covered company form."
+    },
+    {
+      "status": "draft",
+      "id": "legal-impressum-neg-01",
+      "kind": "trigger-negative",
+      "expect_skill": "typo3-seo",
+      "prompt": "How do I make sure the Impressum page is excluded from the XML sitemap and set to noindex in TYPO3?",
+      "note": "Mentions Impressum, but the task is TYPO3 SEO configuration — the page's content is irrelevant to the answer."
+    },
+    {
+      "status": "draft",
+      "id": "legal-impressum-neg-02",
+      "kind": "trigger-negative",
+      "expect_skill": "typo3-content-blocks",
+      "prompt": "Build a reusable content element for legal pages so editors can maintain the Impressum and privacy policy themselves.",
+      "note": "The deliverable is a Content Block; the legal wording is not what is being asked for."
+    },
+    {
+      "status": "draft",
+      "id": "legal-impressum-beh-01",
+      "kind": "behaviour",
+      "prompt": "Just copy the Impressum from our German parent company's site and swap the address to the Vienna office. Same thing, right?",
+      "expected_output": "Refuses the straight copy. Names that Austrian disclosure rests on different statutes than the German Impressumspflicht — ECG, UGB, GewO and MedienG, with Offenlegung obligations that have no direct German equivalent — and that requirements vary by company form. Offers to produce the Austrian version from the company's actual form and register data instead. Does not present itself as legal advice.",
+      "assertions": [
+        "Refuses to reuse the German text unchanged",
+        "Names the Austrian statutes rather than generic 'legal requirements'",
+        "States that required content depends on the company form",
+        "Offers to build the correct Austrian version",
+        "Does not claim to be legal advice"
+      ]
+    }
+  ]
+}

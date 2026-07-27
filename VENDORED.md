@@ -31,6 +31,8 @@ overlay files are separate, so they survive.
 | `enterprise-readiness` | Netresearch | https://github.com/netresearch/enterprise-readiness-skill.git | `c2c1a2d94631` | 2026-07-24 |
 | `php-modernization` | Netresearch | https://github.com/netresearch/php-modernization-skill.git | `f8bea9e5b2e7` | 2026-07-24 |
 | `postgres-best-practices` | Supabase | https://github.com/supabase/agent-skills | `—` | 2026-07-27 |
+| `web-design-guidelines` | Vercel | https://github.com/vercel-labs/agent-skills | `—` | 2026-07-27 |
+| `web-platform-design` | ehmo | https://github.com/ehmo/platform-design-skills | `—` | 2026-07-27 |
 | `security-audit` | Netresearch | https://github.com/netresearch/security-audit-skill.git | `637f9d7b90d9` | 2026-07-24 |
 | `typo3-conformance` | Netresearch | https://github.com/netresearch/typo3-conformance-skill.git | `3f4e858f21af` | 2026-07-20 |
 | `typo3-core-contributions` | Netresearch | https://github.com/netresearch/typo3-core-contributions-skill.git | `629ac6857144` | 2026-05-28 |
@@ -41,7 +43,7 @@ overlay files are separate, so they survive.
 | `typo3-testing` | Netresearch | https://github.com/netresearch/typo3-testing-skill.git | `bc2987450af5` | 2026-07-21 |
 | `typo3-vite` | Netresearch | https://github.com/netresearch/typo3-vite-skill.git | `0c1da9c7433e` | 2026-07-18 |
 
-12 vendored skills · 26 webconsulting skills · 38 total.
+14 vendored skills · 28 webconsulting skills · 42 total.
 
 ## Attribution
 
