@@ -73,7 +73,7 @@ A capable model handles negation. The description should not need it to.
 
 ## S3 — Overlapping triggers are measured, not assumed
 
-With 37 skills in one collection, descriptions compete. Two skills sharing vocabulary give
+With 38 skills in one collection, descriptions compete. Two skills sharing vocabulary give
 the agent no basis for choosing, and the wrong playbook loads — a failure that is invisible
 in normal use, because the agent still answers.
 
@@ -276,7 +276,7 @@ Their evals, where we add them, live in the overlay and are marked as ours.
 ## Honest status
 
 ```
-26 owned skills (11 vendored, exempt)
+26 owned skills (12 vendored, exempt)
 suites present    : 26/26
 human-reviewed    :  4/26   (49/185 cases)
 awaiting signature: 22/26   (136/185 cases — not coverage until signed)

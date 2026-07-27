@@ -172,7 +172,7 @@ prescriptive part became a program, which is what the advice actually points at.
 ## Current status
 
 ```
-26 owned skills (11 vendored, exempt)
+26 owned skills (12 vendored, exempt)
 suites present    : 26/26
 human-reviewed    :  4/26   (49/185 cases)
 awaiting signature: 22/26   (136/185 cases — not coverage until signed)

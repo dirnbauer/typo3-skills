@@ -2,12 +2,17 @@
 
 **Agent Skills for TYPO3 v14 development, upgrades and operations.**
 
-36 skills, plus an always-on rules layer, for AI coding agents working on TYPO3 projects — Claude
+38 skills, plus an always-on rules layer, for AI coding agents working on TYPO3 projects — Claude
 Code, Cursor, Codex, Gemini CLI, Windsurf, and anything else that reads `SKILL.md` files.
 
-A focused extraction from [webconsulting-skills](https://github.com/dirnbauer/webconsulting-skills),
-which carries 140 skills across many domains. This repository is only the TYPO3 and PHP set, so a
-TYPO3 project installs what it needs and nothing it does not.
+This is the active repository for TYPO3 skills. It began as a focused extraction from
+[webconsulting-skills](https://github.com/dirnbauer/webconsulting-skills) — 140 skills across many
+domains, now archived and read-only — and carries only the TYPO3, PHP and database set, so a TYPO3
+project installs what it needs and nothing it does not. Everything here is maintained; the
+non-TYPO3 skills stay available in the archive at their final state.
+
+**Doing an upgrade?** Go straight to [`skills/typo3-upgrade-run/SKILL.md`](skills/typo3-upgrade-run/SKILL.md)
+— its "Start here" section is the whole method in one screen.
 
 ## Install
 
@@ -53,6 +58,11 @@ documents itself in its own numbered directory.
 `typo3-ddev` · `typo3-solr` · `typo3-seo` · `typo3-security` · `security-audit` ·
 `enterprise-readiness` · `typo3-accessibility` · `typo3-wcag22-aa-agentic` · `typo3-docs` ·
 `typo3-core-contributions` · `typo3-vite`
+
+### Data
+
+`postgres-best-practices` — indexes, locks, schema, batch writes and monitoring for the database
+under the site. TYPO3-specific database work belongs to `typo3-datahandler` and `typo3-ddev`.
 
 ### Supporting
 
@@ -121,7 +131,11 @@ off.** Coverage is reported as reviewed-versus-total so the number cannot flatte
 Thresholds are ratchets set at measured values, so a regression fails the build rather than
 drifting quietly. CI runs the same script.
 
-Current: **26/26 owned skills have suites**, 4/26 human-reviewed (49/185 cases), with the other 22 skills (136 cases) written and awaiting a signature. Reviewed and proposed cases both pass at **100%** under the offline grader. No scaffolded cases remain.
+Current: **30 of 38 skills ship an eval suite — 259 cases in total.** 49 are human-reviewed, 136 are
+written and awaiting a signature, 9 are drafts from the most recent addition, and 65 predate the
+status field. Reviewed and proposed cases both pass at **100%** under the offline grader; no
+scaffolded cases remain. A case counts as evidence only once a human signs it off (S5), so the
+reviewed number is the one that matters.
 
 ## Contributing
 
