@@ -131,11 +131,13 @@ off.** Coverage is reported as reviewed-versus-total so the number cannot flatte
 Thresholds are ratchets set at measured values, so a regression fails the build rather than
 drifting quietly. CI runs the same script.
 
-Current: **30 of 38 skills ship an eval suite — 259 cases in total.** 49 are human-reviewed, 136 are
-written and awaiting a signature, 9 are drafts from the most recent addition, and 65 predate the
-status field. Reviewed and proposed cases both pass at **100%** under the offline grader; no
-scaffolded cases remain. A case counts as evidence only once a human signs it off (S5), so the
-reviewed number is the one that matters.
+Current: **all 26 owned skills ship an eval suite — 250 cases**, three vendored skills carry
+inherited suites, and the remaining vendored skills are exempt: the runner and the collision
+analyser skip them, so a suite added there would be a file no tool reads. 49 cases are
+human-reviewed, 136 are written and awaiting a signature, and 65 predate the status field. Reviewed
+and proposed cases both pass at **100%** under the offline grader; no scaffolded cases remain. A
+case counts as evidence only once a human signs it off (S5), so the reviewed number is the one that
+matters.
 
 ## Contributing
 
