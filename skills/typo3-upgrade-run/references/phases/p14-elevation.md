@@ -12,7 +12,7 @@ Each track has its own approval and its own derived baseline `B-<n>`.
 |---|---|
 | 500 | performance and Core Web Vitals — `scripts/lighthouse-sample.mjs` |
 | 510 | technical SEO and structured data — see `references/metadata-and-social.md` |
-| 520 | accessibility beyond automated-green |
+| 520 | accessibility beyond automated-green — `scripts/a11y-audit.mjs` |
 | 530 | security posture |
 | 540 | media and cache |
 | 550 | code quality |
@@ -45,6 +45,45 @@ Two traps:
 Report **medians with min–max**, never a single run, and carry the caveat next to the number:
 these are loopback network, warm cache, laptop CPU. The absolute score is indicative; the
 before/after delta on the same machine is the evidence. TBT is a lab **proxy** for INP.
+
+## Loop 520 — accessibility, split by whether the fix moves pixels
+
+```bash
+node scripts/a11y-audit.mjs --base-url https://site.ddev.site --ddev-dir . \
+  --count 12 --seed 1 --report .typo3-update/report.a11y-before.json
+```
+
+The report separates findings into two groups, because during an invariance run that
+distinction decides what may be fixed without a new baseline:
+
+- **invariant** — `alt` text, labels, `lang`, roles, discernible link text, list markup.
+  Attribute and structure changes that leave every pixel where it was.
+- **visual** — `color-contrast`, `target-size`, `meta-viewport`. These recolour or move
+  something and need their own approval and baseline.
+
+**Prove the invariant ones really were invariant.** A structural fix can shift layout
+through a descendant selector you did not think about — measure the affected elements
+before and after rather than assuming:
+
+```js
+[...document.querySelectorAll('#sidebar a')].map(a => {
+  const r = a.getBoundingClientRect();
+  return { t: a.innerText.trim(), x: Math.round(r.x), y: Math.round(r.y),
+           pl: getComputedStyle(a).paddingLeft };
+})
+```
+
+A real example from a run: the sidebar template wrapped the menu in a second, empty
+`<ul>`, so `#sidebar > ul` contained a `<ul>` instead of `<li>` elements — axe's `list`
+rule, on every page. Removing the wrapper is obviously correct HTML, **and it would have
+silently shifted every top-level link 8px left**, because the stylesheet carried
+`#sidebar ul ul a { padding-left: 8px }` and that second `ul` was the wrapper. The
+selector had to lose one level in the same commit. Measured after: 13 links, zero
+position changes.
+
+**Never report an axe-clean run as "accessible".** Automated rules cover roughly a third
+to a half of WCAG. Report it as "no automated violations" and keep keyboard order, focus
+visibility and whether the `alt` text is actually *meaningful* as separate, manual work.
 
 ## Loop 510 always includes the `<head>` audit
 The minimum metadata set, a generated Open Graph card and the Impressum check live in
