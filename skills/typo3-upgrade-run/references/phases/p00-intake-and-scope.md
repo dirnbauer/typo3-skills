@@ -40,20 +40,25 @@ Read-only inspection. Creating `.typo3-update/` from `templates/run-directory/`.
    full-page screenshots of login and form pages. Decide before capturing whether the run directory
    may be committed — a "yes" pushes customer data to a remote — and record when `.typo3-update/`
    gets deleted. Prefer an anonymised dump where the site's rendering does not depend on real data.
-8. **Ask about commercially licensed extensions.** Paid extensions usually need a new licence for a
+8. **Name the v14 blockers out loud.** Once the extension set is known, run
+   `ddev composer why-not typo3/cms-core "^14.3"` and put every package it names at the **top** of
+   the plan, with what it provides and who depends on it. An extension with no v14 release blocks
+   the whole install and can change the project's cost and shape, so it is intake output, not a
+   mid-run discovery. See `references/extension-strategy.md`.
+9. **Ask about commercially licensed extensions.** Paid extensions usually need a new licence for a
    new major, served from a private repository. That is a purchase with lead time, not a dependency
    problem, and it surfaces mid-P05 as an opaque 403. Identify them now.
-9. Create the run directory and fill `config/run.yml`: trusted origin (scheme included), every site,
+10. Create the run directory and fill `config/run.yml`: trusted origin (scheme included), every site,
    languages as the site's real prefixes, golden paths, budgets.
-10. Ask once whether the run directory should be committed, and record the answer.
-11. Write `ADR-001-scope.md`.
+11. Ask once whether the run directory should be committed, and record the answer.
+12. Write `ADR-001-scope.md`.
 
 ## Evidence
 `state.json` initialised · `config/run.yml` · `decisions/ADR-001-scope.md`
 
 ## Exit
 Target kind, source version, DDEV project and sync-freshness decision are all recorded in
-`state.json`.
+`state.json`, and every extension without a v14 release has been named in the plan.
 
 ## Blocking
 No local sync, or one the user cannot vouch for. Ask; do not improvise one.

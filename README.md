@@ -99,6 +99,12 @@ Four more govern how skills themselves are written — see [SKILL-SPEC.md](SKILL
 | `skills-declare-lifecycle` | Declare capability vs preference; retire capability skills once absorbed |
 | `skills-directives-not-essays` | Directives over prose; exact procedures belong in scripts |
 
+And one governs upgrades:
+
+| Rule | Constraint |
+|---|---|
+| `upgrade-every-extension-resolves-on-v14` | Name the extensions without a v14 release before migrating anything; every extension ends with a resolution, and a feature that must stay is forked into `packages/` |
+
 A rule answers *is this change allowed?*. A skill answers *how do I build this?*
 
 ## Conventions

@@ -77,3 +77,12 @@ to input no code review would catch:
 
 These carry `severity: error` and broad `appliesTo` globs on purpose: they apply to every
 task, not to a particular file type.
+
+## Upgrade rules
+
+| Rule | Constraint |
+|---|---|
+| `upgrade/upgrade-every-extension-resolves-on-v14` | Name every extension without a v14 release **before** migrating anything; each one ends with exactly one resolution, and a feature that must stay is forked into `packages/` rather than dropped |
+
+An extension with no v14 release blocks the whole install, so it changes the cost and shape of the
+project. That makes it an intake finding, not something to discover mid-run.
