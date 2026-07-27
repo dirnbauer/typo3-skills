@@ -10,6 +10,13 @@ Read `skills/<name>/SKILL.md` and follow it. Load files under `references/`, `ru
 `assets/` or `templates/` **only when the skill asks for them** — that is the progressive-disclosure
 contract these skills are written against, and loading everything defeats it.
 
+**One exception, and it is not optional:** if `skills/<name>/references/webconsulting-additions.md`
+exists, read it together with `SKILL.md`. Vendored skills keep their upstream `SKILL.md`
+byte-identical, so it cannot link forward to the overlay — which means the overlay is the one file
+this collection adds that the skill itself can never point you at. It carries the boundaries against
+sibling skills and the TYPO3-specific caveats upstream does not know. Skipping it is how a general
+Postgres or PHP skill ends up answering a question that belongs to `typo3-datahandler`.
+
 Combine skills rather than merging them. `typo3-rector` + `typo3-testing` is the intended shape.
 
 ## Upgrade orchestration

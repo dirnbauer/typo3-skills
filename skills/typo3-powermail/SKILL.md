@@ -56,7 +56,7 @@ Mail (tx_powermail_domain_model_mail)
 composer require in2code/powermail
 ```
 
-Typical requirements (always confirm the **current** release on [Packagist](https://packagist.org/packages/in2code/powermail)): PHP **^8.2**, **`typo3/cms-core: ^13.4`** (latest stable line at time of writing), plus ext-json, ext-gd, ext-fileinfo, ext-curl. **Do not assume TYPO3 v14** until the package constraint is updated upstream.
+Typical requirements (always confirm the **current** release on [Packagist](https://packagist.org/packages/in2code/powermail)): PHP **^8.2**, **`typo3/cms-core: ^13.4`** — the newest powermail line still targets v13.4 and has no v14 release, so this is a genuine blocker for a v14 project, not an oversight. Plus ext-json, ext-gd, ext-fileinfo, ext-curl. **Do not assume TYPO3 v14** until the package constraint is updated upstream.
 
 ## 2. Field Types
 

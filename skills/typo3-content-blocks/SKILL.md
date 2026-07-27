@@ -13,7 +13,7 @@ license: "MIT / CC-BY-SA-4.0"
 > Source: https://github.com/dirnbauer/webconsulting-skills
 
 > **Compatibility:** This skill targets **TYPO3 v14.3+** with **Content Blocks 2.x**. Always match the [Packagist `friendsoftypo3/content-blocks`](https://packagist.org/packages/friendsoftypo3/content-blocks) constraint to your Core version.
-> For **Content Blocks 1.x on TYPO3 v13**, upstream requires **TYPO3 ≥ 13.4** (`typo3/cms-core: ^13.4`) — confirm on Packagist.
+> For **Content Blocks 2.x**, the line this skill targets, upstream requires **TYPO3 ≥ 14.3** (`typo3/cms-core: ^14.3`) — confirm the exact patch constraint on Packagist. The 1.x line was v13-only and is not what a v14 project installs.
 > Examples use TYPO3 v14 APIs and CB 2.x; adjust `composer.json` if upstream constraints differ.
 
 > **TYPO3 API First:** Always use TYPO3's built-in APIs, core features, and established conventions before creating custom implementations. Do not reinvent what TYPO3 already provides. Always verify that the APIs and methods you use exist and are not deprecated in TYPO3 v14 by checking the official TYPO3 documentation.
@@ -50,7 +50,7 @@ ddev composer require friendsoftypo3/content-blocks
 ddev typo3 cache:flush
 ```
 
-> **Version constraint:** Content Blocks **1.x** requires TYPO3 **≥ 13.4** (`typo3/cms-core: ^13.4` in the package). TYPO3 **13.1–13.3** do **not** satisfy that Composer constraint.
+> **Version constraint:** Content Blocks **2.x** requires TYPO3 **≥ 14.3** (`typo3/cms-core: ^14.3`, tightened to a specific patch in recent releases). Do not pin 1.x in a v14 project — it is the v13 line and will not resolve.
 
 ### Security Configuration (Classic Mode)
 

@@ -46,7 +46,7 @@ Prefer TYPO3 v14.2+ and Core ViewHelpers:
 
 Use `f:mark.contentArea` only when the project cannot use the v14.2+ content-area pipeline yet, for example TYPO3 v13 compatibility or legacy content rendering with VHS/Flux/container loops.
 
-Always verify the package constraints before changing `composer.json`; current upstream (1.7.1) requires PHP 8.2+ and supports TYPO3 13.4.22+ or 14.3+ (`typo3/cms-core ^13.4.22 || ^14.3.0`; only early 1.0.x releases supported 14.2).
+Always verify the package constraints before changing `composer.json`; current upstream (1.9.0) requires PHP 8.2+ and supports TYPO3 13.4.22+ or 14.3+ (`typo3/cms-core ^13.4.22 || ^14.3.0`; only early 1.0.x releases supported 14.2).
 
 ## How to install
 
