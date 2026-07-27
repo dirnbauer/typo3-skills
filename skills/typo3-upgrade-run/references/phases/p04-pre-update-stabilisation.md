@@ -43,6 +43,30 @@ contains `?tx_`, `&cHash=` or `?id=`, the route enhancer is missing or not match
 enhancer rather than putting the parameter form in the sitemap, because that form is what search
 engines would then index.
 
+### The double check: run it, do not read it
+
+```bash
+node scripts/sitemap-audit.mjs --base-url "https://acme.ddev.site" --json sitemap-audit.json
+```
+
+Reading a sitemap tells you whether the document you *looked at* is right. It cannot tell you about
+the one you never thought to open — a second site nobody enumerated, or a language that quietly
+falls back to the default. So the audit never trusts one source:
+
+| Source | Answers |
+|---|---|
+| `config/sites/*/config.yaml` | which sites and languages **should** exist — every base, every `baseVariant`, every enabled language |
+| The live HTTP responses | which sitemaps **do** exist, following any `<sitemapindex>` to the documents it names |
+| The database | how many indexable pages there **are**, so an empty or partial sitemap cannot pass |
+
+A disagreement between any two is a finding: config without live is a missing sitemap, live without
+config is a document nobody declared, and database without live is a page tree the sitemap does not
+cover. It exits 1 on findings, so it can gate the loop instead of being read and nodded at.
+
+It also checks language purity per document (a `de` sitemap listing `en` URLs is a fallback fault),
+canonical URL form (a listed `?tx_…` or `&cHash=` means the route enhancer is missing — fix the
+enhancer, never ship the parameter form), and that `robots.txt` advertises a sitemap that resolves.
+
 ### Checks — each of these has to pass before the loop closes
 
 | Check | Passes when |
