@@ -54,13 +54,43 @@ Read-only inspection. Creating `.typo3-update/` from `templates/run-directory/`.
    the plan, with what it provides and who depends on it. An extension with no v14 release blocks
    the whole install and can change the project's cost and shape, so it is intake output, not a
    mid-run discovery. See `references/extension-strategy.md`.
-9. **Sweep the database for TypoScript that only exists there.** Automated tooling processes
+9. **Inventory EVERY extension, with usage evidence.** Step 8 finds what *blocks* the target;
+   it says nothing about an extension that upgrades cleanly and nobody uses — and those are the
+   expensive ones, because they get migrated, tested, sometimes forked, and carried forward
+   forever without anyone asking whether the site needs them. Removing beats migrating, and it
+   beats forking by a wide margin.
+
+   ```bash
+   node scripts/extension-usage.mjs --ddev-dir . --report .typo3-update/report.extension-usage.json
+   ```
+
+   It reads `composer.json`, skips Core subpackages, and for every remaining package counts its
+   own tables, its content elements and plugin instances, **and the columns it adds to existing
+   tables** — that last one matters, because an extension that only extends `pages` or
+   `tt_content` owns no table and registers no CType, so a naive count reports something
+   load-bearing as unused.
+
+   **Zero usage is a question, not a verdict.** Sitepackages, ViewHelper libraries, middlewares,
+   link handlers, scheduler tasks and monitoring clients all legitimately store nothing. Confirm
+   before removing:
+
+   ```bash
+   ddev typo3 extension:list --active
+   grep -rn '<ext-key>' packages/ config/ fileadmin/
+   ddev mysql -N -e "SELECT uid,title FROM sys_template WHERE deleted=0
+     AND (config LIKE '%<ext-key>%' OR include_static_file LIKE '%<ext-key>%');"
+   ```
+
+   Then remove, and **prove the removal with the invariance gate** rather than by looking at the
+   site.
+
+10. **Sweep the database for TypoScript that only exists there.** Automated tooling processes
    files; on sites of this generation the interesting TypoScript lives in `sys_template` and in
    `TSconfig` columns, edited through the backend and never on disk. `<INCLUDE_TYPOSCRIPT:>` is
    the sharpest example — removed in v14 and discarded *silently* — but the same blind spot
    applies to anything a file-based migration tool is expected to catch. Run the detection query
    in `known-problems.md` and record the count, including zero.
-10. **Inventory the custom code, and say what each piece does.** The extension *list* is not the
+11. **Inventory the custom code, and say what each piece does.** The extension *list* is not the
    scope; the custom code is. A site with forty third-party extensions and no custom PHP is a
    smaller job than one with four extensions and a bespoke Extbase domain model. Record, per
    in-house package (`packages/`, `extensions/`, path repositories in `composer.json`):
@@ -81,7 +111,7 @@ Read-only inspection. Creating `.typo3-update/` from `templates/run-directory/`.
    grep -rln 'MiddlewareInterface\|registerPlugin\|configureModule\|EventListener' packages/ extensions/
    ```
 
-11. **Check for `EXT:mask` specifically.** If the site builds content elements with Mask, the
+12. **Check for `EXT:mask` specifically.** If the site builds content elements with Mask, the
    migration to Content Blocks has to happen **on the 13.4 rung, before the v14 rung** — the
    importer supports v13 and there is no supported path once you are on 14.3. That changes the
    shape of the ladder, so it is intake output, not a mid-run discovery. See
@@ -92,7 +122,7 @@ Read-only inspection. Creating `.typo3-update/` from `templates/run-directory/`.
      WHERE deleted=0 AND CType LIKE 'mask_%' GROUP BY CType ORDER BY 2 DESC;"
    ```
 
-12. **Name the subsystems that carry their own upgrade project.** Some things are not "an
+13. **Name the subsystems that carry their own upgrade project.** Some things are not "an
    extension to update" but a workstream with their own version matrix, their own data to
    reindex or migrate, and sometimes their own licence: a search stack (Solr and its companions),
    a form framework holding live submissions, a news or blog archive, Content Blocks, anything
@@ -100,18 +130,18 @@ Read-only inspection. Creating `.typo3-update/` from `templates/run-directory/`.
    extension with zero records gets removed, not migrated, and that decision belongs here rather
    than mid-run. See `references/feature-upgrades.md`.
 
-13. **Read the README and write one sentence about what this site actually is.** Whose site,
+14. **Read the README and write one sentence about what this site actually is.** Whose site,
    for whom, what it is for. It costs a minute, it is the context every later judgement call is
    made against, and its absence is why a run can be technically green while nobody noticed the
    most important page was broken.
 
-14. **Ask about commercially licensed extensions.** Paid extensions usually need a new licence for a
+15. **Ask about commercially licensed extensions.** Paid extensions usually need a new licence for a
    new major, served from a private repository. That is a purchase with lead time, not a dependency
    problem, and it surfaces mid-P05 as an opaque 403. Identify them now.
-15. Create the run directory and fill `config/run.yml`: trusted origin (scheme included), every site,
+16. Create the run directory and fill `config/run.yml`: trusted origin (scheme included), every site,
    languages as the site's real prefixes, golden paths, budgets.
-16. Ask once whether the run directory should be committed, and record the answer.
-17. Write `ADR-001-scope.md`.
+17. Ask once whether the run directory should be committed, and record the answer.
+18. Write `ADR-001-scope.md`.
 
 ## Evidence
 `state.json` initialised · `config/run.yml` · `decisions/ADR-001-scope.md`

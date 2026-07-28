@@ -445,6 +445,7 @@ incomplete rather than claiming success. A gate that does not apply needs an exp
 | `scripts/sitemap-audit.mjs` | proving the sitemap across every site and language (loop 010) |
 | `references/quality-bars.md`, `references/measurement-recipes.md` | Contract B |
 | `references/extension-strategy.md` | classifying or routing an extension; forking one into `packages/` |
+| `scripts/extension-usage.mjs` | **P00** — every extension with usage evidence, so unused ones get removed not migrated |
 | `references/typo3-14-constraints.md` | constraints, #108345, `providesPackages` |
 | `references/feature-upgrades.md` | Solr, Visual Editor, CKEditor, security headers |
 | `references/mask-to-content-blocks.md` | **a Mask site — read at P00**, the importer runs on v13, not v14 |
