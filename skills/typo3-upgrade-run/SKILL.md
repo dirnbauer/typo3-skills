@@ -441,6 +441,7 @@ incomplete rather than claiming success. A gate that does not apply needs an exp
 | `references/rollback.md` | restoring an anchor — database, code and files together |
 | `references/known-problems.md` | **a 500, a warning or a Composer refusal you have not seen before** |
 | `references/fleet-profile.md` | **P00, before diagnosing anything** — what these projects usually turn out to be |
+| `references/fleet-survey.md` | **before any run** — read-only triage across several projects: order, blockers, where the effort is |
 | `scripts/sitemap-audit.mjs` | proving the sitemap across every site and language (loop 010) |
 | `references/quality-bars.md`, `references/measurement-recipes.md` | Contract B |
 | `references/extension-strategy.md` | classifying or routing an extension; forking one into `packages/` |

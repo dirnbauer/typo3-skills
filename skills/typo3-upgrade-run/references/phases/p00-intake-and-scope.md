@@ -2,6 +2,10 @@
 
 No loop. This phase decides what is being updated and creates the run directory.
 
+Scoping **several** projects rather than starting one? Use
+[`references/fleet-survey.md`](../fleet-survey.md) first — it is read-only, answers which project
+to start with and what each will cost, and leaves this phase to the one you choose.
+
 ## Preconditions
 - The repository is present and readable.
 - No run directory yet, or one whose `run_id` the user confirms resuming.
@@ -56,13 +60,47 @@ Read-only inspection. Creating `.typo3-update/` from `templates/run-directory/`.
    the sharpest example — removed in v14 and discarded *silently* — but the same blind spot
    applies to anything a file-based migration tool is expected to catch. Run the detection query
    in `known-problems.md` and record the count, including zero.
-10. **Ask about commercially licensed extensions.** Paid extensions usually need a new licence for a
+10. **Inventory the custom code, and say what each piece does.** The extension *list* is not the
+   scope; the custom code is. A site with forty third-party extensions and no custom PHP is a
+   smaller job than one with four extensions and a bespoke Extbase domain model. Record, per
+   in-house package (`packages/`, `extensions/`, path repositories in `composer.json`):
+
+   - what it is for, in one sentence, from its `composer.json` description or `ext_emconf.php`
+   - `.php` file count and rough line count — the honest proxy for how much has to be reviewed
+   - Extbase plugins, custom backend modules, middlewares, event listeners and hooks
+   - domain models and their tables: bespoke data is the single biggest driver of upgrade effort,
+     because nothing upstream will migrate it for you
+   - integrations with anything outside TYPO3 — APIs, imports, external systems. These break
+     without any TYPO3 error and are invisible to every gate in this skill.
+
+   ```bash
+   for d in packages/* extensions/*; do
+     [ -d "$d" ] || continue
+     echo "$d  php:$(find "$d" -name '*.php' | wc -l)  loc:$(find "$d" -name '*.php' -exec cat {} + | wc -l)"
+   done
+   grep -rln 'MiddlewareInterface\|registerPlugin\|configureModule\|EventListener' packages/ extensions/
+   ```
+
+11. **Name the subsystems that carry their own upgrade project.** Some things are not "an
+   extension to update" but a workstream with their own version matrix, their own data to
+   reindex or migrate, and sometimes their own licence: a search stack (Solr and its companions),
+   a form framework holding live submissions, a news or blog archive, Content Blocks, anything
+   commerce. Record which are present, at what version, and **how much data each holds** — an
+   extension with zero records gets removed, not migrated, and that decision belongs here rather
+   than mid-run. See `references/feature-upgrades.md`.
+
+12. **Read the README and write one sentence about what this site actually is.** Whose site,
+   for whom, what it is for. It costs a minute, it is the context every later judgement call is
+   made against, and its absence is why a run can be technically green while nobody noticed the
+   most important page was broken.
+
+13. **Ask about commercially licensed extensions.** Paid extensions usually need a new licence for a
    new major, served from a private repository. That is a purchase with lead time, not a dependency
    problem, and it surfaces mid-P05 as an opaque 403. Identify them now.
-11. Create the run directory and fill `config/run.yml`: trusted origin (scheme included), every site,
+14. Create the run directory and fill `config/run.yml`: trusted origin (scheme included), every site,
    languages as the site's real prefixes, golden paths, budgets.
-12. Ask once whether the run directory should be committed, and record the answer.
-13. Write `ADR-001-scope.md`.
+15. Ask once whether the run directory should be committed, and record the answer.
+16. Write `ADR-001-scope.md`.
 
 ## Evidence
 `state.json` initialised · `config/run.yml` · `decisions/ADR-001-scope.md`
