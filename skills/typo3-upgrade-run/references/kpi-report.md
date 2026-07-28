@@ -1,10 +1,21 @@
 # The KPI report
 
-A Word document in the webconsulting corporate design, produced in phase P15. Written in the
+**A Markdown file is the deliverable.** `.typo3-update/report/KPI-REPORT.md`, written in the
 language recorded in `config/run.yml` (`reporting.language`, default German).
 
-Write the report as Markdown first — it stays the single source of truth and is what gets reviewed
-— then render it:
+Markdown, not Word, because the report is written **while the run is still moving**. Findings get
+reclassified, a gate closes, a number changes — and every export made before that moment is now
+wrong while still looking authoritative. On a real run the Word file was generated at 22:41 and
+the report changed at 23:30; the stale `.docx` sat there for hours reporting gates as unproven
+that had already passed. One source of truth, edited in place, cannot drift from itself.
+
+Markdown also diffs, reviews and greps. A `.docx` does none of those.
+
+## When a Word document is genuinely wanted
+
+Only on explicit request, and **only once the content is final** — after Contract A closure, with
+no gate still open. It is a derived artifact with a shelf life, so treat it as an export, not as
+the report:
 
 ```bash
 python3 scripts/md2docx-webconsulting.py \
@@ -18,19 +29,23 @@ The renderer applies the `webconsulting-branding` tokens directly (primary `#1b7
 notice in the header only, quiet footer). It needs `python-docx`; the `document-processing` skill
 covers the wider DOCX/PDF/XLSX toolkit if a task needs more than this.
 
-**Check the output, do not assume it.** Re-read the generated file and assert no raw Markdown
-survived — nested inline spans (`` **`code`** ``, ``[`label`](path)``) and soft-wrapped bold are
-the constructs that leak:
+Two rules if you do export:
 
-```bash
-python3 - <<'EOF'
-from docx import Document
-d = Document('.typo3-update/report/TYPO3-14-Update-Bericht.docx')
-bad = [p.text for p in d.paragraphs if '**' in p.text or '`' in p.text]
-bad += [c.text for t in d.tables for r in t.rows for c in r.cells if '**' in c.text]
-print('stray markdown:', len(bad))
-EOF
-```
+1. **Re-export or delete after any edit to the Markdown.** A stale export is worse than no export,
+   because nothing about the file says it is out of date.
+2. **Check the output, do not assume it.** Nested inline spans (`` **`code`** ``,
+   ``[`label`](path)``) and bold spanning a soft line break are the constructs that leak raw
+   Markdown into the document:
+
+   ```bash
+   python3 - <<'EOF'
+   from docx import Document
+   d = Document('.typo3-update/report/TYPO3-14-Update-Bericht.docx')
+   bad = [p.text for p in d.paragraphs if '**' in p.text or '`' in p.text]
+   bad += [c.text for t in d.tables for r in t.rows for c in r.cells if '**' in c.text]
+   print('stray markdown:', len(bad))   # must be 0
+   EOF
+   ```
 
 ## The single rule
 
