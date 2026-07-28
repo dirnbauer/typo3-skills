@@ -334,14 +334,28 @@ export async function lighthouse({ values, paths, log }) {
     throw new HarnessError(`Lighthouse is not installed: ${err.message}. Run npm ci.`);
   }
 
-  const runs = intOpt(values, 'runs', 5);
+  const runs = intOpt(values, 'runs', 3);
   const formFactor = values['form-factor'] ?? 'mobile';
-  const urls = manifest.lighthouseSampleUrls.map((id) => urlById(manifest, id)).filter(Boolean);
+  const sampleIds = manifest.lighthouseSampleUrls ?? [];
+  if (!sampleIds.length) {
+    throw new PreconditionError(
+      'The manifest carries no lighthouseSampleUrls. Re-run "t3u discover-urls".',
+    );
+  }
+  const allUrls = sampleIds.map((id) => urlById(manifest, id)).filter(Boolean);
+  const urls = stratifyByTemplate(allUrls, intOpt(values, 'sample', 10), manifest.baseUrl);
   const guard = await UrlGuard.create({ allowedOrigins: manifest.allowedOrigins });
 
   // One Chrome for the whole run. v1 spawned and killed one PER URL — 100 cold starts.
+  //
+  // `--ignore-certificate-errors` is not optional here: DDEV serves the site over HTTPS
+  // with a locally-generated certificate, and without this flag Lighthouse does not fail
+  // — it waits, and the command hangs until something kills it.
   const chrome = await chromeLauncher.launch({
-    chromeFlags: ['--headless=new', '--disable-dev-shm-usage', '--disable-gpu'],
+    chromeFlags: [
+      '--headless=new', '--disable-dev-shm-usage', '--disable-gpu',
+      '--ignore-certificate-errors', '--no-sandbox',
+    ],
   });
 
   const results = [];
@@ -350,12 +364,19 @@ export async function lighthouse({ values, paths, log }) {
       await guard.assertUrl(url, { purpose: 'lighthouse' });
       const perUrl = [];
       for (let i = 0; i < runs; i += 1) {
-        const lhr = (await lighthouseMod(url, {
-          port: chrome.port, output: 'json', logLevel: 'error', formFactor,
-          screenEmulation: formFactor === 'mobile'
-            ? { mobile: true, width: 412, height: 823, deviceScaleFactor: 1.75, disabled: false }
-            : { mobile: false, width: 1350, height: 940, deviceScaleFactor: 1, disabled: false },
-        })).lhr;
+        // A per-audit deadline. Lighthouse can sit indefinitely on a page that never
+        // reaches a quiet network, and a gate that hangs is worse than one that fails:
+        // nobody can tell it apart from slow progress.
+        const lhr = (await withDeadline(
+          lighthouseMod(url, {
+            port: chrome.port, output: 'json', logLevel: 'error', formFactor,
+            screenEmulation: formFactor === 'mobile'
+              ? { mobile: true, width: 412, height: 823, deviceScaleFactor: 1.75, disabled: false }
+              : { mobile: false, width: 1350, height: 940, deviceScaleFactor: 1, disabled: false },
+          }),
+          intOpt(values, 'timeout', 120) * 1000,
+          `lighthouse timed out on ${url}`,
+        )).lhr;
         await guard.assertUrl(lhr.finalDisplayedUrl ?? url, { purpose: 'lighthouse-final' });
         perUrl.push(lhr);
       }
@@ -363,7 +384,10 @@ export async function lighthouse({ values, paths, log }) {
       log.debug(`lighthouse ${url}: perf ${results.at(-1).scores.performance.median}`);
     }
   } finally {
-    await chrome.kill().catch(() => {});
+    // chrome-launcher's kill() returns void, not a Promise. Calling .catch() on it threw
+    // "Cannot read properties of undefined (reading 'catch')" from the finally block,
+    // which masked whatever the real error had been.
+    try { chrome.kill(); } catch { /* already gone */ }
   }
 
   // Only a budget produces findings. A local absolute score is indicative, not a verdict.
@@ -392,6 +416,60 @@ export async function lighthouse({ values, paths, log }) {
   log.warn('Local scores are indicative. Never quote them as field results, and never write "INP passing".');
 
   return { exitCode: EXIT.PASS, verdict, reports: [written.path], message: 'lighthouse recorded' };
+}
+
+/** Reject rather than hang. A gate that never returns cannot be distinguished from a slow one. */
+function withDeadline(promise, ms, message) {
+  let timer;
+  return Promise.race([
+    promise.finally(() => clearTimeout(timer)),
+    new Promise((_, reject) => { timer = setTimeout(() => reject(new HarnessError(message)), ms); }),
+  ]);
+}
+
+/**
+ * Sample by template class, not uniformly.
+ *
+ * A random draw from a sitemap that is mostly leaf pages measures the leaf template over
+ * and over and never touches the listing template — which is normally the slower one,
+ * because it renders many records and many images. Performance problems live in
+ * templates, so the sample has to cover them.
+ *
+ * Classified from the URL alone, so this needs no database access:
+ *   home     the site root
+ *   listing  a path that is the prefix of other sampled paths (a section index)
+ *   detail   a leaf
+ *
+ * One of each is guaranteed before the remainder is filled in manifest order, which is
+ * already seeded — so the selection stays reproducible across runs.
+ */
+function stratifyByTemplate(urls, limit, baseUrl) {
+  // The site root is frequently absent from the sitemap sample — it is often a shortcut
+  // page, and sitemap generators skip it. That silently drops the single URL every
+  // visitor loads, so add it back before classifying.
+  if (baseUrl) {
+    const root = new URL('/', baseUrl).href;
+    if (!urls.some((u) => { try { return new URL(u).pathname === '/'; } catch { return false; } })) {
+      urls = [root, ...urls];
+    }
+  }
+  if (urls.length <= limit) return urls;
+  const pathOf = (u) => { try { return new URL(u).pathname.replace(/\/+$/, '') || '/'; } catch { return u; } };
+  const paths = urls.map(pathOf);
+  const classify = (u, i) => {
+    const p = paths[i];
+    if (p === '/') return 'home';
+    return paths.some((q, j) => j !== i && q.startsWith(`${p}/`)) ? 'listing' : 'detail';
+  };
+  const buckets = { home: [], listing: [], detail: [] };
+  urls.forEach((u, i) => buckets[classify(u, i)].push(u));
+
+  const picked = [];
+  const seen = new Set();
+  const take = (u) => { if (u && !seen.has(u) && picked.length < limit) { seen.add(u); picked.push(u); } };
+  for (const k of ['home', 'listing', 'detail']) take(buckets[k][0]);
+  for (const u of urls) take(u);
+  return picked;
 }
 
 function summarise(url, lhrs, formFactor) {

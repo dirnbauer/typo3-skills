@@ -87,8 +87,9 @@ export const COMMANDS = {
   smoke: { summary: 'Deterministic read-only navigation check', options: {
     report: { type: 'string' }, 'max-steps': { type: 'string', default: '25' },
   }},
-  lighthouse: { summary: 'Lighthouse over the manifest sample', options: {
-    report: { type: 'string' }, runs: { type: 'string', default: '5' },
+  lighthouse: { summary: 'Lighthouse over a template-stratified sample', options: {
+    report: { type: 'string' }, runs: { type: 'string', default: '3' },
+    sample: { type: 'string', default: '10' }, timeout: { type: 'string', default: '120' },
     'form-factor': { type: 'string', default: 'mobile' }, budget: { type: 'string' },
   }},
   gate: { summary: 'Aggregate a loop verdict from its stage reports', options: {

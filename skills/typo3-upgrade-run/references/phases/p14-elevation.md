@@ -10,7 +10,7 @@ Each track has its own approval and its own derived baseline `B-<n>`.
 
 | Loop | Track |
 |---|---|
-| 500 | performance and Core Web Vitals — `scripts/lighthouse-sample.mjs` |
+| 500 | performance and Core Web Vitals — `t3u lighthouse` |
 | 510 | technical SEO and structured data — see `references/metadata-and-social.md` |
 | 520 | accessibility beyond automated-green — `scripts/a11y-audit.mjs` |
 | 530 | security posture |
@@ -21,9 +21,8 @@ Each track has its own approval and its own derived baseline `B-<n>`.
 ## Loop 500 — sample by template, not at random
 
 ```bash
-node scripts/lighthouse-sample.mjs --base-url https://site.ddev.site --ddev-dir . \
-  --count 10 --runs 1 --form-factor mobile --seed 1 \
-  --report .typo3-update/report.lighthouse.json
+node scripts/t3u.mjs lighthouse --run-dir .typo3-update \
+  --sample 10 --runs 3 --form-factor mobile --loop 500
 ```
 
 **A random sample of a site is not a representative sample of its templates.** Ten URLs drawn
@@ -39,8 +38,12 @@ Two traps:
   must, because shortcuts redirect and link pages leave the site — silently drops the one URL every
   visitor loads. Add `/` explicitly when nothing classified as home.
 - **Lighthouse may be declared in `package.json` and not installed.** `npm install lighthouse
-  chrome-launcher` in the harness before the first run; the `t3u lighthouse` subcommand is
-  registered in `--help` but is a stub and fails at runtime.
+  chrome-launcher` in the harness before the first run — the command reports this clearly rather
+  than failing obscurely.
+- **DDEV serves HTTPS with a locally-generated certificate.** Chrome must be launched with
+  `--ignore-certificate-errors` or Lighthouse does not fail, it *waits* — and the command hangs
+  until something kills it. A gate that hangs is worse than one that fails, because nobody can
+  tell it apart from slow progress. Every audit therefore also carries a `--timeout` deadline.
 
 **The largest single win is almost always the image format.** Before tuning anything else, check
 whether images are being re-encoded at all: a source already at the requested dimensions is passed
@@ -48,7 +51,8 @@ through untouched, so an unoptimised upload stays unoptimised however the qualit
 See [`references/image-formats.md`](../image-formats.md) — on a real run this took performance
 89 → 100 and LCP 3.8s → 1.8s by moving two header images to AVIF, with no element moving.
 
-Report **medians with min–max**, never a single run, and carry the caveat next to the number:
+`--sample` bounds how many URLs are audited and `--runs` how many times each; the default of
+3 runs is what makes a median meaningful. Report **medians with min–max**, never a single run, and carry the caveat next to the number:
 these are loopback network, warm cache, laptop CPU. The absolute score is indicative; the
 before/after delta on the same machine is the evidence. TBT is a lab **proxy** for INP.
 
