@@ -75,9 +75,25 @@ ddev mysql -N -e "SELECT COUNT(*) FROM be_users WHERE username='_t3u_upgrade_pro
   so no other stage in this run ever touches them; that table carries the SEO value of the last
   relaunches, and a changed host match or a slug-wizard regeneration 404s top-traffic legacy URLs
   while the certificate still says "invisible to visitors".
-- Editorial configuration: page and user TSconfig, `be_groups` module access and permissions, DB and
-  file mounts, and backend layouts still apply as before. v14's module-parent renames make old
-  identifiers no-ops, which silently either hides every module or exposes all of them.
+- **Backend users and permissions** — the gate nothing else covers. The sweep proves a module
+  opens; the write round-trip proves an *admin* can save. Neither says anything about the editor
+  who logs in on Monday, and permission damage is silent: TYPO3 ignores an entry pointing at
+  something that no longer exists, and does not offer a content type an editor may not use.
+
+  ```bash
+  node scripts/backend-permissions-audit.mjs --ddev-dir . \
+    --report .typo3-update/report.permissions.json        # --fix for additive repairs
+  ```
+
+  It checks who holds admin, whether `groupMods` still resolves, whether every CType **in use** is
+  editable, exclude-fields, table access, file permissions and mountpoints. Full strategy in
+  [`references/backend-permissions.md`](../backend-permissions.md) — including that **admin
+  retention is a question for the client, by name**, never an inference from who holds the flag
+  today, and that module identifiers must be enumerated from registered code rather than from the
+  module menu.
+
+  Then log in as a real editor and try it. The audit proves the configuration is coherent; only
+  using the account proves an editor can work.
 - **Site search.** With Solr, loop 200 covers it. With `EXT:indexed_search` the index must be
   rebuilt, or the smoke test passes on an empty index because the result page renders perfectly.
 
