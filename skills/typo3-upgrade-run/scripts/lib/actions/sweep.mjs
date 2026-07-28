@@ -419,7 +419,7 @@ export async function lighthouse({ values, paths, log }) {
 }
 
 /** Reject rather than hang. A gate that never returns cannot be distinguished from a slow one. */
-function withDeadline(promise, ms, message) {
+export function withDeadline(promise, ms, message) {
   let timer;
   return Promise.race([
     promise.finally(() => clearTimeout(timer)),
@@ -443,7 +443,7 @@ function withDeadline(promise, ms, message) {
  * One of each is guaranteed before the remainder is filled in manifest order, which is
  * already seeded — so the selection stays reproducible across runs.
  */
-function stratifyByTemplate(urls, limit, baseUrl) {
+export function stratifyByTemplate(urls, limit, baseUrl) {
   // The site root is frequently absent from the sitemap sample — it is often a shortcut
   // page, and sitemap generators skip it. That silently drops the single URL every
   // visitor loads, so add it back before classifying.
