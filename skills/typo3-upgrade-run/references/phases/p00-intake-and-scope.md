@@ -81,7 +81,18 @@ Read-only inspection. Creating `.typo3-update/` from `templates/run-directory/`.
    grep -rln 'MiddlewareInterface\|registerPlugin\|configureModule\|EventListener' packages/ extensions/
    ```
 
-11. **Name the subsystems that carry their own upgrade project.** Some things are not "an
+11. **Check for `EXT:mask` specifically.** If the site builds content elements with Mask, the
+   migration to Content Blocks has to happen **on the 13.4 rung, before the v14 rung** — the
+   importer supports v13 and there is no supported path once you are on 14.3. That changes the
+   shape of the ladder, so it is intake output, not a mid-run discovery. See
+   [`references/mask-to-content-blocks.md`](../mask-to-content-blocks.md).
+
+   ```bash
+   ddev mysql -N -e "SELECT CType, COUNT(*) FROM tt_content
+     WHERE deleted=0 AND CType LIKE 'mask_%' GROUP BY CType ORDER BY 2 DESC;"
+   ```
+
+12. **Name the subsystems that carry their own upgrade project.** Some things are not "an
    extension to update" but a workstream with their own version matrix, their own data to
    reindex or migrate, and sometimes their own licence: a search stack (Solr and its companions),
    a form framework holding live submissions, a news or blog archive, Content Blocks, anything
@@ -89,18 +100,18 @@ Read-only inspection. Creating `.typo3-update/` from `templates/run-directory/`.
    extension with zero records gets removed, not migrated, and that decision belongs here rather
    than mid-run. See `references/feature-upgrades.md`.
 
-12. **Read the README and write one sentence about what this site actually is.** Whose site,
+13. **Read the README and write one sentence about what this site actually is.** Whose site,
    for whom, what it is for. It costs a minute, it is the context every later judgement call is
    made against, and its absence is why a run can be technically green while nobody noticed the
    most important page was broken.
 
-13. **Ask about commercially licensed extensions.** Paid extensions usually need a new licence for a
+14. **Ask about commercially licensed extensions.** Paid extensions usually need a new licence for a
    new major, served from a private repository. That is a purchase with lead time, not a dependency
    problem, and it surfaces mid-P05 as an opaque 403. Identify them now.
-14. Create the run directory and fill `config/run.yml`: trusted origin (scheme included), every site,
+15. Create the run directory and fill `config/run.yml`: trusted origin (scheme included), every site,
    languages as the site's real prefixes, golden paths, budgets.
-15. Ask once whether the run directory should be committed, and record the answer.
-16. Write `ADR-001-scope.md`.
+16. Ask once whether the run directory should be committed, and record the answer.
+17. Write `ADR-001-scope.md`.
 
 ## Evidence
 `state.json` initialised · `config/run.yml` · `decisions/ADR-001-scope.md`

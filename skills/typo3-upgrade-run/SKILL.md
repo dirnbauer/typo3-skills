@@ -447,6 +447,7 @@ incomplete rather than claiming success. A gate that does not apply needs an exp
 | `references/extension-strategy.md` | classifying or routing an extension; forking one into `packages/` |
 | `references/typo3-14-constraints.md` | constraints, #108345, `providesPackages` |
 | `references/feature-upgrades.md` | Solr, Visual Editor, CKEditor, security headers |
+| `references/mask-to-content-blocks.md` | **a Mask site — read at P00**, the importer runs on v13, not v14 |
 | `references/metadata-and-social.md` | the `<head>` audit: minimum metadata, generated OG card, Impressum |
 | `references/image-formats.md` | **AVIF first, WebP fallback** — every processed image, and where not to |
 | `references/harness-contract.md`, `references/visual-regression.md` | running the harness |
