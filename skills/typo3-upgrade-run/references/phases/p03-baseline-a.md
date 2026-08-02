@@ -35,6 +35,13 @@ Every sample URL captured; manifest written; `state.baselines["A-original"].seal
 
 ## Blocking
 Sitemaps too broken to derive a sample. Record `ADR-002-degraded-sampling`, derive the sample from a
-page-tree crawl instead, seal **that**, and name the degradation in the closure certificate. Never
-fix the sitemaps first.
+database-backed page-tree crawl instead, seal **that**, and name the degradation in the closure
+certificate. Never fix the sitemaps first:
 
+```bash
+t3u discover-urls --from-pages --allow-missing-sitemap
+```
+
+The fallback includes public standard pages and shortcut roots (`doktype` 1 and 4). It cannot infer
+route-enhancer or plugin detail URLs from `pages`; the manifest records that limitation. Repair the
+sitemap after the baseline, then reconcile its dynamic URLs against the sealed fallback manifest.

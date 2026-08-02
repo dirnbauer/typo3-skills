@@ -7,7 +7,16 @@ with this skill.
 
 ## Steps
 1. Resolve v14 changelog items and extension-scanner findings for every used API surface, including
-   what the tools do not cover.
+   what the tools do not cover. Run the repository-owned audit across **every** package, not only the
+   active sitepackage:
+
+   ```bash
+   node /path/to/typo3-upgrade-run/scripts/local-extension-audit.mjs --root "$PWD"
+   ```
+
+   It blocks on the removed three-argument `addTCAcolumns()` signature, incomplete Composer extension
+   metadata and `ext_emconf.php` retained by project-local packages. Use `--publishable key,key` only
+   for packages actually shipped through TER/Tailor or required by Classic mode.
 2. Remove `TYPO3_version` branches, v12/v13 constraints, compatibility helpers, deprecated hooks that
    have documented event replacements, legacy backend module registration, obsolete TypoScript,
    unused XLF keys and dead imports.
@@ -50,8 +59,8 @@ with this skill.
    **before** risky rewrites, not after.
 
 ## Exit
-0 strong extension-scanner matches; no `TYPO3_version` branch or v12/v13 constraint left in
-executable code or configuration.
+0 strong extension-scanner matches; local-extension audit exits 0; no `TYPO3_version` branch or
+v12/v13 constraint left in executable code or configuration.
 
 ## Blocking
 A guessed event name. A behaviour change without an approval.

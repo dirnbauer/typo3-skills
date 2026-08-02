@@ -24,6 +24,8 @@ import { assertPlausibleBaseUrl } from '../../lib/net/url-guard.mjs';
 import { Journal } from '../../lib/run/journal.mjs';
 import { collectReports, renderSummary } from '../../lib/actions/report.mjs';
 import { countActiveOpenFindings } from '../../lib/actions/compare.mjs';
+import { discoverFromPages, parsePageTreeRows } from '../../lib/actions/discover.mjs';
+import { parse } from '../../lib/cli/args.mjs';
 import {
   captureAll,
   DEFAULT_VISUAL_WORKERS,
@@ -515,6 +517,24 @@ describe('manifest and tiered coverage', () => {
     assert.ok(m.coverage.visualCaptured < 400, 'pixels are budgeted');
   });
 
+  test('declares database fallback coverage and page-tree URL sources', () => {
+    const root = 'https://acme.ddev.site/';
+    const detail = 'https://acme.ddev.site/news/detail';
+    const m = build([root, detail], {
+      goldenPaths: [root],
+      urlSources: new Map([[root, 'page-tree'], [detail, 'page-tree']]),
+      discovery: {
+        mode: 'pages-fallback', degraded: true,
+        knownLimitations: [{ id: 'dynamic-routes-not-discoverable', detail: 'Repair the sitemap.' }],
+      },
+    });
+    assert.equal(m.discovery.mode, 'pages-fallback');
+    assert.equal(m.coverage.discoveryDegraded, true);
+    assert.equal(m.coverage.discoveryKnownLimitations[0].id, 'dynamic-routes-not-discoverable');
+    assert.equal(m.allUrls.find((entry) => entry.url === root).source, 'page-tree');
+    assert.equal(m.allUrls.find((entry) => entry.url === detail).source, 'page-tree');
+  });
+
   test('names the ACTUAL url ids it did not capture, never only a count', () => {
     const urls = Array.from({ length: 200 }, (_, i) => `https://acme.ddev.site/p${i}`);
     const m = build(urls, { visualBudget: 10 });
@@ -540,6 +560,52 @@ describe('manifest and tiered coverage', () => {
     const cluster = m.clusters.find((c) => c.memberCount === 50);
     assert.ok(cluster, 'same-signature pages must form one cluster');
     assert.equal(cluster.representatives.length, 2, 'one representative is a single point of failure');
+  });
+});
+
+describe('database-backed URL discovery', () => {
+  test('exposes an explicit database fallback and missing-sitemap acknowledgement', () => {
+    const parsed = parse(['discover-urls', '--from-pages', '--allow-missing-sitemap']);
+    assert.equal(parsed.values['from-pages'], true);
+    assert.equal(parsed.values['allow-missing-sitemap'], true);
+  });
+
+  test('includes a shortcut root and de-duplicates translated page slugs', () => {
+    const parsed = parsePageTreeRows([
+      '1\t4\t/',
+      '2\t1\t/news',
+      '3\t1\t/news',
+      'not-a-row',
+    ].join('\n'), new URL('https://acme.ddev.site/'));
+    assert.equal(parsed.rows, 3);
+    assert.deepEqual(parsed.urls, [
+      'https://acme.ddev.site/',
+      'https://acme.ddev.site/news',
+    ]);
+  });
+
+  test('runs the page query without a shell and guards every discovered URL', async () => {
+    const guarded = [];
+    const run = async (command, args, options) => {
+      assert.equal(command, 'ddev');
+      assert.deepEqual(args.slice(0, 4), ['mysql', '-N', '-B', '-e']);
+      assert.equal(options.cwd, '/project');
+      return { stdout: '1\t4\t/\n2\t1\t/fish\n' };
+    };
+    const result = await discoverFromPages({
+      base: new URL('https://acme.ddev.site/'), cwd: '/project', run,
+      log: { step() {} },
+      guard: {
+        async assertUrl(url, context) {
+          guarded.push([url, context.purpose]);
+          return { url: new URL(url) };
+        },
+      },
+    });
+    assert.equal(result.urls.length, 2);
+    assert.deepEqual(guarded.map((entry) => entry[1]), [
+      'page-tree-discovery', 'page-tree-discovery',
+    ]);
   });
 });
 

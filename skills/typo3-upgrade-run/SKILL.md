@@ -153,8 +153,8 @@ Vite, before Bootstrap 5, before accessibility corrections, before the core upda
 reverse of the intuitive order and it is not negotiable: a baseline captured after a fix cannot
 show what the fix broke, and a change made before the baseline exists can never be audited.
 
-Where sitemaps are too broken to sample from, record an ADR for degraded sampling, derive the
-sample from a page-tree crawl, and seal that. **Seal first, remediate second, always.**
+Where sitemaps are too broken to sample from, record an ADR and run
+`discover-urls --from-pages --allow-missing-sitemap`; declare unknown routes. **Seal first, remediate second.**
 
 The target is **zero unexplained differences**. There is no "minor" bucket: on a long full-page
 screenshot a percentage covers a great many pixels, so a missing button hides comfortably inside
@@ -314,8 +314,8 @@ Playbooks: `references/phases/p00-…p15-….md`. Load the one for the current p
   `https://github.com/dirnbauer/powermail` fork on branch `typo3-v14`. Verify its
   `in2code/powermail` Composer identity and `typo3/cms-core: ^14.3` constraint at execution time,
   then record the resolved commit from `composer.lock`. See `references/extension-strategy.md`.
-- `ext_emconf.php` is deprecated in v14 and unevaluated in v15 (feature #108345). Remove it for
-  project-local extensions in `packages/`; keep it only for TER/Tailor publishing or Classic mode.
+- `ext_emconf.php` is deprecated in v14 and unevaluated in v15 (feature #108345). Local Composer
+  packages remove it; only TER/Tailor or Classic packages retain loader-dependent `$_EXTKEY` usage.
 
 ## Routing
 
@@ -478,7 +478,7 @@ incomplete rather than claiming success. A gate that does not apply needs an exp
 | `scripts/sitemap-audit.mjs` | proving the sitemap across every site and language (loop 010) |
 | `references/quality-bars.md`, `references/measurement-recipes.md` | Contract B |
 | `references/extension-strategy.md`, `references/native-fluid-components.md` | classifying, routing or replacing an extension; migrating fluid-components |
-| `scripts/extension-usage.mjs` | **P00** — every extension with usage evidence, so unused ones get removed not migrated |
+| `scripts/extension-usage.mjs`, `scripts/local-extension-audit.mjs` | **P00/P08** — usage evidence; local Composer metadata, `ext_emconf.php` policy and legacy TCA signatures |
 | `references/typo3-14-constraints.md`, `references/database-integrity.md` | constraints, #108345, schema/data integrity and destructive cleanup |
 | `references/feature-upgrades.md` | Solr, Visual Editor, CKEditor, security headers |
 | `references/mask-to-content-blocks.md`, `references/deployment-handover.md` | **a Mask site at P00**; Deployer audit and deployment-information handover |

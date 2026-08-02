@@ -27,6 +27,8 @@ matching symptom with a different cause is exactly how a wrong fix gets applied 
 - [Rector is clean only after a second applied pass](#rector-is-clean-only-after-a-second-applied-pass)
 - [Fractor cannot find the generated extension registry](#fractor-cannot-find-the-generated-extension-registry)
 - [Composer metadata says compatible, runtime still breaks](#composer-metadata-says-compatible-runtime-still-breaks)
+- [Static analysis says addTCAcolumns expects exactly 2 arguments](#static-analysis-says-addtcacolumns-expects-exactly-2-arguments)
+- [A local ext_emconf.php reports an undefined $_EXTKEY](#a-local-ext_emconfphp-reports-an-undefined-_extkey)
 
 ---
 
@@ -591,3 +593,35 @@ has moved while its own wrapper has not.
 **Fix.** Lock the exact package/source commit, inspect the failing interface in installed code, patch
 the smallest owned boundary through Composer with a removal condition, then prove the actual runtime
 surface. Scanner and static analysis supplement that proof; neither replaces it.
+
+---
+
+## Static analysis says addTCAcolumns expects exactly 2 arguments
+
+**Symptom.** TYPO3 14 boots, but PHPStan or the local-extension audit reports a three-argument call
+to `ExtensionManagementUtility::addTCAcolumns()` in a TCA override.
+
+**Cause.** Old sitepackages commonly passed a third positional flag. TYPO3 14's API accepts the
+table and column array only. Rector/Fractor can miss this in local package override files, especially
+when the call still parses and the affected backend path has not been opened.
+
+**Fix.** Remove the obsolete third argument after checking that the first two arguments are the
+intended table and column definition. Run `scripts/local-extension-audit.mjs` from P08 across the
+whole `packages/` tree, then rerun static analysis and the backend sweep. Do not suppress the arity
+error or limit the search to the package that happened to fail first.
+
+---
+
+## A local ext_emconf.php reports an undefined $_EXTKEY
+
+**Symptom.** Static analysis or a direct include reports that `$_EXTKEY` is undefined in
+`ext_emconf.php`, prompting a hardcoded `$EM_CONF['site_package']` workaround.
+
+**Cause.** `$_EXTKEY` is supplied by the classic extension loader; it is not a generally defined PHP
+variable. More importantly, TYPO3 14 project-local Composer packages do not need `ext_emconf.php`:
+Composer metadata is the source of truth, and v15 no longer evaluates the file.
+
+**Fix.** For packages local to `packages/`, remove `ext_emconf.php` and declare
+`type: typo3-cms-extension` plus `extra.typo3/cms.extension-key` in `composer.json`. Retain the file
+only for TER/Tailor publication or Classic mode; in that loader context keep `$EM_CONF[$_EXTKEY]`
+and its TER-compatible file restrictions. Do not hardcode the key merely to silence analysis.

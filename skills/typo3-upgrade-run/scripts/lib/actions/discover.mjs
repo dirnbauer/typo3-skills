@@ -8,6 +8,8 @@
  */
 
 import { writeFile, mkdir, readFile } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { EXIT, HarnessError, PreconditionError } from '../cli/exit-codes.mjs';
 import { UrlGuard, assertPlausibleBaseUrl } from '../net/url-guard.mjs';
 import { walkSitemaps } from '../net/sitemap.mjs';
@@ -16,6 +18,17 @@ import { buildManifest } from '../run/manifest.mjs';
 import { profileHash } from '../browser/stabilize.mjs';
 import { intOpt, listOpt } from '../cli/args.mjs';
 import { readJson } from './core.mjs';
+
+const execFileAsync = promisify(execFile);
+
+export const PAGE_TREE_SQL = `SELECT uid, doktype, slug
+FROM pages
+WHERE deleted=0 AND hidden=0 AND t3ver_wsid=0
+  AND (starttime=0 OR starttime<=UNIX_TIMESTAMP())
+  AND (endtime=0 OR endtime>UNIX_TIMESTAMP())
+  AND doktype IN (1,4)
+  AND slug IS NOT NULL AND slug<>''
+ORDER BY uid`;
 
 export async function discoverUrls({ values, paths, log, journal }) {
   const store = new StateStore(paths);
@@ -48,9 +61,48 @@ export async function discoverUrls({ values, paths, log, journal }) {
 
   const failed = documents.filter((d) => d.status === 'failed' || d.status === 'guard-blocked');
   for (const f of failed) log.warn(`sitemap ${f.status}: ${f.url} — ${f.error}`);
+  if (failed.length && !values['allow-missing-sitemap']) {
+    throw new PreconditionError(
+      'Sitemap discovery failed. Record the degraded-sampling ADR, then rerun with '
+      + '--allow-missing-sitemap and --from-pages before changing the sitemap.',
+      { failedSitemaps: failed },
+    );
+  }
 
   const goldenPaths = await loadGolden(values['golden-file'], base, guard, log);
-  const all = [...new Set([...urls, ...goldenPaths])];
+  const urlSources = new Map(urls.map((url) => [url, 'sitemap']));
+  let pageTree = null;
+  if (values['from-pages']) {
+    pageTree = await discoverFromPages({ base, guard, cwd: process.cwd(), log });
+    for (const url of pageTree.urls) {
+      if (!urlSources.has(url)) urlSources.set(url, 'page-tree');
+    }
+  }
+  const pageUrls = pageTree?.urls ?? [];
+  if (failed.length && urls.length === 0 && pageUrls.length === 0) {
+    throw new PreconditionError(
+      'All sitemap entry points failed and the database fallback produced no URLs. Baseline A cannot be sampled.',
+      { failedSitemaps: failed.length },
+    );
+  }
+  const all = [...new Set([...urls, ...pageUrls, ...goldenPaths])];
+
+  const pageFallbackDegraded = failed.length > 0 && pageTree !== null;
+  const discovery = {
+    mode: pageTree ? (urls.length ? 'sitemap+pages' : 'pages-fallback') : 'sitemap',
+    degraded: failed.length > 0,
+    failedSitemaps: failed.length,
+    missingSitemapAccepted: Boolean(values['allow-missing-sitemap']),
+    pageTree: pageTree ? {
+      rows: pageTree.rows,
+      urls: pageTree.urls.length,
+      doktypes: [1, 4],
+    } : null,
+    knownLimitations: pageFallbackDegraded ? [{
+      id: 'dynamic-routes-not-discoverable',
+      detail: 'The pages table cannot enumerate route-enhancer or plugin detail URLs. Repair the sitemap and reconcile it against this manifest before closure.',
+    }] : [],
+  };
 
   if (!all.length) {
     throw new PreconditionError(
@@ -67,6 +119,8 @@ export async function discoverUrls({ values, paths, log, journal }) {
     sourceSitemaps: documents,
     urls: all,
     goldenPaths,
+    urlSources,
+    discovery,
     visualBudget: intOpt(values, 'visual-budget', 1500),
     lighthouseSample: intOpt(values, 'lighthouse-sample', 3),
     viewports: listOpt(values, 'viewports', ['desktop', 'tablet', 'mobile']),
@@ -93,10 +147,17 @@ export async function discoverUrls({ values, paths, log, journal }) {
     log.warn(`COVERAGE DEGRADED: ${cov.notCaptured.reduce((a, n) => a + n.count, 0)} URLs not pixel-compared.`);
     for (const n of cov.notCaptured) log.warn(`  ${n.reason}: ${n.count}`);
   }
+  if (cov.discoveryDegraded) {
+    log.warn('URL DISCOVERY DEGRADED: one or more sitemap documents failed.');
+    for (const limitation of cov.discoveryKnownLimitations) {
+      log.warn(`  ${limitation.id}: ${limitation.detail}`);
+    }
+  }
 
   await journal.append('note', {
     note: 'discovery complete', urls: cov.discovered,
-    visual: cov.visualCaptured, degraded: cov.degraded, truncated,
+    visual: cov.visualCaptured, degraded: cov.degraded,
+    discoveryDegraded: cov.discoveryDegraded, discoveryMode: discovery.mode, truncated,
   });
 
   // Sitemap failures are findings: they are gaps in the evidence, not warnings.
@@ -112,6 +173,40 @@ export async function discoverUrls({ values, paths, log, journal }) {
       ? `${failed.length} sitemap document(s) failed — discovery is incomplete`
       : `${cov.discovered} URLs discovered`,
   };
+}
+
+export function parsePageTreeRows(stdout, base) {
+  const records = [];
+  const urls = new Set();
+  for (const line of stdout.split('\n').map((value) => value.trim()).filter(Boolean)) {
+    const [uidRaw, doktypeRaw, slugRaw] = line.split('\t');
+    const uid = Number(uidRaw);
+    const doktype = Number(doktypeRaw);
+    const slug = slugRaw?.trim();
+    if (!Number.isInteger(uid) || ![1, 4].includes(doktype) || !slug) continue;
+    const url = new URL(slug.startsWith('/') ? slug : `/${slug}`, base).href;
+    records.push({ uid, doktype, slug, url });
+    urls.add(url);
+  }
+  return { rows: records.length, records, urls: [...urls].sort() };
+}
+
+export async function discoverFromPages({ base, guard, cwd, log, run = execFileAsync }) {
+  let stdout;
+  try {
+    ({ stdout } = await run('ddev', ['mysql', '-N', '-B', '-e', PAGE_TREE_SQL], {
+      cwd, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024,
+    }));
+  } catch (error) {
+    throw new PreconditionError(`Database URL discovery failed: ${error.message}`);
+  }
+  const parsed = parsePageTreeRows(stdout, base);
+  const accepted = [];
+  for (const url of parsed.urls) {
+    accepted.push((await guard.assertUrl(url, { purpose: 'page-tree-discovery' })).url.href);
+  }
+  log.step(`Database discovery added ${accepted.length} URL(s) from ${parsed.rows} public page row(s)`);
+  return { ...parsed, urls: accepted };
 }
 
 async function loadGolden(file, base, guard, log) {

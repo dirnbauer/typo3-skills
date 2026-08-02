@@ -118,6 +118,14 @@ Where full pixel coverage is not achieved, the manifest records `coverage.notCap
 **actual URL ids** and a reason from a fixed set: `tier3-budget`, `cluster-represented`,
 `excluded-by-config`, `guard-blocked`, `fetch-failed`.
 
+If a sitemap is broken before Baseline A, `discover-urls --from-pages --allow-missing-sitemap`
+supplements discovery from public `pages` rows, including standard pages and shortcut roots
+(`doktype` 1 and 4). The command invokes `ddev mysql` without a shell, sends every derived URL
+through the same URL guard, labels those manifest entries `page-tree`, and records
+`coverage.discoveryDegraded`. It also records `dynamic-routes-not-discoverable`: route-enhancer and
+plugin detail URLs cannot be inferred from the `pages` table. This is an ADR-backed temporary
+baseline source, not a substitute for repairing and reconciling the sitemap after it is sealed.
+
 When a budget was exhausted, the loop report carries `coverageDegraded: true` and the generated
 summary says so in its **first paragraph**. A report that covered 60% of a site and reads exactly
 like one that covered all of it is worse than no report.

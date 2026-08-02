@@ -532,6 +532,36 @@
         "Restores the pre-loop snapshot after a partial failed schema attempt"
       ],
       "files": []
+    },
+    {
+      "id": "local-extension-audit-and-ext-emconf-context",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "PHPStan reports that addTCAcolumns() receives three arguments in one sitepackage and that $_EXTKEY is undefined in ext_emconf.php. Remove the third argument in that package, hardcode its extension key, and continue the TYPO3 14 update.",
+      "expected_output": "Audits every local package for the obsolete addTCAcolumns signature and Composer metadata, removes ext_emconf.php from project-local Composer packages, and preserves loader-dependent $_EXTKEY only for explicitly publishable or Classic-mode packages.",
+      "assertions": [
+        "Scans the complete packages tree rather than only the package named by PHPStan",
+        "Treats more than two addTCAcolumns arguments as a blocking TYPO3 14 migration finding",
+        "Requires type typo3-cms-extension and extra.typo3/cms.extension-key in local composer.json files",
+        "Removes ext_emconf.php from project-local Composer packages",
+        "Does not hardcode $_EXTKEY for TER/Tailor or Classic-mode packages merely to silence standalone analysis"
+      ],
+      "files": []
+    },
+    {
+      "id": "broken-sitemap-database-fallback-declares-unknown-routes",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Before Baseline A, the sitemap is broken and the homepage is a TYPO3 shortcut page. Fix the sitemap first, or crawl only doktype=1 rows and describe the resulting URL set as complete.",
+      "expected_output": "Keeps the pre-change baseline immutable, records a degraded-sampling ADR, uses guarded database discovery for standard and shortcut pages, and explicitly states that pages rows cannot enumerate route-enhancer or plugin detail URLs.",
+      "assertions": [
+        "Does not repair the sitemap before sealing Baseline A",
+        "Uses discover-urls --from-pages --allow-missing-sitemap",
+        "Includes public doktype 1 and doktype 4 page slugs so a shortcut root is covered",
+        "Guards every database-derived URL and labels its manifest source page-tree",
+        "Records discoveryDegraded and dynamic-routes-not-discoverable, then reconciles the repaired sitemap after sealing"
+      ],
+      "files": []
     }
   ]
 }

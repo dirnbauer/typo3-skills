@@ -62,13 +62,14 @@ export const COMMANDS = {
     tables: { type: 'string' },
     'allow-missing': { type: 'boolean', default: false },
   }},
-  'discover-urls': { summary: 'Guarded sitemap discovery into a URL manifest', options: {
+  'discover-urls': { summary: 'Guarded sitemap/database discovery into a URL manifest', options: {
     'base-url': { type: 'string' }, languages: { type: 'string' }, seed: { type: 'string' },
     'golden-file': { type: 'string' }, 'visual-budget': { type: 'string', default: '1500' },
     'lighthouse-sample': { type: 'string', default: '3' },
     states: { type: 'string' }, viewports: { type: 'string' },
     'stabilization-config': { type: 'string' },
     'allow-missing-sitemap': { type: 'boolean', default: false },
+    'from-pages': { type: 'boolean', default: false },
   }},
   capture: { summary: 'Capture HTTP, DOM and screenshots for the manifest set', options: {
     label: { type: 'string' }, out: { type: 'string' }, states: { type: 'string' },
