@@ -58,6 +58,55 @@ $title = requireString($plan, 'title');
 if (mb_strlen($title) > 50) {
     fail('title exceeds the be_groups.title limit of 50 characters.');
 }
+$leafTitles = [
+    'base' => deriveLeafTitle($title, 'Base'),
+    'content' => deriveLeafTitle($title, 'Content'),
+    'site' => deriveLeafTitle($title, 'Site'),
+    'extensions' => deriveLeafTitle($title, 'Extensions'),
+];
+$allGroups = $connection->fetchAllAssociative(
+    'SELECT uid, title, hidden, subgroup, db_mountpoints, file_mountpoints '
+    . 'FROM be_groups WHERE deleted = 0 ORDER BY uid'
+);
+$groupsByTitle = [];
+$groupsByUid = [];
+foreach ($allGroups as $groupRow) {
+    $groupsByTitle[(string)$groupRow['title']][] = $groupRow;
+    $groupsByUid[(int)$groupRow['uid']] = $groupRow;
+}
+foreach ([$title, ...array_values($leafTitles)] as $managedTitle) {
+    if (count($groupsByTitle[$managedTitle] ?? []) > 1) {
+        fail(sprintf('More than one non-deleted backend group is titled "%s".', $managedTitle));
+    }
+}
+$mainGroupRow = ($groupsByTitle[$title] ?? [])[0] ?? null;
+$leafGroupRows = [];
+foreach ($leafTitles as $key => $leafTitle) {
+    $leafGroupRows[$key] = ($groupsByTitle[$leafTitle] ?? [])[0] ?? null;
+}
+$managedExistingLeafUids = array_values(array_filter(array_map(
+    static fn(?array $row): ?int => $row === null ? null : (int)$row['uid'],
+    $leafGroupRows
+)));
+$preservedLeafUids = [];
+if ($mainGroupRow !== null) {
+    foreach (csvIntegers((string)($mainGroupRow['subgroup'] ?? '')) as $subgroupUid) {
+        if (in_array($subgroupUid, $managedExistingLeafUids, true)) {
+            continue;
+        }
+        if (!isset($groupsByUid[$subgroupUid])) {
+            continue;
+        }
+        if ((int)$groupsByUid[$subgroupUid]['hidden'] !== 0) {
+            fail(sprintf('Additional subgroup %d is hidden and cannot extend the editor role.', $subgroupUid));
+        }
+        if (csvIntegers((string)($groupsByUid[$subgroupUid]['subgroup'] ?? '')) !== []) {
+            fail(sprintf('Additional subgroup %d is nested. Capability groups must remain leaves.', $subgroupUid));
+        }
+        $preservedLeafUids[] = $subgroupUid;
+    }
+}
+$preservedLeafUids = uniqueSorted($preservedLeafUids);
 $description = requireString($plan, 'description');
 $allowedContentTypes = requireStringList($plan, 'allowed_content_types');
 $exceptions = $plan['content_type_exceptions'] ?? null;
@@ -249,9 +298,27 @@ $flaggedSiteRoots = array_map(
     $connection->fetchAllAssociative('SELECT uid FROM pages WHERE deleted = 0 AND is_siteroot = 1')
 );
 $requiredSiteRoots = uniqueSorted(array_merge($configuredSiteRoots, $flaggedSiteRoots));
-$missingSiteRoots = array_values(array_diff($requiredSiteRoots, $dbMountpoints));
+$preservedDbMountpoints = [];
+$preservedFileMountpoints = [];
+foreach ($preservedLeafUids as $preservedLeafUid) {
+    array_push(
+        $preservedDbMountpoints,
+        ...csvIntegers((string)($groupsByUid[$preservedLeafUid]['db_mountpoints'] ?? ''))
+    );
+    array_push(
+        $preservedFileMountpoints,
+        ...csvIntegers((string)($groupsByUid[$preservedLeafUid]['file_mountpoints'] ?? ''))
+    );
+}
+$effectiveDbMountpoints = uniqueSorted([...$dbMountpoints, ...$preservedDbMountpoints]);
+$effectiveFileMountpoints = uniqueSorted([...$fileMountpoints, ...$preservedFileMountpoints]);
+$invalidPreservedDbMountpoints = array_values(array_diff($preservedDbMountpoints, $validPages));
+if ($invalidPreservedDbMountpoints !== []) {
+    fail('Preserved Site leaves reference missing pages: ' . implode(', ', $invalidPreservedDbMountpoints));
+}
+$missingSiteRoots = array_values(array_diff($requiredSiteRoots, $effectiveDbMountpoints));
 if ($missingSiteRoots !== []) {
-    fail('The plan omits configured or flagged site roots: ' . implode(', ', $missingSiteRoots));
+    fail('The plan and preserved Site leaves omit configured or flagged site roots: ' . implode(', ', $missingSiteRoots));
 }
 
 $activeFileMountRows = $connection->fetchAllAssociative(
@@ -261,13 +328,17 @@ $activeFileMountpoints = array_map(
     static fn(array $row): int => (int)$row['uid'],
     $activeFileMountRows
 );
-$missingActiveFileMountpoints = array_values(array_diff($activeFileMountpoints, $fileMountpoints));
+$missingActiveFileMountpoints = array_values(array_diff($activeFileMountpoints, $effectiveFileMountpoints));
 if ($missingActiveFileMountpoints !== []) {
-    fail('The plan omits active file mounts: ' . implode(', ', $missingActiveFileMountpoints));
+    fail('The plan and preserved Site leaves omit active file mounts: ' . implode(', ', $missingActiveFileMountpoints));
 }
 $invalidFileMountpoints = array_values(array_diff($fileMountpoints, $activeFileMountpoints));
 if ($invalidFileMountpoints !== []) {
     fail('The plan references missing or hidden file mounts: ' . implode(', ', $invalidFileMountpoints));
+}
+$invalidPreservedFileMountpoints = array_values(array_diff($preservedFileMountpoints, $activeFileMountpoints));
+if ($invalidPreservedFileMountpoints !== []) {
+    fail('Preserved Site leaves reference missing or hidden file mounts: ' . implode(', ', $invalidPreservedFileMountpoints));
 }
 $coveredStorageUids = [];
 foreach ($activeFileMountRows as $fileMountRow) {
@@ -329,48 +400,110 @@ $explicitAllowDeny = array_map(
     uniqueSorted($allowedContentTypes)
 );
 
-$groupRows = $connection->fetchAllAssociative(
-    'SELECT uid FROM be_groups WHERE deleted = 0 AND title = ?',
-    [$title]
-);
-if (count($groupRows) > 1) {
-    fail(sprintf('More than one non-deleted backend group is titled "%s".', $title));
-}
-
 $now = time();
-$fields = [
-    'pid' => 0,
-    'tstamp' => $now,
-    'title' => $title,
-    'description' => $description,
-    'hidden' => 0,
-    'subgroup' => '',
-    'groupMods' => implode(',', uniqueSorted($modules)),
-    'tables_select' => implode(',', uniqueSorted($tablesSelect)),
-    'tables_modify' => implode(',', uniqueSorted($tablesModify)),
-    'pagetypes_select' => implode(',', $pageTypes),
-    'db_mountpoints' => implode(',', $dbMountpoints),
-    'file_mountpoints' => implode(',', $fileMountpoints),
-    'file_permissions' => implode(',', uniqueSorted($filePermissions)),
-    'explicit_allowdeny' => implode(',', $explicitAllowDeny),
-    'non_exclude_fields' => implode(',', $nonExcludeFields),
-    'allowed_languages' => '',
-    'mfa_providers' => implode(',', $mfaProviders),
-    'category_perms' => '',
-    'workspace_perms' => $workspacePermissions,
-    'TSconfig' => $tsconfig,
-    'tsconfig_includes' => '',
+$coreContentTables = [
+    'pages',
+    'tt_content',
+    'sys_category',
+    'sys_file',
+    'sys_file_collection',
+    'sys_file_metadata',
+    'sys_file_reference',
 ];
+$contentTablesSelect = array_values(array_intersect($tablesSelect, $coreContentTables));
+$contentTablesModify = array_values(array_intersect($tablesModify, $coreContentTables));
+$extensionTablesSelect = array_values(array_diff($tablesSelect, $coreContentTables));
+$extensionTablesModify = array_values(array_diff($tablesModify, $coreContentTables));
+$contentNonExcludeFields = array_values(array_filter(
+    $nonExcludeFields,
+    static fn(string $field): bool => in_array(strtok($field, ':'), $coreContentTables, true)
+));
+$extensionNonExcludeFields = array_values(array_diff($nonExcludeFields, $contentNonExcludeFields));
+$coreModuleIdentifiers = [
+    'web_layout',
+    'records',
+    'page_preview',
+    'content_status',
+    'web_info_overview',
+    'web_info_translations',
+    'recycler',
+    'media_management',
+    'user_setup',
+];
+$baseModules = array_values(array_intersect($modules, $coreModuleIdentifiers));
+$extensionModules = array_values(array_diff($modules, $baseModules));
+
+$leafFields = [
+    'base' => array_replace(emptyGroupFields($leafTitles['base'], $now), [
+        'description' => sprintf('Core editor baseline for %s. Assign users to the main group only.', $title),
+        'groupMods' => implode(',', uniqueSorted($baseModules)),
+        'pagetypes_select' => implode(',', $pageTypes),
+        'file_permissions' => implode(',', uniqueSorted($filePermissions)),
+        'mfa_providers' => implode(',', $mfaProviders),
+        'workspace_perms' => $workspacePermissions,
+        'TSconfig' => $tsconfig,
+    ]),
+    'content' => array_replace(emptyGroupFields($leafTitles['content'], $now), [
+        'description' => sprintf('Core content types, tables, and fields for %s.', $title),
+        'tables_select' => implode(',', uniqueSorted($contentTablesSelect)),
+        'tables_modify' => implode(',', uniqueSorted($contentTablesModify)),
+        'explicit_allowdeny' => implode(',', $explicitAllowDeny),
+        'non_exclude_fields' => implode(',', uniqueSorted($contentNonExcludeFields)),
+    ]),
+    'site' => array_replace(emptyGroupFields($leafTitles['site'], $now), [
+        'description' => sprintf('Primary Site and file mounts for %s.', $title),
+        'db_mountpoints' => implode(',', $dbMountpoints),
+        'file_mountpoints' => implode(',', $fileMountpoints),
+    ]),
+    'extensions' => array_replace(emptyGroupFields($leafTitles['extensions'], $now), [
+        'description' => sprintf('Installed extension modules, tables, and fields for %s.', $title),
+        'groupMods' => implode(',', uniqueSorted($extensionModules)),
+        'tables_select' => implode(',', uniqueSorted($extensionTablesSelect)),
+        'tables_modify' => implode(',', uniqueSorted($extensionTablesModify)),
+        'non_exclude_fields' => implode(',', uniqueSorted($extensionNonExcludeFields)),
+    ]),
+];
+$mainFields = array_replace(emptyGroupFields($title, $now), [
+    'description' => $description,
+]);
 
 $dryRun = isset($options['dry-run']);
-$groupUid = $groupRows === [] ? null : (int)$groupRows[0]['uid'];
+$groupUid = $mainGroupRow === null ? null : (int)$mainGroupRow['uid'];
+$leafUids = array_map(
+    static fn(?array $row): ?int => $row === null ? null : (int)$row['uid'],
+    $leafGroupRows
+);
 if (!$dryRun) {
-    $connection->transactional(function (Connection $connection) use ($fields, $groupRows, $now): void {
-        if ($groupRows === []) {
-            $connection->insert('be_groups', $fields + ['crdate' => $now]);
-            return;
+    $connection->transactional(function (Connection $connection) use (
+        $leafFields,
+        $leafGroupRows,
+        $leafTitles,
+        $mainFields,
+        $mainGroupRow,
+        $preservedLeafUids,
+        $now,
+        &$leafUids
+    ): void {
+        foreach ($leafFields as $key => $fields) {
+            if ($leafGroupRows[$key] === null) {
+                $connection->insert('be_groups', $fields + ['crdate' => $now]);
+            } else {
+                $connection->update('be_groups', $fields, ['uid' => (int)$leafGroupRows[$key]['uid']]);
+            }
+            $leafUids[$key] = (int)$connection->fetchOne(
+                'SELECT uid FROM be_groups WHERE deleted = 0 AND title = ?',
+                [$leafTitles[$key]]
+            );
         }
-        $connection->update('be_groups', $fields, ['uid' => (int)$groupRows[0]['uid']]);
+        $mainFields['subgroup'] = implode(',', uniqueSorted([
+            ...array_values($leafUids),
+            ...$preservedLeafUids,
+        ]));
+        if ($mainGroupRow === null) {
+            $connection->insert('be_groups', $mainFields + ['crdate' => $now]);
+        } else {
+            $connection->update('be_groups', $mainFields, ['uid' => (int)$mainGroupRow['uid']]);
+        }
     });
     $groupUid = (int)$connection->fetchOne(
         'SELECT uid FROM be_groups WHERE deleted = 0 AND title = ?',
@@ -379,8 +512,44 @@ if (!$dryRun) {
 }
 
 echo json_encode([
-    'status' => $dryRun ? 'valid-dry-run' : ($groupRows === [] ? 'created' : 'updated'),
+    'status' => $dryRun ? 'valid-dry-run' : ($mainGroupRow === null ? 'created' : 'updated'),
+    'main_group' => [
+        'uid' => $groupUid,
+        'title' => $title,
+        'direct_permissions' => false,
+    ],
     'group_uid' => $groupUid,
+    'required_leaf_groups' => array_map(
+        static fn(string $leafTitle, string $key): array => [
+            'key' => $key,
+            'uid' => $leafUids[$key],
+            'title' => $leafTitle,
+        ],
+        $leafTitles,
+        array_keys($leafTitles)
+    ),
+    'preserved_additional_leaf_uids' => $preservedLeafUids,
+    'permission_split' => [
+        'base' => [
+            'modules' => uniqueSorted($baseModules),
+            'page_types' => $pageTypes,
+            'tsconfig' => $tsconfig,
+        ],
+        'content' => [
+            'tables_select' => uniqueSorted($contentTablesSelect),
+            'tables_modify' => uniqueSorted($contentTablesModify),
+            'content_types' => uniqueSorted($allowedContentTypes),
+        ],
+        'site' => [
+            'db_mountpoints' => $dbMountpoints,
+            'file_mountpoints' => $fileMountpoints,
+        ],
+        'extensions' => [
+            'modules' => uniqueSorted($extensionModules),
+            'tables_select' => uniqueSorted($extensionTablesSelect),
+            'tables_modify' => uniqueSorted($extensionTablesModify),
+        ],
+    ],
     'title' => $title,
     'allowed_content_types' => uniqueSorted($allowedContentTypes),
     'content_type_exceptions' => $exceptions,
@@ -394,9 +563,12 @@ echo json_encode([
     'excluded_admin_only_fields' => uniqueSorted($adminOnlyFields),
     'excluded_system_managed_fields' => uniqueSorted($systemManagedFields),
     'db_mountpoints' => $dbMountpoints,
+    'effective_db_mountpoints' => $effectiveDbMountpoints,
     'required_site_roots' => $requiredSiteRoots,
     'file_mountpoints' => $fileMountpoints,
+    'effective_file_mountpoints' => $effectiveFileMountpoints,
     'enabled_administrator_count' => $enabledAdministratorCount,
+    'required_user_options_bits' => 3,
     'users_changed' => false,
 ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR) . "\n";
 
@@ -443,6 +615,49 @@ function uniqueSorted(array $values): array
     $values = array_values(array_unique($values));
     sort($values);
     return $values;
+}
+
+function csvIntegers(string $value): array
+{
+    $values = array_map('intval', array_filter(array_map('trim', explode(',', $value)), 'strlen'));
+    return uniqueSorted(array_values(array_filter($values, static fn(int $item): bool => $item > 0)));
+}
+
+function deriveLeafTitle(string $mainTitle, string $leafName): string
+{
+    $suffix = ' · ' . $leafName;
+    $prefixLength = 50 - mb_strlen($suffix);
+    if ($prefixLength < 1) {
+        fail(sprintf('Leaf name "%s" leaves no room for the main group title.', $leafName));
+    }
+    return mb_substr($mainTitle, 0, $prefixLength) . $suffix;
+}
+
+function emptyGroupFields(string $title, int $timestamp): array
+{
+    return [
+        'pid' => 0,
+        'tstamp' => $timestamp,
+        'title' => $title,
+        'description' => '',
+        'hidden' => 0,
+        'subgroup' => '',
+        'groupMods' => '',
+        'tables_select' => '',
+        'tables_modify' => '',
+        'pagetypes_select' => '',
+        'db_mountpoints' => '',
+        'file_mountpoints' => '',
+        'file_permissions' => '',
+        'explicit_allowdeny' => '',
+        'non_exclude_fields' => '',
+        'allowed_languages' => '',
+        'mfa_providers' => '',
+        'category_perms' => '',
+        'workspace_perms' => 0,
+        'TSconfig' => '',
+        'tsconfig_includes' => '',
+    ];
 }
 
 function containsAdminOnlyDisplayCondition(mixed $condition): bool

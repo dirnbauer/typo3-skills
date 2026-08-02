@@ -104,11 +104,12 @@ $authMode = $GLOBALS['TCA']['tt_content']['columns']['CType']['config']['authMod
 $groups = $connection->fetchAllAssociative(
     'SELECT uid, title, hidden, subgroup, groupMods, tables_select, tables_modify, pagetypes_select, '
     . 'db_mountpoints, file_mountpoints, file_permissions, allowed_languages, mfa_providers, '
-    . 'explicit_allowdeny, non_exclude_fields, TSconfig '
+    . 'explicit_allowdeny, non_exclude_fields, category_perms, workspace_perms, TSconfig, tsconfig_includes '
     . 'FROM be_groups WHERE deleted = 0 ORDER BY uid'
 );
 $users = $connection->fetchAllAssociative(
-    'SELECT uid, username, admin, disable, usergroup, lastlogin FROM be_users WHERE deleted = 0 ORDER BY uid'
+    'SELECT uid, username, admin, disable, usergroup, options, lastlogin '
+    . 'FROM be_users WHERE deleted = 0 ORDER BY uid'
 );
 $fileMounts = $connection->fetchAllAssociative(
     'SELECT uid, title, hidden, read_only, identifier FROM sys_filemounts WHERE deleted = 0 ORDER BY uid'
@@ -253,9 +254,28 @@ foreach ([$adminOnlyExcludeFields, $systemManagedExcludeFields] as $fieldMap) {
 $forbiddenNonExcludeFieldValues = array_values(array_unique($forbiddenNonExcludeFieldValues));
 sort($forbiddenNonExcludeFieldValues);
 
+$groupsByUid = [];
+$referencedSubgroupUids = [];
+foreach ($groups as $groupRow) {
+    $groupsByUid[(int)$groupRow['uid']] = $groupRow;
+    array_push($referencedSubgroupUids, ...csvIntegers((string)($groupRow['subgroup'] ?? '')));
+}
+$referencedSubgroupUids = array_values(array_unique($referencedSubgroupUids));
+sort($referencedSubgroupUids);
+
 $findings = [];
 $normalizedGroups = [];
 foreach ($groups as $group) {
+    $rawGroup = $group;
+    $inheritanceError = null;
+    try {
+        $resolvedGroup = resolveEffectiveGroupPermissions((int)$rawGroup['uid'], $groupsByUid);
+        $group = $resolvedGroup['permissions'];
+        $effectiveGroupUids = $resolvedGroup['group_uids'];
+    } catch (RuntimeException $exception) {
+        $inheritanceError = $exception->getMessage();
+        $effectiveGroupUids = [(int)$rawGroup['uid']];
+    }
     $allowedContentTypes = [];
     foreach (explode(',', (string)($group['explicit_allowdeny'] ?? '')) as $permission) {
         $permission = trim($permission);
@@ -266,8 +286,10 @@ foreach ($groups as $group) {
     $allowedContentTypes = array_values(array_unique(array_filter($allowedContentTypes, 'strlen')));
     sort($allowedContentTypes);
 
-    $isTarget = !isset($options['group-title']) || $options['group-title'] === false
-        || (string)$group['title'] === (string)$options['group-title'];
+    $isTopLevel = !in_array((int)$rawGroup['uid'], $referencedSubgroupUids, true);
+    $isTarget = isset($options['group-title']) && $options['group-title'] !== false
+        ? (string)$rawGroup['title'] === (string)$options['group-title']
+        : $isTopLevel;
     $missingEditorialTypes = array_values(array_diff(
         $usedContentTypes,
         $exceptionContentTypes,
@@ -282,11 +304,18 @@ foreach ($groups as $group) {
     $groupTablesModify = csvStrings((string)($group['tables_modify'] ?? ''));
     $groupNonExcludeFields = csvStrings((string)($group['non_exclude_fields'] ?? ''));
     $groupPageTypes = csvIntegers((string)($group['pagetypes_select'] ?? ''));
-    $groupSubgroups = csvIntegers((string)($group['subgroup'] ?? ''));
+    $groupSubgroups = csvIntegers((string)($rawGroup['subgroup'] ?? ''));
     $groupMfaProviders = csvStrings((string)($group['mfa_providers'] ?? ''));
     $groupAllowedLanguages = csvIntegers((string)($group['allowed_languages'] ?? ''));
 
     $groupFindings = [];
+    if ($isTarget && $inheritanceError !== null) {
+        $groupFindings[] = finding(
+            'error',
+            'invalid-group-inheritance',
+            $inheritanceError
+        );
+    }
     if ($isTarget && $authMode === 'explicitAllow' && $allowedContentTypes === []) {
         $groupFindings[] = finding(
             'error',
@@ -318,12 +347,91 @@ foreach ($groups as $group) {
             $unregisteredAllowedTypes
         );
     }
-    if ($isTarget && $groupSubgroups !== []) {
+    $requiredLeafTitles = [
+        deriveLeafTitle((string)$rawGroup['title'], 'Base'),
+        deriveLeafTitle((string)$rawGroup['title'], 'Content'),
+        deriveLeafTitle((string)$rawGroup['title'], 'Site'),
+        deriveLeafTitle((string)$rawGroup['title'], 'Extensions'),
+    ];
+    $directSubgroupTitles = [];
+    $nestedLeafUids = [];
+    foreach ($groupSubgroups as $subgroupUid) {
+        if (!isset($groupsByUid[$subgroupUid])) {
+            continue;
+        }
+        $directSubgroupTitles[] = (string)$groupsByUid[$subgroupUid]['title'];
+        if (csvIntegers((string)($groupsByUid[$subgroupUid]['subgroup'] ?? '')) !== []) {
+            $nestedLeafUids[] = $subgroupUid;
+        }
+    }
+    $missingRequiredLeafTitles = array_values(array_diff($requiredLeafTitles, $directSubgroupTitles));
+    $directPermissionFields = nonEmptyDirectPermissionFields($rawGroup);
+    $directLeafAssignments = [];
+    $usersMissingGroupMountInheritance = [];
+    foreach ($users as $user) {
+        $assignedLeaves = array_values(array_intersect(
+            csvIntegers((string)($user['usergroup'] ?? '')),
+            $groupSubgroups
+        ));
+        foreach ($assignedLeaves as $assignedLeafUid) {
+            $directLeafAssignments[] = sprintf(
+                '%s (uid %d) -> group %d',
+                (string)$user['username'],
+                (int)$user['uid'],
+                $assignedLeafUid
+            );
+        }
+        if (
+            in_array((int)$rawGroup['uid'], csvIntegers((string)($user['usergroup'] ?? '')), true)
+            && (int)$user['admin'] === 0
+            && (((int)$user['options'] & 3) !== 3)
+        ) {
+            $usersMissingGroupMountInheritance[] = sprintf(
+                '%s (uid %d, options %d)',
+                (string)$user['username'],
+                (int)$user['uid'],
+                (int)$user['options']
+            );
+        }
+    }
+    if ($isTarget && $missingRequiredLeafTitles !== []) {
         $groupFindings[] = finding(
             'error',
-            'subgroups-configured',
-            'The main editor group must not inherit subgroups.',
-            $groupSubgroups
+            'required-leaf-groups-missing',
+            'The main editor group must directly inherit Base, Content, Site, and Extensions leaves.',
+            $missingRequiredLeafTitles
+        );
+    }
+    if ($isTarget && $nestedLeafUids !== []) {
+        $groupFindings[] = finding(
+            'error',
+            'nested-editor-leaf-groups',
+            'Editor capability groups must remain direct leaves of the main group.',
+            $nestedLeafUids
+        );
+    }
+    if ($isTarget && $directPermissionFields !== []) {
+        $groupFindings[] = finding(
+            'error',
+            'main-group-has-direct-permissions',
+            'Keep the main editor group as a composition and page-owner group only.',
+            $directPermissionFields
+        );
+    }
+    if ($isTarget && $directLeafAssignments !== []) {
+        $groupFindings[] = finding(
+            'error',
+            'leaf-groups-assigned-directly',
+            'Assign backend users only to the main editor group, never directly to a leaf.',
+            $directLeafAssignments
+        );
+    }
+    if ($isTarget && $usersMissingGroupMountInheritance !== []) {
+        $groupFindings[] = finding(
+            'error',
+            'users-do-not-inherit-group-mounts',
+            'Non-admin members must inherit page and file mounts from associated groups (options bits 1 and 2).',
+            $usersMissingGroupMountInheritance
         );
     }
     $unregisteredModules = array_values(array_filter(
@@ -513,7 +621,7 @@ foreach ($groups as $group) {
     $pagesWithBroadEverybodyRights = [];
     foreach ($mountedSitePages as $page) {
         $pageUid = (int)$page['uid'];
-        if ((int)$page['perms_groupid'] !== (int)$group['uid']) {
+        if ((int)$page['perms_groupid'] !== (int)$rawGroup['uid']) {
             $pagesWithWrongGroup[] = $pageUid;
         }
         if (((int)$page['perms_group'] & 27) !== 27) {
@@ -561,10 +669,18 @@ foreach ($groups as $group) {
 
     array_push($findings, ...$groupFindings);
     $normalizedGroups[] = [
-        'uid' => (int)$group['uid'],
-        'title' => (string)$group['title'],
-        'hidden' => (bool)$group['hidden'],
+        'uid' => (int)$rawGroup['uid'],
+        'title' => (string)$rawGroup['title'],
+        'hidden' => (bool)$rawGroup['hidden'],
+        'evaluated_as_main' => $isTarget,
         'subgroup' => $groupSubgroups,
+        'effective_group_uids' => $effectiveGroupUids,
+        'required_leaf_titles' => $requiredLeafTitles,
+        'missing_required_leaf_titles' => $missingRequiredLeafTitles,
+        'nested_leaf_uids' => $nestedLeafUids,
+        'direct_permission_fields' => $directPermissionFields,
+        'direct_leaf_assignments' => $directLeafAssignments,
+        'users_missing_group_mount_inheritance' => $usersMissingGroupMountInheritance,
         'allowed_content_types' => $allowedContentTypes,
         'missing_editorial_content_types' => $missingEditorialTypes,
         'allowed_exception_content_types' => $allowedExceptions,
@@ -706,6 +822,7 @@ $report = [
             'admin' => (bool)$user['admin'],
             'disabled' => (bool)$user['disable'],
             'groups' => csvIntegers((string)($user['usergroup'] ?? '')),
+            'options' => (int)$user['options'],
             'lastlogin' => (int)$user['lastlogin'],
         ],
         $users
@@ -755,6 +872,93 @@ function csvIntegers(string $value): array
     $values = array_values(array_unique(array_filter($values, static fn(int $value): bool => $value > 0)));
     sort($values);
     return $values;
+}
+
+function groupCsvPermissionFields(): array
+{
+    return [
+        'groupMods',
+        'tables_select',
+        'tables_modify',
+        'pagetypes_select',
+        'db_mountpoints',
+        'file_mountpoints',
+        'file_permissions',
+        'allowed_languages',
+        'mfa_providers',
+        'explicit_allowdeny',
+        'non_exclude_fields',
+        'category_perms',
+        'tsconfig_includes',
+    ];
+}
+
+function resolveEffectiveGroupPermissions(int $groupUid, array $groupsByUid, array $path = []): array
+{
+    if (in_array($groupUid, $path, true)) {
+        throw new RuntimeException('Backend group inheritance contains a cycle at group ' . $groupUid . '.');
+    }
+    if (!isset($groupsByUid[$groupUid])) {
+        throw new RuntimeException('Backend group inheritance references missing group ' . $groupUid . '.');
+    }
+    $permissions = $groupsByUid[$groupUid];
+    $groupUids = [$groupUid];
+    $path[] = $groupUid;
+    foreach (csvIntegers((string)($permissions['subgroup'] ?? '')) as $subgroupUid) {
+        if (!isset($groupsByUid[$subgroupUid])) {
+            throw new RuntimeException('Backend group inheritance references missing group ' . $subgroupUid . '.');
+        }
+        if ((int)($groupsByUid[$subgroupUid]['hidden'] ?? 0) !== 0) {
+            throw new RuntimeException('Backend group inheritance references hidden group ' . $subgroupUid . '.');
+        }
+        $child = resolveEffectiveGroupPermissions($subgroupUid, $groupsByUid, $path);
+        foreach (groupCsvPermissionFields() as $fieldName) {
+            $permissions[$fieldName] = implode(',', array_values(array_unique([
+                ...csvStrings((string)($permissions[$fieldName] ?? '')),
+                ...csvStrings((string)($child['permissions'][$fieldName] ?? '')),
+            ])));
+        }
+        foreach (['TSconfig'] as $fieldName) {
+            $parts = array_filter([
+                trim((string)($permissions[$fieldName] ?? '')),
+                trim((string)($child['permissions'][$fieldName] ?? '')),
+            ], 'strlen');
+            $permissions[$fieldName] = implode("\n", array_values(array_unique($parts)));
+        }
+        $permissions['workspace_perms'] = (int)($permissions['workspace_perms'] ?? 0)
+            | (int)($child['permissions']['workspace_perms'] ?? 0);
+        array_push($groupUids, ...$child['group_uids']);
+    }
+    $groupUids = array_values(array_unique($groupUids));
+    sort($groupUids);
+    return [
+        'permissions' => $permissions,
+        'group_uids' => $groupUids,
+    ];
+}
+
+function nonEmptyDirectPermissionFields(array $group): array
+{
+    $fields = [];
+    foreach (groupCsvPermissionFields() as $fieldName) {
+        if (csvStrings((string)($group[$fieldName] ?? '')) !== []) {
+            $fields[] = $fieldName;
+        }
+    }
+    if (trim((string)($group['TSconfig'] ?? '')) !== '') {
+        $fields[] = 'TSconfig';
+    }
+    if ((int)($group['workspace_perms'] ?? 0) !== 0) {
+        $fields[] = 'workspace_perms';
+    }
+    sort($fields);
+    return $fields;
+}
+
+function deriveLeafTitle(string $mainTitle, string $leafName): string
+{
+    $suffix = ' · ' . $leafName;
+    return mb_substr($mainTitle, 0, 50 - mb_strlen($suffix)) . $suffix;
 }
 
 function containsAdminOnlyDisplayCondition(mixed $condition): bool

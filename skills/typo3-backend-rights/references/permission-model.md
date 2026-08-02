@@ -6,7 +6,9 @@ Read this reference before creating or changing a TYPO3 backend group or user.
 
 - Identify the user-selected TYPO3 installation first and apply the approved group, User TSconfig,
   and user setting only there; do not stop at a generic permission plan.
-- Use one top-level main editor group; keep `be_groups.subgroup` empty.
+- Use one user-facing main editor group with four flat leaf groups: Base, Content, Site, Extensions.
+- Keep permission fields empty on the main group and `subgroup` empty on every leaf.
+- Assign users only to the main group; preserve later site/extension leaf packs attached to it.
 - Keep at least one separate enabled administrator that can log in.
 - Keep the account used to perform the work as an administrator.
 - Ask before replacing a user's existing group list.
@@ -32,7 +34,26 @@ Read this reference before creating or changing a TYPO3 backend group or user.
 | `explicit_allowdeny` | Comma-separated auth-mode values, especially `tt_content:CType:<value>` |
 | `non_exclude_fields` | Comma-separated `<table>:<field>` values for TCA fields marked `exclude` |
 | `TSconfig` | Prefer one sitepackage import for the selected User TSconfig profile |
-| `subgroup` | Keep empty; required rights belong to the one main group |
+| `subgroup` | Main: four required leaf UIDs plus preserved capability leaves; leaf groups: empty |
+
+## Flat group composition
+
+Keep the main group free of direct permission values. Split the initial permission set once:
+
+- **Base**: Core modules, page types, all-language mode, `totp,recovery-codes`, file operations,
+  workspace permission, and User TSconfig.
+- **Content**: explicit editorial CTypes and the Core content, category, and FAL tables/fields.
+- **Site**: current database and file mount UIDs.
+- **Extensions**: installed extension modules and non-Core domain tables/fields, including News,
+  Core Form, and Powermail form definitions.
+
+All four are direct leaves of the main group. The user belongs only to the main group, and pages
+use the main group as group owner. Put routine extension changes into Extensions. For a later Site
+root, add a direct `<main> · Site: Name` leaf containing its mounts. Add a separate extension leaf
+only when the capability needs an independent lifecycle; otherwise update Extensions. Never add a
+second inheritance level. Set both group-mount inheritance bits on assigned users
+(`be_users.options |= 3`) without clearing other option bits. Audit effective inherited permissions,
+not only the raw main row.
 
 ## The empty CType allow-list defect
 

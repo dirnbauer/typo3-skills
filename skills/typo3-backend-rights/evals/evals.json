@@ -16,7 +16,7 @@
       "id": "typo3-backend-rights-trigger-pos-02",
       "kind": "trigger-positive",
       "status": "proposed",
-      "prompt": "Create one main backend group that can manage all normal site content, news records, and files across every mount.",
+      "prompt": "Create one main backend editor role with simple subgroups that can manage all normal content, news records, and files.",
       "expect_skill": "typo3-backend-rights",
       "note": "Canonical full editor-group request."
     },
@@ -128,6 +128,20 @@
         "Report the selected project root, DDEV name, TYPO3 version and affected group/user UIDs."
       ],
       "note": "Regression for ambiguous installations and advice-only delivery."
+    },
+    {
+      "id": "typo3-backend-rights-behaviour-10",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Split the TYPO3 editor rights into inherited groups so another website or extension can be added later, but keep it simple.",
+      "assertions": [
+        "Create one user-facing main group with Base, Content, Site and Extensions leaf groups.",
+        "Keep direct permissions off the main group and do not nest leaf groups.",
+        "Assign users only to the main group and keep it as the page group owner.",
+        "Preserve user option bits while enabling group page-mount and file-mount inheritance.",
+        "Allow additional Site or Extension leaf groups later and preserve them during updates."
+      ],
+      "note": "Protects the flat extensible group architecture."
     },
     {
       "id": "typo3-backend-rights-behaviour-06",

@@ -1,6 +1,6 @@
 {
   "title": "Editorial Main",
-  "description": "One main editor group derived from the live project.",
+  "description": "One user-facing editor group composed from four simple leaf groups.",
   "allowed_content_types": [
     "header",
     "text",

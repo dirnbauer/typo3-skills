@@ -1,6 +1,6 @@
 ---
 name: typo3-backend-rights
-description: "Build and audit one main non-admin TYPO3 backend user group plus a branded, context-aware editor backend: explicit CType and field permissions, all site roots and languages, modules, mounts, MFA providers, Forms/Powermail editing, User TSconfig, Visual Editor, Admin Panel, and safe admin conversion. Use when record types or fields are missing/read-only, be_groups.explicit_allowdeny is blank, mounts/modules are incomplete, the TYPO3 login/backend needs customer branding, or legacy groups must be consolidated. Always preserve a separate working administrator."
+description: "Build and audit one main non-admin TYPO3 backend editor group composed from four simple leaf groups for Base, Content, Site access, and Extensions. Covers explicit CType/field permissions, roots, languages, modules, mounts, MFA, Forms/Powermail, User TSconfig, Visual Editor, Admin Panel, extensible site/extension packs, safe admin conversion, and customer branding for the TYPO3 login/backend with the Application Context. Use when record types or fields are missing/read-only, be_groups.explicit_allowdeny is blank, mounts/modules are incomplete, or legacy groups must be consolidated. Always preserve a separate working administrator."
 ---
 
 # TYPO3 backend rights
@@ -15,8 +15,9 @@ not a copied backend record.
 1. Identify the TYPO3 installation selected by the user before writing. If several projects could
    be meant, ask which one to use. Apply the approved group, User TSconfig, and user setting to that
    installation; a permission plan without the requested live/local integration is incomplete.
-2. Create or maintain exactly **one main editor group**. Keep `subgroup` empty. Do not split
-   required rights across inherited groups.
+2. Create or maintain exactly **one user-facing main editor group** with four required leaf
+   subgroups: **Base**, **Content**, **Site access**, and **Extensions**. Put no permissions directly
+   on the main group; assign users only to it. Keep every leaf's `subgroup` empty.
 3. Derive rights from installed TCA, existing records, backend modules, configured sites, pages
    marked `is_siteroot`, file mounts, and file storages. Never clone a legacy group without
    auditing every field.
@@ -47,6 +48,23 @@ not a copied backend record.
    for the current work or the last remaining administrator.
 13. Apply customer branding and the actual TYPO3 application context before and after login using
     supported Core configuration and a small sitepackage stylesheet. Keep it version-controlled.
+
+## Keep the group structure simple
+
+Use one flat inheritance level:
+
+| Group | Owns |
+|---|---|
+| `<main> · Base` | Core editor modules, page types, all languages, MFA, file operations, workspace setting, User TSconfig |
+| `<main> · Content` | Editorial CTypes, Core content/FAL/category tables, and their editor fields |
+| `<main> · Site` | Database mounts and file mounts |
+| `<main> · Extensions` | Installed extension modules, domain tables, and their editor fields |
+
+The main group contains only those subgroup references and remains the page group owner. To add a
+website later, attach one new leaf such as `<main> · Site: Example`; to add a separately maintained
+extension capability, attach `<main> · Extension: Example`. Do not nest leaves. Preserve additional
+leaf groups when regenerating the four required groups. This is a baseline of four, not a permanent
+limit of four.
 
 Report the selected installation's DDEV/project name, root, TYPO3 version, and affected group/user
 UIDs. Never apply one installation's audited permissions to another installation.
@@ -135,7 +153,7 @@ the frontend plugin.
 
 ## Configure TSconfig
 
-Keep User TSconfig in the sitepackage and import it from the main group. Copy one bundled profile:
+Keep User TSconfig in the sitepackage and import it from the **Base** subgroup. Copy one bundled profile:
 
 - [basic.tsconfig](assets/tsconfig/basic.tsconfig): page-cache clearing and safe preview access.
 - [optimized.tsconfig](assets/tsconfig/optimized.tsconfig): the basic rights plus useful Admin
@@ -180,10 +198,11 @@ and do not try to set `TYPO3_CONTEXT` from `additional.php`; it is read earlier 
 Use `$GLOBALS['TYPO3_CONF_VARS']['BE']['stylesheets']` for a small sitepackage stylesheet. Do not
 override TYPO3's danger/success colors, focus indicators, or structural layout.
 
-## Create the group
+## Create the group structure
 
-Create or update one top-level group through the TYPO3 backend or a project command using TYPO3's
-loaded TCA. Set a descriptive title such as `Editorial Main`, keep `subgroup` empty, and document:
+Create or update the four required leaf groups first, then create or update the main group with
+their UIDs in `subgroup`. Keep the main group's permission fields empty and each leaf's `subgroup`
+empty. Set a descriptive main title such as `Editorial Main` and document:
 
 - the allowed editorial CTypes;
 - every excluded infrastructure CType with its reason;
@@ -194,8 +213,8 @@ loaded TCA. Set a descriptive title such as `Editorial Main`, keep `subgroup` em
 - page group ownership and permission bits;
 - the selected TSconfig profile.
 
-Create the group before changing any user. Do not delete or repurpose old groups until the new
-group has passed verification.
+Create the complete structure before changing any user. Do not delete or repurpose old groups until
+the main group and all inherited rights have passed verification.
 
 For a repeatable local/DDEV setup, prepare a reviewed JSON plan following
 [permission-plan.example.json](assets/permission-plan.example.json), then apply only the group:
@@ -210,7 +229,8 @@ ddev exec php /dev/stdin --plan=/var/www/html/var/transient/backend-rights-plan.
 ```
 
 The command validates live CTypes, exception reasons, tables, mounts, and admin presence before a
-transactional insert/update. It never changes users or deletes old groups.
+transactional insert/update of the main group and four required leaves. It preserves additional
+leaf references and never changes users or deletes old groups.
 
 ## Change user membership safely
 
@@ -220,6 +240,9 @@ Ask the user this explicit question before replacing memberships:
 
 - If yes, replace that user's group list with the main group.
 - If no, append the main group and preserve existing memberships.
+- Never assign a user directly to Base, Content, Site, Extensions, or later capability leaves.
+- Enable both **Inherit page mounts from groups** and **Inherit file mounts from groups** while
+  preserving other user options (`be_users.options |= 3`). Otherwise the Site leaf has no effect.
 - If the target user is an administrator, set `admin = 0` only after proving a different enabled,
   login-capable administrator remains.
 - Never demote the current working administrator. Use a second account for the editor test.
@@ -252,9 +275,9 @@ Use a real non-admin session and verify all of these:
     application context with accessible contrast.
 12. The separate administrator can still log in.
 
-Re-run the audit with `--group-title` and `--strict`. Report the group UID, target user, remaining
-administrator, allowed/missing CTypes, exceptions, tables, fields, mounts, TSconfig profile, and
-the non-admin verification evidence.
+Re-run the audit with `--group-title` and `--strict`. Report the main and leaf group UIDs, target
+user, remaining administrator, allowed/missing CTypes, exceptions, tables, fields, mounts,
+TSconfig profile, and the non-admin verification evidence.
 
 ## Resources
 
@@ -263,6 +286,6 @@ the non-admin verification evidence.
 - [backend-branding.md](references/backend-branding.md): supported login/backend branding,
   accessible color selection, application-context display, and verification.
 - `scripts/audit-backend-rights.php`: read-only runtime TCA/database audit.
-- `scripts/apply-backend-rights.php`: validate and transactionally create/update the one group
-  from a reviewed plan; never changes users.
+- `scripts/apply-backend-rights.php`: validate and transactionally create/update the main group
+  and four required leaves from a reviewed plan; never changes users.
 - `assets/tsconfig/`: basic and optimized User TSconfig templates.
