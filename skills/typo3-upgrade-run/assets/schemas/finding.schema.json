@@ -56,7 +56,7 @@
     },
     "reproduced": {
       "type": ["boolean", "null"],
-      "description": "Flake quarantine: did the difference reproduce on an immediate re-shoot? false means harness-noise."
+      "description": "Did the difference reproduce on an immediate identical re-shoot? false classifies the result as harness-noise; it never makes a gate green."
     },
     "diff_pixels": { "type": ["integer", "null"], "minimum": 0 },
     "diff_percent": {

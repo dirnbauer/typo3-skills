@@ -14,7 +14,7 @@ import { untrustedBlock } from '../util/redact.mjs';
 import { readJson } from './core.mjs';
 
 export async function report({ values, paths, log }) {
-  const loopDir = values.loop ? paths.loop(values.loop) : paths.root;
+  const loopDir = values.loop ? await resolveLoopDir(paths, values.loop) : paths.root;
   const reports = await collectReports(loopDir, paths);
 
   if (!reports.length) throw new PreconditionError(`No JSON reports found under ${loopDir}.`);
@@ -38,16 +38,43 @@ export async function report({ values, paths, log }) {
 
 async function collectReports(dir, paths) {
   const out = [];
-  for (const base of [dir, paths.root]) {
-    let files = [];
-    try { files = await readdir(base); } catch { continue; }
-    for (const f of files.filter((x) => x.startsWith('report.') && x.endsWith('.json'))) {
-      const r = await readJson(path.join(base, f));
-      if (r) out.push({ ...r, _path: path.join(base, f) });
+  const roots = dir === paths.root ? [dir] : [dir];
+  for (const base of roots) {
+    for (const file of await reportFiles(base)) {
+      const r = await readJson(file);
+      if (r?.kind) out.push({ ...r, _path: file });
     }
-    if (out.length) break;
   }
   return out;
+}
+
+async function reportFiles(root) {
+  const out = [];
+  async function walk(dir) {
+    let entries = [];
+    try { entries = await readdir(dir, { withFileTypes: true }); } catch { return; }
+    for (const entry of entries) {
+      const file = path.join(dir, entry.name);
+      if (entry.isDirectory()) await walk(file);
+      else if (
+        entry.isFile()
+        && entry.name.endsWith('.json')
+        && (entry.name.startsWith('report.') || entry.name === 'report.json')
+      ) out.push(file);
+    }
+  }
+  await walk(root);
+  return out.sort();
+}
+
+async function resolveLoopDir(paths, reference) {
+  const value = String(reference);
+  if (/^\d{3}-(?:harness|invariance|elevation|report)-/.test(value)) return paths.loop(value);
+  const id = value.match(/^\d{3}/)?.[0];
+  const entries = await readdir(paths.loopsDir, { withFileTypes: true }).catch(() => []);
+  const matches = entries.filter((entry) => entry.isDirectory() && entry.name.startsWith(`${id}-`));
+  if (matches.length !== 1) throw new PreconditionError(`Expected one loop directory for ${value}, found ${matches.length}.`);
+  return paths.loop(matches[0].name);
 }
 
 export function renderSummary(reports, loopId) {

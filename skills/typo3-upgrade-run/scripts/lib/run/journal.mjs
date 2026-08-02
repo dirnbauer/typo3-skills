@@ -34,10 +34,11 @@ export class Journal {
     });
   }
 
-  async commandEnd({ argv, loopId, exitCode, durationMs, verdict, reports = [] }) {
+  async commandEnd({ argv, loopId, exitCode, durationMs, verdict, reports = [], envFp = null }) {
     await this.append('command', {
       phase: 'end', loop_id: loopId ?? null, argv: redactArgv(argv),
       exit_code: exitCode, duration_ms: durationMs, verdict: verdict ?? null, reports,
+      env_fp: envFp,
     });
   }
 

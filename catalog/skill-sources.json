@@ -136,11 +136,11 @@
   {
     "directory": "typo3-backend-rights",
     "skill_name": "typo3-backend-rights",
-    "description": "Build and audit one main non-admin TYPO3 backend editor group composed from four simple leaf groups for Base, Content, Site access, and Extensions. Covers explicit CType/field permissions, roots, languages, modules, mounts, MFA, Forms/Powermail, conditional Workspaces access, User TSconfig, Visual Editor, Admin Panel, extensible site/extension packs, safe admin conversion, and customer branding for the TYPO3 login/backend with the Application Context. Use when record types or fields are missing/read-only, be_groups.explicit_allowdeny is blank, mounts/modules are incomplete, or legacy groups must be consolidated. Always preserve a separate working administrator.",
+    "description": "Build and audit one main non-admin TYPO3 backend editor group composed from four simple leaf groups for Base, Content, Site access, and Extensions. Covers explicit CType/field permissions, multisite page owner/group/everybody ACL defaults, roots, languages, modules, mounts, MFA, Forms/Powermail, conditional Workspaces access, User TSconfig, Visual Editor, Admin Panel, extensible site/extension packs, safe admin conversion, and customer branding for the TYPO3 login/backend with the Application Context. Use when page permissions, record types or fields are missing/read-only, be_groups.explicit_allowdeny is blank, mounts/modules are incomplete, or legacy groups must be consolidated. Always preserve a separate working administrator.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-backend-rights/SKILL.md",
-    "line_count": 326,
+    "line_count": 374,
     "frontmatter_keys": [
       "name",
       "description"
@@ -261,7 +261,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-design-system-page/SKILL.md",
-    "line_count": 146,
+    "line_count": 153,
     "frontmatter_keys": [
       "name",
       "description"
@@ -458,7 +458,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-scheduler-jobs/SKILL.md",
-    "line_count": 147,
+    "line_count": 170,
     "frontmatter_keys": [
       "name",
       "description"
@@ -604,7 +604,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-upgrade-run/SKILL.md",
-    "line_count": 466,
+    "line_count": 499,
     "frontmatter_keys": [
       "name",
       "description"

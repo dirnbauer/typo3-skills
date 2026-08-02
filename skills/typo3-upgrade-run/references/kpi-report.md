@@ -67,7 +67,7 @@ Use the `share` redaction profile: hostnames and path segments hashed, query val
 | TYPO3 version | `state.target.typo3_from` → `typo3_to` |
 | PHP version | `state.target.php_from` → `php_to`, plus the recorded 8.5 attempt and its blockers |
 | Extension set changes | `manifests/extensions.json`, grouped by resolution |
-| Visual differences | loop 300 `findings_by_class`, ending at zero |
+| Visual differences | loop 300 `findingsByClass`, ending at zero |
 | Backend module sweep | loop 310 coverage and result |
 | Accessibility | loop 040 and the loop 300 re-audit, automated and manual **shown separately** |
 | Lighthouse and Core Web Vitals | loop 500, medians with min/max |
@@ -129,7 +129,7 @@ the per-loop `report.json` files, so it is recorded fact rather than recollectio
 | Iterations run | `03-iterations.md` entries, one per pass |
 | Verdict | `06-exit.md` — `passed`, `aborted`, `superseded` |
 | Abort trigger, if any | which condition fired: max iterations, no progress, oscillation, fingerprint drift, time budget, budget breach, unclassifiable |
-| Findings by class | `findings_by_class`, all eight buckets including `unclassified` |
+| Findings by class | `findingsByClass`, all eight buckets including `unclassified` |
 | Wall-clock | first and last journal entry for that loop |
 
 A loop that needed six iterations and one that passed first time both read as "green" in a summary.
@@ -148,9 +148,10 @@ They are not the same run, and the difference is usually where the next estimate
   if something else did, say what.
 - **Findings that were repaired against findings that were approved as declared changes.** These
   are different outcomes and must never be merged into one number.
-- **What was not covered**: URLs omitted by sampling, carousel slides beyond the first, quarantined
-  captures below the dust floor, third-party integrations blocked during capture. Each with its
-  count and its reason.
+- **What was not covered**: URLs omitted by declared visual sampling, carousel slides beyond the
+  captured state, non-HTML resources where DOM/visual checks are not applicable, and third-party
+  integrations blocked during capture. Each with its count and its reason. Strict-zero visual
+  evidence has no dust-floor exclusions or quarantine.
 
 ### Honesty rules for this section
 

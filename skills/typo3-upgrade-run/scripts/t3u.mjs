@@ -21,11 +21,23 @@ import {
 } from './lib/actions/compare.mjs';
 import { backendSweep, smoke, lighthouse } from './lib/actions/sweep.mjs';
 import { report } from './lib/actions/report.mjs';
+import {
+  approvalRecord,
+  loopOpen,
+  loopStart,
+  snapshotCreate,
+  validateRun,
+} from './lib/actions/lifecycle.mjs';
 
 const ACTIONS = {
   init,
   doctor,
   status,
+  'validate-run': validateRun,
+  'loop-start': loopStart,
+  'loop-open': loopOpen,
+  'snapshot-create': snapshotCreate,
+  approval: approvalRecord,
   'env-fingerprint': envFingerprint,
   'content-fingerprint': contentFingerprint,
   'discover-urls': discoverUrls,

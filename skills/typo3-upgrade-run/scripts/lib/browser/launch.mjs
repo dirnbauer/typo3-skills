@@ -14,6 +14,10 @@ import { STABILIZE_CSS, initScript, settleScript } from './stabilize.mjs';
 
 export const SAFE_BROWSER_ARGS = Object.freeze([
   '--disable-dev-shm-usage',
+  // Full-page captures must be byte-stable across fresh browser processes. Chromium's
+  // GPU/SwiftShader raster paths can produce sparse pixel changes inside otherwise identical
+  // decoded images; software rendering makes the same captures exact.
+  '--disable-gpu',
   '--disable-background-timer-throttling',
   '--disable-backgrounding-occluded-windows',
   '--disable-renderer-backgrounding',
@@ -88,10 +92,10 @@ export async function newContext(browser, {
 }
 
 /** Apply CSS, settle, and return the settle report. Identical before and after by construction. */
-export async function stabilizePage(page) {
+export async function stabilizePage(page, stabilize = {}) {
   await page.addStyleTag({ content: STABILIZE_CSS }).catch(() => {});
   try {
-    return await page.evaluate(settleScript());
+    return await page.evaluate(settleScript(stabilize));
   } catch {
     return { fonts: false, lazy: 0, videos: 0, height: 0, settleFailed: true };
   }

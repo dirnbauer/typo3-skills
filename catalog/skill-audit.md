@@ -152,7 +152,7 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source owner: webconsulting
 - Source URL: https://github.com/dirnbauer/typo3-skills
 - Frontmatter name: typo3-backend-rights
-- SKILL.md lines: 326
+- SKILL.md lines: 374
 
 **Pass 1: Structure**
 - No pass 1 issues found.
@@ -264,7 +264,7 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source owner: webconsulting
 - Source URL: https://github.com/dirnbauer/typo3-skills
 - Frontmatter name: typo3-design-system-page
-- SKILL.md lines: 146
+- SKILL.md lines: 153
 
 **Pass 1: Structure**
 - No pass 1 issues found.
@@ -440,7 +440,7 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source owner: webconsulting
 - Source URL: https://github.com/dirnbauer/typo3-skills
 - Frontmatter name: typo3-scheduler-jobs
-- SKILL.md lines: 147
+- SKILL.md lines: 170
 
 **Pass 1: Structure**
 - No pass 1 issues found.
@@ -568,7 +568,7 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source owner: webconsulting
 - Source URL: https://github.com/dirnbauer/typo3-skills
 - Frontmatter name: typo3-upgrade-run
-- SKILL.md lines: 466
+- SKILL.md lines: 499
 
 **Pass 1: Structure**
 - No pass 1 issues found.

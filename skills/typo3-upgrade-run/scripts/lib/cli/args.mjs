@@ -28,24 +28,46 @@ export const GLOBAL_OPTIONS = {
 export const COMMANDS = {
   init: { summary: 'Create the run directory and initial state', options: {
     'base-url': { type: 'string' }, 'project-name': { type: 'string' },
+    'ddev-project': { type: 'string' },
     languages: { type: 'string' }, force: { type: 'boolean', default: false },
   }},
   doctor: { summary: 'Check the environment can run the harness', options: {
-    'base-url': { type: 'string' },
+    'base-url': { type: 'string' }, 'ddev-project': { type: 'string' },
   }},
   status: { summary: 'Print the run dashboard', options: {} },
+  'validate-run': { summary: 'Validate state, loop documents, and evidence references', options: {} },
+  'loop-start': { summary: 'Scaffold a planned loop from the protocol templates', options: {
+    id: { type: 'string' }, track: { type: 'string' }, slug: { type: 'string' },
+    contract: { type: 'string' }, phase: { type: 'string' },
+    'baseline-ref': { type: 'string' }, 'intent-ref': { type: 'string' },
+  }},
+  'loop-open': { summary: 'Open a planned loop after snapshot and live freeze checks', options: {
+    snapshot: { type: 'string' },
+  }},
+  'snapshot-create': { summary: 'Create and record the rollback snapshot for a loop', options: {
+    name: { type: 'string' },
+  }},
+  approval: { summary: 'Record intent authorization or observed-result acceptance', options: {
+    id: { type: 'string' }, stage: { type: 'string' }, scope: { type: 'string' },
+    question: { type: 'string' }, answer: { type: 'string' }, evidence: { type: 'string' },
+    granted: { type: 'boolean', default: false },
+  }},
   'env-fingerprint': { summary: 'Record or assert the environment fingerprint', options: {
     'write-baseline': { type: 'boolean', default: false }, assert: { type: 'boolean', default: false },
+    'ddev-project': { type: 'string' },
   }},
   'content-fingerprint': { summary: 'Record or assert the content fingerprint', options: {
     'write-baseline': { type: 'boolean', default: false }, assert: { type: 'boolean', default: false },
     'ddev-project': { type: 'string' }, fileadmin: { type: 'string', default: 'fileadmin' },
+    tables: { type: 'string' },
     'allow-missing': { type: 'boolean', default: false },
   }},
   'discover-urls': { summary: 'Guarded sitemap discovery into a URL manifest', options: {
     'base-url': { type: 'string' }, languages: { type: 'string' }, seed: { type: 'string' },
     'golden-file': { type: 'string' }, 'visual-budget': { type: 'string', default: '1500' },
-    'lighthouse-sample': { type: 'string', default: '25' },
+    'lighthouse-sample': { type: 'string', default: '3' },
+    states: { type: 'string' }, viewports: { type: 'string' },
+    'stabilization-config': { type: 'string' },
     'allow-missing-sitemap': { type: 'boolean', default: false },
   }},
   capture: { summary: 'Capture HTTP, DOM and screenshots for the manifest set', options: {
@@ -58,10 +80,12 @@ export const COMMANDS = {
     // must be asked for and confirmed twice, because it can turn a short close into a long one.
     scope: { type: 'string', default: 'final' },
     'all-urls': { type: 'boolean', default: false },
+    'visual-workers': { type: 'string' },
   }},
   'selftest-determinism': { summary: 'Shoot the untouched site twice; require zero differences', options: {
     repeats: { type: 'string', default: '2' }, 'fresh-browser': { type: 'boolean', default: true },
     sample: { type: 'string', default: 'all' },
+    'visual-workers': { type: 'string' },
   }},
   'seal-baseline': { summary: 'Write MANIFEST.sha256 and LOCK.json; make a baseline immutable', options: {
     dir: { type: 'string' }, id: { type: 'string', default: 'A-original' },
@@ -75,7 +99,7 @@ export const COMMANDS = {
   'compare-dom': { summary: 'Compare normalised DOM for all URLs', options: {
     before: { type: 'string' }, after: { type: 'string' }, report: { type: 'string' },
   }},
-  'compare-visual': { summary: 'Compare screenshots with flake quarantine', options: {
+  'compare-visual': { summary: 'Compare screenshots with strict-zero pixel evidence', options: {
     'before-dir': { type: 'string' }, 'after-dir': { type: 'string' }, 'diff-dir': { type: 'string' },
     report: { type: 'string' }, reshoots: { type: 'string', default: '1' },
   }},
@@ -87,13 +111,14 @@ export const COMMANDS = {
   smoke: { summary: 'Deterministic read-only navigation check', options: {
     report: { type: 'string' }, 'max-steps': { type: 'string', default: '25' },
   }},
-  lighthouse: { summary: 'Lighthouse over a template-stratified sample', options: {
+  lighthouse: { summary: 'Lighthouse on homepage plus two seeded random pages', options: {
     report: { type: 'string' }, runs: { type: 'string', default: '3' },
-    sample: { type: 'string', default: '10' }, timeout: { type: 'string', default: '120' },
+    sample: { type: 'string', default: '3' }, timeout: { type: 'string', default: '120' },
     'form-factor': { type: 'string', default: 'mobile' }, budget: { type: 'string' },
+    label: { type: 'string', default: 'final' },
   }},
   gate: { summary: 'Aggregate a loop verdict from its stage reports', options: {
-    group: { type: 'string' },
+    group: { type: 'string' }, 'idempotence-diff': { type: 'string' },
   }},
   report: { summary: 'Regenerate markdown from JSON reports', options: {} },
   help: { summary: 'Show help', options: {} },

@@ -8,6 +8,8 @@ contract: "{{CONTRACT}}"
 phase: "{{PHASE}}"
 doc: preconditions
 baseline_ref: "{{BASELINE_REF}}"
+approval_ref: {{INTENT_REF}}
+acceptance_ref: null
 env_fingerprint: null
 content_fingerprint: null
 snapshot: null

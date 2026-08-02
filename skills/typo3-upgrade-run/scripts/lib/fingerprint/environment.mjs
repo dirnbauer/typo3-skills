@@ -13,11 +13,18 @@
 import os from 'node:os';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import { readdir, readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { sha256 } from '../run/paths.mjs';
 
 const exec = promisify(execFile);
+const SCRIPT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
-/** Keys that participate in the hash. Everything else is recorded only. */
+/**
+ * Immutable renderer/tooling keys. The application being upgraded is deliberately absent:
+ * changing PHP or TYPO3 is the subject of the experiment, not renderer drift.
+ */
 export const HASH_RELEVANT = Object.freeze([
   'node.version', 'os.type', 'os.release', 'os.arch', 'os.containerImage',
   'playwright.version', 'browser.name', 'browser.version', 'browser.channel', 'browser.launchArgsHash',
@@ -25,28 +32,36 @@ export const HASH_RELEVANT = Object.freeze([
   'rendering.deviceScaleFactor', 'rendering.colorScheme', 'rendering.reducedMotion',
   'rendering.forcedColors', 'rendering.locale', 'rendering.timezone',
   'imageProcessing.processor', 'imageProcessing.version', 'imageProcessing.gfxHash',
-  'php.version', 'php.extensionsHash',
-  'typo3.version', 'ddev.version', 'ddev.dbEngine',
-  'harness.version', 'harness.depsLockHash',
+  'ddev.version',
+  'harness.version', 'harness.depsLockHash', 'harness.sourceHash',
 ]);
 
-export const RECORDED_ONLY = Object.freeze(['os.cpus', 'os.totalmem', 'os.hostname', 'os.uptime']);
+export const RECORDED_ONLY = Object.freeze([
+  'os.cpus', 'os.totalmem', 'os.hostname', 'os.uptime',
+  'php.version', 'php.extensionsHash', 'typo3.version', 'typo3.context',
+  'ddev.projectType', 'ddev.dbEngine',
+]);
 
 export async function collectEnvironment({
   runner = safeRun,
+  appRunner = null,
+  ddevProject = null,
   harnessVersion = '2.0.0',
   depsLockHash = null,
+  sourceHash = null,
   rendering = {},
   launchArgs = [],
 } = {}) {
+  const runInApp = appRunner ?? ((cmd, args) => ddevRun(cmd, args, ddevProject));
+  const identity = await harnessIdentity({ depsLockHash, sourceHash });
   const [playwrightVersion, browser, fonts, php, typo3, ddev, imaging] = await Promise.all([
     detectPlaywright(),
     detectBrowser(runner),
     detectFonts(runner),
-    detectPhp(runner),
-    detectTypo3(runner),
+    detectPhp(runInApp),
+    detectTypo3(runInApp),
     detectDdev(runner),
-    detectImaging(runner),
+    detectImaging(runInApp),
   ]);
 
   const components = {
@@ -72,7 +87,7 @@ export async function collectEnvironment({
     php,
     typo3,
     ddev,
-    harness: { version: harnessVersion, depsLockHash },
+    harness: { version: harnessVersion, ...identity },
   };
 
   return {
@@ -112,6 +127,14 @@ async function safeRun(cmd, args) {
   } catch {
     return null;
   }
+}
+
+/** Application commands always execute in the DDEV web container. */
+async function ddevRun(cmd, args, project) {
+  if (cmd === 'composer' || cmd === 'typo3') {
+    return safeRun('ddev', [cmd, ...args]);
+  }
+  return safeRun('ddev', ['exec', '--', cmd, ...args]);
 }
 
 async function detectPlaywright() {
@@ -154,7 +177,7 @@ async function detectTypo3(runner) {
   const raw = await runner('composer', ['show', '--locked', 'typo3/cms-core', '--format=json']);
   if (!raw) return { version: null, context: process.env.TYPO3_CONTEXT ?? null };
   try {
-    const parsed = JSON.parse(raw);
+    const parsed = JSON.parse(raw.slice(raw.indexOf('{')));
     return { version: parsed?.versions?.[0] ?? parsed?.version ?? null, context: process.env.TYPO3_CONTEXT ?? null };
   } catch {
     return { version: null, context: process.env.TYPO3_CONTEXT ?? null };
@@ -162,12 +185,16 @@ async function detectTypo3(runner) {
 }
 
 async function detectDdev(runner) {
-  const raw = await runner('ddev', ['describe', '-j']);
-  if (!raw) return { version: null, projectType: null, dbEngine: null };
+  const [versionRaw, describeRaw] = await Promise.all([
+    runner('ddev', ['version', '-j']),
+    runner('ddev', ['describe', '-j']),
+  ]);
+  if (!versionRaw && !describeRaw) return { version: null, projectType: null, dbEngine: null };
   try {
-    const d = JSON.parse(raw)?.raw ?? {};
+    const v = JSON.parse(versionRaw ?? '{}');
+    const d = JSON.parse(describeRaw ?? '{}')?.raw ?? {};
     return {
-      version: d.router ?? null,
+      version: v?.raw?.['DDEV version'] ?? v?.raw?.ddev_version ?? v?.ddev_version ?? v?.version ?? null,
       projectType: d.type ?? null,
       dbEngine: d.dbinfo ? `${d.dbinfo.database_type}:${d.dbinfo.database_version}` : null,
     };
@@ -181,20 +208,43 @@ async function detectImaging(runner) {
   const version = await runner('convert', ['-version']);
   const processor = version?.includes('GraphicsMagick') ? 'GraphicsMagick'
     : version?.includes('ImageMagick') ? 'ImageMagick' : null;
-  const gfx = await runner('php', ['-r',
-    'echo json_encode($GLOBALS["TYPO3_CONF_VARS"]["GFX"] ?? []);']);
-  let gfxObj = {};
-  try { gfxObj = gfx ? JSON.parse(gfx) : {}; } catch { gfxObj = {}; }
+  const gfx = await runner('typo3', ['configuration:show', 'GFX']);
+  const normalizedGfx = String(gfx ?? '').replace(/\r\n/g, '\n').trim();
   return {
     processor,
     version: version ? version.split('\n')[0] : null,
-    typo3Gfx: gfxObj,
-    gfxHash: sha256(JSON.stringify(sortKeys(gfxObj))),
+    typo3Gfx: normalizedGfx || null,
+    gfxHash: sha256(normalizedGfx),
   };
 }
 
-function sortKeys(o) {
-  if (o === null || typeof o !== 'object') return o;
-  if (Array.isArray(o)) return o.map(sortKeys);
-  return Object.fromEntries(Object.keys(o).sort().map((k) => [k, sortKeys(o[k])]));
+async function harnessIdentity({ depsLockHash, sourceHash }) {
+  const lock = depsLockHash ?? await hashFile(path.join(SCRIPT_ROOT, 'package-lock.json'));
+  const source = sourceHash ?? await hashSourceTree(SCRIPT_ROOT);
+  return {
+    depsLockHash: lock ? `sha256:${lock.replace(/^sha256:/, '')}` : null,
+    sourceHash: source ? `sha256:${source.replace(/^sha256:/, '')}` : null,
+  };
+}
+
+async function hashFile(file) {
+  try { return sha256(await readFile(file)); } catch { return null; }
+}
+
+async function hashSourceTree(root) {
+  const files = [];
+  async function walk(dir) {
+    for (const entry of (await readdir(dir, { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name))) {
+      if (['node_modules', 'tests', '.typo3-update'].includes(entry.name)) continue;
+      const absolute = path.join(dir, entry.name);
+      if (entry.isDirectory()) await walk(absolute);
+      else if (entry.isFile() && (entry.name.endsWith('.mjs') || entry.name === 'package.json')) files.push(absolute);
+    }
+  }
+  try { await walk(root); } catch { return null; }
+  const parts = [];
+  for (const file of files) {
+    parts.push(`${path.relative(root, file)}\0${sha256(await readFile(file))}`);
+  }
+  return sha256(parts.join('\n'));
 }

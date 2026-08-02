@@ -56,8 +56,17 @@ capture:
   # generated element ids deterministic.
   page_random_seed: 20260725
   frozen_clock_epoch: 1774425600000
-  # Seeded as cookies/localStorage, never by clicking the banner — clicking is timing-dependent.
-  consent_state: {}
+  # Store the adapter in a JSON file passed to discover-urls --stabilization-config.
+  # It is sealed into the manifest. Default = accepted; modal-open is a separate capture state.
+  consent_adapter:
+    file: ""
+    required_keys:
+      - consent.origin
+      - consent.cookies
+      - consent.localStorage
+      - consent.fallbackSelectors
+      - consent.scrollLockClasses
+      - consent.modalTriggerSelectors
 
 # Pages that are genuinely non-deterministic and cannot be stabilised.
 # Each entry needs an ADR and is EXCLUDED from the invariance claim, named in the

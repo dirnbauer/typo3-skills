@@ -27,6 +27,9 @@ export async function discoverUrls({ values, paths, log, journal }) {
   const languages = listOpt(values, 'languages', state.project?.languages ?? []);
   const seed = values.seed ?? state.manifest?.seed ?? `${state.run_id}-visual`;
   const extraOrigins = values['allow-origin'] ?? [];
+  const stabilization = values['stabilization-config']
+    ? await loadStabilization(values['stabilization-config'])
+    : {};
 
   await assertPlausibleBaseUrl(baseUrl);
   const guard = await UrlGuard.create({ allowedOrigins: [baseUrl, ...extraOrigins] });
@@ -65,8 +68,11 @@ export async function discoverUrls({ values, paths, log, journal }) {
     urls: all,
     goldenPaths,
     visualBudget: intOpt(values, 'visual-budget', 1500),
-    lighthouseSample: intOpt(values, 'lighthouse-sample', 25),
-    stabilizationProfileHash: profileHash({}),
+    lighthouseSample: intOpt(values, 'lighthouse-sample', 3),
+    viewports: listOpt(values, 'viewports', ['desktop', 'tablet', 'mobile']),
+    states: captureStates(values, stabilization),
+    stabilization,
+    stabilizationProfileHash: profileHash(stabilization),
   });
 
   await mkdir(paths.manifestsDir, { recursive: true });
@@ -125,6 +131,27 @@ async function loadGolden(file, base, guard, log) {
     }
   }
   return out.length ? out : [new URL('/', base).href];
+}
+
+async function loadStabilization(file) {
+  try {
+    const parsed = JSON.parse(await readFile(file, 'utf8'));
+    if (parsed.consent?.cookies && !parsed.consent.origin) {
+      throw new HarnessError('stabilization consent cookies require consent.origin.');
+    }
+    return parsed;
+  } catch (error) {
+    if (error instanceof HarnessError) throw error;
+    throw new HarnessError(`Cannot read --stabilization-config ${file}: ${error.message}`);
+  }
+}
+
+function captureStates(values, stabilization) {
+  const configured = listOpt(values, 'states', ['default']);
+  if ((stabilization.consent?.modalTriggerSelectors ?? []).length) {
+    configured.push('consent-modal-open');
+  }
+  return [...new Set(configured)];
 }
 
 export { readJson };

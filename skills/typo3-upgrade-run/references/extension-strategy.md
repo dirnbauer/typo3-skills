@@ -89,11 +89,32 @@ current metadata anyway — this list is a head start, not a substitute for look
 |---|---|---|
 | `ichhabrecht/filefill` | **remove** | A development convenience that fills missing files from a remote source. Its newest release (5.0.0) is `^13.4`-only, so it blocks the 14.3 rung, and it is a dev dependency with no production role. Remove it rather than holding the whole upgrade for a helper. |
 | `wapplersystems/core-upgrader` | **remove** | A tool for performing a major jump, not a runtime dependency. Once the jump is done it has no reason to stay, and its own versions trail the core it upgrades. Frequently sits in `require-dev` of a project meta-package rather than the root, so `composer remove` needs `--dev`. |
-| `in2code/powermail` | fork or remove | No v14 release upstream. Fork per branch 3 when forms are genuinely in use — but **check first**: a site can carry powermail in `composer.json` with zero forms, zero fields and zero mails in the database because its forms were built with Core `EXT:form`. Removing beats forking when nothing uses it. |
+| `in2code/powermail` | use the `dirnbauer/powermail` v14 fork or remove | Upstream has no v14 release. When forms are genuinely in use, use the approved `typo3-v14` branch from `https://github.com/dirnbauer/powermail`; when nothing uses Powermail, remove it instead. **Check first**: a site can carry Powermail in `composer.json` with zero forms, fields and mails because its forms were built with Core `EXT:form`. |
+| `fluidtypo3/fluid-components` | **replace** where it blocks the target | Move the existing component contract to native Fluid components, preserving namespaces, argument types, FAL objects and link behavior. Follow `references/native-fluid-components.md`; visible bug fixes remain declared changes. |
 
 The general lesson under that last row: an extension appearing in `composer.json` proves it was
 installed once, not that anything uses it. Count the records and the content elements before
 committing to migrate or fork something.
+
+### Approved Powermail v14 fork
+
+For a site that uses Powermail, configure the approved VCS repository and require its v14 branch:
+
+```bash
+ddev composer config repositories.powermail-v14 vcs https://github.com/dirnbauer/powermail.git
+ddev composer require in2code/powermail:"dev-typo3-v14" --with-all-dependencies
+```
+
+Before requiring it, verify at execution time that the branch still:
+
+- uses the Composer identity `in2code/powermail`;
+- requires `typo3/cms-core: ^14.3`;
+- supports the selected PHP target; and
+- comes from `github.com/dirnbauer/powermail`, not a similarly named repository.
+
+Record the resolved commit from `composer.lock`, run the full extension migration and test pipeline,
+and classify the resolution as `forked` with its approval and ADR. The Composer lock is the
+reproducibility anchor; never follow an unrecorded moving branch in a completed run.
 
 ## 4. Still broken after migration attempts
 

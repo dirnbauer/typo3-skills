@@ -3,6 +3,8 @@
  */
 
 import { mkdir, writeFile, readFile, cp } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { EXIT, HarnessError, InvalidRunError, PreconditionError } from '../cli/exit-codes.mjs';
@@ -15,6 +17,7 @@ import { renderStatus } from '../run/status.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const TEMPLATES = path.resolve(HERE, '../../../templates/run-directory');
+const exec = promisify(execFile);
 
 export async function init({ values, paths, log, journal }) {
   const baseUrl = values['base-url'];
@@ -89,6 +92,19 @@ export async function doctor({ values, paths, log }) {
     add('sandbox', true, 'enabled');
   }
 
+  for (const [name, args] of [
+    ['ddev CLI', ['version']],
+    ['application PHP via DDEV', ['exec', '--', 'php', '-r', 'echo PHP_VERSION;']],
+    ['application Composer via DDEV', ['composer', 'show', '--locked', 'typo3/cms-core', '--format=json']],
+  ]) {
+    try {
+      const { stdout } = await exec('ddev', args, { timeout: 20_000 });
+      add(name, true, String(stdout).trim().split('\n')[0].slice(0, 120));
+    } catch (error) {
+      add(name, false, String(error.stderr || error.message).trim().slice(0, 120));
+    }
+  }
+
   const baseUrl = values['base-url'];
   if (baseUrl) {
     try {
@@ -121,7 +137,11 @@ export async function status({ paths, log, values }) {
 
 export async function envFingerprint({ values, paths, log, journal }) {
   const store = new StateStore(paths);
-  const current = await collectEnvironment({ launchArgs: (await import('../browser/launch.mjs')).browserArgs() });
+  const state = await store.read();
+  const current = await collectEnvironment({
+    ddevProject: values['ddev-project'] ?? state.project?.ddev_project ?? null,
+    launchArgs: (await import('../browser/launch.mjs')).browserArgs(),
+  });
 
   if (values['write-baseline']) {
     await mkdir(paths.manifestsDir, { recursive: true });
@@ -129,6 +149,8 @@ export async function envFingerprint({ values, paths, log, journal }) {
     await store.update((s) => {
       s.fingerprints.environment = current.fingerprintHash;
       s.fingerprints.sealed_at = new Date().toISOString();
+      s.target.php_from ||= current.components.php?.version ?? '';
+      s.target.typo3_from ||= current.components.typo3?.version ?? '';
     });
     log.success(`Environment fingerprint sealed: ${current.fingerprintHash}`);
     return { exitCode: EXIT.PASS, verdict: 'pass', fingerprint: current.fingerprintHash, message: 'environment sealed' };
@@ -153,9 +175,18 @@ export async function envFingerprint({ values, paths, log, journal }) {
 
 export async function contentFingerprint({ values, paths, log, journal }) {
   const store = new StateStore(paths);
+  const state = await store.read();
+  const sealed = values['write-baseline'] ? null : await readJson(paths.contentFingerprint);
+  if (!values['write-baseline'] && !sealed) {
+    throw new PreconditionError('No sealed content fingerprint. Run with --write-baseline first.');
+  }
+  const configuredTables = listOpt(values, 'tables', []);
   const current = await collectContent({
-    ddevProject: values['ddev-project'] ?? null,
-    fileadmin: values.fileadmin ?? 'fileadmin',
+    ddevProject: values['ddev-project'] ?? state.project?.ddev_project ?? null,
+    fileadmin: values.fileadmin ?? sealed?.files?.root ?? 'fileadmin',
+    tables: configuredTables.length
+      ? configuredTables
+      : sealed?.database?.tables?.map((table) => table.table) ?? null,
     allowMissing: values['allow-missing'] ?? false,
   });
 
@@ -167,9 +198,6 @@ export async function contentFingerprint({ values, paths, log, journal }) {
     log.success(`Content fingerprint sealed: ${current.fingerprintHash}`);
     return { exitCode: EXIT.PASS, verdict: 'pass', fingerprint: current.fingerprintHash, degraded: current.degraded, message: 'content sealed' };
   }
-
-  const sealed = await readJson(paths.contentFingerprint);
-  if (!sealed) throw new PreconditionError('No sealed content fingerprint. Run with --write-baseline first.');
 
   const cmp = compareContent(sealed, current);
   if (!cmp.match) {

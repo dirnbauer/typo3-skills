@@ -10,15 +10,26 @@ Loop id bands: `000–009` harness · `010–099` pre-update stabilisation · `1
 
 ## 10.1 The twelve steps
 
-**1. Scaffold.** Create the loop directory from `templates/run-directory/loop/` with all seven documents present, front matter prefilled from `state.json`. Scaffold it; do not type it by hand.
+**1. Scaffold.** Run `t3u loop-start`. It creates the loop directory from
+`templates/run-directory/loop/` with all seven documents present and front matter prefilled from
+`state.json`. Scaffold it; do not type it by hand.
 
-**2. Charter.** Write `00-charter.md`: objective, contract, track, in scope, **out of scope**, `depends_on`, budgets, the baseline this loop measures against, and the approval that authorises it. A declared-change loop or any elevation loop without a non-null `approval_ref` is illegal and must not start.
+**2. Charter and intent authorization.** Write `00-charter.md`: objective, contract, track, in scope,
+**out of scope**, `depends_on`, budgets, baseline, and the approval that authorises the work. Every
+elevation loop needs a granted **intent** approval before it starts. A possible Contract A
+rendering difference cannot yet carry acceptance evidence; it remains a regression until the
+observed result is shown to the user and a separate **acceptance** approval is recorded.
 
 **3. Preconditions.** Evaluate every `checks[]` entry in `01-preconditions.md` **against `state.json` and the manifests on disk** — never against memory and never against what the transcript says happened. Any `result: fail` blocks the loop.
 
-**4. Freeze check.** Recompute the environment fingerprint and the content fingerprint. If either differs from the value sealed in phase P01 — other than through a change this run itself recorded in `journal.jsonl` — stop. The comparison base is invalid; re-running would produce meaningless diffs. This is an `INVALID` outcome, not a failure of the site.
+**4. Freeze check.** `t3u loop-open` and every comparison re-collect the live environment and
+semantic content fingerprints. The PHP and TYPO3 versions being upgraded are recorded subjects,
+not immutable renderer keys. Any renderer/toolchain or unrecorded content drift is `INVALID`, not a
+failure of the site.
 
-**5. Rollback anchor.** `ddev snapshot --name loop-<NNN>-pre`, recorded in front matter and in `manifests/snapshots.json`. A loop that changes state without a snapshot id may not proceed.
+**5. Rollback anchor.** Run `t3u snapshot-create --loop <NNN>` and then
+`t3u loop-open --loop <NNN> --snapshot loop-<NNN>-pre`. A loop that changes state without a
+recorded snapshot id may not proceed.
 
 **6. Baseline binding.** Record which baseline this loop measures against. Every Contract A loop binds to `A-original`. Elevation loops bind to their own `B-<n>`. **A Contract A loop naming anything other than `A-original` is a rules violation**, not a configuration choice.
 
@@ -38,13 +49,16 @@ Loop id bands: `000–009` harness · `010–099` pre-update stabilisation · `1
 | No progress | 2 consecutive iterations with `progress: false` |
 | Oscillation | any finding transitions `closed → open` once (`reopened_count ≥ 1`) |
 | Fingerprint drift | environment or content fingerprint changed mid-loop |
-| Time budget | 90 min per loop · 240 min for loop 300 |
+| Time budget | 90 min per loop · 240 min for loop 000 and loop 300 |
 | Budget breach | an iteration exceeded the change budget |
 | Unclassifiable finding | a finding that fits no class in `30-finding-classification.md` |
 
 Aborting is a correct outcome. A loop that thrashes for twenty iterations produces less information than one that stops after six and says precisely what it could not resolve.
 
-**12. Exit, then prove idempotence.** `06-exit.md` lists `exit_criteria[]` as boolean expressions over `report.json`. When all are true, **re-run the measurement once more, changing nothing**. `idempotence_rerun.diff_count` must be `0`.
+**12. Exit, then prove idempotence.** `06-exit.md` lists `exit_criteria[]` as boolean expressions over
+`report.json`. When all are true, **re-run the measurement once more, changing nothing**.
+`idempotence_rerun.diff_count` must be `0`; pass it explicitly to
+`t3u gate --loop <NNN> --idempotence-diff 0`. Missing is not zero.
 
 A green loop that is not idempotent is not green — it is `harness-noise`, and the noise must be fixed before the loop closes. Then advance `state.json` and append the transition to `journal.jsonl`.
 
@@ -52,7 +66,29 @@ A green loop that is not idempotent is not green — it is `harness-noise`, and 
 
 Runs after phase P01, **before any baseline exists**.
 
-Shoot the untouched site twice — same sample, same viewports, same settings, browser fully closed between passes — and require **zero** differences.
+Shoot the untouched site twice — same sample, same viewports, same settings, browser fully closed
+between passes — and require **zero** differences. Pixel colour tolerance and dust floor are both
+zero; one changed pixel blocks.
+
+Before the first exhaustive run, execute a seeded intermediate diagnostic:
+
+```bash
+t3u selftest-determinism --sample intermediate --visual-workers 3
+```
+
+It uses the same thresholds and viewport matrix over the deterministic intermediate URL
+slice, but it never writes a self-test lock and can never close loop 000. Its purpose is
+to catch stabilization defects in minutes instead of discovering them near the end of a
+full-site run. Once the diagnostic is green, run the exhaustive `--sample all` command
+twice unchanged.
+
+The intermediate diagnostic uses three independent Chromium processes concurrently by default.
+Contexts inside one shared process are forbidden for a multi-worker diagnostic: renderer-global
+state can make fractional layout allocation depend on concurrent workload. Exhaustive proofs
+and baseline captures always use one worker. Parallel workers may be benchmarked from 1 through
+6 for diagnostics, but they are never authoritative evidence. The worker count is recorded in
+capture metadata and the self-test report and remains unchanged between both sides and both
+exhaustive proofs.
 
 A non-zero result is **always** a harness or stabilisation defect. It is never a site defect, because nothing changed between the two passes. Fix it in the harness or in the stabilisation configuration (`references/determinism-stabilization.md`), never in the site.
 
@@ -67,7 +103,8 @@ Only a harness that proves zero against itself may judge an update. Every `compa
 An unbounded "repeat until green" loop has three failure modes this protocol closes:
 
 - **Thrashing** — two fixes that undo each other, forever. Closed by one-cause-per-iteration plus the progress requirement.
-- **Chasing ghosts** — hunting a site regression that is actually harness noise or content drift. Closed by loop 000, the fingerprints, and flake quarantine.
+- **Chasing ghosts** — hunting a site regression that is actually harness noise or content drift.
+  Closed by loop 000, live fingerprints, and strict zero.
 - **False green** — passing by weakening the measurement. Closed by `20-baseline-integrity.md` and by the idempotence re-run.
 
 The budgets are defaults. Exceeding one requires an approval recorded in `06-exit.md`, which makes the decision visible instead of implicit.

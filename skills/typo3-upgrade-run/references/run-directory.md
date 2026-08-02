@@ -19,7 +19,7 @@ Nothing in this skill is "remembered". It is written down, and the gates read wh
 ├── manifests/
 │   ├── url-manifest.json           seed, all URLs, tiers, clusters, viewports, coverage
 │   ├── environment.json            versions + fonts + GFX config, hashed
-│   ├── content-fingerprint.json    row counts, max tstamp, fileadmin tree hash
+│   ├── content-fingerprint.json    complete ordered row/schema hashes + fileadmin tree hash
 │   ├── extensions.json             every installed extension + classification + resolution
 │   ├── tooling.json                pinned harness/browser/Lighthouse/axe versions
 │   └── snapshots.json              every ddev snapshot, with its loop and reason

@@ -15,6 +15,7 @@ import path from 'node:path';
 import { HarnessError } from '../cli/exit-codes.mjs';
 import { redactUrl, redactHeaders, redactStack, untrusted } from '../util/redact.mjs';
 import { sha256 } from '../run/paths.mjs';
+import { loopReportSchemaErrors } from '../run/schema.mjs';
 
 export const HARNESS_VERSION = '2.0.0';
 export const REPORT_SCHEMA_VERSION = '1.0.0';
@@ -63,6 +64,15 @@ export function validateReport(report) {
   need(['pass', 'findings', 'invalid', 'error'].includes(report.verdict), `bad verdict: ${report.verdict}`);
   need(typeof report.counts === 'object' && report.counts !== null, 'counts missing');
   need(Array.isArray(report.findings), 'findings must be an array');
+  if (EVIDENCE_KINDS.has(report.kind)) {
+    need(typeof report.run?.runId === 'string' && report.run.runId.length > 0, 'run.runId missing');
+    for (const key of INPUT_KEYS) {
+      need(
+        typeof report.inputs?.[key] === 'string' && report.inputs[key].length > 0,
+        `inputs.${key} missing`,
+      );
+    }
+  }
 
   for (const [i, f] of (report.findings ?? []).entries()) {
     need(typeof f.id === 'string', `findings[${i}].id missing`);
@@ -83,11 +93,22 @@ export function validateReport(report) {
     );
     need(blocking.length === 0, `verdict is pass but ${blocking.length} blocking finding(s) are open`);
   }
+  if (report.kind === 'loop') errors.push(...loopReportSchemaErrors(report));
   return errors;
 }
 
 const CLASSES = ['regression', 'declared-change', 'pre-existing', 'harness-noise', 'environment', 'content-drift', 'improvement'];
 const BLOCKING_CLASSES = ['regression', 'harness-noise', 'content-drift'];
+const INPUT_KEYS = [
+  'manifestHash',
+  'environmentFingerprintHash',
+  'contentFingerprintHash',
+  'selftestLockHash',
+];
+const EVIDENCE_KINDS = new Set([
+  'http', 'dom', 'visual', 'selftest', 'loop',
+  'backend-sweep', 'smoke', 'lighthouse',
+]);
 
 /** Recursive redaction. `local` keeps paths and non-secret query names; `share` also
  *  hashes hostnames and path segments for a document that leaves the building. */

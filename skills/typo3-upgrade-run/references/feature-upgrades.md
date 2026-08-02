@@ -1,6 +1,6 @@
-# Feature upgrades — Solr, Visual Editor, CKEditor RTE, security headers
+# Feature upgrades and post-invariance security headers
 
-Phase P10, loops 200–230. Each runs **after** the core upgrade and **before** invariance closure,
+Phase P10, loops 200–220. Each runs **after** the core upgrade and **before** invariance closure,
 and each is a declared-change loop: re-shoot the affected sample pages afterwards, and any rendering
 change needs an approval per difference class or it is a `regression`.
 
@@ -75,7 +75,11 @@ Exit: open a rich-text element and confirm the preset loads with language and ab
 applies the intended styling, and shows the affordances on marked-up text; confirm the same markup
 renders correctly in the frontend; confirm the accessibility re-check stays green.
 
-## Loop 230 — Security headers
+## Contract B loop 530 — Security headers
+
+This is a post-invariance elevation loop. It may begin only after Contract A is closed, with a
+recorded intent approval and a derived Contract B baseline. Header differences are expected output
+of this loop and therefore cannot be introduced while proving the original rendering contract.
 
 Apply the `typo3-security` checklist: HSTS, `X-Content-Type-Options`, `X-Frame-Options` /
 `frame-ancestors`, `Referrer-Policy`, `Permissions-Policy`, `trustedHostsPattern`, backend hardening,

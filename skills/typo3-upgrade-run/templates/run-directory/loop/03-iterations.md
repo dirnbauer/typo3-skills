@@ -8,6 +8,8 @@ contract: "{{CONTRACT}}"
 phase: "{{PHASE}}"
 doc: iterations
 baseline_ref: "{{BASELINE_REF}}"
+approval_ref: {{INTENT_REF}}
+acceptance_ref: null
 status: open
 append_only: true
 created_at: "{{NOW}}"

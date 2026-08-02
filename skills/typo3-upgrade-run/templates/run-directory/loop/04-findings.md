@@ -8,6 +8,8 @@ contract: "{{CONTRACT}}"
 phase: "{{PHASE}}"
 doc: findings
 baseline_ref: "{{BASELINE_REF}}"
+approval_ref: {{INTENT_REF}}
+acceptance_ref: null
 status: open
 created_at: "{{NOW}}"
 updated_at: "{{NOW}}"

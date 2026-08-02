@@ -1,6 +1,18 @@
 # Rule 40 — Approval matrix
 
-Normative. An approval is a recorded decision by the user, stored as a file, referenced by id. Approval given in conversation and not recorded does not exist for the gate — write it down as it is given.
+Normative. An approval is a recorded decision by the user, stored as a file, referenced by id.
+Approval given in conversation and not recorded does not exist for the gate — write it down as it
+is given.
+
+There are two stages with different timing:
+
+1. **Intent authorization** — before work. It approves a precise scope and risk. It cannot include
+   after-evidence that does not exist yet.
+2. **Observed-result acceptance** — after measurement. It records what the user actually saw and
+   requires an evidence path. Only this stage can reclassify a rendering regression as a
+   `declared-change`.
+
+Use `t3u approval --stage intent ...` and `t3u approval --stage acceptance --evidence ...`.
 
 ## 40.1 The matrix
 
@@ -52,6 +64,7 @@ A difference class is defined by its **cause**, not its appearance: one changed 
 ```yaml
 ---
 id: APR-004
+stage: acceptance
 requested_at: 2026-07-25T10:14:02+02:00
 granted_at: 2026-07-25T10:31:40+02:00
 granted_by: user
@@ -65,6 +78,9 @@ evidence_ref: loops/030-invariance-bootstrap-5-latest/artifacts/iter-2/diff/kont
 ```
 
 The body records the question **as it was asked**, the answer as it was given, and what was shown to the user at the time. An approval whose record does not show what the user actually saw is not evidence that they agreed to it.
+
+An intent record says explicitly that evidence is not yet applicable. An acceptance record without
+`evidence_ref` is invalid and the gate refuses it.
 
 ## 40.4 Scope of an approval
 

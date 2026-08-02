@@ -11,10 +11,11 @@
 import { readFile, writeFile, rename, mkdir, open } from 'node:fs/promises';
 import path from 'node:path';
 import { HarnessError, PreconditionError, InvalidRunError } from '../cli/exit-codes.mjs';
+import { stateSchemaErrors } from './schema.mjs';
 
 export const STATE_SCHEMA = 'typo3-upgrade-run/state@1';
 
-export const LOOP_VERDICTS = Object.freeze(['planned', 'open', 'green', 'aborted', 'superseded']);
+export const LOOP_VERDICTS = Object.freeze(['planned', 'open', 'green', 'aborted', 'superseded', 'invalid']);
 
 export function emptyState({ runId, now }) {
   return {
@@ -71,12 +72,20 @@ export class StateStore {
     if (state.schema !== STATE_SCHEMA) {
       throw new InvalidRunError(`Unsupported state schema: ${state.schema}`, { expected: STATE_SCHEMA });
     }
+    const errors = stateSchemaErrors(state);
+    if (errors.length) {
+      throw new InvalidRunError(`state schema validation failed:\n  - ${errors.join('\n  - ')}`, { errors });
+    }
     return state;
   }
 
   /** Atomic: write a temp file, then rename over the target under a lock. */
   async write(state) {
     state.updated_at = this.now();
+    const errors = stateSchemaErrors(state);
+    if (errors.length) {
+      throw new InvalidRunError(`state schema validation failed:\n  - ${errors.join('\n  - ')}`, { errors });
+    }
     await mkdir(path.dirname(this.paths.statePath), { recursive: true });
     const lock = await this.#acquireLock();
     try {
@@ -141,6 +150,7 @@ export function assertLoopTransition(from, to) {
     green: ['superseded'],
     aborted: ['superseded'],
     superseded: [],
+    invalid: ['superseded'],
   };
   if (!legal[from]?.includes(to)) {
     throw new HarnessError(

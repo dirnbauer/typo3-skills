@@ -1,8 +1,13 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { stratifyByTemplate, withDeadline } from '../../lib/actions/sweep.mjs';
-import { HarnessError } from '../../lib/cli/exit-codes.mjs';
+import {
+  finalLighthouseSample,
+  lighthouseBudgetFindings,
+  stratifyByTemplate,
+  withDeadline,
+} from '../../lib/actions/sweep.mjs';
+import { HarnessError, PreconditionError } from '../../lib/cli/exit-codes.mjs';
 
 const BASE = 'https://site.ddev.site/';
 const u = (p) => `https://site.ddev.site${p}`;
@@ -15,6 +20,21 @@ const SITEMAP = [
 ];
 
 describe('lighthouse sampling', () => {
+  test('final reporting always uses the homepage plus two seeded random pages', () => {
+    const picked = finalLighthouseSample(SITEMAP, BASE, 'run-seed');
+    assert.equal(picked.length, 3);
+    assert.equal(new URL(picked[0]).pathname, '/');
+    assert.deepEqual(picked, finalLighthouseSample([...SITEMAP].reverse(), BASE, 'run-seed'));
+    assert.equal(new Set(picked).size, 3);
+  });
+
+  test('refuses a final report when two non-home pages cannot be found', () => {
+    assert.throws(
+      () => finalLighthouseSample([u('/only/')], BASE, 'run-seed'),
+      (error) => error instanceof PreconditionError && /requires two non-home pages/.test(error.message),
+    );
+  });
+
   test('adds the site root when the sitemap omits it', () => {
     const picked = stratifyByTemplate(SITEMAP, 4, BASE);
     assert.ok(
@@ -46,6 +66,45 @@ describe('lighthouse sampling', () => {
   test('returns everything when the sample is smaller than the limit', () => {
     const few = [u('/a/'), u('/b/')];
     assert.equal(stratifyByTemplate(few, 10, BASE).length, 3); // + the root
+  });
+});
+
+describe('lighthouse quality budgets', () => {
+  test('turns measured misses into actionable quality-gap findings', () => {
+    const results = [{
+      url: u('/news/a/'),
+      scores: {
+        performance: { median: 82 },
+        accessibility: { median: 100 },
+        seo: { median: 98 },
+      },
+      metrics: {
+        lcp: { median: 3100 },
+        cls: { median: 0.02 },
+        tbt: { median: 90 },
+        fcp: { median: 1200 },
+        si: { median: 2600 },
+      },
+    }];
+    const budget = {
+      performance: {
+        lighthouse_performance_mobile: 90,
+        lcp_mobile_ms: 2500,
+        cls: 0.05,
+        tbt_ms: 200,
+        fcp_ms: 1800,
+        speed_index_ms: 3400,
+      },
+      accessibility: { lighthouse_accessibility: 100 },
+      seo: { lighthouse_seo: 100 },
+    };
+    const findings = lighthouseBudgetFindings(results, budget, '500', 'mobile');
+    assert.deepEqual(findings.map((finding) => finding.metric), [
+      'scores.performance.median',
+      'scores.seo.median',
+      'metrics.lcp.median',
+    ]);
+    assert.ok(findings.every((finding) => finding.class === 'improvement'));
   });
 });
 

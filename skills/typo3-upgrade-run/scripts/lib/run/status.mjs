@@ -41,7 +41,7 @@ ${blocked}
 | Content fingerprint | ${code(s.fingerprints?.content)} |
 | Determinism self-test | ${s.selftest?.status ?? 'never-run'}${s.selftest?.at ? ` (${s.selftest.at})` : ''} |
 | URL manifest | ${code(s.manifest?.hash)} |
-| Quarantined captures | ${(s.selftest?.quarantined_captures ?? []).length} |
+| Visual comparison | strict zero (no quarantine) |
 
 ## Loops
 
@@ -65,7 +65,10 @@ function php85(s) {
 }
 
 function badge(v) {
-  return { green: '✓ green', open: '· open', aborted: '✗ aborted', planned: '· planned', superseded: '~ superseded' }[v] ?? v;
+  return {
+    green: '✓ green', open: '· open', aborted: '✗ aborted',
+    planned: '· planned', superseded: '~ superseded', invalid: '! invalid',
+  }[v] ?? v;
 }
 
 function code(v) { return v ? `\`${v}\`` : '—'; }

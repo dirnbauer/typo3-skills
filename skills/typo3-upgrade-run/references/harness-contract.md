@@ -38,6 +38,12 @@ That is the mechanical form of "only a harness that proves zero against itself m
 The lock hashes the environment fingerprint, the content fingerprint, the manifest hash, the
 stabilisation profile and the harness version, and expires after `selftest_max_age_hours`.
 
+The wrapper then re-collects the **live** renderer and semantic content fingerprints. Comparing the
+sealed JSON files to each other is not a freeze check. The host owns Node, Playwright, Chromium and
+fonts; DDEV owns application PHP, Composer, TYPO3, database, ImageMagick/GraphicsMagick and `GFX`.
+PHP and TYPO3 versions are recorded upgrade subjects, not immutable renderer keys. The immutable
+hash includes `package-lock.json` and the complete harness runtime source.
+
 ## Where the URL guard runs
 
 Nine call sites, because a URL can become hostile between any two of them and a manifest is a file
@@ -86,6 +92,7 @@ ids, the input hashes (`manifestHash`, `environmentFingerprintHash`, `contentFin
 `selftestLockHash`), the verdict, counts, findings, and the redaction profile applied.
 
 A report that fails its own schema is exit 2. The harness must not emit malformed evidence.
+Reports with a null run id or any null input hash are malformed.
 
 Redaction happens in **exactly one place** — the write door — between schema validation and disk.
 Profiles: `local` (default; keeps paths, strips secret query values, credentials, tokens, cookies,
@@ -114,6 +121,18 @@ Where full pixel coverage is not achieved, the manifest records `coverage.notCap
 When a budget was exhausted, the loop report carries `coverageDegraded: true` and the generated
 summary says so in its **first paragraph**. A report that covered 60% of a site and reads exactly
 like one that covered all of it is worse than no report.
+
+XML sitemaps and other non-HTML URLs still receive Stage 1 records, including content type and body
+hash. Stage 2 records them as not-applicable and Stage 3 skips them. An unexpected non-HTML content
+type is a harness/content finding, never a security-policy event.
+
+Header differences are emitted per header, not as one opaque object. Per-response CSP nonces and
+dynamic report-endpoint query values are normalized before comparison; actual policy directives
+remain comparable.
+
+`gate --loop` reads `loops/<selected>/artifacts/report.{http,dom,visual}.json`, requires all three
+stages and identical non-null input hashes, requires explicit idempotence evidence, and writes the
+result to that loop's `report.json`. Missing is never interpreted as pass.
 
 ## Tests
 
@@ -159,6 +178,32 @@ carry the value. It is gated because on a large site it can turn a ten-minute cl
 overnight one, and because an agent should never quietly commit someone else's afternoon. Ask,
 state the URL count and the rough time, and ask again. If the answer is anything other than an
 explicit second yes, take the seeded 1000 and declare the omission.
+
+## Determinism runtime
+
+Run loop 000's deterministic intermediate diagnostic before its first exhaustive proof:
+
+```bash
+t3u selftest-determinism --sample intermediate --visual-workers 3
+```
+
+The diagnostic uses the normal 10%/20–100 URL selection and captures every configured viewport
+for those URLs. It cannot write `selftest.lock.json` and cannot unlock comparisons. It is a fast
+fault detector, not evidence for closure.
+
+Intermediate visual diagnostics use a fixed pool of independent Chromium processes. The default
+is three and the diagnostic range is 1–6. A multi-worker pool must not share one Chromium process:
+isolated contexts still share renderer-global state and can produce workload-dependent fractional
+layout. Exhaustive self-tests and baseline captures always use one worker because sustained
+parallel load can introduce process-level capture failures and rendering differences. Record the
+count in capture metadata, capture indexes, self-test reports, and the self-test lock.
+
+Intermediate workers reuse one page for the whole viewport. Dispose the per-navigation guard and
+quiet detector after each capture, and close/recreate the page before retrying a failed capture.
+Authoritative exhaustive and baseline captures instead use a fresh page for every screenshot:
+long-lived renderer state has produced process-dependent edge pixels on otherwise identical CSS.
+Restart each worker's Chromium process at every viewport so fresh-page target allocation cannot
+accumulate across the complete matrix.
 
 
 ## Where the logs are, and why all three matter

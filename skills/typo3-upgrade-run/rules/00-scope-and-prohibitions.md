@@ -27,7 +27,10 @@ These are unconditional. There is no approval that grants them, and no phase in 
 
 ## 00.3 Requires explicit approval
 
-Recorded in `approvals/` before the action, per `40-approval-matrix.md`. An approval is only valid when it names the specific action and its scope. A previous approval never generalises to the next action.
+Recorded in `approvals/` per `40-approval-matrix.md`. Destructive or elevation work needs an
+**intent** approval before the action. Accepting an observed rendering result needs a separate
+**acceptance** approval after the evidence exists. An approval is valid only for its named action,
+scope and stage; a previous approval never generalises to the next action.
 
 - Removing an extension, replacing a feature, or dropping a table or column
 - Any destructive database change, bulk deletion, or discarding of editor changes

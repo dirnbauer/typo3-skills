@@ -11,8 +11,8 @@ recorded command is not evidence.
 - **Warm first, then measure.** Crawl the sample once and discard the result, so caches, processed
   images and lazy assets are in the same state for every run. A cold first request measures the
   cache, not the site.
-- **Aggregate over runs.** Single Lighthouse runs are noisy. Use the configured `runs_per_url`
-  (default 5) and take the **median**, and record min and max so the spread is visible.
+- **Aggregate over runs.** Single Lighthouse runs are noisy. Use three runs per URL, take the
+  **median**, and record min and max so the spread is visible.
 - **Pin the browser.** The Lighthouse Chrome must be the version recorded in the environment
   fingerprint. A browser change between the before and after measurement makes the delta meaningless.
 - **Never submit the site to a remote scanner.** Mozilla Observatory, Google Rich Results and
@@ -21,11 +21,14 @@ recorded command is not evidence.
 
 ## Performance and Core Web Vitals
 
+Run this only after Contract A closes, inside approved loop 500. The final-report set is fixed to
+three URLs by the harness: homepage plus two seeded random non-home pages.
+
 ```bash
 node scripts/t3u.mjs lighthouse \
-  --manifest .typo3-update/manifests/url-manifest.json \
-  --report .typo3-update/loops/500-elevation-performance-cwv/report.lighthouse.json \
-  --runs 5 --form-factor mobile --budget .typo3-update/config/thresholds.yml
+  --label before \
+  --runs 3 --form-factor mobile --budget .typo3-update/config/thresholds.yml \
+  --loop 500
 ```
 
 Mobile preset throttling is recorded in the report (`rttMs`, `throughputKbps`,
@@ -37,6 +40,21 @@ and attribute each shift to its element.
 
 INP has no lab equivalent. Time the five primary interactions — nav open, search submit, accordion,
 form field focus, cookie dismiss — with `performance.measure`, report p95, and label it a **proxy**.
+
+### Feeding results into the next agent iteration
+
+Use `artifacts/report.lighthouse.before.json` and its `optimizationCandidates` and `agentBrief`; do
+not copy an audit title from the terminal and work from memory. An exit 1 means the configured
+quality bars produced measured improvement findings, not that the evidence run failed.
+
+1. Select one measured opportunity/cause.
+2. Add or update project regression tests **before** the site change.
+3. Make the smallest change for that cause.
+4. Run the project tests and Contract A checks.
+5. Rerun Lighthouse unchanged with `--label after`; the seed selects the same three URLs and keeps
+   both reports for the final comparison.
+6. Keep the change only when tests pass and the target improves without a new A difference.
+   Otherwise restore the loop snapshot and record the refuted hypothesis.
 
 ## SEO and structured data
 

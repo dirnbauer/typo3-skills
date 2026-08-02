@@ -14,7 +14,18 @@ export const STATES = Object.freeze([
   {
     name: 'default',
     applies: () => true,
-    apply: async () => ({ applied: true }),
+    apply: async (page) => {
+      // "Default" means no interactive focus state. Pages may autofocus a field from
+      // window.load or a delayed script, which otherwise makes the same default capture
+      // alternate between its focused and unfocused rendering.
+      const blurred = await page.evaluate(() => {
+        const active = document.activeElement;
+        if (!active || active === document.body || active === document.documentElement) return false;
+        active.blur?.();
+        return true;
+      });
+      return { applied: true, blurred };
+    },
   },
   {
     name: 'keyboard-focus',
@@ -88,6 +99,18 @@ export const STATES = Object.freeze([
       return { applied: true };
     },
   },
+  {
+    name: 'consent-modal-open',
+    selector: (profile) => (profile.consent?.modalTriggerSelectors ?? []).join(','),
+    async apply(page, sel) {
+      if (!sel) return { applied: false };
+      const el = await page.$(sel);
+      if (!el) return { applied: false };
+      await el.click({ timeout: 3000 }).catch(() => {});
+      await page.waitForTimeout(300);
+      return { applied: true };
+    },
+  },
 ]);
 
 export const DEFAULT_STATES = Object.freeze(['default']);
@@ -97,9 +120,10 @@ export function stateByName(name) {
 }
 
 /** Does the page contain the trigger this state needs? Cheap DOM presence check. */
-export async function stateApplies(page, state) {
-  if (!state.selector) return true;
-  try { return (await page.$(state.selector)) !== null; }
+export async function stateApplies(page, state, profile = {}) {
+  const selector = typeof state.selector === 'function' ? state.selector(profile) : state.selector;
+  if (!selector) return !state.selector;
+  try { return (await page.$(selector)) !== null; }
   catch { return false; }
 }
 
@@ -107,15 +131,16 @@ export async function stateApplies(page, state) {
  * @returns {{name:string, applied:boolean, skipped:boolean, reason:string|null}}
  * `skipped` with reason 'not-applicable' is NOT a coverage gap; a failed apply is.
  */
-export async function applyState(page, name) {
+export async function applyState(page, name, profile = {}) {
   const state = stateByName(name);
   if (!state) return { name, applied: false, skipped: true, reason: 'unknown-state' };
 
-  if (!(await stateApplies(page, state))) {
+  if (!(await stateApplies(page, state, profile))) {
     return { name, applied: false, skipped: true, reason: 'not-applicable' };
   }
   try {
-    const res = await state.apply(page, state.selector);
+    const selector = typeof state.selector === 'function' ? state.selector(profile) : state.selector;
+    const res = await state.apply(page, selector);
     return {
       name,
       applied: Boolean(res.applied),

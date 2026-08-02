@@ -18,7 +18,8 @@ P13 closed. All approved Contract B tracks green or explicitly stopped.
    wall-clock per phase, repaired against approved findings, and everything the run did not cover.
    Assemble it from `journal.jsonl` and the per-loop `report.json` files — a number nobody can
    trace back to a recorded entry does not belong in the report.
-6. Write `report/handover-deployment.md`.
+6. Write `report/handover-deployment.md` using `references/deployment-handover.md`, including the
+   audited Deployer recipe and `EXT:deployer_information` mode/version/first-real-deploy checks.
 
 ## The handover is information only
 This skill executes none of it. It lists: the Composer, schema, wizard, reference-index, language and
@@ -30,6 +31,10 @@ run so the deploying party knows the old one is dead; reindexing needs such as
 Solr; and every gap DDEV could not close — HSTS meaningfulness, production proxy headers, third-party
 embeds absent locally.
 
+For `deployer_information`, state whether standard Deployer metadata or custom `LAST_DEPLOY` is the
+source of truth, who updates it, when it is updated, and how the first real deployment and rollback
+will prove that the displayed timestamp is honest. Do not run those remote checks from this skill.
+
 ## Reports are assembled, not written
 Every figure comes from `state.json` and the loop reports. A number in the KPI document that appears
 nowhere in the evidence is a fabrication, however plausible it looks.
@@ -39,4 +44,3 @@ assumptions and recommendations visually separate.
 
 ## Exit
 `gate-check --group ALL` exits 0.
-

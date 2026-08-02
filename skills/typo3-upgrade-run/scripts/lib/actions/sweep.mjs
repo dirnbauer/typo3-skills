@@ -12,6 +12,8 @@
  */
 
 import path from 'node:path';
+import { readFile, readdir } from 'node:fs/promises';
+import { parse as parseYaml } from 'yaml';
 import { EXIT, HarnessError, PreconditionError, PolicyError } from '../cli/exit-codes.mjs';
 import { UrlGuard } from '../net/url-guard.mjs';
 import { launchBrowser, newContext } from '../browser/launch.mjs';
@@ -19,8 +21,9 @@ import { createRoutePolicy } from '../browser/route-policy.mjs';
 import { envelope, writeReport } from '../report/write.mjs';
 import { untrusted } from '../util/redact.mjs';
 import { intOpt } from '../cli/args.mjs';
-import { urlById } from '../run/manifest.mjs';
 import { readJson } from './core.mjs';
+import { readEvidenceContext } from '../run/evidence.mjs';
+import { sample as seededSample } from '../util/rng.mjs';
 
 export const ERROR_MARKERS = Object.freeze([
   'Oops, an error occurred', 'Uncaught TYPO3 Exception', 'Fatal error:', 'Parse error:',
@@ -202,8 +205,9 @@ export async function backendSweep({ values, paths, log, journal }) {
 
   const verdict = findings.length ? 'findings' : 'pass';
   const reportPath = values.report ?? path.join(paths.root, 'report.backend-sweep.json');
+  const evidence = await actionEvidence(paths, values, '310');
   const written = await writeReport(reportPath, envelope({
-    kind: 'backend-sweep', run: { loopId: values.loop ?? '310' }, verdict,
+    kind: 'backend-sweep', ...evidence, verdict,
     counts: {
       groups: report.groups, realModules: report.realModules, opened: report.opened,
       failed: report.failed, skippedExpected: report.skippedExpected,
@@ -305,8 +309,9 @@ export async function smoke({ values, paths, log }) {
 
   const verdict = findings.length ? 'findings' : 'pass';
   const reportPath = values.report ?? path.join(paths.root, 'report.smoke.json');
+  const evidence = await actionEvidence(paths, values, '310');
   const written = await writeReport(reportPath, envelope({
-    kind: 'smoke', run: { loopId: values.loop ?? '310' }, verdict,
+    kind: 'smoke', ...evidence, verdict,
     counts: { visited: visited.length, ok: visited.filter((v) => v.ok).length, findings: findings.length },
     findings, extra: { deterministic: true, randomClicking: false, visited },
   }), { profile: values['redaction-profile'], dryRun: values['dry-run'] });
@@ -324,6 +329,17 @@ export async function smoke({ values, paths, log }) {
 export async function lighthouse({ values, paths, log }) {
   const manifest = await readJson(paths.urlManifest);
   if (!manifest) throw new PreconditionError('No URL manifest. Run "t3u discover-urls" first.');
+  const evidenceContext = await readEvidenceContext(paths);
+  if (evidenceContext.state.contract_a?.status !== 'closed') {
+    throw new PreconditionError(
+      'Lighthouse-driven optimization starts after Contract A closes. Record opportunities now only after the invariance certificate exists.',
+    );
+  }
+  if (!evidenceContext.state.contract_b?.unlocked) {
+    throw new PreconditionError('Contract B is locked. Close and countersign Contract A first.');
+  }
+  const loopName = await resolveElevationLoop(paths, values.loop, evidenceContext.state);
+  const loopId = loopName.slice(0, 3);
 
   let lighthouseMod;
   let chromeLauncher;
@@ -336,14 +352,8 @@ export async function lighthouse({ values, paths, log }) {
 
   const runs = intOpt(values, 'runs', 3);
   const formFactor = values['form-factor'] ?? 'mobile';
-  const sampleIds = manifest.lighthouseSampleUrls ?? [];
-  if (!sampleIds.length) {
-    throw new PreconditionError(
-      'The manifest carries no lighthouseSampleUrls. Re-run "t3u discover-urls".',
-    );
-  }
-  const allUrls = sampleIds.map((id) => urlById(manifest, id)).filter(Boolean);
-  const urls = stratifyByTemplate(allUrls, intOpt(values, 'sample', 10), manifest.baseUrl);
+  const allUrls = manifest.allUrls.map((entry) => entry.url);
+  const urls = finalLighthouseSample(allUrls, manifest.baseUrl, manifest.seed ?? 'lighthouse-final');
   const guard = await UrlGuard.create({ allowedOrigins: manifest.allowedOrigins });
 
   // One Chrome for the whole run. v1 spawned and killed one PER URL — 100 cold starts.
@@ -391,13 +401,31 @@ export async function lighthouse({ values, paths, log }) {
   }
 
   // Only a budget produces findings. A local absolute score is indicative, not a verdict.
-  const budget = values.budget ? await readJson(values.budget) : null;
-  const findings = [];
+  const budget = values.budget ? await readLighthouseBudget(values.budget) : null;
+  const findings = lighthouseBudgetFindings(results, budget, loopId, formFactor);
   const verdict = findings.length ? 'findings' : 'pass';
+  const optimizationCandidates = results
+    .flatMap((result) => result.opportunities.map((opportunity) => ({
+      url: result.url,
+      ...opportunity,
+    })))
+    .sort((a, b) => (b.savingsMs ?? 0) - (a.savingsMs ?? 0));
 
-  const reportPath = values.report ?? path.join(paths.root, 'report.lighthouse.json');
+  const label = String(values.label ?? 'final');
+  if (!/^[a-z0-9][a-z0-9-]*$/.test(label)) {
+    throw new HarnessError('--label must use lowercase letters, numbers and hyphens.');
+  }
+  const reportPath = values.report
+    ?? path.join(paths.loopArtifacts(loopName), `report.lighthouse.${label}.json`);
   const written = await writeReport(reportPath, envelope({
-    kind: 'lighthouse', run: { loopId: values.loop ?? '500' }, verdict,
+    kind: 'lighthouse',
+    run: {
+      ...evidenceContext.run,
+      loopId,
+      track: 'elevation',
+    },
+    inputs: evidenceContext.inputs,
+    verdict,
     counts: { urls: results.length, runsPerUrl: runs },
     findings,
     extra: {
@@ -408,14 +436,34 @@ export async function lighthouse({ values, paths, log }) {
         'Local TTFB is unrealistically low and is not transferable.',
       ],
       results,
+      optimizationCandidates,
+      agentBrief: {
+        moment: 'after Contract A closure, before final reporting, in an approved Contract B performance loop',
+        workflow: [
+          'Select the highest measured opportunity by expected savings.',
+          'Add or update regression tests before changing the site.',
+          'Change one cause only.',
+          'Run the project tests and the same three-page Lighthouse sample.',
+          'Keep the change only when tests pass, the measured target improves, and Contract A checks remain green.',
+        ],
+      },
       budgetApplied: Boolean(budget),
     },
   }), { profile: values['redaction-profile'], dryRun: values['dry-run'] });
 
-  log.success(`Lighthouse: ${results.length} URL(s) × ${runs} run(s), medians recorded`);
+  log[findings.length ? 'finding' : 'success'](
+    `Lighthouse: ${results.length} URL(s) × ${runs} run(s), medians recorded, ${findings.length} quality gap(s)`,
+  );
   log.warn('Local scores are indicative. Never quote them as field results, and never write "INP passing".');
 
-  return { exitCode: EXIT.PASS, verdict, reports: [written.path], message: 'lighthouse recorded' };
+  return {
+    exitCode: findings.length ? EXIT.FINDINGS : EXIT.PASS,
+    verdict,
+    reports: [written.path],
+    message: findings.length
+      ? `lighthouse recorded with ${findings.length} quality-gap finding(s)`
+      : 'lighthouse recorded',
+  };
 }
 
 /** Reject rather than hang. A gate that never returns cannot be distinguished from a slow one. */
@@ -472,6 +520,114 @@ export function stratifyByTemplate(urls, limit, baseUrl) {
   return picked;
 }
 
+/** Final reporting: fixed homepage plus two reproducibly random non-home pages. */
+export function finalLighthouseSample(urls, baseUrl, seed = 'lighthouse-final') {
+  const root = new URL('/', baseUrl).href;
+  const candidates = [...new Set(urls)]
+    .filter((url) => {
+      try { return new URL(url).pathname !== '/'; } catch { return false; }
+    })
+    .sort();
+  if (candidates.length < 2) {
+    throw new PreconditionError(
+      `Final Lighthouse reporting requires two non-home pages; the manifest has ${candidates.length}.`,
+    );
+  }
+  return [root, ...seededSample(candidates, 2, seed)];
+}
+
+export function lighthouseBudgetFindings(results, budget, loopId = '500', formFactor = 'mobile') {
+  if (!budget) return [];
+  const checks = [
+    ['scores.performance.median', `performance.lighthouse_performance_${formFactor}`, 'min'],
+    ['scores.accessibility.median', 'accessibility.lighthouse_accessibility', 'min'],
+    ['scores.seo.median', 'seo.lighthouse_seo', 'min'],
+    ['metrics.lcp.median', `performance.lcp_${formFactor}_ms`, 'max'],
+    ['metrics.cls.median', 'performance.cls', 'max'],
+    ['metrics.tbt.median', 'performance.tbt_ms', 'max'],
+    ['metrics.fcp.median', 'performance.fcp_ms', 'max'],
+    ['metrics.si.median', 'performance.speed_index_ms', 'max'],
+  ];
+  const findings = [];
+  for (const result of results) {
+    for (const [resultPath, budgetKey, direction] of checks) {
+      const expected = readPath(budget, budgetKey);
+      const actual = readPath(result, resultPath);
+      if (typeof expected !== 'number' || typeof actual !== 'number') continue;
+      const misses = direction === 'min' ? actual < expected : actual > expected;
+      if (!misses) continue;
+      findings.push({
+        id: `F-${String(loopId).padStart(3, '0')}-${String(findings.length + 1).padStart(3, '0')}`,
+        target: result.url,
+        class: 'improvement',
+        severity: 'minor',
+        status: 'open',
+        metric: resultPath,
+        expected,
+        actual,
+        direction,
+      });
+    }
+  }
+  return findings;
+}
+
+async function resolveElevationLoop(paths, reference, state) {
+  const value = String(reference ?? '');
+  if (!value) throw new PreconditionError('--loop is required for Lighthouse evidence.');
+  let loopName = value;
+  if (!/^\d{3}-(?:harness|invariance|elevation|report)-/.test(value)) {
+    const id = value.match(/^\d{3}/)?.[0];
+    if (!id) throw new PreconditionError('--loop must be NNN or a complete loop directory name.');
+    const matches = (await readdir(paths.loopsDir).catch(() => []))
+      .filter((name) => name.startsWith(`${id}-`));
+    if (matches.length !== 1) {
+      throw new PreconditionError(`Expected one directory for loop ${id}, found ${matches.length}.`);
+    }
+    [loopName] = matches;
+  }
+  if (!loopName.includes('-elevation-')) {
+    throw new PreconditionError(`Lighthouse optimization belongs to an elevation loop, not ${loopName}.`);
+  }
+  const id = loopName.slice(0, 3);
+  if (state.loops?.[id] !== 'open') {
+    throw new PreconditionError(`Loop ${id} must be open; current state is ${state.loops?.[id] ?? 'missing'}.`);
+  }
+  const charterBody = await readFile(paths.loopDoc(loopName, '00-charter.md'), 'utf8');
+  const match = charterBody.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
+  if (!match) throw new PreconditionError(`Loop ${loopName} has no valid charter front matter.`);
+  const charter = parseYaml(match[1]);
+  if (charter.contract !== 'B' || charter.track !== 'elevation') {
+    throw new PreconditionError(`Loop ${loopName} is not a Contract B elevation loop.`);
+  }
+  if (!state.baselines?.[charter.baseline_ref]?.sealed) {
+    throw new PreconditionError(`Loop baseline ${charter.baseline_ref ?? '(missing)'} is not sealed.`);
+  }
+  if (!charter.approval_ref || !state.approvals?.includes(charter.approval_ref)) {
+    throw new PreconditionError(`Loop ${loopName} has no recorded intent approval.`);
+  }
+  const approvalFiles = await readdir(paths.approvalsDir).catch(() => []);
+  if (!approvalFiles.some((file) => file.startsWith(`${charter.approval_ref}-intent-`))) {
+    throw new PreconditionError(`Intent approval file ${charter.approval_ref} is missing.`);
+  }
+  return loopName;
+}
+
+async function readLighthouseBudget(file) {
+  let parsed;
+  try {
+    const body = await readFile(file, 'utf8');
+    parsed = file.endsWith('.json') ? JSON.parse(body) : parseYaml(body);
+  } catch (error) {
+    throw new HarnessError(`Cannot read Lighthouse budget ${file}: ${error.message}`);
+  }
+  return parsed.contract_b ?? parsed;
+}
+
+function readPath(value, dotted) {
+  return dotted.split('.').reduce((current, key) => current?.[key], value);
+}
+
 function summarise(url, lhrs, formFactor) {
   const pick = (fn) => {
     const vals = lhrs.map(fn).filter((v) => typeof v === 'number').sort((a, b) => a - b);
@@ -498,5 +654,16 @@ function summarise(url, lhrs, formFactor) {
       .filter((a) => a.details?.type === 'opportunity' && (a.numericValue ?? 0) > 0)
       .slice(0, 5)
       .map((a) => ({ id: a.id, title: a.title, savingsMs: a.numericValue, measured: true })),
+  };
+}
+
+async function actionEvidence(paths, values, fallbackLoop) {
+  const evidence = await readEvidenceContext(paths);
+  return {
+    run: {
+      ...evidence.run,
+      loopId: String(values.loop ?? fallbackLoop).slice(0, 3),
+    },
+    inputs: evidence.inputs,
   };
 }

@@ -54,6 +54,7 @@ export function buildManifest({
   viewports = ['desktop', 'tablet', 'mobile'],
   states = ['default'],
   browser = {},
+  stabilization = {},
   stabilizationProfileHash = null,
   tierPolicy = { tier1: true, clusters: true, remainderSeeded: true },
   now = () => new Date().toISOString(),
@@ -133,7 +134,7 @@ export function buildManifest({
       for (const state of states) {
         captures.push({
           captureId: sha256(`${viewport} ${state} ${url}`).slice(0, 16),
-          urlId: ids.get(url), viewport, state, quarantined: false,
+          urlId: ids.get(url), viewport, state,
         });
       }
     }
@@ -163,7 +164,7 @@ export function buildManifest({
     visualRegressionUrls: visualUrls.map((u) => ids.get(u)),
     lighthouseSampleUrls: lighthouseUrls.map((u) => ids.get(u)),
     captures,
-    viewports, states, browser,
+    viewports, states, browser, stabilization,
     stabilizationProfileHash,
     tierPolicyHash: sha256(JSON.stringify(tierPolicy)),
     createdAt: now(),

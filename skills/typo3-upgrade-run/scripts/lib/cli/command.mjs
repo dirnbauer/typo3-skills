@@ -20,9 +20,13 @@ import { RunPaths } from '../run/paths.mjs';
 import { Journal } from '../run/journal.mjs';
 import { StateStore } from '../run/state.mjs';
 import { redactStack } from '../util/redact.mjs';
+import { assertLiveInputs } from '../run/evidence.mjs';
 
 /** Commands that may not run without a proven-deterministic harness. */
-const REQUIRES_SELFTEST = new Set(['compare-http', 'compare-dom', 'compare-visual', 'gate']);
+const REQUIRES_SELFTEST = new Set([
+  'compare-http', 'compare-dom', 'compare-visual', 'gate',
+  'backend-sweep', 'smoke', 'lighthouse',
+]);
 
 const SELFTEST_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
@@ -36,13 +40,22 @@ export async function runCommand({ command, values, positionals, argv, actions, 
   let result = null;
 
   const ctx = { command, values, positionals, log, paths, journal, state, argv };
+  let environmentFingerprintHash = null;
 
   try {
-    await journal.commandStart({ argv, cwd: process.cwd(), loopId: values.loop, envFp: null })
+    environmentFingerprintHash = (await state.read().catch(() => null))?.fingerprints?.environment ?? null;
+    await journal.commandStart({
+      argv,
+      cwd: process.cwd(),
+      loopId: values.loop,
+      envFp: environmentFingerprintHash,
+    })
       .catch(() => { /* the journal must never be the reason a command fails */ });
 
     if (REQUIRES_SELFTEST.has(command) && !values['dry-run']) {
       await assertSelftestValid(paths, now);
+      const { browserArgs } = await import('../browser/launch.mjs');
+      await assertLiveInputs(paths, { launchArgs: browserArgs() });
     }
 
     const action = actions[command];
@@ -95,6 +108,7 @@ export async function runCommand({ command, values, positionals, argv, actions, 
       durationMs: now() - started,
       verdict: result?.verdict ?? verdictFor(exitCode),
       reports: result?.reports ?? [],
+      envFp: environmentFingerprintHash,
     }).catch(() => {});
   }
 

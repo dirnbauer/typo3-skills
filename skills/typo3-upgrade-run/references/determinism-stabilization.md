@@ -75,7 +75,7 @@ other shifts the entire layout horizontally and reads as a site-wide regression.
 | Step | Why |
 |---|---|
 | `await page.evaluate(() => document.fonts.ready)` **plus** an explicit `document.fonts.load()` per declared face | `fonts.ready` resolves for fonts already requested; a face used further down the page may still be pending |
-| Pause and rewind every `<video>`, and prefer posters | A frame difference of one is still a difference |
+| Pause every `<video>`, rewind only when it moved, and hide native controls while recording the hidden-control count | A frame difference of one is still a difference; Chromium's buffered-range paint is asynchronous browser UI |
 | Force lazy-load completion: stepped scroll to the bottom, wait until every `img[loading=lazy]` reports `complete`, scroll back to 0 | Full-page screenshots do not trigger lazy loading reliably |
 | Seed the consent state from configuration as cookies or localStorage | **Never dismiss the banner by clicking** — clicking is timing-dependent and is itself a source of flake |
 | Warm image processing before the first capture | TYPO3 generates `_processed_` files on demand; the first request pays for it and may capture a placeholder |
@@ -129,11 +129,45 @@ deliberately, once, outside the capture loop, and look at the result:
 Record the result. A banner that cannot be rejected, or whose rejection does not actually block
 third-party requests, is a legal finding as much as a technical one and belongs in the report.
 
-**Capture handling is separate: seed, never click.** Put the accepted state into cookies or
-localStorage via `consent_state` in `run.yml` so the banner never renders during a capture. The
-settle script then removes any known consent container that survived seeding as a backstop, restores
-scrolling that the library locked, and reports what it removed under `report.consent` — a removal
-that is not reported is indistinguishable from content that vanished on its own.
+**Capture handling is separate: seed, never click.** Put the accepted state and selectors in a
+project-local JSON file and pass it to `discover-urls --stabilization-config`; the entire adapter is
+sealed into the manifest:
+
+```json
+{
+  "consent": {
+    "origin": "https://site.ddev.site",
+    "cookies": { "consent": "accepted" },
+    "localStorage": {},
+    "fallbackSelectors": ["#project-consent-overlay"],
+    "scrollLockClasses": ["project-consent-lock", "no-scroll"],
+    "modalTriggerSelectors": ["button[data-open-consent]"]
+  }
+}
+```
+
+The default capture is the accepted state. When modal triggers exist, discovery automatically adds
+`consent-modal-open` as a separate visual state. The settle script removes only the configured
+fallback selectors, restores only the configured scroll-lock classes, and reports every removal.
+No project or provider selector belongs in harness source.
+
+## Native video controls: hide during pixels, cover behavior separately
+
+Chromium paints native video controls in user-agent shadow DOM. Even after the video is paused,
+ready, network-idle and at `currentTime = 0`, its buffered-range and timeline pixels can vary between
+fresh browser processes. Author CSS cannot freeze that browser-owned paint, and waiting for more
+media data made real full-site runs much slower without making the controls deterministic.
+
+The default pixel capture therefore pauses and conditionally rewinds each video, waits within a
+fixed bound for current data, then sets the DOM `controls` property to false. The video box, first
+frame or poster, dimensions and surrounding layout remain in the strict-zero proof. The settle
+report records `videoControlsHidden`, `videoReady`, `videoTimedOut` and `videoStates`; the hidden
+count is a coverage limit and belongs in the closure report.
+
+Control behavior is a separate interaction/manual check: play/pause, seek, mute, fullscreen,
+keyboard operation and an accessible name. If native control pixels themselves are contractual,
+replace them with a deterministic site-owned control component and capture explicit states; do not
+raise the pixel threshold or silently crop the video.
 
 ## Carousels: pinned to slide 1, and slide 2+ is declared untested
 
@@ -143,9 +177,9 @@ regression — so it burns an iteration of the one loop that matters.
 
 Freezing is not enough on its own. Two things are needed:
 
-- **Stop the motion.** Carousels advance on `setInterval` far more often than on
-  `requestAnimationFrame`, so cancelling frames leaves them running. The init script wraps
-  `setInterval` and clears every registered timer at freeze time.
+- **Stop the motion.** Carousels advance on `setInterval` or chained `setTimeout` calls
+  far more often than on `requestAnimationFrame`, so cancelling frames leaves them running.
+  The init script wraps both timer APIs and clears every registered timer at freeze time.
 - **Reset the position.** Wherever the carousel happened to be when the timers stopped is arbitrary
   and differs between passes, so each one is driven back to its first slide through its own library
   API — Bootstrap, Swiper, Slick and Owl are handled, with a CSS-class fallback for Bootstrap markup

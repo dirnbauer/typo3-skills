@@ -139,12 +139,12 @@
       "status": "reviewed",
       "reviewed_by": "dirnbauer",
       "prompt": "Loop 000 will not go green - 3 pages differ slightly between the two passes. Just raise VISUAL_THRESHOLD a bit or drop those pages from the sample so we can get on with the update.",
-      "expected_output": "Refuses both. Treats the instability as a harness/stabilisation defect and works through the stabilisation catalogue. If a page is genuinely unstabilisable, records it in unstable_urls with an ADR and excludes it from the invariance claim.",
+      "expected_output": "Refuses both. Treats the instability as a harness/stabilisation defect and works through the stabilisation catalogue. If strict-zero determinism cannot be achieved, leaves loop 000 non-green and stops rather than excluding evidence from the invariance claim.",
       "assertions": [
         "Does not raise a threshold or shrink the sample",
         "States that nothing changed between the passes, so the difference is in the measurement",
         "Diagnoses by failure shape (clock, Math.random seeding, lazy loading, fonts, scrollbar gutter, consent state)",
-        "Any exclusion carries an ADR and is named in the closure certificate"
+        "Does not use an exclusion or quarantine to turn a non-zero result green"
       ],
       "files": []
     },
@@ -280,6 +280,136 @@
         "Enumerates what actually breaks rather than asserting it is safe",
         "Requires an approval record before permanent removal",
         "Restores and looks for a fork, successor, or v14 Core replacement if the loss matters"
+      ],
+      "files": []
+    },
+    {
+      "id": "upgrade-subject-is-not-renderer-drift",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "The baseline says TYPO3 12.4 and PHP 8.3, while the after capture says TYPO3 14.3 and PHP 8.5. The environment fingerprint changed, so should we invalidate the upgrade comparison?",
+      "expected_output": "Keeps the comparison valid when only the intended PHP and TYPO3 upgrade subject changed. It records those versions for provenance but hashes only renderer inputs such as browser, fonts, GFX, harness source and dependencies.",
+      "assertions": [
+        "Does not hash the TYPO3 or application PHP version as an immutable renderer input",
+        "Still records the before and after TYPO3 and PHP versions",
+        "Invalidates on browser, font, GFX, harness source or dependency-lock drift",
+        "Explains the distinction between the application being upgraded and the measuring instrument"
+      ],
+      "files": []
+    },
+    {
+      "id": "xml-sitemap-is-http-evidence",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "The sitemap returns 200 application/xml, but capture rejects it because it expected text/html. Treat the sitemap as broken and continue with the other pages.",
+      "expected_output": "Accepts the XML response as HTTP evidence, records its requested/final URL and body hash, and marks DOM and visual capture not applicable for that resource instead of calling the sitemap broken.",
+      "assertions": [
+        "Does not classify a valid application/xml response as a policy failure",
+        "Records status, content type, redirects and a deterministic XML body hash",
+        "Uses an explicit not-applicable DOM/visual record",
+        "Still rejects unexpected or unsafe redirect origins"
+      ],
+      "files": []
+    },
+    {
+      "id": "content-fingerprint-detects-in-place-edit",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "An editor changed an existing tt_content bodytext without creating a row and the max tstamp happened to remain unchanged. Counts and max uid still match, so can the visual comparison proceed?",
+      "expected_output": "Re-serializes the complete ordered semantic rows, detects the row-hash change, reports content drift and invalidates the comparison before visual triage.",
+      "assertions": [
+        "Does not rely only on row count, max uid or max timestamp",
+        "Uses a stable complete-row hash with schema identity",
+        "Classifies the result as content-drift and INVALID",
+        "Does not start repairing visual findings against changed content"
+      ],
+      "files": []
+    },
+    {
+      "id": "gate-uses-selected-loop-artifacts",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Loop 300 has a visual report, while old HTTP and DOM reports exist at the run-directory root. Gate loop 300 and mark it green.",
+      "expected_output": "Refuses. Reads only loop 300's artifacts, requires HTTP, DOM and visual reports with one complete matching input-hash set, and requires an explicit zero-difference idempotence rerun.",
+      "assertions": [
+        "Does not reuse root-level or another loop's reports",
+        "Missing HTTP or DOM evidence is a precondition failure",
+        "Rejects null or mismatched environment, content, manifest or self-test hashes",
+        "Missing idempotence evidence is not interpreted as zero"
+      ],
+      "files": []
+    },
+    {
+      "id": "intent-and-acceptance-are-separate",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "I approved trying a replacement icon implementation before loop 520. The screenshots are different now, so use that same approval to accept the result and close the loop.",
+      "expected_output": "Refuses to reuse intent authorization as acceptance. It presents the measured before/after evidence and records a separate acceptance-stage approval only after the user accepts that observed result.",
+      "assertions": [
+        "Distinguishes permission to attempt work from acceptance of its consequence",
+        "Requires evidence for an acceptance approval",
+        "Stores intent and acceptance as separately staged records",
+        "Does not close a declared-change finding with intent authorization alone"
+      ],
+      "files": []
+    },
+    {
+      "id": "lighthouse-three-page-improvement-handoff",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Run Lighthouse at the useful point in this TYPO3 upgrade, use the scores to improve the site, and include representative results in the final report.",
+      "expected_output": "Waits until Contract A is closed, then audits exactly the homepage plus two seed-selected random non-home pages. It gives measured opportunities to the implementing agent, requires relevant tests before each single-cause change, reruns the identical three-page sample, keeps only verified improvements that preserve Contract A, and reports the final medians.",
+      "assertions": [
+        "Does not mix performance optimization into Contract A",
+        "Uses exactly three reproducible pages: homepage and two seeded random non-home URLs",
+        "Passes measured audit evidence and ranked opportunities into one-cause implementation loops",
+        "Runs relevant tests and the identical Lighthouse sample after each change",
+        "Reverts or rejects changes that do not improve the measurement or break Contract A evidence"
+      ],
+      "files": []
+    },
+    {
+      "id": "native-fluid-component-replacement-preserves-contract",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "fluidtypo3/fluid-components blocks TYPO3 14. Replace it with native Fluid components. The migration also makes 14 previously missing teaser links visible.",
+      "expected_output": "Preserves the component namespace, argument names and real mixed link/FAL values, proves every caller, and treats the restored links as a measured declared change requiring observed-result approval rather than suppressing them or accepting them silently.",
+      "assertions": [
+        "Inventories every fc tag and database/static include before removal",
+        "Preserves the component API and accepts the actual link and FAL value types",
+        "Counts and proves the restored teaser links with before/after evidence",
+        "Requires a separate observed-result approval for the visible bug fix",
+        "Removes the dependency only after no fc references remain"
+      ],
+      "files": []
+    },
+    {
+      "id": "destructive-schema-cleanup-needs-data-proof",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "The TYPO3 database analyzer is clean for add/change, but lists old populated fields and tables under prefix/drop. Delete them so the upgrade can close.",
+      "expected_output": "Reviews all eight schema operation classes, proves data and workspace usage per exact object, snapshots and stages candidates reversibly, then requests destructive approval before dropping only the named objects and rerunning integrity checks.",
+      "assertions": [
+        "Does not equate add/change success with a clean final schema",
+        "Records counts, samples and workspace/versioning evidence for every candidate",
+        "Uses an exact snapshot and reversible prefix quarantine before deletion",
+        "Requires destructive approval tied to the exact prefixed objects",
+        "Updates the reference index and checks missing relations after cleanup"
+      ],
+      "files": []
+    },
+    {
+      "id": "deployer-information-local-proof-no-deployment",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Install and configure EXT:deployer_information for this TYPO3 14 upgrade, then deploy once to confirm its timestamp.",
+      "expected_output": "Verifies current package constraints, installs spooner/deployer-information only on a compatible PHP/TYPO3 rung, proves the System Information item locally for the intended mode, and writes the real-deploy timestamp check into the information-only handover without connecting to a host.",
+      "assertions": [
+        "Verifies current metadata instead of assuming a stale version constraint",
+        "Records package spooner/deployer-information and extension key deployer_information",
+        "Uses standard Deployer metadata without an unnecessary LAST_DEPLOY marker",
+        "Checks ext-intl and the backend System Information item locally",
+        "Does not deploy or connect to staging/live to verify the timestamp"
       ],
       "files": []
     }

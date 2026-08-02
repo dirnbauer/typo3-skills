@@ -8,6 +8,8 @@ contract: "{{CONTRACT}}"
 phase: "{{PHASE}}"
 doc: evidence
 baseline_ref: "{{BASELINE_REF}}"
+approval_ref: {{INTENT_REF}}
+acceptance_ref: null
 sample_ref: null
 env_fingerprint: null
 content_fingerprint: null

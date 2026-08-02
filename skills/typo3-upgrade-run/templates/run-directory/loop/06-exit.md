@@ -8,6 +8,8 @@ contract: "{{CONTRACT}}"
 phase: "{{PHASE}}"
 doc: exit
 baseline_ref: "{{BASELINE_REF}}"
+approval_ref: {{INTENT_REF}}
+acceptance_ref: null
 snapshot: null
 status: open
 created_at: "{{NOW}}"
@@ -34,7 +36,7 @@ be checkable by hand from `04-findings.md` and `05-evidence.md`.
 | EX-02 | `findings.where(class == "declared-change" and approval_ref == null).count == 0` | |
 | EX-03 | `findings.where(class == "harness-noise").count == 0` | |
 | EX-04 | `findings.where(class == "content-drift").count == 0` | |
-| EX-05 | `findings_by_class.unclassified == 0` | |
+| EX-05 | `findingsByClass.unclassified == 0` | |
 | EX-06 | `coverage.http_compared == coverage.discovered` | |
 
 ## Idempotence re-run

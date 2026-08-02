@@ -63,10 +63,12 @@ export function createRoutePolicy({ allowedOrigins = [], blockThirdParty = true 
  * was waiting for.
  */
 export function createQuietDetector(page, { quietMs = 500, hardCapMs = 15000 } = {}) {
-  let inFlight = 0;
   const pending = new Set();
-  const onRequest = (req) => { inFlight += 1; pending.add(req.url()); };
-  const onDone = (req) => { inFlight = Math.max(0, inFlight - 1); pending.delete(req.url()); };
+  // Playwright can emit the same request object more than once around redirects. Counting
+  // events therefore leaks an in-flight request even after the object has completed and
+  // makes every page consume the hard timeout. Track request identities instead.
+  const onRequest = (req) => { pending.add(req); };
+  const onDone = (req) => { pending.delete(req); };
 
   page.on('request', onRequest);
   page.on('requestfinished', onDone);
@@ -77,7 +79,7 @@ export function createQuietDetector(page, { quietMs = 500, hardCapMs = 15000 } =
       const started = Date.now();
       let quietSince = null;
       while (Date.now() - started < hardCapMs) {
-        if (inFlight === 0) {
+        if (pending.size === 0) {
           quietSince ??= Date.now();
           if (Date.now() - quietSince >= quietMs) break;
         } else {
@@ -86,7 +88,10 @@ export function createQuietDetector(page, { quietMs = 500, hardCapMs = 15000 } =
         await new Promise((r) => setTimeout(r, 50));
       }
       const timedOut = Date.now() - started >= hardCapMs;
-      return { timedOut, stillPending: timedOut ? [...pending].slice(0, 10) : [] };
+      return {
+        timedOut,
+        stillPending: timedOut ? [...pending].slice(0, 10).map((req) => req.url()) : [],
+      };
     },
     dispose() {
       page.off('request', onRequest);
@@ -109,6 +114,12 @@ export function attachNavigationGuard(page, guard, trustedOrigin, { onViolation 
       throw err;
     }
   };
-  page.on('framenavigated', (frame) => { if (frame === page.mainFrame()) check(frame.url()); });
-  return { check };
+  const onNavigated = (frame) => { if (frame === page.mainFrame()) check(frame.url()); };
+  page.on('framenavigated', onNavigated);
+  return {
+    check,
+    dispose() {
+      page.off('framenavigated', onNavigated);
+    },
+  };
 }

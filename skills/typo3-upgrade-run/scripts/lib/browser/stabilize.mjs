@@ -51,26 +51,39 @@ export function initScript({ seed = 20260725, epoch = 1774425600000 } = {}) {
   if (raf) {
     globalThis.requestAnimationFrame = (cb) => { const id = raf(cb); globalThis.__t3uFrames.add(id); return id; };
   }
-  // Carousels advance on setInterval far more often than on rAF, so cancelling frames
-  // alone leaves the most common rotating element still moving between two passes.
+  // Carousels advance on setInterval or chained setTimeout calls far more often than on
+  // rAF, so cancelling frames alone leaves the most common rotating element moving.
   const setIntervalOrig = globalThis.setInterval;
+  const setTimeoutOrig = globalThis.setTimeout;
   globalThis.__t3uTimers = new Set();
+  globalThis.__t3uTimeouts = new Set();
   globalThis.setInterval = (...a) => { const id = setIntervalOrig(...a); globalThis.__t3uTimers.add(id); return id; };
+  globalThis.setTimeout = (...a) => { const id = setTimeoutOrig(...a); globalThis.__t3uTimeouts.add(id); return id; };
 
   globalThis.__t3uFreeze = () => {
     for (const id of globalThis.__t3uFrames) { try { cancelAnimationFrame(id); } catch {} }
     globalThis.__t3uFrames.clear();
     for (const id of globalThis.__t3uTimers) { try { clearInterval(id); } catch {} }
     globalThis.__t3uTimers.clear();
-    for (const v of document.querySelectorAll('video')) { try { v.pause(); v.currentTime = 0; } catch {} }
+    for (const id of globalThis.__t3uTimeouts) { try { clearTimeout(id); } catch {} }
+    globalThis.__t3uTimeouts.clear();
+    // Seeking a video that is already at zero restarts Chromium's native loading spinner.
+    // The asynchronous spinner paint then differs by a few pixels between identical runs.
+    // settleScript owns the bounded seek/readiness wait; freeze only stops playback.
+    for (const v of document.querySelectorAll('video')) { try { v.pause(); } catch {} }
   };
 })();`;
 }
 
 /** Runs in the page immediately before the screenshot. Returns a small settle report. */
-export function settleScript() {
+export function settleScript(profile = {}) {
+  const consentSelectors = JSON.stringify(profile.consent?.fallbackSelectors ?? []);
+  const scrollLockClasses = JSON.stringify(profile.consent?.scrollLockClasses ?? []);
   return `(async () => {
-  const report = { fonts: false, lazy: 0, videos: 0, height: 0 };
+  const report = {
+    fonts: false, lazy: 0, lazyPromoted: 0, videos: 0, height: 0,
+    decoded: 0, decodeSkipped: 0, decodeFailed: 0, decodeTimedOut: 0,
+  };
 
   try { await document.fonts.ready; } catch {}
   try {
@@ -79,12 +92,23 @@ export function settleScript() {
     report.fonts = true;
   } catch {}
 
-  // Force lazy content in by stepping to the bottom, then return to the top.
+  // Force lazy content in by promoting lazy images and stepping to the bottom, then return
+  // to the top. Some browsers do not schedule a lazy image during a fast synthetic scroll;
+  // promotion makes the intended coverage explicit and leaves fewer unresolved decodes.
+  const lazyImgs = [...document.querySelectorAll('img[loading="lazy"]')];
+  for (const img of lazyImgs) img.loading = 'eager';
+  report.lazyPromoted = lazyImgs.length;
+
   const step = Math.max(200, Math.floor(window.innerHeight * 0.8));
-  for (let y = 0; y < document.body.scrollHeight; y += step) {
+  const maxScrollSteps = 250;
+  let scrollSteps = 0;
+  for (let y = 0; y < document.body.scrollHeight && scrollSteps < maxScrollSteps; y += step) {
     window.scrollTo(0, y);
     await new Promise((r) => setTimeout(r, 30));
+    scrollSteps += 1;
   }
+  report.scrollSteps = scrollSteps;
+  report.scrollCapped = scrollSteps === maxScrollSteps;
   window.scrollTo(0, 0);
   await new Promise((r) => setTimeout(r, 60));
 
@@ -100,11 +124,24 @@ export function settleScript() {
   // screenshot taken here catches a partially painted photo and the same page differs
   // between two identical passes by a few hundred scattered pixels. decode() resolves
   // when the frame is ready to paint, which is the guarantee we actually need.
-  await Promise.all(imgs.map((img) => {
-    if (typeof img.decode !== 'function') return null;
-    return img.decode().catch(() => {});
+  // decode() is permitted to remain pending while an image is incomplete. Awaiting those
+  // promises without a deadline hangs the entire capture when lazy images have a currentSrc
+  // but never reach complete. Decode only complete images
+  // and bound every remaining promise so one corrupt resource cannot stop the run.
+  const decodeTimeoutMs = 3000;
+  await Promise.all(imgs.map(async (img) => {
+    if (!img.complete || typeof img.decode !== 'function') {
+      report.decodeSkipped += 1;
+      return;
+    }
+    const outcome = await Promise.race([
+      img.decode().then(() => 'decoded').catch(() => 'failed'),
+      new Promise((resolve) => setTimeout(() => resolve('timeout'), decodeTimeoutMs)),
+    ]);
+    if (outcome === 'decoded') report.decoded += 1;
+    else if (outcome === 'timeout') report.decodeTimedOut += 1;
+    else report.decodeFailed += 1;
   }));
-  report.decoded = imgs.length;
 
   // jQuery animations: switch them off and settle whatever is already running.
   //
@@ -130,11 +167,7 @@ export function settleScript() {
   // picture of the banner. Remove only containers matching well-known consent implementations,
   // and REPORT each removal — silently deleting page content would hide a real regression.
   report.consent = { removed: 0, selectors: [] };
-  const CONSENT = [
-    '#CybotCookiebotDialog', '#usercentrics-root', '#uc-center-container', '#klaro',
-    '.cc-window', '.cmplz-cookiebanner', '#cookiescript_injected', '#onetrust-consent-sdk',
-    '#cookie-notice', '.cookie-consent-banner', '#cookieman-modal', '.tx-cookieman',
-  ];
+  const CONSENT = ${consentSelectors};
   for (const sel of CONSENT) {
     for (const el of document.querySelectorAll(sel)) {
       const cs = getComputedStyle(el);
@@ -148,7 +181,9 @@ export function settleScript() {
   if (report.consent.removed) {
     document.documentElement.style.overflow = '';
     document.body.style.overflow = '';
-    document.body.classList.remove('cmplz-blocked', 'modal-open', 'no-scroll');
+    const scrollLocks = ${scrollLockClasses};
+    document.documentElement.classList.remove(...scrollLocks);
+    document.body.classList.remove(...scrollLocks);
   }
 
   // Carousels: pin every one to its first slide and say so.
@@ -202,12 +237,77 @@ export function settleScript() {
         report.carousels.found += 1;
         const slides = countSlides(this, '.owl-item:not(.cloned)');
         if (slides > 1) report.carousels.untestedSlides += slides - 1;
-        try { jq(this).trigger('stop.owl.autoplay'); jq(this).trigger('to.owl.carousel', [0, 0, true]); report.carousels.pinned += 1; note('owl'); } catch {}
+        try {
+          // Consent overlays commonly lock scrolling while Owl first measures the page.
+          // Refresh after removing those locks so responsive item widths are recalculated
+          // from the final viewport, then pin the refreshed carousel to its first item.
+          jq(this).trigger('refresh.owl.carousel');
+          jq(this).trigger('stop.owl.autoplay');
+          jq(this).trigger('to.owl.carousel', [0, 0, true]);
+          report.carousels.pinned += 1;
+          note('owl');
+        } catch {}
       });
     }
   } catch {}
 
-  for (const v of document.querySelectorAll('video')) { try { v.pause(); v.currentTime = 0; report.videos += 1; } catch {} }
+  // Allow carousel refresh/layout writes to reach a paint boundary before freezing their
+  // timers and recording the document height.
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+  // Native video controls render in Chromium's user-agent shadow DOM, outside the CSS
+  // animation freeze above. An unconditional currentTime=0 starts a redundant seek even
+  // when the video is already at zero, and taking the screenshot while that seek/loading
+  // spinner is active produces non-reproducible control pixels. Pause every video, seek
+  // only when necessary, and wait within a fixed bound for a paintable, non-loading state.
+  report.videoReady = 0;
+  report.videoTimedOut = 0;
+  report.videoControlsHidden = 0;
+  report.videoStates = [];
+  const mediaTimeoutMs = 5000;
+  await Promise.all([...document.querySelectorAll('video')].map(async (video) => {
+    report.videos += 1;
+    try {
+      video.pause();
+      if (Math.abs(video.currentTime) > 0.001) {
+        video.currentTime = 0;
+        await Promise.race([
+          new Promise((resolve) => video.addEventListener('seeked', resolve, { once: true })),
+          new Promise((resolve) => setTimeout(resolve, mediaTimeoutMs)),
+        ]);
+      }
+
+      const ready = await Promise.race([
+        new Promise((resolve) => {
+          const startedAt = performance.now();
+          const check = () => {
+            const paintable = video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA;
+            const loading = video.networkState === HTMLMediaElement.NETWORK_LOADING;
+            if (paintable && !loading) resolve(true);
+            else if (performance.now() - startedAt >= mediaTimeoutMs) resolve(false);
+            else setTimeout(check, 50);
+          };
+          check();
+        }),
+        new Promise((resolve) => setTimeout(() => resolve(false), mediaTimeoutMs + 100)),
+      ]);
+      if (ready) report.videoReady += 1;
+      else report.videoTimedOut += 1;
+      report.videoStates.push({
+        currentTime: video.currentTime,
+        networkState: video.networkState,
+        paused: video.paused,
+        readyState: video.readyState,
+      });
+      if (video.controls) {
+        video.controls = false;
+        report.videoControlsHidden += 1;
+      }
+    } catch {
+      report.videoTimedOut += 1;
+    }
+  }));
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   if (globalThis.__t3uFreeze) globalThis.__t3uFreeze();
 
   report.height = document.documentElement.scrollHeight;
@@ -219,7 +319,7 @@ export function profileHash(profile) {
   return `sha256:${sha256(JSON.stringify({
     css: STABILIZE_CSS,
     init: initScript(profile),
-    settle: settleScript(),
+    settle: settleScript(profile),
     profile: sortKeys(profile),
   }))}`;
 }
@@ -229,7 +329,15 @@ export function profileHash(profile) {
  * itself a flake source — the one we would be trying to remove.
  */
 export function consentStateFor(config = {}) {
-  const cookies = Object.entries(config.cookies ?? {}).map(([name, value]) => ({ name, value: String(value) }));
+  const origin = config.origin ? new URL(config.origin) : null;
+  const cookies = Object.entries(config.cookies ?? {}).map(([name, value]) => ({
+    name,
+    value: String(value),
+    domain: origin?.hostname,
+    path: '/',
+    secure: origin?.protocol === 'https:',
+    sameSite: 'Lax',
+  }));
   const origins = config.localStorage
     ? [{ origin: config.origin, localStorage: Object.entries(config.localStorage).map(([name, value]) => ({ name, value: String(value) })) }]
     : [];

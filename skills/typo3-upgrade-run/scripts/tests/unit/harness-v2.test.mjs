@@ -1,5 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
+import { EventEmitter } from 'node:events';
 import { mkdtemp, writeFile, mkdir, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -15,14 +16,236 @@ import { assertPhaseAdvance, assertLoopTransition, assertContractBUnlock, emptyS
 import { RunPaths, captureId } from '../../lib/run/paths.mjs';
 import { sealBaseline, verifyBaseline, hashTree } from '../../lib/run/lockfile.mjs';
 import { browserArgs, launchOptions, SAFE_BROWSER_ARGS } from '../../lib/browser/launch.mjs';
-import { createRoutePolicy } from '../../lib/browser/route-policy.mjs';
-import { initScript, profileHash, STABILIZE_CSS } from '../../lib/browser/stabilize.mjs';
+import { attachNavigationGuard, createQuietDetector, createRoutePolicy } from '../../lib/browser/route-policy.mjs';
+import { STATES } from '../../lib/browser/states.mjs';
+import { initScript, profileHash, settleScript, STABILIZE_CSS } from '../../lib/browser/stabilize.mjs';
 import { isSafeLink, escapeAttrValue } from '../../lib/actions/sweep.mjs';
 import { assertPlausibleBaseUrl } from '../../lib/net/url-guard.mjs';
 import { Journal } from '../../lib/run/journal.mjs';
 import { renderSummary } from '../../lib/actions/report.mjs';
+import {
+  captureAll,
+  DEFAULT_VISUAL_WORKERS,
+  DIAGNOSTIC_VISUAL_WORKERS,
+  MAX_VISUAL_WORKERS,
+} from '../../lib/actions/capture.mjs';
 
 const tmp = () => mkdtemp(path.join(tmpdir(), 't3u-'));
+
+describe('browser settling', () => {
+  test('default capture state removes page-driven autofocus', async () => {
+    const defaultState = STATES.find((state) => state.name === 'default');
+    let evaluated = false;
+    const page = {
+      evaluate: async (fn) => {
+        evaluated = true;
+        assert.match(fn.toString(), /active\.blur/);
+        return true;
+      },
+    };
+    const result = await defaultState.apply(page);
+    assert.equal(evaluated, true);
+    assert.deepEqual(result, { applied: true, blurred: true });
+  });
+
+  test('deterministic captures disable Chromium GPU rasterization', () => {
+    assert.ok(SAFE_BROWSER_ARGS.includes('--disable-gpu'));
+    assert.ok(browserArgs({}).includes('--disable-gpu'));
+  });
+
+  test('quiet detection tracks request identities instead of leaking duplicate events', async () => {
+    const page = new EventEmitter();
+    const detector = createQuietDetector(page, { quietMs: 5, hardCapMs: 100 });
+    const request = { url: () => 'https://example.test/asset.css' };
+
+    page.emit('request', request);
+    page.emit('request', request);
+    page.emit('requestfinished', request);
+
+    const result = await detector.wait();
+    detector.dispose();
+    assert.deepEqual(result, { timedOut: false, stillPending: [] });
+  });
+
+  test('navigation guards can be detached when a worker reuses its page', () => {
+    const page = new EventEmitter();
+    const mainFrame = { url: () => 'https://example.test/next' };
+    page.mainFrame = () => mainFrame;
+    let checks = 0;
+    const guard = {
+      assertSameOrigin(url, origin) {
+        checks += 1;
+        assert.equal(url, 'https://example.test/next');
+        assert.equal(origin, 'https://example.test');
+      },
+    };
+
+    const navigation = attachNavigationGuard(page, guard, 'https://example.test');
+    page.emit('framenavigated', mainFrame);
+    navigation.dispose();
+    page.emit('framenavigated', mainFrame);
+
+    assert.equal(checks, 1);
+  });
+
+  test('image decoding is bounded and skips incomplete lazy images', () => {
+    const script = settleScript();
+    assert.match(script, /img\.complete/);
+    assert.match(script, /decodeTimeoutMs = 3000/);
+    assert.match(script, /Promise\.race/);
+    assert.match(script, /lazyPromoted/);
+  });
+
+  test('native video controls settle without redundant zero-time seeks', () => {
+    const init = initScript();
+    const script = settleScript();
+    assert.doesNotMatch(init, /v\.currentTime = 0/);
+    assert.match(script, /Math\.abs\(video\.currentTime\) > 0\.001/);
+    assert.match(script, /video\.networkState === HTMLMediaElement\.NETWORK_LOADING/);
+    assert.doesNotMatch(script, /video\.load\(\)/);
+    assert.match(script, /mediaTimeoutMs = 5000/);
+    assert.match(script, /report\.videoReady/);
+    assert.match(script, /report\.videoTimedOut/);
+    assert.match(script, /video\.controls = false/);
+    assert.match(script, /report\.videoControlsHidden/);
+  });
+
+  test('consent adapters are explicit configuration, not site-specific harness code', () => {
+    const defaultScript = settleScript();
+    assert.doesNotMatch(defaultScript, /supi/i);
+    const script = settleScript({
+      consent: {
+        fallbackSelectors: ['#project-consent-overlay'],
+        scrollLockClasses: ['project-consent-lock'],
+      },
+    });
+    assert.match(script, /#project-consent-overlay/);
+    assert.match(script, /project-consent-lock/);
+  });
+
+  test('Owl is refreshed after consent normalization and before pinning', () => {
+    const init = initScript();
+    const script = settleScript({ consent: { fallbackSelectors: ['#consent'] } });
+    const refresh = script.indexOf("trigger('refresh.owl.carousel')");
+    const pin = script.indexOf("trigger('to.owl.carousel'");
+    assert.ok(refresh > script.indexOf('#consent'));
+    assert.ok(refresh < pin);
+    assert.match(script, /requestAnimationFrame\(\(\) => requestAnimationFrame/);
+    assert.match(init, /globalThis\.__t3uTimeouts = new Set\(\)/);
+    assert.match(init, /globalThis\.setTimeout =/);
+    assert.match(init, /clearTimeout\(id\)/);
+  });
+
+  test('determinism passes use identical warm-up lifecycles', async () => {
+    const source = await readFile(new URL('../../lib/actions/compare.mjs', import.meta.url), 'utf8');
+    const selftest = source.slice(source.indexOf('export async function selftestDeterminism'));
+    assert.equal((selftest.match(/warmup: true/g) ?? []).length, 2);
+    assert.doesNotMatch(selftest, /warmup: false/);
+  });
+
+  test('capture waits for window.load before site-state stabilization', async () => {
+    const source = await readFile(new URL('../../lib/actions/capture.mjs', import.meta.url), 'utf8');
+    assert.match(source, /waitForLoadState\('load', \{ timeout: 45000 \}\)/);
+    assert.ok(source.indexOf("waitForLoadState('load'") < source.indexOf('const quiet = createQuietDetector(page)'));
+  });
+
+  test('HTTP evidence records a guarded response after a cache warm-up request', async () => {
+    const source = await readFile(new URL('../../lib/actions/capture.mjs', import.meta.url), 'utf8');
+    const warmup = source.indexOf("purpose: 'capture-http-warmup'");
+    const recorded = source.indexOf("purpose: 'capture-http', accept: 'any'", warmup);
+    assert.ok(warmup >= 0);
+    assert.ok(recorded > warmup);
+    assert.match(source, /index\.httpWarmup \+= 1/);
+  });
+
+  test('visual capture has one bounded and recorded retry', async () => {
+    const source = await readFile(new URL('../../lib/actions/capture.mjs', import.meta.url), 'utf8');
+    assert.match(source, /const maxAttempts = 2/);
+    assert.match(source, /index\.retries\.push/);
+    assert.match(source, /firstError/);
+    assert.match(source, /captureAttempt: attempt/);
+    assert.match(source, /rm\(file, \{ force: true \}\)/);
+    assert.match(source, /rm\(metaFile, \{ force: true \}\)/);
+  });
+
+  test('self-test reports each missing capture once', async () => {
+    const source = await readFile(new URL('../../lib/actions/compare.mjs', import.meta.url), 'utf8');
+    const selftest = source.slice(source.indexOf('export async function selftestDeterminism'));
+    assert.doesNotMatch(selftest, /onlyInBefore|onlyInAfter/);
+  });
+
+  test('self-test has no pixel-dust quarantine: any changed pixel blocks', async () => {
+    const source = await readFile(new URL('../../lib/actions/compare.mjs', import.meta.url), 'utf8');
+    const selftest = source.slice(source.indexOf('export async function selftestDeterminism'));
+    assert.doesNotMatch(selftest, /px < PIXEL_DUST_FLOOR/);
+    assert.match(source, /PIXEL_DUST_FLOOR = 0/);
+  });
+
+  test('visual capture isolates final pages and bounds diagnostic workers', async () => {
+    assert.equal(DEFAULT_VISUAL_WORKERS, 1);
+    assert.equal(DIAGNOSTIC_VISUAL_WORKERS, 3);
+    assert.equal(MAX_VISUAL_WORKERS, 6);
+    await assert.rejects(
+      captureAll({ visualWorkers: 0 }),
+      /visualWorkers must be an integer from 1 to 6/,
+    );
+    await assert.rejects(
+      captureAll({ visualWorkers: 3 }),
+      /Final visual evidence requires exactly 1 worker/,
+    );
+
+    const source = await readFile(new URL('../../lib/actions/capture.mjs', import.meta.url), 'utf8');
+    assert.match(source, /const workerCount = Math\.min\(visualWorkers, caps\.length\)/);
+    assert.match(source, /browsers\.push\(browser\)/);
+    assert.match(source, /const context = await newContext\(browsers\[workerIndex\], \{/);
+    assert.match(source, /storageState: consent/);
+    assert.match(source, /capIndex = workerIndex; capIndex < caps\.length; capIndex \+= workerCount/);
+    assert.match(source, /const reusePage = scope === 'intermediate'/);
+    assert.match(source, /let reusablePage = null/);
+    assert.match(source, /let page = null/);
+    assert.match(source, /if \(!reusablePage \|\| reusablePage\.isClosed\(\)\)/);
+    assert.match(source, /page = await context\.newPage\(\)/);
+    assert.match(source, /if \(!reusePage\) await page\?\.close/);
+    assert.match(source, /await Promise\.all\(browsers\.map\(\(browser\) => browser\.close/);
+    assert.match(source, /await page\?\.close\(\)\.catch\(\(\) => \{\}\)/);
+    assert.match(source, /navigationGuard\?\.dispose\(\)/);
+    assert.match(source, /visualWorker: workerIndex \+ 1/);
+  });
+
+  test('intermediate self-test is a fast diagnostic that cannot unlock comparisons', async () => {
+    const source = await readFile(new URL('../../lib/actions/compare.mjs', import.meta.url), 'utf8');
+    const selftest = source.slice(source.indexOf('export async function selftestDeterminism'));
+    const diagnostic = selftest.indexOf("sampleMode === 'intermediate'");
+    const lockWrite = selftest.indexOf('const selftestHash');
+    assert.ok(diagnostic >= 0 && diagnostic < lockWrite);
+    assert.match(selftest, /rm\(paths\.selftestLock, \{ force: true \}\)/);
+    assert.match(selftest, /status: 'diagnostic-green'/);
+    assert.match(selftest, /Full --sample all proof is still required/);
+  });
+
+  test('a failed self-test revokes a stale green lock and state', async () => {
+    const source = await readFile(new URL('../../lib/actions/compare.mjs', import.meta.url), 'utf8');
+    const selftest = source.slice(source.indexOf('export async function selftestDeterminism'));
+    const failedBranch = selftest.slice(
+      selftest.indexOf('if (!passed)'),
+      selftest.indexOf("if (sampleMode === 'intermediate')"),
+    );
+    assert.match(failedBranch, /rm\(paths\.selftestLock, \{ force: true \}\)/);
+    assert.match(failedBranch, /status: 'open'/);
+    assert.match(failedBranch, /lock_hash: null/);
+    assert.match(failedBranch, /s\.loops\['000'\] = 'open'/);
+  });
+
+  test('capture accounting errors block determinism even if a PNG was left behind', async () => {
+    const source = await readFile(new URL('../../lib/actions/compare.mjs', import.meta.url), 'utf8');
+    const selftest = source.slice(source.indexOf('export async function selftestDeterminism'));
+    assert.match(selftest, /const captureA = await captureAll/);
+    assert.match(selftest, /const captureB = await captureAll/);
+    assert.match(selftest, /reason: 'capture-error'/);
+    assert.match(selftest, /const problems = \[\.\.\.unstable, \.\.\.captureProblems\]/);
+    assert.match(selftest, /captureErrors: captureErrors\.length/);
+  });
+});
 
 describe('exit-code contract', () => {
   test('the six codes are distinct and meaningful', () => {
@@ -207,7 +430,7 @@ describe('HTTP/metadata comparison', () => {
     const c = page({ headers: { 'content-type': 'text/html; charset=utf-8' } });
     const d = compareRecords(a, c);
     assert.equal(d.identical, false);
-    assert.ok(d.differences.some((x) => x.field === 'headers'));
+    assert.ok(d.differences.some((x) => x.field === 'header:x-frame-options'));
   });
 
   test('a lost canonical, title or hreflang is a difference', () => {
@@ -321,7 +544,17 @@ describe('manifest and tiered coverage', () => {
 
 describe('the report write door', () => {
   const good = () => envelope({
-    kind: 'visual', run: { loopId: '300' }, verdict: 'pass', counts: { captures: 1 }, findings: [],
+    kind: 'visual',
+    run: { runId: '2026-07-25-acme', loopId: '300' },
+    inputs: {
+      manifestHash: 'sha256:m',
+      environmentFingerprintHash: 'sha256:e',
+      contentFingerprintHash: 'sha256:c',
+      selftestLockHash: 'sha256:s',
+    },
+    verdict: 'pass',
+    counts: { captures: 1 },
+    findings: [],
   });
 
   test('accepts a well-formed report', () => {

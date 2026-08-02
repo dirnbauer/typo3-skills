@@ -13,24 +13,28 @@ Each track has its own approval and its own derived baseline `B-<n>`.
 | 500 | performance and Core Web Vitals — `t3u lighthouse` |
 | 510 | technical SEO and structured data — see `references/metadata-and-social.md` |
 | 520 | accessibility beyond automated-green — `scripts/a11y-audit.mjs` |
-| 530 | security posture |
+| 530 | security posture, including CSP and other security headers |
 | 540 | media and cache |
 | 550 | code quality |
 | 560 | information architecture and content — **recommendation-only by default** |
 
-## Loop 500 — sample by template, not at random
+## Loop 500 — final reporting sample and improvement handoff
 
 ```bash
 node scripts/t3u.mjs lighthouse --run-dir .typo3-update \
-  --sample 10 --runs 3 --form-factor mobile --loop 500
+  --runs 3 --form-factor mobile --loop 500 --label before
 ```
 
-**A random sample of a site is not a representative sample of its templates.** Ten URLs drawn
-uniformly from a sitemap that is 80% leaf pages measures the leaf template ten times and never
-touches the listing template — which is usually the slower one, because it renders many records
-and many images. The sample is therefore stratified into **home / listing / detail** (a page with
-children is a listing, a leaf is a detail) with one of each guaranteed before the remainder is
-filled from a seeded shuffle, so a rerun audits the same pages.
+The command uses exactly three reproducible pages: the homepage and two seeded random non-home
+pages. This is a concise final-report sample, not a field-performance claim. The selected URLs are
+stable across reruns even if manifest ordering changes.
+
+The generated `artifacts/report.lighthouse.before.json` is the handoff to the improvement iteration.
+It carries measured opportunities, configured quality gaps and an `agentBrief`. Take the highest
+measured opportunity, add or update regression tests before changing one cause, run the tests, then
+rerun Lighthouse on the identical three pages with `--label after`. Both reports remain available.
+Keep the change only when tests pass, the measured target improves, and Contract A remains green;
+otherwise restore the loop snapshot. This happens after Contract A closes and before P15 reporting.
 
 Two traps:
 
@@ -51,8 +55,8 @@ through untouched, so an unoptimised upload stays unoptimised however the qualit
 See [`references/image-formats.md`](../image-formats.md) — on a real run this took performance
 89 → 100 and LCP 3.8s → 1.8s by moving two header images to AVIF, with no element moving.
 
-`--sample` bounds how many URLs are audited and `--runs` how many times each; the default of
-3 runs is what makes a median meaningful. Report **medians with min–max**, never a single run, and carry the caveat next to the number:
+`--runs` controls how many times each of the three URLs is audited; the default of 3 makes a median
+meaningful. Report **medians with min–max**, never a single run, and carry the caveat next to the number:
 these are loopback network, warm cache, laptop CPU. The absolute score is indicative; the
 before/after delta on the same machine is the evidence. TBT is a lab **proxy** for INP.
 
@@ -120,4 +124,3 @@ from lab data — TBT is a proxy.
 
 ## Blocking
 An unapproved track. A change that would regress the proven Contract A state.
-

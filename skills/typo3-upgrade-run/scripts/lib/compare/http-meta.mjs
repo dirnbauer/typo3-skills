@@ -10,8 +10,10 @@
  * finding (privacy, caching, and consent all change) even though its value is noise.
  */
 
+import { sha256 } from '../run/paths.mjs';
+
 export const COMPARED_FIELDS = Object.freeze([
-  'status', 'finalUrl', 'redirectChain', 'contentType', 'contentLanguage',
+  'status', 'requestedUrl', 'finalUrl', 'redirectChain', 'contentType', 'documentKind', 'bodyHash', 'contentLanguage',
   'canonical', 'hreflang', 'title', 'metaDescription', 'robots',
   'openGraph', 'twitter', 'jsonLd', 'htmlLang', 'headers', 'cookieNames',
 ]);
@@ -27,29 +29,37 @@ export const VOLATILE_HEADERS = Object.freeze([
 ]);
 
 /** Extract the comparable record from a fetched response + body. Pure, so it is testable. */
-export function extractRecord({ url, status, headers, body, redirects = [] }) {
+export function extractRecord({ requestedUrl = null, url, status, headers, body, redirects = [] }) {
   const h = normaliseHeaders(headers);
+  const contentType = (h['content-type'] ?? '').split(';')[0].trim() || null;
+  const documentKind = isHtml(contentType) ? 'html'
+    : isXml(contentType, body) ? 'xml'
+      : 'other';
+  const html = documentKind === 'html' ? body : '';
   return {
     url,
+    requestedUrl: requestedUrl ?? url,
     status,
     finalUrl: url,
     redirectChain: redirects,
-    contentType: (h['content-type'] ?? '').split(';')[0].trim() || null,
+    contentType,
+    documentKind,
+    bodyHash: documentKind === 'html' ? null : `sha256:${sha256(String(body ?? ''))}`,
     contentLanguage: h['content-language'] ?? null,
-    canonical: matchAttr(body, /<link[^>]+rel=["']canonical["'][^>]*>/i, /href=["']([^"']+)["']/i),
-    hreflang: matchAll(body, /<link[^>]+rel=["']alternate["'][^>]*>/gi)
+    canonical: matchAttr(html, /<link[^>]+rel=["']canonical["'][^>]*>/i, /href=["']([^"']+)["']/i),
+    hreflang: matchAll(html, /<link[^>]+rel=["']alternate["'][^>]*>/gi)
       .map((tag) => ({
         lang: pick(tag, /hreflang=["']([^"']+)["']/i),
         href: pick(tag, /href=["']([^"']+)["']/i),
       }))
       .filter((x) => x.lang)
       .sort((a, b) => String(a.lang).localeCompare(String(b.lang))),
-    title: decode(pick(body, /<title[^>]*>([\s\S]*?)<\/title>/i)),
-    metaDescription: metaContent(body, 'description'),
-    robots: metaContent(body, 'robots'),
-    openGraph: metaProps(body, /property=["']og:([^"']+)["']/i),
-    twitter: metaProps(body, /name=["']twitter:([^"']+)["']/i),
-    jsonLd: matchAll(body, /<script[^>]+application\/ld\+json[^>]*>([\s\S]*?)<\/script>/gi)
+    title: decode(pick(html, /<title[^>]*>([\s\S]*?)<\/title>/i)),
+    metaDescription: metaContent(html, 'description'),
+    robots: metaContent(html, 'robots'),
+    openGraph: metaProps(html, /property=["']og:([^"']+)["']/i),
+    twitter: metaProps(html, /name=["']twitter:([^"']+)["']/i),
+    jsonLd: matchAll(html, /<script[^>]+application\/ld\+json[^>]*>([\s\S]*?)<\/script>/gi)
       .map((block) => {
         const inner = block.replace(/^[\s\S]*?>/, '').replace(/<\/script>$/i, '');
         try {
@@ -59,8 +69,8 @@ export function extractRecord({ url, status, headers, body, redirects = [] }) {
           return { valid: false, error: String(err.message).slice(0, 120) };
         }
       }),
-    htmlLang: pick(body, /<html[^>]+lang=["']([^"']+)["']/i),
-    headers: Object.fromEntries(HEADER_ALLOWLIST.filter((k) => k in h).map((k) => [k, h[k]])),
+    htmlLang: pick(html, /<html[^>]+lang=["']([^"']+)["']/i),
+    headers: Object.fromEntries(HEADER_ALLOWLIST.filter((k) => k in h).map((k) => [k, normalizeHeaderValue(k, h[k])])),
     cookieNames: cookieNames(headers),
   };
 }
@@ -75,9 +85,12 @@ export function compareRecords(before, after) {
   };
 
   diff('status', before.status, after.status);
+  diff('requestedUrl', before.requestedUrl, after.requestedUrl);
   diff('finalUrl', before.finalUrl, after.finalUrl);
   diff('redirectChain', before.redirectChain, after.redirectChain);
   diff('contentType', before.contentType, after.contentType);
+  diff('documentKind', before.documentKind, after.documentKind);
+  diff('bodyHash', before.bodyHash, after.bodyHash);
   diff('contentLanguage', before.contentLanguage, after.contentLanguage);
   diff('canonical', before.canonical, after.canonical);
   diff('hreflang', before.hreflang, after.hreflang);
@@ -88,7 +101,17 @@ export function compareRecords(before, after) {
   diff('twitter', before.twitter, after.twitter);
   diff('jsonLd', before.jsonLd, after.jsonLd);
   diff('htmlLang', before.htmlLang, after.htmlLang);
-  diff('headers', before.headers, after.headers);
+  const headerNames = new Set([
+    ...Object.keys(before.headers ?? {}),
+    ...Object.keys(after.headers ?? {}),
+  ]);
+  for (const name of [...headerNames].sort()) {
+    diff(
+      `header:${name}`,
+      normalizeHeaderValue(name, before.headers?.[name]),
+      normalizeHeaderValue(name, after.headers?.[name]),
+    );
+  }
   diff('cookieNames', before.cookieNames, after.cookieNames);
 
   return { identical: differences.length === 0, differences };
@@ -103,6 +126,17 @@ function normaliseHeaders(headers) {
     const key = k.toLowerCase();
     if (VOLATILE_HEADERS.includes(key) && key !== 'set-cookie') continue;
     out[key] = v;
+  }
+  return out;
+}
+
+function normalizeHeaderValue(name, value) {
+  if (value === null || value === undefined) return null;
+  let out = String(value).replace(/\s+/g, ' ').trim();
+  if (name === 'content-security-policy' || name === 'content-security-policy-report-only') {
+    out = out
+      .replace(/'nonce-[^']+'/gi, "'nonce-<NONCE>'")
+      .replace(/([?&][A-Za-z0-9_.~-]+)=([^&\s;]+)/g, '$1=<DYNAMIC>');
   }
   return out;
 }
@@ -151,4 +185,14 @@ function decode(s) {
     .replace(/&quot;/g, '"').replace(/&#0?39;|&apos;/g, "'")
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function isHtml(contentType) {
+  return contentType === 'text/html' || contentType === 'application/xhtml+xml';
+}
+
+function isXml(contentType, body) {
+  return contentType === 'application/xml'
+    || contentType === 'text/xml'
+    || /^\s*<\?xml\b|^\s*<(?:urlset|sitemapindex)\b/i.test(String(body ?? ''));
 }

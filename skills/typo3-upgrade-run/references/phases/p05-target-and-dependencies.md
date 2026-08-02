@@ -39,13 +39,18 @@ P04 green.
    hand over, and a `.env.dist` is that list already written down.
 8. Update PHPStan to the newest release compatible with the resolved dependency set, including
    `saschaegerer/phpstan-typo3` through `phpstan/extension-installer`. Do not copy stale config.
-9. `ddev composer validate --strict`, update with the narrowest justified command, inspect the
+9. On the PHP 8.4 / TYPO3 13.4-or-14.3 compatible rung, install and locally configure
+   `spooner/deployer-information` per `references/deployment-handover.md`. Verify current metadata
+   before selecting the constraint; record its locked version and extension key
+   `deployer_information` in the extension manifest.
+10. `ddev composer validate --strict`, update with the narrowest justified command, inspect the
    lockfile diff.
 
 ## Exit
 `ddev composer why-not typo3/cms-core "^14.3"` names no blocker. `why-not php 8.4` empty, and the 8.5
 attempt recorded with its outcome. Every extension in `manifests/extensions.json` has a resolution.
+`deployer_information` is installed at a compatible version and its local configuration mode is
+recorded.
 
 ## Blocking
 Any extension left `unresolved`. A removal without an approval record.
-

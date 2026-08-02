@@ -37,7 +37,7 @@ const CONTENT_HASH_MAX_BYTES = 8 * 1024 * 1024;
 export async function collectContent({
   ddevProject = null,
   fileadmin = 'fileadmin',
-  tables = TRACKED_TABLES,
+  tables = null,
   allowMissing = false,
   runner = ddevSql,
 } = {}) {
@@ -72,12 +72,42 @@ export async function collectContent({
 async function collectDatabase({ ddevProject, tables, runner }) {
   const rows = [];
   try {
-    for (const table of tables) {
-      const sql = `SELECT COUNT(*) AS c, COALESCE(MAX(tstamp),0) AS t, COALESCE(MAX(uid),0) AS u FROM ${table}`;
-      const out = await runner(sql, ddevProject);
-      if (out === null) continue;
-      const [c, t, u] = out;
-      rows.push({ table, rowCount: Number(c), maxTstamp: Number(t), maxUid: Number(u), method: 'count+max' });
+    const selected = tables?.length ? tables : await discoverTrackedTables(runner, ddevProject);
+    for (const table of selected) {
+      if (!safeIdentifier(table) || excluded(table)) continue;
+      const columnsRaw = await runner(`SHOW COLUMNS FROM \`${table}\``, ddevProject);
+      const columns = parseTable(columnsRaw).map((row) => ({
+        name: row.Field,
+        type: row.Type,
+        key: row.Key,
+      })).filter((column) => column.name);
+      if (!columns.length) continue;
+
+      const names = new Set(columns.map((column) => column.name));
+      const maxTstamp = names.has('tstamp') ? 'COALESCE(MAX(`tstamp`),0)' : '0';
+      const maxUid = names.has('uid') ? 'COALESCE(MAX(`uid`),0)' : '0';
+      const statsRaw = await runner(
+        `SELECT COUNT(*) AS row_count, ${maxTstamp} AS max_tstamp, ${maxUid} AS max_uid FROM \`${table}\``,
+        ddevProject,
+      );
+      const stats = parseTable(statsRaw)[0];
+      if (!stats) continue;
+
+      const order = columns.filter((column) => column.key === 'PRI').map((column) => column.name);
+      if (!order.length) order.push(...columns.map((column) => column.name));
+      const select = columns.map((column) => `\`${column.name}\``).join(',');
+      const orderBy = order.map((column) => `\`${column}\``).join(',');
+      const data = await runner(`SELECT ${select} FROM \`${table}\` ORDER BY ${orderBy}`, ddevProject);
+      if (data === null) continue;
+      rows.push({
+        table,
+        rowCount: Number(stats.row_count ?? 0),
+        maxTstamp: Number(stats.max_tstamp ?? 0),
+        maxUid: Number(stats.max_uid ?? 0),
+        schemaHash: `sha256:${sha256(JSON.stringify(columns))}`,
+        rowHash: `sha256:${sha256(String(data))}`,
+        method: 'sha256 over complete ordered row serialization',
+      });
     }
     if (!rows.length) return { available: false, error: 'no tables could be queried' };
     return { available: true, tables: rows, via: 'ddev mysql' };
@@ -93,16 +123,43 @@ async function ddevSql(sql, project) {
   // and promisified execFile has no `input` option (that belongs to execFileSync), so
   // the statement was never delivered to stdin. Pass the SQL with -e instead.
   const args = ['mysql'];
-  if (project) args.push('--project', project);
   args.push('-e', `${sql};`);
   try {
     const { stdout } = await exec('ddev', args, { timeout: 20000, encoding: 'utf8' });
-    const lines = String(stdout).trim().split('\n');
-    if (lines.length < 2) return null;
-    return lines[1].split('\t');
+    return String(stdout);
   } catch {
     return null;
   }
+}
+
+async function discoverTrackedTables(runner, project) {
+  const raw = await runner('SHOW TABLES', project);
+  const rows = parseTable(raw);
+  const present = rows.map((row) => Object.values(row)[0]).filter(Boolean);
+  const wanted = new Set(TRACKED_TABLES);
+  for (const table of present) {
+    if (String(table).startsWith('tx_') && !excluded(String(table))) wanted.add(String(table));
+  }
+  return [...wanted].filter((table) => present.includes(table)).sort();
+}
+
+function parseTable(raw) {
+  const lines = String(raw ?? '').trim().split('\n').filter(Boolean);
+  if (lines.length < 2) return [];
+  const headers = lines[0].split('\t');
+  return lines.slice(1).map((line) => Object.fromEntries(
+    line.split('\t').map((value, index) => [headers[index], value]),
+  ));
+}
+
+function safeIdentifier(value) {
+  return /^[A-Za-z0-9_]+$/.test(String(value));
+}
+
+function excluded(table) {
+  return EXCLUDED_TABLES.some((pattern) => (
+    pattern.endsWith('*') ? table.startsWith(pattern.slice(0, -1)) : table === pattern
+  ));
 }
 
 export async function collectFiles(root) {
@@ -168,8 +225,17 @@ export function compareContent(sealed, current) {
   for (const t of current.database?.tables ?? []) {
     const b = bTables.get(t.table);
     if (!b) { drifted.push({ key: `table:${t.table}`, before: null, after: t }); continue; }
-    if (b.rowCount !== t.rowCount || b.maxTstamp !== t.maxTstamp || b.maxUid !== t.maxUid) {
+    if (b.rowCount !== t.rowCount
+      || b.maxTstamp !== t.maxTstamp
+      || b.maxUid !== t.maxUid
+      || b.rowHash !== t.rowHash
+      || b.schemaHash !== t.schemaHash) {
       drifted.push({ key: `table:${t.table}`, before: b, after: t });
+    }
+  }
+  for (const [table, before] of bTables) {
+    if (!(current.database?.tables ?? []).some((entry) => entry.table === table)) {
+      drifted.push({ key: `table:${table}`, before, after: null });
     }
   }
   if (sealed.files?.treeHash !== current.files?.treeHash) {

@@ -122,6 +122,10 @@ Read-only inspection. Creating `.typo3-update/` from `templates/run-directory/`.
      WHERE deleted=0 AND CType LIKE 'mask_%' GROUP BY CType ORDER BY 2 DESC;"
    ```
 
+   Also check for `fluidtypo3/fluid-components` and inventory every `fc:` invocation. When it has
+   to be replaced, the component namespace, argument API, FAL values and link behavior are Contract
+   A inputs; follow [`references/native-fluid-components.md`](../native-fluid-components.md).
+
 13. **Name the subsystems that carry their own upgrade project.** Some things are not "an
    extension to update" but a workstream with their own version matrix, their own data to
    reindex or migrate, and sometimes their own licence: a search stack (Solr and its companions),
@@ -152,4 +156,3 @@ Target kind, source version, DDEV project and sync-freshness decision are all re
 
 ## Blocking
 No local sync, or one the user cannot vouch for. Ask; do not improvise one.
-

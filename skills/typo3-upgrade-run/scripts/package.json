@@ -18,12 +18,14 @@
     "test:e2e": "node --test tests/e2e/*.test.mjs"
   },
   "dependencies": {
+    "ajv": "^8.17.1",
     "chrome-launcher": "^1.2.1",
     "lighthouse": "^13.4.1",
     "odiff-bin": "^4.3.8",
     "pixelmatch": "^7.2.0",
     "playwright": "^1.60.0",
-    "pngjs": "^7.0.0"
+    "pngjs": "^7.0.0",
+    "yaml": "^2.8.1"
   },
   "comment:removed-dependencies": {
     "axios": "follows redirects internally, so the URL guard never sees the hops",

@@ -1,5 +1,6 @@
 ---
 id: "APR-{{NNN}}"
+stage: "intent"         # intent | acceptance
 requested_at: "{{NOW}}"
 granted_at: null
 granted_by: null
@@ -22,6 +23,8 @@ user agreed to this.
 ## What the user was shown
 
 Screenshots, diffs, command output, affected URL counts. Link the artifacts.
+For `stage: intent`, write "not yet applicable" instead. For `stage: acceptance`, at least one
+evidence path is mandatory.
 
 | Evidence | Path |
 |---|---|

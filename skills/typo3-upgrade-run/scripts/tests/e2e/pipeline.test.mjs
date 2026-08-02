@@ -24,6 +24,12 @@ import { classify } from '../../lib/compare/classify.mjs';
 import { envelope, writeReport } from '../../lib/report/write.mjs';
 
 const localResolver = async () => ['127.0.0.1'];
+const EVIDENCE = {
+  manifestHash: 'sha256:m',
+  environmentFingerprintHash: 'sha256:e',
+  contentFingerprintHash: 'sha256:c',
+  selftestLockHash: 'sha256:s',
+};
 
 describe('e2e: guarded discovery over a hostile sitemap', () => {
   let server; let origin; let guard;
@@ -157,7 +163,10 @@ describe('e2e: findings reach the exit code — the v1 defect', () => {
       differences: cmp.differences,
     }];
     const report = envelope({
-      kind: 'http', run: { loopId: '300' }, verdict: 'findings',
+      kind: 'http',
+      run: { runId: '2026-07-25-e2e', loopId: '300' },
+      inputs: EVIDENCE,
+      verdict: 'findings',
       counts: { urls: 1, different: 1 }, findings,
     });
 
@@ -211,7 +220,10 @@ describe('e2e: prompt injection in page content is inert', () => {
 
   test('the injected text is contained when it reaches a report', async () => {
     const report = envelope({
-      kind: 'http', run: { loopId: '300' }, verdict: 'findings',
+      kind: 'http',
+      run: { runId: '2026-07-25-e2e', loopId: '300' },
+      inputs: EVIDENCE,
+      verdict: 'findings',
       counts: { urls: 1 },
       findings: [{
         id: 'F-300-001', target: '/', class: 'environment', severity: 'info', status: 'open',

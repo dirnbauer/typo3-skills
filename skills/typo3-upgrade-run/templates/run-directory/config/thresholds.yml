@@ -11,7 +11,7 @@ visual:
   # can hide inside "1%". diff_percent stays in the report as data only.
   max_unexplained_diff_pixels: 0
   engine: odiff              # odiff | pixelmatch
-  reshoots_before_finding: 1 # flake quarantine
+  reshoots_before_finding: 1 # confirms harness-noise; never changes non-zero to green
   anti_aliasing: true
 
 coverage:
@@ -47,7 +47,7 @@ contract_b:
     lighthouse_performance_desktop: 95
     critical_js_kb: 170
     critical_css_kb: 60
-    runs_per_url: 5
+    runs_per_url: 3
     aggregate: median
   seo:
     lighthouse_seo: 100

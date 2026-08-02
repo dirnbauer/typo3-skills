@@ -20,9 +20,18 @@ Every command this skill runs is appended to `journal.jsonl` with its redacted a
 
 ## 50.2 The environment fingerprint
 
-Hashed inputs: Node version and platform · OS type, release, container image · Playwright version · browser name, version, revision, channel, launch-args hash · installed font list · device scale factor, colour scheme, reduced-motion, forced-colors, locale, timezone · image processor and version, plus the TYPO3 `GFX` configuration (processor, path, effects, jpg/webp/avif quality, allowed extensions, upscaling) · PHP version and extension list · TYPO3 version and context · DDEV version, project type, database engine · harness version and dependency lockfile hash.
+The fingerprint has two roles and must not confuse them:
 
-Recorded but **not** hashed: CPU count, memory, hostname, uptime. These vary legitimately between runs and hashing them would make every run invalid.
+- **Immutable renderer/toolchain hash:** host Node/OS · Playwright and Chromium · launch arguments ·
+  host fonts · viewport/rendering settings · application image processor and TYPO3 `GFX` · DDEV
+  version · harness version · dependency lock hash · harness source hash.
+- **Upgrade subject, recorded but not hashed:** application PHP version/extensions · TYPO3 version
+  and context · DDEV project type/database engine. These are the values the upgrade is expected to
+  change. Hashing them makes every successful upgrade invalidate itself.
+
+CPU count, memory, hostname and uptime are also recorded only. Browser and fonts are collected on
+the host because that is where Playwright renders. PHP, Composer, TYPO3, database, image processor
+and `GFX` are always collected through DDEV; host PHP or Composer never describes the application.
 
 Sealed in phase P01. Asserted at step 4 of every loop. **Drift produces `INVALID` (exit 3), never `FINDINGS` (exit 1)** — the run cannot be judged, which is a different statement from the site being wrong, and conflating the two is how a browser patch gets mistaken for a regression.
 
@@ -32,7 +41,13 @@ A Playwright or Chromium update between the before and after captures is the cla
 
 Proves the *inputs* did not change while the run was in progress.
 
-Database: row count, max `tstamp`, and max `uid` per table for `pages`, `tt_content`, `sys_file`, `sys_file_reference`, `sys_file_metadata`, `sys_redirect`, `sys_template`, `sys_category*`. Excluded because they change on their own: `cf_*`, `sys_log`, `be_sessions`, `fe_sessions`, `sys_lockedrecords`, `tx_scheduler_task`.
+Database: complete ordered row serialization hash plus schema hash, row count, max `tstamp`, and max
+`uid` for the core content tables and every `tx_*` extension table discovered in the database.
+`--tables` can add or freeze an explicit set. The complete row hash catches an edit to a non-max row
+even when count, max uid and max timestamp stay unchanged. Raw rows never enter the report.
+
+Excluded because they change on their own: `cf_*`, `sys_log`, `be_sessions`, `fe_sessions`,
+`sys_lockedrecords`, `tx_scheduler_task`, `sys_history`, and `sys_refindex`.
 
 Files: `fileadmin/` tree hash over sorted `(relative path, size, mtime@1s, content SHA-256 for files under 8 MiB)`. `_processed_` and `_temp_` are excluded from the **input** fingerprint — they are rendering results, not inputs — but their warm/cold state is recorded separately because it changes timing.
 
@@ -45,7 +60,10 @@ Before every capture, identically before and after:
 - Context: `reducedMotion: 'reduce'`, fixed `colorScheme`, `forcedColors: 'none'`, explicit `locale` and `timezoneId`, `deviceScaleFactor: 1`.
 - Init script: **seed `Math.random` per capture** — this is what actually makes randomised carousels, shuffled teasers and generated element ids deterministic, and it is the single highest-leverage stabilisation. Pin `Date.now()` and `new Date()` to a fixed epoch plus a monotonic counter; a hard freeze divides by zero in real code. Patch `requestAnimationFrame` so pending frames can be cancelled before the shot.
 - CSS: `animation: none`, `transition: none`, `caret-color: transparent`, `scroll-behavior: auto`, `scrollbar-gutter: stable`.
-- Then: `document.fonts.ready` plus an explicit load of each declared face; pause and rewind every `<video>`; force lazy-load completion by stepped scroll to the bottom, wait until every `img[loading=lazy]` reports `complete`, scroll back to 0; seed the consent state from configuration as cookies or localStorage — **never by clicking the banner**, which is timing-dependent; warm image processing before the first capture.
+- Then: `document.fonts.ready` plus an explicit load of each declared face; pause and rewind every `<video>`; force lazy-load completion by stepped scroll to the bottom, wait until every `img[loading=lazy]` reports `complete`, scroll back to 0; seed the consent state from the sealed stabilization adapter as cookies or localStorage — **never by clicking the banner**, which is timing-dependent; warm image processing before the first capture.
+- Consent captures include the accepted default state and, when trigger selectors are configured,
+  `consent-modal-open`. Fallback overlay selectors and scroll-lock classes are configuration, never
+  project-specific selectors hard-coded in the harness.
 - Do **not** use `networkidle`. Use `domcontentloaded` plus fonts plus an in-flight-request quiet-period detector fed by the route handler, with a hard cap.
 
 ## 50.5 Third-party requests are blocked by default
@@ -54,11 +72,11 @@ External origins are aborted unless explicitly allow-listed. Google Fonts, analy
 
 Anything genuinely required must be explicitly allowed or mirrored locally, and the allow-list is recorded in the manifest.
 
-## 50.6 Flake quarantine
+## 50.6 Strict zero and harness noise
 
-A difference must **reproduce on an immediate re-shoot** of the same capture before it becomes a finding. One that does not reproduce is classified `harness-noise` and sends work back to loop 000.
-
-Captures found unstable during loop 000 are marked `quarantined` in the manifest. Their later differences are pre-classified `harness-noise` — still blocking, but honestly labelled rather than presented as a site regression.
+Loop 000 uses pixel colour tolerance `0` and dust floor `0`. One changed pixel blocks the self-test;
+there is no quarantine that can turn a non-zero result green. A later difference that does not
+reproduce is `harness-noise` and sends work back to loop 000, where the cause must be stabilized.
 
 ## 50.7 Reproducible sampling
 

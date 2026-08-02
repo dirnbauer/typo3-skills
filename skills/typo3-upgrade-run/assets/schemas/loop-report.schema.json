@@ -1,102 +1,144 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/dirnbauer/webconsulting-skills/skills/typo3-upgrade-run/assets/schemas/loop-report.schema.json",
-  "title": "typo3-upgrade-run loop report",
-  "description": "The machine mirror of a loop directory. Gates read this, not the prose. Markdown summaries are generated from it, never hand-written.",
+  "title": "typo3-upgrade-run executable loop report",
+  "description": "The schema for report.json emitted by t3u gate from the selected loop's HTTP, DOM and visual reports.",
   "type": "object",
-  "required": ["schema", "loop", "preconditions", "verdict", "findings", "findings_by_class"],
+  "required": [
+    "$schema",
+    "schemaVersion",
+    "kind",
+    "harness",
+    "run",
+    "inputs",
+    "verdict",
+    "counts",
+    "findings",
+    "stages",
+    "findingsByClass",
+    "blockingReasons",
+    "residualFindings",
+    "idempotence",
+    "redaction"
+  ],
   "additionalProperties": false,
   "properties": {
-    "schema": { "const": "typo3-upgrade-run/loop-report@1" },
-    "loop": {
+    "$schema": { "const": "typo3-upgrade-run/loop/v1" },
+    "schemaVersion": { "const": "1.0.0" },
+    "kind": { "const": "loop" },
+    "harness": {
       "type": "object",
-      "required": ["id", "track", "slug", "contract"],
+      "required": ["name", "version"],
       "additionalProperties": false,
       "properties": {
-        "id": { "type": "string", "pattern": "^[0-9]{3}$" },
-        "track": { "enum": ["harness", "invariance", "elevation", "report"] },
-        "slug": { "type": "string" },
-        "contract": { "enum": ["A", "B", "none"] },
-        "phase": { "type": "string", "pattern": "^P[0-9]{2}$" },
-        "baseline_ref": { "type": "string" },
-        "snapshot": { "type": ["string", "null"] },
-        "approval_ref": { "type": ["string", "null"] },
-        "started_at": { "type": ["string", "null"], "format": "date-time" },
-        "finished_at": { "type": ["string", "null"], "format": "date-time" }
+        "name": { "const": "t3u" },
+        "version": { "type": "string" }
       }
     },
-    "preconditions": {
+    "run": {
       "type": "object",
-      "required": ["gate"],
+      "required": ["runId", "loopId", "track", "createdAt"],
       "additionalProperties": false,
       "properties": {
-        "gate": { "enum": ["pass", "fail"] },
-        "environment_fingerprint": { "enum": ["match", "drift", "missing"] },
-        "content_fingerprint": { "enum": ["match", "drift", "missing"] },
-        "baseline_lock": { "enum": ["match", "drift", "missing"] },
-        "selftest": { "enum": ["valid", "expired", "missing", "failed"] },
-        "manifest": { "enum": ["match", "drift", "missing"] },
-        "checks": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "required": ["id", "expr", "result"],
-            "additionalProperties": false,
-            "properties": {
-              "id": { "type": "string" },
-              "expr": { "type": "string" },
-              "expected": {},
-              "actual": {},
-              "result": { "enum": ["pass", "fail", "not-applicable"] },
-              "reason": { "type": ["string", "null"] }
-            }
-          }
+        "runId": { "type": "string", "minLength": 1 },
+        "loopId": { "type": "string", "pattern": "^[0-9]{3}$" },
+        "track": { "enum": ["harness", "invariance", "elevation", "report"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "inputs": {
+      "type": "object",
+      "required": [
+        "manifestHash",
+        "environmentFingerprintHash",
+        "contentFingerprintHash",
+        "selftestLockHash"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "manifestHash": { "type": "string", "minLength": 1 },
+        "environmentFingerprintHash": { "type": "string", "minLength": 1 },
+        "contentFingerprintHash": { "type": "string", "minLength": 1 },
+        "selftestLockHash": { "type": "string", "minLength": 1 }
+      }
+    },
+    "verdict": { "enum": ["pass", "findings", "invalid", "error"] },
+    "counts": { "$ref": "#/$defs/classCounts" },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "target", "class", "severity", "status"],
+        "properties": {
+          "id": { "type": "string" },
+          "target": { "type": "string" },
+          "class": {
+            "enum": [
+              "regression",
+              "declared-change",
+              "pre-existing",
+              "harness-noise",
+              "environment",
+              "content-drift",
+              "improvement"
+            ]
+          },
+          "severity": { "enum": ["blocker", "major", "minor", "info"] },
+          "status": { "enum": ["open", "closed"] }
         }
       }
     },
     "stages": {
       "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
       "items": {
         "type": "object",
-        "required": ["stage", "verdict"],
+        "required": ["stage", "verdict", "counts"],
         "additionalProperties": false,
         "properties": {
-          "stage": { "enum": ["http", "dom", "visual", "backend-sweep", "smoke", "lighthouse", "axe", "static", "tests", "custom"] },
-          "report": { "type": ["string", "null"] },
-          "verdict": { "enum": ["pass", "findings", "invalid", "skipped"] },
-          "exit_code": { "type": ["integer", "null"], "minimum": 0, "maximum": 5 },
-          "counts": { "type": "object", "additionalProperties": { "type": "integer" } }
+          "stage": { "enum": ["http", "dom", "visual"] },
+          "verdict": { "enum": ["pass", "findings", "invalid", "error"] },
+          "counts": { "type": "object" }
         }
       }
     },
-    "iterations": {
-      "type": "array",
-      "description": "Append-only. One entry per iteration; each addresses exactly one cause.",
-      "items": {
-        "type": "object",
-        "required": ["n", "cause_id", "open_before", "open_after", "progress"],
-        "additionalProperties": false,
-        "properties": {
-          "n": { "type": "integer", "minimum": 1 },
-          "cause_id": { "type": "string" },
-          "change_ref": { "type": ["string", "null"] },
-          "files_touched": { "type": "integer", "minimum": 0 },
-          "lines_changed": { "type": "integer", "minimum": 0 },
-          "budget_breach": { "type": "boolean", "default": false },
-          "measurement_ref": { "type": ["string", "null"] },
-          "open_before": { "type": "integer", "minimum": 0 },
-          "open_after": { "type": "integer", "minimum": 0 },
-          "progress": { "type": "boolean", "description": "open_after < open_before" }
-        }
-      }
-    },
-    "findings": {
-      "type": "array",
-      "items": { "$ref": "finding.schema.json" }
-    },
-    "findings_by_class": {
+    "findingsByClass": { "$ref": "#/$defs/classCounts" },
+    "blockingReasons": { "type": "array", "items": { "type": "string" } },
+    "residualFindings": { "type": "array", "items": { "type": "string" } },
+    "idempotence": {
       "type": "object",
-      "required": ["regression", "declared-change", "pre-existing", "harness-noise", "environment", "content-drift", "improvement", "unclassified"],
+      "required": ["ran", "diffCount"],
+      "additionalProperties": false,
+      "properties": {
+        "ran": { "const": true },
+        "diffCount": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "redaction": {
+      "type": "object",
+      "required": ["applied", "profile", "rules"],
+      "additionalProperties": false,
+      "properties": {
+        "applied": { "type": "boolean" },
+        "profile": { "enum": ["local", "share"] },
+        "rules": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  },
+  "$defs": {
+    "classCounts": {
+      "type": "object",
+      "required": [
+        "regression",
+        "declared-change",
+        "pre-existing",
+        "harness-noise",
+        "environment",
+        "content-drift",
+        "improvement",
+        "unclassified"
+      ],
       "additionalProperties": false,
       "properties": {
         "regression": { "type": "integer", "minimum": 0 },
@@ -106,98 +148,8 @@
         "environment": { "type": "integer", "minimum": 0 },
         "content-drift": { "type": "integer", "minimum": 0 },
         "improvement": { "type": "integer", "minimum": 0 },
-        "unclassified": {
-          "type": "integer",
-          "minimum": 0,
-          "description": "Must be 0 for any verdict other than aborted."
-        }
+        "unclassified": { "type": "integer", "minimum": 0 }
       }
-    },
-    "coverage": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "discovered": { "type": "integer", "minimum": 0 },
-        "http_compared": { "type": "integer", "minimum": 0 },
-        "dom_compared": { "type": "integer", "minimum": 0 },
-        "visual_captured": { "type": "integer", "minimum": 0 },
-        "degraded": {
-          "type": "boolean",
-          "default": false,
-          "description": "When true the generated summary must say so in its first paragraph."
-        },
-        "not_captured": {
-          "type": "array",
-          "description": "Actual url ids, never only a count. Silent truncation is the failure this prevents.",
-          "items": {
-            "type": "object",
-            "required": ["reason", "url_ids"],
-            "additionalProperties": false,
-            "properties": {
-              "reason": { "enum": ["tier3-budget", "cluster-represented", "excluded-by-config", "guard-blocked", "fetch-failed"] },
-              "count": { "type": "integer", "minimum": 0 },
-              "url_ids": { "type": "array", "items": { "type": "string" } }
-            }
-          }
-        }
-      }
-    },
-    "exit_criteria": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["id", "expr", "result"],
-        "additionalProperties": false,
-        "properties": {
-          "id": { "type": "string" },
-          "expr": { "type": "string" },
-          "result": { "enum": ["pass", "fail", "not-applicable"] },
-          "reason": { "type": ["string", "null"] }
-        }
-      }
-    },
-    "idempotence_rerun": {
-      "type": "object",
-      "required": ["ran"],
-      "additionalProperties": false,
-      "properties": {
-        "ran": { "type": "boolean" },
-        "diff_count": { "type": ["integer", "null"], "minimum": 0 },
-        "at": { "type": ["string", "null"], "format": "date-time" }
-      }
-    },
-    "budgets": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "max_iterations": { "type": "integer", "minimum": 1 },
-        "iterations_used": { "type": "integer", "minimum": 0 },
-        "no_progress_streak": { "type": "integer", "minimum": 0 },
-        "time_budget_min": { "type": "integer", "minimum": 1 },
-        "time_used_min": { "type": "number", "minimum": 0 },
-        "change_budget": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "files": { "type": "integer", "minimum": 1 },
-            "lines": { "type": "integer", "minimum": 1 }
-          }
-        }
-      }
-    },
-    "verdict": { "enum": ["planned", "open", "green", "aborted", "superseded", "invalid"] },
-    "abort_condition": {
-      "type": ["string", "null"],
-      "enum": ["max_iterations", "no_progress_2", "oscillation", "fingerprint_drift", "time_budget", "budget_breach", "unclassifiable", null]
-    },
-    "blocking_reasons": { "type": "array", "items": { "type": "string" } },
-    "residual_findings": {
-      "type": "array",
-      "description": "Only pre-existing, environment and improvement may survive a green exit.",
-      "items": { "type": "string" }
-    },
-    "next_loop": { "type": ["string", "null"] },
-    "documents": { "type": "array", "items": { "type": "string" } },
-    "artifacts_dir": { "type": "string" }
+    }
   }
 }

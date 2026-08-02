@@ -118,11 +118,15 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "status": { "enum": ["never-run", "open", "green", "aborted"] },
+        "status": { "enum": ["never-run", "open", "diagnostic-green", "green", "aborted"] },
         "at": { "type": ["string", "null"], "format": "date-time" },
         "lock_hash": { "type": ["string", "null"] },
         "coverage": { "type": ["string", "null"] },
-        "quarantined_captures": { "type": "array", "items": { "type": "string" } }
+        "quarantined_captures": {
+          "type": "array",
+          "maxItems": 0,
+          "description": "Deprecated compatibility field. Strict-zero runs require this to remain empty."
+        }
       }
     },
     "manifest": {
@@ -138,7 +142,7 @@
       "type": "object",
       "description": "loop_id -> verdict",
       "propertyNames": { "pattern": "^[0-9]{3}$" },
-      "additionalProperties": { "enum": ["planned", "open", "green", "aborted", "superseded"] }
+      "additionalProperties": { "enum": ["planned", "open", "green", "aborted", "superseded", "invalid"] }
     },
     "gates": {
       "type": "object",

@@ -6,7 +6,7 @@
  * validating once at discovery would be trusting it.
  */
 
-import { mkdir, writeFile, readFile, access } from 'node:fs/promises';
+import { mkdir, writeFile, readFile, access, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { sample } from '../util/rng.mjs';
 import { EXIT, HarnessError, PreconditionError } from '../cli/exit-codes.mjs';
@@ -19,8 +19,9 @@ import { createRoutePolicy, createQuietDetector, attachNavigationGuard } from '.
 import { applyState } from '../browser/states.mjs';
 import { verifyManifest, urlById } from '../run/manifest.mjs';
 import { captureId } from '../run/paths.mjs';
-import { listOpt } from '../cli/args.mjs';
+import { intOpt, listOpt } from '../cli/args.mjs';
 import { readJson } from './core.mjs';
+import { consentStateFor } from '../browser/stabilize.mjs';
 
 export async function capture({ values, paths, log, journal }) {
   const label = values.label;
@@ -47,12 +48,18 @@ export async function capture({ values, paths, log, journal }) {
     : path.join(paths.root, 'captures', label);
   const stages = new Set(listOpt(values, 'stages', ['http', 'dom', 'visual']));
   const guard = await UrlGuard.create({ allowedOrigins: manifest.allowedOrigins });
+  const scope = values.scope === 'intermediate' ? 'intermediate' : 'final';
 
   const result = await captureAll({
     manifest, guard, outRoot, stages, log, journal,
     resume: values.resume, warmup: values.warmup !== false,
-    scope: values.scope === 'intermediate' ? 'intermediate' : 'final',
+    scope,
     allowAll: values['all-urls'] === true,
+    visualWorkers: intOpt(
+      values,
+      'visual-workers',
+      scope === 'intermediate' ? DIAGNOSTIC_VISUAL_WORKERS : DEFAULT_VISUAL_WORKERS,
+    ),
   });
 
   await writeFile(
@@ -100,6 +107,13 @@ export const SAMPLING = Object.freeze({
   FINAL_HARD_CAP: 1000,
 });
 
+// Authoritative full captures are serial: sustained parallel renderer load proved
+// non-deterministic on the same unchanged site. Intermediate diagnostics deliberately
+// trade authority for fast feedback and use a small process-isolated pool.
+export const DEFAULT_VISUAL_WORKERS = 1;
+export const DIAGNOSTIC_VISUAL_WORKERS = 3;
+export const MAX_VISUAL_WORKERS = 6;
+
 /** Returns the URL entries to capture, plus a declaration of what was left out. */
 export function selectUrls(allUrls, { scope = 'final', seed = 'sample', allowAll = false } = {}) {
   const total = allUrls.length;
@@ -122,13 +136,53 @@ export function selectUrls(allUrls, { scope = 'final', seed = 'sample', allowAll
     reason: 'above-final-hard-cap' };
 }
 
-export async function captureAll({ manifest, guard, outRoot, stages, log, journal, resume = false, warmup = true, scope = 'final', allowAll = false }) {
+export async function captureAll({
+  manifest,
+  guard,
+  outRoot,
+  stages,
+  log,
+  journal,
+  resume = false,
+  warmup = true,
+  scope = 'final',
+  allowAll = false,
+  visualWorkers = DEFAULT_VISUAL_WORKERS,
+}) {
+  if (!Number.isInteger(visualWorkers) || visualWorkers < 1 || visualWorkers > MAX_VISUAL_WORKERS) {
+    throw new HarnessError(`visualWorkers must be an integer from 1 to ${MAX_VISUAL_WORKERS}`);
+  }
+  if (scope === 'final' && visualWorkers !== DEFAULT_VISUAL_WORKERS) {
+    throw new PreconditionError(
+      `Final visual evidence requires exactly ${DEFAULT_VISUAL_WORKERS} worker; `
+      + 'parallel workers are diagnostic-only.',
+    );
+  }
   await mkdir(outRoot, { recursive: true });
   for (const kind of ['http', 'dom', 'shots']) await mkdir(path.join(outRoot, kind), { recursive: true });
 
-  const index = { http: 0, dom: 0, shots: 0, errors: [], signatures: {}, states: {} };
+  const index = {
+    http: 0,
+    httpWarmup: 0,
+    dom: 0,
+    domSkipped: 0,
+    shots: 0,
+    visualWorkers,
+    errors: [],
+    retries: [],
+    signatures: {},
+    states: {},
+  };
+  const stabilization = manifest.stabilization ?? {};
+  const consent = stabilization.consent
+    ? consentStateFor({
+        ...stabilization.consent,
+        origin: stabilization.consent.origin ?? manifest.allowedOrigins[0],
+      })
+    : undefined;
   const selection = selectUrls(manifest.allUrls, { scope, seed: manifest.seed ?? 'sample', allowAll });
   const urls = selection.urls.map((u) => u.url);
+  const nonHtmlUrls = new Set();
   index.selection = selection && { scope: selection.scope, total: selection.total,
     captured: selection.captured, omitted: selection.omitted, reason: selection.reason };
   if (selection.omitted) {
@@ -140,17 +194,31 @@ export async function captureAll({ manifest, guard, outRoot, stages, log, journa
     for (const url of urls) {
       try {
         await guard.assertUrl(url, { purpose: 'capture-http' });
-        const res = await safeFetch(guard, url, { purpose: 'capture-http', accept: 'html' });
+        // TYPO3 can emit session cookies while populating a cold page cache and omit them
+        // once that same response is cached. Recording the first request therefore makes an
+        // unchanged second run look different. Match the browser lifecycle: warm once, then
+        // record a fresh guarded response.
+        if (warmup) {
+          await safeFetch(guard, url, { purpose: 'capture-http-warmup', accept: 'any' });
+          index.httpWarmup += 1;
+        }
+        const res = await safeFetch(guard, url, { purpose: 'capture-http', accept: 'any' });
+        const html = ['text/html', 'application/xhtml+xml'].includes(res.contentType);
+        if (!html) nonHtmlUrls.add(url);
 
         if (stages.has('http')) {
           const record = extractRecord({
-            url: res.url, status: res.status, headers: res.headers,
+            requestedUrl: url, url: res.url, status: res.status, headers: res.headers,
             body: res.body, redirects: res.redirects,
           });
           await writeFile(path.join(outRoot, 'http', `${keyOf(url)}.json`), `${JSON.stringify(record, null, 2)}\n`, 'utf8');
           index.http += 1;
         }
         if (stages.has('dom')) {
+          if (!html) {
+            index.domSkipped += 1;
+            continue;
+          }
           const { normalized, hits, overreach } = domHash(res.body);
           await writeFile(path.join(outRoot, 'dom', `${keyOf(url)}.html`), normalized, 'utf8');
           const sig = templateSignature(res.body);
@@ -169,7 +237,11 @@ export async function captureAll({ manifest, guard, outRoot, stages, log, journa
         if (err.exitCode === 5) await journal?.policyBlock({ reason: err.message, target: url, purpose: 'capture' });
       }
     }
-    log.step(`stage 1/2 complete: ${index.http} http, ${index.dom} dom, ${index.errors.length} error(s)`);
+    log.step(
+      `stage 1/2 complete: ${index.http} http, ${index.dom} dom`
+      + (index.domSkipped ? `, ${index.domSkipped} non-HTML DOM not-applicable` : '')
+      + `, ${index.errors.length} error(s)`,
+    );
   }
 
   /* ---- stage 3: screenshots for the manifest capture set only ---- */
@@ -177,63 +249,153 @@ export async function captureAll({ manifest, guard, outRoot, stages, log, journa
   // "intermediate" run still paid the full screenshot cost — which is the only expensive part.
   // Captures reference the manifest by urlId, not by url.
   const sampledIds = new Set(selection.urls.map((u) => u.id));
-  const captureSet = selection.omitted
+  const selectedCaptures = selection.omitted
     ? manifest.captures.filter((c) => sampledIds.has(c.urlId))
     : manifest.captures;
+  const captureSet = selectedCaptures.filter((capture) => {
+    const url = urlById(manifest, capture.urlId);
+    return url && !nonHtmlUrls.has(url);
+  });
   if (stages.has('visual') && captureSet.length) {
-    const { browser } = await launchBrowser({ log });
-    try {
-      const byViewport = groupBy(captureSet, (c) => c.viewport);
-      for (const [viewport, caps] of byViewport) {
-        if (!VIEWPORTS[viewport]) { log.warn(`unknown viewport ${viewport}, skipped`); continue; }
-        const context = await newContext(browser, { viewport });
-        const policy = createRoutePolicy({ allowedOrigins: manifest.allowedOrigins });
-        await policy.attach(context);
-
-        for (const cap of caps) {
-          const url = urlById(manifest, cap.urlId);
-          if (!url) continue;
-          const file = path.join(outRoot, 'shots', `${cap.captureId}.png`);
-          if (resume && await exists(file)) { index.shots += 1; continue; }
-
-          const page = await context.newPage();
-          try {
-            await guard.assertUrl(url, { purpose: 'capture-goto' });   // again, right before goto
-            attachNavigationGuard(page, guard, new URL(url).origin);
-            const quiet = createQuietDetector(page);
-
-            await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
-            guard.assertSameOrigin(page.url(), new URL(url).origin, { purpose: 'post-goto' });
-
-            if (warmup) { await page.reload({ waitUntil: 'domcontentloaded' }).catch(() => {}); }
-            await quiet.wait();
-            quiet.dispose();
-
-            const stateResult = await applyState(page, cap.state ?? 'default');
-            index.states[cap.captureId] = stateResult;
-
-            const settle = await stabilizePage(page);
-            await page.screenshot({ path: file, fullPage: true });
-            await writeFile(
-              path.join(outRoot, 'shots', `${cap.captureId}.meta.json`),
-              `${JSON.stringify({
-                captureId: cap.captureId, viewport, state: cap.state,
-                documentHeight: settle.height, settle, state_result: stateResult,
-              }, null, 2)}\n`, 'utf8',
-            );
-            index.shots += 1;
-          } catch (err) {
-            index.errors.push({ captureId: cap.captureId, stage: 'visual', error: err.message });
-          } finally {
-            await page.close().catch(() => {});
-          }
+    const byViewport = groupBy(captureSet, (c) => c.viewport);
+    const routeReports = [];
+    for (const [viewport, caps] of byViewport) {
+      if (!VIEWPORTS[viewport]) { log.warn(`unknown viewport ${viewport}, skipped`); continue; }
+      const workerCount = Math.min(visualWorkers, caps.length);
+      const browsers = [];
+      try {
+        // Context isolation is insufficient for strict pixels: Blink renderer state and
+        // fractional layout allocation can vary between concurrently loaded contexts in the
+        // same process. Each worker therefore owns a distinct Chromium process. Restart the
+        // process at every viewport so a final proof never accumulates target allocation
+        // across the complete matrix.
+        for (let workerIndex = 0; workerIndex < workerCount; workerIndex += 1) {
+          const { browser } = await launchBrowser({ log });
+          browsers.push(browser);
         }
-        index.routePolicy = policy.report();
-        await context.close();
+        const workerReports = await Promise.all(
+          Array.from({ length: workerCount }, async (_, workerIndex) => {
+            const context = await newContext(browsers[workerIndex], {
+              viewport,
+              storageState: consent,
+              stabilize: stabilization,
+            });
+            const policy = createRoutePolicy({ allowedOrigins: manifest.allowedOrigins });
+            await policy.attach(context);
+            const reusePage = scope === 'intermediate';
+            let reusablePage = null;
+            try {
+              // Round-robin assignment is stable across runs and balances pages whose settle
+              // times vary. Each worker owns a separate browser process and one context for
+              // the entire viewport. Fast diagnostics reuse a page; authoritative final
+              // evidence uses a fresh page for every screenshot to prevent renderer history
+              // from affecting strict pixels.
+              for (let capIndex = workerIndex; capIndex < caps.length; capIndex += workerCount) {
+                const cap = caps[capIndex];
+                const url = urlById(manifest, cap.urlId);
+                if (!url) continue;
+                const file = path.join(outRoot, 'shots', `${cap.captureId}.png`);
+                const metaFile = path.join(outRoot, 'shots', `${cap.captureId}.meta.json`);
+                if (resume && await exists(file)) { index.shots += 1; continue; }
+
+                const maxAttempts = 2;
+                let firstError = null;
+                for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+                  let navigationGuard = null;
+                  let page = null;
+                  try {
+                    if (reusePage) {
+                      if (!reusablePage || reusablePage.isClosed()) {
+                        reusablePage = await context.newPage();
+                      }
+                      page = reusablePage;
+                    } else {
+                      page = await context.newPage();
+                    }
+                    await guard.assertUrl(url, { purpose: 'capture-goto' });   // again, right before goto
+                    navigationGuard = attachNavigationGuard(page, guard, new URL(url).origin);
+
+                    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
+                    guard.assertSameOrigin(page.url(), new URL(url).origin, { purpose: 'post-goto' });
+
+                    if (warmup) { await page.reload({ waitUntil: 'domcontentloaded' }).catch(() => {}); }
+                    // A number of legacy TYPO3 themes initialise sliders and layout helpers from
+                    // window.load rather than DOMContentLoaded. Stabilising before that event races
+                    // the site's own initialisation and can produce two internally consistent layouts.
+                    await page.waitForLoadState('load', { timeout: 45000 });
+                    // Start tracking after the optional warm-up navigation. Requests abandoned by
+                    // the reload do not always emit a terminal event and would otherwise poison the
+                    // quiet detector with a stale request.
+                    const quiet = createQuietDetector(page);
+                    // Promote and settle lazy assets before requiring network quiet. Waiting first
+                    // deadlocks on a lazy image that has started but cannot finish until it is
+                    // scrolled into view.
+                    let settle;
+                    let network;
+                    try {
+                      settle = await stabilizePage(page, stabilization);
+                      network = await quiet.wait();
+                    } finally {
+                      quiet.dispose();
+                    }
+
+                    const stateResult = await applyState(page, cap.state ?? 'default', stabilization);
+                    index.states[cap.captureId] = stateResult;
+
+                    await page.screenshot({ path: file, fullPage: true });
+                    await writeFile(
+                      metaFile,
+                      `${JSON.stringify({
+                        captureId: cap.captureId, viewport, state: cap.state, captureAttempt: attempt,
+                        visualWorker: workerIndex + 1,
+                        documentHeight: settle.height, settle, network, state_result: stateResult,
+                      }, null, 2)}\n`, 'utf8',
+                    );
+                    index.shots += 1;
+                    if (attempt > 1) {
+                      index.retries.push({ captureId: cap.captureId, attempt, firstError });
+                    }
+                    break;
+                  } catch (err) {
+                    // page.screenshot may leave a partial or complete-looking PNG before
+                    // throwing. A failed attempt must never leak that file into pairing.
+                    await Promise.all([
+                      rm(file, { force: true }),
+                      rm(metaFile, { force: true }),
+                    ]);
+                    await page?.close().catch(() => {});
+                    if (page === reusablePage) reusablePage = null;
+                    if (attempt < maxAttempts) {
+                      firstError = err.message;
+                      log.warn(
+                        `capture ${cap.captureId} failed on attempt ${attempt}; retrying once: `
+                        + err.message.split('\n', 1)[0],
+                      );
+                    } else {
+                      index.errors.push({ captureId: cap.captureId, stage: 'visual', attempts: attempt, error: err.message });
+                    }
+                  } finally {
+                    navigationGuard?.dispose();
+                    if (!reusePage) await page?.close().catch(() => {});
+                  }
+                }
+              }
+              return policy.report();
+            } finally {
+              await reusablePage?.close().catch(() => {});
+              await context.close();
+            }
+          }),
+        );
+        routeReports.push(...workerReports);
+      } finally {
+        await Promise.all(browsers.map((browser) => browser.close().catch(() => {})));
       }
-    } finally {
-      await browser.close().catch(() => {});
     }
+    index.routePolicy = mergeRoutePolicyReports(routeReports);
+    index.errors.sort(byCaptureId);
+    index.retries.sort(byCaptureId);
+    index.states = Object.fromEntries(Object.entries(index.states).sort(([a], [b]) => a.localeCompare(b)));
     log.step(`stage 3 complete: ${index.shots} screenshot(s)`);
   }
 
@@ -252,6 +414,27 @@ function groupBy(items, fn) {
     m.get(k).push(i);
   }
   return m;
+}
+
+function byCaptureId(a, b) {
+  return String(a.captureId ?? a.url ?? '').localeCompare(String(b.captureId ?? b.url ?? ''));
+}
+
+function mergeRoutePolicyReports(reports) {
+  const blockedOrigins = {};
+  for (const report of reports) {
+    for (const [origin, count] of Object.entries(report.blockedOrigins ?? {})) {
+      blockedOrigins[origin] = (blockedOrigins[origin] ?? 0) + count;
+    }
+  }
+  return {
+    workers: reports.length,
+    blockThirdParty: reports.every((report) => report.blockThirdParty),
+    allowedOrigins: [...new Set(reports.flatMap((report) => report.allowedOrigins ?? []))].sort(),
+    blockedOrigins: Object.fromEntries(Object.entries(blockedOrigins).sort()),
+    blockedRequests: reports.reduce((sum, report) => sum + (report.blockedRequests ?? 0), 0),
+    permittedRequests: reports.reduce((sum, report) => sum + (report.permittedRequests ?? 0), 0),
+  };
 }
 
 export { readFile };

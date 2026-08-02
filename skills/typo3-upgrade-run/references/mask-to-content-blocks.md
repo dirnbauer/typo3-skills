@@ -86,6 +86,33 @@ the gaps are predictable:
 - **Field-level behaviour** — defaults, evaluations, display conditions — deserves a look per
   element rather than a spot check.
 
+## Preserve the content API, not only the rendered HTML
+
+Treat the Mask definition as a data contract. Before removing it, compare every generated
+`EditorInterface.yaml` with the source definition and preserve:
+
+- the original `typeName`, so existing `tt_content.CType` values keep resolving;
+- field identifiers, so persisted values and templates still address the same properties; and
+- `prefixFields: false` where the old fields were unprefixed. Accepting the generator default can
+  create perfectly valid but empty-looking records because the runtime reads different columns.
+
+Audit generated field types rather than trusting the importer's closest match. Media fields are a
+common miss: if the existing element accepts video, ensure the generated file restrictions include
+the actual types in use (for example MP4), then prove one record of each media variant in FormEngine
+and the frontend.
+
+Content Blocks 2 has a stricter schema than the v1 output produced on the 13.4 rung. On the 14.3
+rung, migrate the generated definitions deliberately:
+
+- scalar options such as `minitems` and `maxitems` are integers, not quoted strings;
+- `DateTime` fields do not accept legacy TCA-shaped options such as `eval` or `renderType`; and
+- the schema rejects unknown keys, so run `ddev typo3 content-blocks:lint` and fix every definition.
+
+Preserve the package's layout and partial paths when moving templates, and remove Mask TypoScript
+or static includes only after the equivalent Content Blocks rendering paths are active. Finish by
+updating the reference index: migrated FAL fields and renamed/prefixed fields can otherwise leave
+records that render locally but fail after cleanup or deployment.
+
 ## Proving it worked
 
 This is a content-element migration, so the invariance gate is exactly the right instrument and
@@ -111,6 +138,10 @@ survived — `scripts/backend-write-roundtrip.mjs` covers the mechanics, and
 `references/backend-permissions.md` covers the part everyone forgets: **new content types are not
 automatically permitted to editors.** A migrated element that editors cannot select has not been
 migrated as far as they are concerned.
+
+The final proof is four-sided: identical frontend output, editable backend records, a clean
+`content-blocks:lint`, and a clean reference index. Record any intentional difference as a declared
+change rather than weakening the visual comparison.
 
 ## If you are already on v14
 

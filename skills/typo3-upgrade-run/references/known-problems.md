@@ -132,10 +132,12 @@ core. The upgrade needs current versions of those tools anyway.
 **Symptom.** `composer update` cannot find a `typo3/cms-*` package at the target version.
 
 **Cause.** The package was merged into another. `typo3/cms-recordlist` was merged into
-`typo3/cms-backend` in v13 and no longer exists.
+`typo3/cms-backend` in v13, and `typo3/cms-setup` was merged into `typo3/cms-backend` for v14.3.
+Neither exists at the later target as a separate package.
 
-**Fix.** Remove it from `require`. Check the version's release notes for others before assuming it is
-the only one.
+**Fix.** Remove the obsolete package from `require` and ensure `typo3/cms-backend` is present through
+the project's core dependency strategy. Check the target release notes and Composer metadata for
+other merged packages before assuming this is the only one.
 
 ---
 

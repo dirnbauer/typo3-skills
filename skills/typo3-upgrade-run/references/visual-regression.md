@@ -36,7 +36,7 @@ t3u compare-http   --before .typo3-update/baseline/A-original/http
 t3u compare-dom    --before .typo3-update/baseline/A-original/dom
 t3u compare-visual --before .typo3-update/baseline/A-original/shots
 t3u backend-sweep --base-url "https://acme.ddev.site"
-t3u gate --loop 300-invariance-closure
+t3u gate --loop 300-invariance-closure --idempotence-diff 0
 t3u report --loop 300-invariance-closure
 ```
 
@@ -152,9 +152,9 @@ report is a fabrication.
 |---|---|---|
 | `--seed` | run id | Sampling seed; recorded in the manifest |
 | `--visual-budget` | `1500` | Screenshot capture budget |
-| `--lighthouse-sample` | `25` | URLs for Lighthouse |
-| `--runs` | `5` | Lighthouse runs per URL, median reported |
-| `--reshoots` | `1` | Flake quarantine re-shoots |
+| `--lighthouse-sample` | `3` | Fixed final set: homepage plus two seeded random non-home pages |
+| `--runs` | `3` | Lighthouse runs per URL, median reported |
+| `--reshoots` | `1` | Immediate reproduction check; non-zero still blocks |
 | `--redaction-profile` | `local` | `local` or `share` (for the KPI document) |
 | `--allow-origin` | — | Additional allowed origin, repeatable |
 | `--env-file` | — | Explicit secret file; no implicit `.env` |
@@ -168,7 +168,7 @@ detects Darwin and launches full Chromium with `--headless=new`.
 
 ## Tests
 
-`npm test` runs 138 tests with no network, no DDEV and no browser: unit tests over the guard,
+`npm test` runs the full offline suite with no network, no DDEV and no browser: unit tests over the guard,
 sitemap walker, normaliser, classifier, manifest, write door, state machine and lockfile, and
 e2e tests against a local fixture server that serves a hostile sitemap, a before/after site
 pair with seeded regressions, and injected page content.

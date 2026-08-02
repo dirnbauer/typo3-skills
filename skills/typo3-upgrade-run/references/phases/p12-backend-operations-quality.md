@@ -117,6 +117,10 @@ ddev mysql -N -e "SELECT COUNT(*) FROM be_users WHERE username='_t3u_upgrade_pro
   replaced ten EXT:form hooks with PSR-14 events, so a form can render pixel-identical while its
   email finisher silently stops sending.
 - Linkvalidator where installed; triage broken links.
+- **Deployment visibility.** With `EXT:deployer_information` installed, open System Information and
+  verify “Last Deployment” renders without exceptions and uses the intended standard/legacy/custom
+  detection mode. This is a local integration check; the real timestamp remains an explicit P15
+  operator verification. See `references/deployment-handover.md`.
 - **Final smoke test — no NEW errors.** `node scripts/smoke-log-check.mjs --base-url … --count 10`
   requests a seeded random sample from the sitemap and reads the application log, `sys_log` and the
   responses, reporting only what appeared *during* the requests. It must come back clean: a page
@@ -148,4 +152,3 @@ trigger logout, cache clearing, deletion, unsubscribe, scheduler actions or larg
 ## Exit
 Every sweep item green · 0 unresolved advisories · deprecation log clean · PHPStan baseline strictly
 smaller than before the update.
-

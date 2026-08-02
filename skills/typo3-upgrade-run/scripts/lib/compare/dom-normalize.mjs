@@ -126,23 +126,9 @@ export function compareDom(beforeHtml, afterHtml, { maxSegments = 5, context = 6
     return { identical: true, hash: a.hash, segments: [], overreach: [...new Set([...b.overreach, ...a.overreach])] };
   }
 
-  const segments = [];
   const bs = b.normalized;
   const as = a.normalized;
-
-  // First divergence, then a coarse scan for further ones.
-  let i = 0;
-  const min = Math.min(bs.length, as.length);
-  while (i < min && bs[i] === as[i]) i += 1;
-  segments.push({
-    at: i,
-    before: bs.slice(Math.max(0, i - context), i + context),
-    after: as.slice(Math.max(0, i - context), i + context),
-  });
-
-  if (bs.length !== as.length) {
-    segments.push({ at: min, lengthDelta: as.length - bs.length, before: null, after: null });
-  }
+  const segments = divergentSegments(bs, as, { maxSegments, context });
 
   return {
     identical: false,
@@ -151,4 +137,64 @@ export function compareDom(beforeHtml, afterHtml, { maxSegments = 5, context = 6
     hits: { before: b.hits, after: a.hits },
     overreach: [...new Set([...b.overreach, ...a.overreach])],
   };
+}
+
+/**
+ * Token-level resynchronisation finds independent causes instead of reporting the first
+ * differing character followed by one giant length delta. It is bounded deliberately:
+ * reports remain readable even for large pages.
+ */
+function divergentSegments(before, after, { maxSegments, context }) {
+  const b = tokens(before);
+  const a = tokens(after);
+  const out = [];
+  let bi = 0;
+  let ai = 0;
+
+  while ((bi < b.length || ai < a.length) && out.length < maxSegments) {
+    if (b[bi]?.value === a[ai]?.value) {
+      bi += 1;
+      ai += 1;
+      continue;
+    }
+
+    const bAt = b[bi]?.start ?? before.length;
+    const aAt = a[ai]?.start ?? after.length;
+    out.push({
+      at: { before: bAt, after: aAt },
+      before: before.slice(Math.max(0, bAt - context), bAt + context),
+      after: after.slice(Math.max(0, aAt - context), aAt + context),
+    });
+
+    const sync = findSync(b, a, bi, ai, 24);
+    if (sync) {
+      bi = sync.bi;
+      ai = sync.ai;
+    } else {
+      bi += bi < b.length ? 1 : 0;
+      ai += ai < a.length ? 1 : 0;
+    }
+  }
+  return out;
+}
+
+function tokens(html) {
+  const result = [];
+  for (const match of String(html).matchAll(/<[^>]+>|[^<]+/g)) {
+    result.push({ value: match[0], start: match.index, end: match.index + match[0].length });
+  }
+  return result;
+}
+
+function findSync(before, after, bi, ai, lookahead) {
+  let best = null;
+  for (let db = 0; db < lookahead && bi + db < before.length; db += 1) {
+    for (let da = 0; da < lookahead && ai + da < after.length; da += 1) {
+      if (db === 0 && da === 0) continue;
+      if (before[bi + db].value !== after[ai + da].value) continue;
+      const score = db + da;
+      if (!best || score < best.score) best = { bi: bi + db, ai: ai + da, score };
+    }
+  }
+  return best;
 }

@@ -75,7 +75,7 @@ export async function safeFetch(guard, rawUrl, {
     const contentType = (res.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
     const allowed = CONTENT_TYPES[accept];
     if (allowed && contentType && !allowed.includes(contentType)) {
-      throw new PolicyError(`Unexpected content-type for ${purpose}: ${contentType}`, {
+      throw new HarnessError(`Unexpected content-type for ${purpose}: ${contentType}`, {
         purpose, contentType, expected: allowed,
       });
     }

@@ -9,7 +9,8 @@ phase: "{{PHASE}}"
 doc: charter
 baseline_ref: "{{BASELINE_REF}}"   # A-original for every Contract A loop
 snapshot: null                # filled at protocol step 5
-approval_ref: null            # REQUIRED for declared-change and all Contract B loops
+approval_ref: {{INTENT_REF}}  # intent approval required before every Contract B loop
+acceptance_ref: null          # observed-result approval; only after evidence exists
 status: planned
 frozen: false                 # set true once written; this document does not change afterwards
 created_at: "{{NOW}}"
@@ -21,7 +22,7 @@ out_of_scope: []
 depends_on: []
 max_iterations: 6             # 8 for loop 300, 3 for harness loops
 change_budget: { files: 10, lines: 400 }
-time_budget_min: 90           # 240 for loop 300
+time_budget_min: 90           # 240 for loop 000 and loop 300
 abort_conditions:
   - max_iterations
   - no_progress_2
@@ -41,8 +42,9 @@ One sentence. What must be true when this loop closes.
 ## Contract
 
 Which contract governs this loop, and what that means here. A Contract A loop must
-produce no unexplained difference against `A-original`. A Contract B loop measures
-against its own derived baseline and needs an approval before it may start.
+produce no unexplained difference against `A-original`. A Contract B loop measures against its
+own derived baseline, needs an intent approval before it starts, and needs a separate acceptance
+approval for any observed result the user chooses to keep.
 
 ## In scope
 
