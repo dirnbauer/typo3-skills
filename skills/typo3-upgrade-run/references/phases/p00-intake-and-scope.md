@@ -38,6 +38,22 @@ Read-only inspection. Creating `.typo3-update/` from `templates/run-directory/`.
    run configured for one origin measures one site and stays silent about the rest. Record every
    site in `config/run.yml`, and if any site is deliberately out of scope, say so — a site never
    discovered must appear in the coverage declaration, not be absent from it.
+
+   Validate the runtime interpretation as well as the YAML text:
+
+   ```bash
+   ddev typo3 site:list
+   ddev typo3 site:show <site-identifier>
+   ddev exec locale -a
+   ddev typo3 site:sets:list   # on rungs that provide the site-set commands
+   ```
+
+   Record each configured locale beside the matching locale installed in the container, and record
+   its BCP 47/hreflang value separately — `de_DE` and `de-AT` solve different problems. Inventory
+   every selected site set and its dependency graph. A configured locale with no installed runtime
+   equivalent invalidates the local baseline; an unavailable site set or unresolved dependency is a
+   target-rung blocker. Repeat `site:list`, `site:show` and `site:sets:list` on every rung that exposes
+   them and before target rendering; do not wait for a frontend exception to reveal the defect.
 6. **Enumerate every file storage.** Read `sys_file_storage`. `fileadmin` is a default, not a
    guarantee: a second local storage, a protected `user_upload` storage, or a remote driver is
    routine. Anything not synced is neither fingerprinted nor captured, so its images render broken
@@ -72,7 +88,8 @@ Read-only inspection. Creating `.typo3-update/` from `templates/run-directory/`.
 
    **Zero usage is a question, not a verdict.** Sitepackages, ViewHelper libraries, middlewares,
    link handlers, scheduler tasks and monitoring clients all legitimately store nothing. Confirm
-   before removing:
+   before removing, then run the complete persisted-reference manifest from
+   `references/extension-strategy.md` rather than treating these starter checks as exhaustive:
 
    ```bash
    ddev typo3 extension:list --active

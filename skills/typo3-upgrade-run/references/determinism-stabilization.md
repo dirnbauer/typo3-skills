@@ -96,6 +96,33 @@ other shifts the entire layout horizontally and reads as a site-wide regression.
 | Random small regions | animation or transition not suppressed |
 | Everything differs slightly | device scale factor, colour scheme, or a browser version change → check the environment fingerprint first; this is `INVALID`, not a stabilisation problem |
 
+## Server-side randomness and media adapters
+
+Seeding `Math.random()` cannot control PHP `shuffle()`, a database `RAND()` order or a provider that
+chooses editorial records before HTML reaches the browser. Do not hide the region or exclude the
+whole page. Add a **project-local, configured adapter** that replaces only the unstable region with a
+structural marker carrying its measured item count and geometry. Preserve separate assertions for
+every selected item's link target, resource URL, accessible name/alt text and load status. The
+coverage declaration must say that the structure and resource integrity were proved while the exact
+editorial selection/order was not. Seal the selector and adapter profile into the manifest; never add
+a provider- or project-specific selector to the shared harness.
+
+Animated and compositor-sensitive media need the same split between stable pixels and untouched
+source evidence:
+
+- For an animated GIF, a route adapter may serve frame 1 during screenshots. Record the transformed
+  resource URL and count, hash the original response separately, and declare every later frame
+  untested. A static poster is preferable when the product owns the markup.
+- If identical SVG bytes containing a blend mode such as `mix-blend-mode:multiply` rasterise
+  differently even with the GPU disabled, a narrowly guarded route adapter may neutralise that one
+  instruction for screenshots. Record the original byte length and SHA-256 on both sides and fail on
+  any source mismatch. The SVG source remains contractual even when that compositor instruction is
+  excluded from pixel proof.
+
+Every transform must apply identically to both captures, report its coverage and refuse when the
+guard does not match. It requires an ADR because it narrows what the pixel claim means; it does not
+authorise a threshold increase.
+
 ## When a page genuinely cannot be stabilised
 
 A live feed, a third-party embed that cannot be mocked, or genuinely random editorial content.

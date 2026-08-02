@@ -108,6 +108,18 @@ rung, migrate the generated definitions deliberately:
 - `DateTime` fields do not accept legacy TCA-shaped options such as `eval` or `renderType`; and
 - the schema rejects unknown keys, so run `ddev typo3 content-blocks:lint` and fix every definition.
 
+Treat the importer as an **in-place model migration**. The safest result keeps the existing CTypes,
+custom columns, child tables and `sys_file_reference.fieldname` values; renaming them for cosmetic
+consistency creates a second migration and can orphan data. Inspect the generated YAML values by
+type, not appearance: converters have emitted quoted strings for integer and boolean options. Check
+stored `NULL` values before accepting a generated non-nullable field.
+
+The data sequence is part of the migration. If legacy Extbase plugins still persist `list_type`, run
+and prove that transaction before CType-only registration makes those records unreadable. Then test
+Fluid with the actual values returned by Content Blocks: Link fields are link objects rather than
+plain strings, and local Frame layouts or `_all` argument forwarding may need explicit migration for
+Fluid 5.
+
 Preserve the package's layout and partial paths when moving templates, and remove Mask TypoScript
 or static includes only after the equivalent Content Blocks rendering paths are active. Finish by
 updating the reference index: migrated FAL fields and renamed/prefixed fields can otherwise leave

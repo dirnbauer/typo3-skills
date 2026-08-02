@@ -412,6 +412,126 @@
         "Does not deploy or connect to staging/live to verify the timestamp"
       ],
       "files": []
+    },
+    {
+      "id": "extract-minimal-provider-preserve-identities",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "A large frontend provider blocks TYPO3 14, but this site uses only its carousel CType, related item table and FAL images. Copy those pieces into the sitepackage, rename the old tables and fields to the new extension key, and remove the provider.",
+      "expected_output": "Treats this as a minimal-provider extraction, inventories the retained contract, and preserves the legacy CType, table, field and FAL identities under Contract A unless an explicit repeatable data migration proves a rename safe. It gates removal with an approval and complete residue, relation and render evidence.",
+      "assertions": [
+        "Inventories retained CTypes, tables, fields, IRRE relations, FAL identities, templates and data processors",
+        "Does not rename legacy database or sys_file_reference identities merely for naming cleanliness",
+        "Requires a separately tested repeatable migration for any intentional identity rename",
+        "Renders every retained CType and plugin and checks counts, relations and the reference index",
+        "Records the extension resolution as replaced with the extracted sitepackage named in notes"
+      ],
+      "files": []
+    },
+    {
+      "id": "provider-residue-scan-before-removal",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Composer no longer contains old_vendor/old_theme and the frontend homepage renders. Remove its database tables and call the migration complete, even though old EXT: paths may still be stored in FlexForms, form identifiers and icon fields.",
+      "expected_output": "Refuses to infer clean removal from Composer or one rendered page. It builds a manifest of old provider identifiers, scans files and all relevant persisted configuration including translations and workspaces, migrates confirmed structured values with an idempotent wizard, and closes only on documented zero live residue plus clean relation checks.",
+      "assertions": [
+        "Searches sys_template fields, page and group TSconfig, pi_flexform, extension-owned configuration columns and project files",
+        "Checks sys_file_reference tablenames and fieldname while distinguishing intentionally preserved identities",
+        "Includes EXT paths, namespaces, CType and plugin signatures, icon paths and form persistence identifiers",
+        "Does not use blind SQL replacement on XML, serialized data or arbitrary custom tables",
+        "Counts deleted residue separately and covers translated and workspace records"
+      ],
+      "files": []
+    },
+    {
+      "id": "site-locale-and-set-preflight",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "The TYPO3 14 frontend throws a site-set dependency error and warns that de_DE is unavailable in DDEV. Change hreflang to de-DE and keep debugging the page until it renders.",
+      "expected_output": "Separates OS locale availability from BCP 47/hreflang semantics, inventories the selected site sets and dependency graph, and uses TYPO3 site commands plus locale -a to make both defects explicit blockers before target rendering.",
+      "assertions": [
+        "Runs site:list and site:show for every configured site",
+        "Runs site:sets:list on rungs that provide it and verifies every selected set dependency resolves",
+        "Compares the configured runtime locale with ddev exec locale -a",
+        "Does not treat changing hreflang as a fix for a missing OS locale",
+        "Repeats the checks on the target rung before rendering"
+      ],
+      "files": []
+    },
+    {
+      "id": "fluid-partial-namespace-and-render-gate",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Cache warm-up succeeds after the TYPO3 14 update. A rarely used content element still fails because its partial uses a custom ViewHelper namespace declared only in the calling template. Mark Fluid migration complete.",
+      "expected_output": "Does not accept cache warm-up as template coverage. It declares the custom namespace in every independently parsed template or partial that uses it, verifies all Fluid root paths, and renders every retained CType, plugin/list type and page template at least once.",
+      "assertions": [
+        "Recognises that a caller or layout does not donate namespaces to a separately parsed partial",
+        "Checks templateRootPaths, partialRootPaths and layoutRootPaths",
+        "Exercises every retained render path rather than only popular pages",
+        "Includes the other Fluid 5 strictness checks for typed arguments, underscore variables and CDATA",
+        "Does not equate cache warm-up with compiling unused templates"
+      ],
+      "files": []
+    },
+    {
+      "id": "moved-form-yaml-migrates-persisted-identifier",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Contact.form.yaml moved from an obsolete extension into the new sitepackage. The new file is present, so remove the old extension even though existing form content records still store the old EXT: persistenceIdentifier.",
+      "expected_output": "Registers the new form directory in persistenceManager.allowedExtensionPaths, migrates settings.persistenceIdentifier inside tt_content.pi_flexform with an idempotent structured-data-aware upgrade wizard, covers translations and workspaces, then renders and submits every migrated form and proves its finishers in Mailpit before removal.",
+      "assertions": [
+        "Configures the new EXT path under persistenceManager.allowedExtensionPaths",
+        "Treats the stored persistenceIdentifier as content data rather than only moving the file",
+        "Does not use a raw SQL or regex replacement for FlexForm XML",
+        "Proves zero live old identifiers across translated and workspace records",
+        "Submits the forms and verifies finishers and outgoing mail"
+      ],
+      "files": []
+    },
+    {
+      "id": "authoritative-report-does-not-accumulate-iterations",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Loop 300 has a green report.json, but its directory also contains report.iter2.dom.json and several report.final*.json files with thousands of historical findings. Generate the current summary and status counts.",
+      "expected_output": "Uses the gated report.json as the single authoritative loop result, keeps iteration files as historical evidence, and derives current open-finding counts only from active non-superseded loop reports.",
+      "assertions": [
+        "Does not recursively aggregate report.iteration or report.final files",
+        "Renders the stage breakdown embedded in the authoritative loop report",
+        "Excludes superseded and aborted loops from run-wide current counts",
+        "Keeps historical artifacts on disk rather than deleting evidence",
+        "Does not report a stale open_findings value from whichever loop gated last"
+      ],
+      "files": []
+    },
+    {
+      "id": "server-randomness-and-media-stabilization-declares-coverage",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Loop 000 still differs because PHP shuffle() changes a logo carousel, an animated GIF advances, and identical SVG bytes with mix-blend-mode:multiply rasterize differently. Hide all three regions so the baseline can seal.",
+      "expected_output": "Refuses blanket hiding. Uses sealed project adapters for structural random-region proof, first-frame GIF capture and a guarded SVG blend transform, while independently verifying links/resources/accessibility and original media hashes and declaring every narrowed coverage claim.",
+      "assertions": [
+        "Recognises that browser Math.random seeding cannot control server-side PHP shuffle",
+        "Preserves item counts, geometry, link/resource and accessible-name evidence for the random region",
+        "Declares later GIF frames untested and hashes the original response",
+        "Fails when the original SVG bytes differ even if transformed pixels match",
+        "Requires sealed adapter configuration and an ADR instead of raising thresholds"
+      ],
+      "files": []
+    },
+    {
+      "id": "persisted-data-moves-before-v14-registration-and-schema",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Enable CType-only plugins, make generated Content Block fields non-nullable, and remove pages.url because TYPO3 says the upgrade wizard already ran. Existing data can be fixed afterwards if anything fails.",
+      "expected_output": "Moves and proves persisted data first: list_type to CType before registration, row-level pages.url audit despite wizard state, and semantic NULL handling before schema tightening, with snapshots and idempotent reruns.",
+      "assertions": [
+        "Migrates live, translated and workspace list_type records before CType-only registration",
+        "Records pre/post counts and a zero-change idempotent wizard rerun",
+        "Audits every populated source value even when a wizard is marked done",
+        "Chooses NULL conversion from field semantics rather than a blind default",
+        "Restores the pre-loop snapshot after a partial failed schema attempt"
+      ],
+      "files": []
     }
   ]
 }

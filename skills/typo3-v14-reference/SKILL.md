@@ -280,6 +280,12 @@ final class RenderingService
 </html>
 ```
 
+Fluid parses a partial as its own template. A custom ViewHelper namespace declared only in the
+calling template or layout is not inherited by that partial; declare the namespace in every file
+that uses it. Verify `templateRootPaths`, `partialRootPaths` and `layoutRootPaths`, then render every
+retained CType, plugin/list type and page template at least once. Cache warm-up does not compile a
+template path no request reaches.
+
 ## 5. Event System (TYPO3 v14)
 
 ### PSR-14 Event Listeners

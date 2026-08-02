@@ -24,6 +24,9 @@ matching symptom with a different cause is exactly how a wrong fix gets applied 
 - [Editors lose their modules, or gain all of them](#editors-lose-their-modules-or-gain-all-of-them)
 - [Every CLI command dies in alias-loader-include.php](#every-cli-command-dies-in-alias-loader-includephp)
 - [extension:setup fails inside a sitepackage's ext_localconf.php](#extensionsetup-fails-inside-a-sitepackages-ext_localconfphp)
+- [Rector is clean only after a second applied pass](#rector-is-clean-only-after-a-second-applied-pass)
+- [Fractor cannot find the generated extension registry](#fractor-cannot-find-the-generated-extension-registry)
+- [Composer metadata says compatible, runtime still breaks](#composer-metadata-says-compatible-runtime-still-breaks)
 
 ---
 
@@ -544,3 +547,47 @@ git mv Configuration/TsConfig/user.tsconfig Configuration/user.tsconfig
 
 Verify the load path in the installed `TsConfigTreeBuilder` rather than trusting the filename — it
 is the code that decides.
+
+---
+
+## Rector is clean only after a second applied pass
+
+**Symptom.** Rector applies successfully, then a dry run immediately proposes changes inside an
+upgrade wizard or other file Rector just generated.
+
+**Cause.** A rule can create code that exposes a later rule. On a real v14 run, generated
+list-type-to-CType wizards still carried namespaces that the next pass migrated.
+
+**Fix.** Treat both Rector and Fractor as fixed-point tools: dry run, review, apply, repeat until a
+fresh dry run reports zero changed files. Include generated code in the configured paths. “The tool
+ran once” is not an exit criterion.
+
+---
+
+## Fractor cannot find the generated extension registry
+
+**Symptom.** Fractor fails during boot after Composer was recovered with plugins disabled. Project
+code has not run yet; the error points at a missing generated TYPO3 extension registry or autoload
+artifact.
+
+**Cause.** `--no-plugins` can complete the lock/install operation without running the Composer plugin
+that generates TYPO3's registry.
+
+**Fix.** Run a normal, plugin-enabled reproducible `composer install` (and `composer dump-autoload`
+where needed), then rerun Fractor. Never patch the missing file in `vendor/`; it is generated and the
+next install would replace it.
+
+---
+
+## Composer metadata says compatible, runtime still breaks
+
+**Symptom.** The dependency graph resolves on TYPO3 14, but a backend status provider, command or
+frontend path fails with an incompatible method signature or a removed API.
+
+**Cause.** Composer constraints describe what the maintainer claims is compatible. They do not type-
+check inherited signatures or execute code paths. A package can also pin an upstream commit whose API
+has moved while its own wrapper has not.
+
+**Fix.** Lock the exact package/source commit, inspect the failing interface in installed code, patch
+the smallest owned boundary through Composer with a removal condition, then prove the actual runtime
+surface. Scanner and static analysis supplement that proof; neither replaces it.

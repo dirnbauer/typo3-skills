@@ -51,6 +51,21 @@
       "prompt": "Write 500 news records into the database from a CSV import script.",
       "expect_skill": "typo3-datahandler",
       "note": "Creating records programmatically, not defining a type."
+    },
+    {
+      "id": "typo3-content-blocks-trigger-pos-05",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Our Mask-to-Content-Blocks conversion changed field names and existing records now look empty. Audit the generated model and migrate it safely.",
+      "expected_output": "Treats the conversion as an in-place data-contract migration, preserves existing CType/column/table/FAL identities unless a separate migration proves a rename, validates YAML scalar types and nullability, and moves list_type data before CType-only registration.",
+      "assertions": [
+        "Preserves existing persisted identities by default",
+        "Checks integer and boolean YAML values by type",
+        "Audits stored NULL values before schema tightening",
+        "Tests Link objects and local Frame layouts",
+        "Proves the list_type migration transaction and idempotent rerun before registration"
+      ],
+      "files": []
     }
   ]
 }

@@ -36,35 +36,40 @@ export async function report({ values, paths, log }) {
   };
 }
 
-async function collectReports(dir, paths) {
-  const out = [];
-  const roots = dir === paths.root ? [dir] : [dir];
-  for (const base of roots) {
-    for (const file of await reportFiles(base)) {
-      const r = await readJson(file);
-      if (r?.kind) out.push({ ...r, _path: file });
+export async function collectReports(dir, paths) {
+  if (dir !== paths.root) {
+    // gate writes the one authoritative loop report. Intermediate and diagnostic
+    // report.*.json files remain useful evidence, but rendering all of them would
+    // count the same finding once per iteration.
+    const authoritative = path.join(dir, 'report.json');
+    const final = await readJson(authoritative);
+    if (final?.kind) return [{ ...final, _path: authoritative }];
+
+    // Before gate has run, render only the current fixed stage files. Never glob
+    // report.final.*, report.iteration.* or other historical names.
+    const out = [];
+    for (const kind of ['http', 'dom', 'visual']) {
+      const file = path.join(dir, 'artifacts', `report.${kind}.json`);
+      const stage = await readJson(file);
+      if (stage?.kind) out.push({ ...stage, _path: file });
     }
+    return out;
+  }
+
+  // A run-wide report consists of one authoritative report per active loop.
+  // Superseded and aborted loops remain on disk as history, not current findings.
+  const state = await readJson(paths.statePath);
+  const entries = await readdir(paths.loopsDir, { withFileTypes: true }).catch(() => []);
+  const out = [];
+  for (const entry of entries.filter((item) => item.isDirectory()).sort((a, b) => a.name.localeCompare(b.name))) {
+    const id = entry.name.slice(0, 3);
+    const status = state?.loops?.[id];
+    if (!status || ['superseded', 'aborted'].includes(status)) continue;
+    const file = path.join(paths.loopsDir, entry.name, 'report.json');
+    const loop = await readJson(file);
+    if (loop?.kind) out.push({ ...loop, _path: file });
   }
   return out;
-}
-
-async function reportFiles(root) {
-  const out = [];
-  async function walk(dir) {
-    let entries = [];
-    try { entries = await readdir(dir, { withFileTypes: true }); } catch { return; }
-    for (const entry of entries) {
-      const file = path.join(dir, entry.name);
-      if (entry.isDirectory()) await walk(file);
-      else if (
-        entry.isFile()
-        && entry.name.endsWith('.json')
-        && (entry.name.startsWith('report.') || entry.name === 'report.json')
-      ) out.push(file);
-    }
-  }
-  await walk(root);
-  return out.sort();
 }
 
 async function resolveLoopDir(paths, reference) {
@@ -99,7 +104,10 @@ export function renderSummary(reports, loopId) {
 
   lines.push(`**Verdict: ${worst}**`, '', '| Stage | Verdict | Counts |', '|---|---|---|');
   for (const r of reports) {
-    lines.push(`| ${r.kind} | ${r.verdict} | ${fmtCounts(r.counts)} |`);
+    const stages = r.kind === 'loop' && Array.isArray(r.stages) ? r.stages : [r];
+    for (const stage of stages) {
+      lines.push(`| ${stage.stage ?? stage.kind} | ${stage.verdict} | ${fmtCounts(stage.counts)} |`);
+    }
   }
 
   const all = reports.flatMap((r) => r.findings ?? []);

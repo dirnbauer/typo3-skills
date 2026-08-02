@@ -36,6 +36,12 @@ Require the latest v14-compatible `friendsoftypo3/visual-editor`, verified on Pa
 time. Migrate the Fluid templates with the `typo3-visual-editor` skill — `f:render.text`, content
 areas, colPos migration.
 
+Content Blocks need a `record-transformation` data processor that runs before their priority-10
+rendering processor (for example at key `5`) so `f:render.text` receives a Record object. Adjacent
+editable content areas must not share the same parent element; add separate, edit-mode-only wrappers
+when the normal frontend structure places them next to each other, then prove normal-mode DOM and
+pixels remain unchanged.
+
 Exit: inline editing verified on a representative page in the backend, **and frontend rendering
 unchanged** — the visual sample is what proves the second half.
 
@@ -47,6 +53,12 @@ obsolete keys, and verify every option against the installed version.
 Enable **text part language** so editors can mark passages with `<span lang="…">` for the site's
 configured languages, and add **abbreviation support** through a maintained CKEditor 5 plugin
 extension found on TER or Packagist and verified against v14 — never guess plugin package names.
+
+Prefer standalone presets during a major migration. Merging inherited heading arrays can register
+duplicate CKEditor model names and break editor boot without an obvious YAML error. Custom v14 ESM
+plugins import UI icons such as check/cancel from `@ckeditor/ckeditor5-icons`, not
+`@ckeditor/ckeditor5-core`; verify the installed exports and version the module URL after changing a
+failed import so the browser cannot retain the old graph.
 
 Align the editor's content styles with the frontend, but scale down oversized elements (a very large
 `h2`, for example) for editing ergonomics.

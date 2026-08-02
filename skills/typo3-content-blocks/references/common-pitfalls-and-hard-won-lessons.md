@@ -102,4 +102,20 @@ For `tt_content` Content Blocks with `prefixFields: false`, do not reuse an unpr
   type: Collection
 ```
 
+### 6. Preserve the Existing Data Contract During Migration
+
+A Mask/importer conversion is normally an in-place model migration. Keep the existing CType, custom
+column identifiers, child-table names and `sys_file_reference.fieldname` values unless a separate,
+repeatable data migration proves every live, translated and workspace record. Cosmetic renames can
+make a valid definition appear empty or orphan FAL relations.
+
+Audit generated YAML scalar types explicitly: converters have emitted integer and boolean options as
+quoted strings. Run `content-blocks:lint`, check existing `NULL` rows before declaring fields
+non-nullable, and test Link fields as link objects rather than strings. Preserve local Frame layouts
+and template paths where the old element relied on them.
+
+If records still use `tt_content.list_type`, migrate them transactionally before enabling CType-only
+registration. Record pre/post counts and prove the wizard is idempotent; otherwise the registration
+switch can produce a 500 before the data migration runs.
+
 ---

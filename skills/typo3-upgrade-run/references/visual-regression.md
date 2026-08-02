@@ -75,6 +75,12 @@ site regression, and a guard refusal is not a broken tool.
 | `gate` | Aggregate a loop verdict |
 | `report` | Generate `SUMMARY.md`, `FINDINGS.md`, `EVIDENCE.md` from the JSON |
 
+`gate` writes one authoritative `<loop>/report.json`. `report` renders that file when it exists and
+uses the fixed `artifacts/report.http.json`, `.dom.json` and `.visual.json` names only before gating.
+Files such as `report.iter2.*` or `report.final.*` are historical diagnostics and must never be
+accumulated into current counts. A run-wide report uses one authoritative report per active loop and
+skips loops marked `superseded` or `aborted` in `state.json`.
+
 ## Coverage
 
 Stage 1 and stage 2 cover **100% of discovered URLs, always**. If they cannot, the run is

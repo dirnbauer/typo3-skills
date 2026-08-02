@@ -76,6 +76,14 @@
       "prompt": "Refactor this React component to use hooks.",
       "known_limitation": "homonym: React hooks vs TYPO3 hooks-to-PSR-14, plus generic 'refactor'",
       "note": "Refactoring, but not PHP and not TYPO3. typo3-batch scores 6.50 here, just over the no-match floor, on exactly two shared terms - 'hook' and 'refactor' - both of which genuinely belong in its description (hook classes migrating to PSR-14 events, large-scale refactors across extensions). Removing either would cost real routing, so this is not a description defect but a limit of lexical matching, which cannot tell a React hook from a TYPO3 hook. Not yet confirmed against --grader claude; a model router should not make this mistake, but that is an expectation, not a measurement. Recorded as xfail so it stays visible and is reported as XPASS if it ever stops reproducing."
+    },
+    {
+      "status": "proposed",
+      "id": "typo3-rector-pos-05",
+      "kind": "trigger-positive",
+      "expect_skill": "typo3-rector",
+      "prompt": "Rector generated CType upgrade wizards, and its next dry run wants to migrate those new PHP files. Finish the migration to an empty pass.",
+      "note": "Generated PHP can require a second applied Rector pass."
     }
   ]
 }

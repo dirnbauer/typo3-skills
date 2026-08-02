@@ -22,7 +22,8 @@ import { initScript, profileHash, settleScript, STABILIZE_CSS } from '../../lib/
 import { isSafeLink, escapeAttrValue } from '../../lib/actions/sweep.mjs';
 import { assertPlausibleBaseUrl } from '../../lib/net/url-guard.mjs';
 import { Journal } from '../../lib/run/journal.mjs';
-import { renderSummary } from '../../lib/actions/report.mjs';
+import { collectReports, renderSummary } from '../../lib/actions/report.mjs';
+import { countActiveOpenFindings } from '../../lib/actions/compare.mjs';
 import {
   captureAll,
   DEFAULT_VISUAL_WORKERS,
@@ -826,6 +827,64 @@ describe('journal', () => {
 });
 
 describe('generated summaries', () => {
+  test('uses report.json as the authoritative loop result instead of accumulating iterations', async () => {
+    const dir = await tmp();
+    const paths = new RunPaths('.typo3-update', dir);
+    const loopDir = paths.loop('300-invariance-closure');
+    await mkdir(path.join(loopDir, 'artifacts'), { recursive: true });
+    await writeFile(path.join(loopDir, 'report.json'), JSON.stringify({
+      kind: 'loop', verdict: 'pass', counts: {}, findings: [],
+    }));
+    await writeFile(path.join(loopDir, 'report.final.visual.json'), JSON.stringify({
+      kind: 'visual', verdict: 'findings', counts: { regression: 5027 },
+      findings: [{ id: 'historical', status: 'open' }],
+    }));
+    await writeFile(path.join(loopDir, 'artifacts', 'report.visual.json'), JSON.stringify({
+      kind: 'visual', verdict: 'findings', counts: { regression: 421 },
+      findings: [{ id: 'stage', status: 'open' }],
+    }));
+
+    const reports = await collectReports(loopDir, paths);
+    assert.equal(reports.length, 1);
+    assert.equal(path.basename(reports[0]._path), 'report.json');
+    assert.deepEqual(reports[0].findings, []);
+  });
+
+  test('counts open findings across active authoritative loops and ignores superseded history', async () => {
+    const dir = await tmp();
+    const paths = new RunPaths('.typo3-update', dir);
+    await mkdir(paths.loopsDir, { recursive: true });
+    const state = { loops: { '100': 'superseded', '300': 'open', '500': 'green' } };
+    for (const [name, findings] of [
+      ['100-invariance-old', [{ id: 'old', status: 'open' }]],
+      ['300-invariance-closure', [{ id: 'current', status: 'open' }]],
+      ['500-elevation-performance', [{ id: 'info', status: 'open' }, { id: 'done', status: 'closed' }]],
+    ]) {
+      await mkdir(paths.loop(name), { recursive: true });
+      await writeFile(paths.loopReport(name), JSON.stringify({ kind: 'loop', findings }));
+    }
+
+    assert.equal(await countActiveOpenFindings(paths, state), 2);
+  });
+
+  test('run-wide reporting skips superseded and orphan loop directories', async () => {
+    const dir = await tmp();
+    const paths = new RunPaths('.typo3-update', dir);
+    await mkdir(paths.loopsDir, { recursive: true });
+    await writeFile(paths.statePath, JSON.stringify({
+      loops: { '100': 'superseded', '300': 'green' },
+    }));
+    for (const name of ['100-invariance-old', '300-invariance-closure', '999-report-orphan']) {
+      await mkdir(paths.loop(name), { recursive: true });
+      await writeFile(paths.loopReport(name), JSON.stringify({ kind: 'loop', findings: [] }));
+    }
+
+    const reports = await collectReports(paths.root, paths);
+    assert.deepEqual(reports.map((report) => path.basename(path.dirname(report._path))), [
+      '300-invariance-closure',
+    ]);
+  });
+
   test('states degraded coverage in the FIRST paragraph, not an appendix', () => {
     const md = renderSummary([{
       kind: 'visual', verdict: 'pass', counts: { captures: 10 }, findings: [],

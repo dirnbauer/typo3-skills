@@ -234,6 +234,15 @@ For every field that is editable in the backend and rendered in the frontend:
 
 Content Blocks templates follow the same rule once a Record object is available. If the frontend template only exposes `{data}`, either add record transformation or keep direct rendering for values that are not supported by `f:render.text`.
 
+For Content Blocks, place `record-transformation` before the priority-10 Content Blocks processor
+(for example `lib.contentBlock.dataProcessing.5 = record-transformation`). If it runs later,
+`f:render.text` still receives the untransformed array and inline editing silently fails.
+
+Adjacent editable content areas need distinct parent elements in Visual Editor edit mode. When two
+areas normally share one parent, add separate wrappers only for edit mode; shared-parent highlights
+and drag/drop boundaries are ambiguous. Keep normal-mode markup untouched and prove that with a DOM
+and pixel comparison.
+
 ## Problems to check
 
 Inline text is not editable:
@@ -348,6 +357,8 @@ No. It improves contextual editing, but complex fields, media replacement, permi
 - `composer show friendsoftypo3/visual-editor` reports a version compatible with the TYPO3 Core version.
 - `rg "f:cObject|lib.dynamicContent|v:content.render|flux:content.render|children_" Resources/Private` has either been migrated or deliberately wrapped.
 - Page templates use `PAGEVIEW` and `page-content` where `f:render.contentArea` is used.
+- Content Blocks run record transformation before priority 10.
+- Adjacent editable areas have distinct parents in edit mode without changing normal-mode markup.
 - Text fields shown in frontend output use `f:render.text` where inline editing is expected.
 - Editors can add, edit, move, and delete content in the Visual Editor module.
 - Rich text visually matches frontend output.

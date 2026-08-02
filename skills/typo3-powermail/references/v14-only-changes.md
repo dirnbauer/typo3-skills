@@ -30,5 +30,17 @@ Powermail Fluid templates must comply with Fluid 5.0 strict typing:
 - No underscore-prefixed variables in Fluid templates.
 - Verify custom Fluid partials and templates for type mismatches.
 
+### Fork and Scanner Verification **[v14 only]**
+
+A development branch resolving with `typo3/cms-core:^14.3` is only a Composer claim. Inspect its
+installed TCA for removed v14 keys such as `ctrl.searchFields`, and apply a locked Composer patch when
+the exact fork commit still carries them. Make the patch fail on context drift and record the
+condition for removing it.
+
+Do not delete compatibility aliases solely because Extension Scanner labels their underlying API as
+future-deprecated. Confirm whether the alias is required on v14, then prove real Powermail behavior:
+render every used form, submit valid and invalid values, exercise confirmation/opt-in/finishers, and
+verify outgoing mail. Scanner output is diagnostic evidence, not runtime coverage.
+
 
 Source: https://github.com/dirnbauer/webconsulting-skills

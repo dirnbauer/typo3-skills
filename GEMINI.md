@@ -1,11 +1,11 @@
 # TYPO3 Agent Skills
 
-36 Agent Skills for TYPO3 v14 development, upgrades and operations.
+This repository contains 45 Agent Skills for AI-augmented software development.
 
 ## Instructions
 
-Follow [AGENTS.md](AGENTS.md) — the single source of truth for all skills, triggers, session
-profiles and conventions.
+Follow the instructions in [AGENTS.md](AGENTS.md) — it is the single source of truth for all skills, triggers, usage examples, session profiles, and acknowledgements.
+
 
 ## Skills location
 
@@ -13,7 +13,10 @@ All skills live in `skills/<skill-name>/SKILL.md`. Installers link the whole ski
 optional `agents/`, `assets/`, `evals/`, `examples/`, `reference/`, `references/`, `rules/`,
 `scripts/` and `templates/` folders remain available.
 
-Read `skills/<name>/SKILL.md` and follow it. Load referenced files only when the skill asks for them.
+Read `skills/<name>/SKILL.md` and follow it. Load referenced files only when the skill asks for them —
+except `references/webconsulting-additions.md`, which you read alongside `SKILL.md` whenever it
+exists. Vendored skills keep their upstream `SKILL.md` byte-identical and therefore cannot link to
+it, so it is the one file the skill can never point you at.
 
 ## Key conventions
 

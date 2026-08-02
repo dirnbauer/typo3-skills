@@ -4,7 +4,11 @@ This repository contains 45 Agent Skills for AI-augmented software development.
 
 ## Instructions
 
-Follow the instructions in [AGENTS.md](AGENTS.md) — it is the single source of truth for all skills, triggers, usage examples, session profiles, and acknowledgements.
+Follow the instructions in AGENTS.md — it is the single source of truth for all skills, triggers, usage examples, session profiles, and acknowledgements.
+
+## Windsurf Integration
+
+Windsurf can read this rule file and the symlinked skill directories under `.windsurf/skills/` or `~/.codeium/windsurf/skills/`.
 
 
 ## Skills location

@@ -51,6 +51,21 @@
       "prompt": "Restyle these elements with shadcn presets and semantic tokens.",
       "expect_skill": "typo3-shadcn-content-elements",
       "note": "Styling, not editability."
+    },
+    {
+      "id": "typo3-visual-editor-trigger-pos-05",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Two adjacent Content Block areas share one highlight and their text is not editable inline. Check record transformation and the edit-mode wrappers.",
+      "expected_output": "Runs Content Block record transformation before priority 10, gives adjacent areas distinct edit-mode parent elements, and proves normal-mode DOM and pixels remain unchanged.",
+      "assertions": [
+        "Places record-transformation before the priority-10 Content Blocks processor",
+        "Uses the Record object for f:render.text",
+        "Adds distinct parents only in edit mode",
+        "Does not change normal frontend markup",
+        "Verifies inline editing and normal-mode visual parity"
+      ],
+      "files": []
     }
   ]
 }

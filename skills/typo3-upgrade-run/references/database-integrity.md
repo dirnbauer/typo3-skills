@@ -18,6 +18,25 @@ Never turn an observed count into a blind update. Take a snapshot, inspect repre
 confirm the target semantics and record the exact conversion. Repeat this for every field called
 out by the analyzer or migration error.
 
+## Move data before removing its source model
+
+A code registration and its persisted discriminator are one migration. For legacy Extbase plugins,
+migrate every live, translated and workspace `tt_content.list_type` value to the target `CType`
+**before** enabling CType-only registration or removing the legacy field. A generated wizard is not
+proof until its pre-count, affected rows, second idempotent run and post-count are recorded. Registering
+the target first can make existing records unrenderable before the wizard gets a chance to fix them.
+
+Likewise, do not trust a wizard's “done” flag as a row audit. Before a source column disappears,
+query every non-empty value and compare it with the target representation. Real projects contain
+older or manually edited records a previously completed wizard did not cover; `pages.url` on hidden
+or link pages is one example. Migrate those exact rows explicitly, rerun the audit at zero, then let
+the schema remove the source column.
+
+Content Block schema declarations must match stored nullability. Before changing a generated field
+to non-nullable, count existing `NULL` rows and decide whether `NULL`, an empty value or a real default
+has the correct semantics. Restore the pre-loop snapshot after a failed schema attempt; do not keep
+retrying against a partially migrated database.
+
 ## Review all eight schema operation types
 
 Where the project already installs `helhum/typo3-console`, its `database:updateschema` command

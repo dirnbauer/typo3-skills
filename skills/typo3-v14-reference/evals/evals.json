@@ -93,6 +93,20 @@
       "expect_skill": "typo3-upgrade-run",
       "prompt": "What PHP version should this project target, and should I keep ext_emconf.php?",
       "note": "Deliberate trap: typo3-v14-reference states these facts but does not OWN the policy. Answering here would be a project-level ruling from an API reference."
+    },
+    {
+      "status": "proposed",
+      "id": "typo3-v14-reference-beh-01",
+      "kind": "behaviour",
+      "prompt": "A v14 partial calls <foo:widget>, but only the outer template declares xmlns:foo. Warm-up passed; can we call the Fluid migration complete?",
+      "expected_output": "Declares the namespace in the independently parsed partial, audits all Fluid root paths, and renders every retained CType/plugin/page-template path instead of treating cache warm-up as coverage.",
+      "assertions": [
+        "Recognises that callers and layouts do not donate namespaces to parsed partials",
+        "Checks template, partial and layout root paths",
+        "Exercises every retained render path",
+        "Does not equate cache warm-up with unused-template compilation"
+      ],
+      "files": []
     }
   ]
 }

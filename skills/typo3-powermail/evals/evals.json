@@ -51,6 +51,21 @@
       "prompt": "Build a Lit component for the backend form editor.",
       "expect_skill": "typo3-webcomponents",
       "note": "Backend JavaScript."
+    },
+    {
+      "id": "typo3-powermail-trigger-pos-05",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Our Powermail v14 fork resolves in Composer but Scanner reports aliases and the form submit path is untested. Verify the fork properly.",
+      "expected_output": "Treats Composer and Scanner output as diagnostic claims, audits removed v14 TCA keys and compatibility aliases against installed code, then proves every used form through render, validation, submit, finishers and outgoing mail.",
+      "assertions": [
+        "Does not equate Composer resolution with runtime compatibility",
+        "Checks removed ctrl.searchFields declarations",
+        "Does not delete required aliases solely from Scanner output",
+        "Locks any fork patch to an exact commit with a removal condition",
+        "Exercises form submission, finishers and mail delivery"
+      ],
+      "files": []
     }
   ]
 }

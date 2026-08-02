@@ -294,3 +294,6 @@ plugin.tx_powermail.settings.setup.marketing {
 ## Detailed Reference
 
 Read [the full guide](references/full-guide.md) when the task needs detailed examples, long templates, troubleshooting matrices, appendices, or sections not included above. Keep this file unloaded for narrow tasks so the skill follows progressive disclosure.
+
+For a TYPO3 v14 migration or fork audit, also read
+[v14-only changes](references/v14-only-changes.md).

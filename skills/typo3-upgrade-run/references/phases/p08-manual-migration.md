@@ -20,8 +20,12 @@ with this skill.
      for sitepackages and custom extensions, not covered by Rector, and each usage needs a different
      `$request->getAttribute(...)` replacement. Look them up in `typo3-v14-reference`; do not guess.
    - **Fluid 5 is strict.** String-for-int ViewHelper arguments are rejected, `_`-prefixed variables
-     are disallowed, CDATA is no longer stripped. These live in `.html` files Fractor does not fully
-     cover and fail on the specific templates that use them.
+     are disallowed, CDATA is no longer stripped. A custom ViewHelper namespace must be declared in
+     every template or partial that uses it; a caller or layout does not donate its namespaces to a
+     separately parsed partial. Verify `templateRootPaths`, `partialRootPaths` and `layoutRootPaths`,
+     then render every retained CType, plugin/list type and page template at least once. Cache warm-up
+     alone does not compile template paths no request reaches. These failures live in `.html` files
+     Fractor does not fully cover and appear only on the affected render path.
    - **`$GLOBALS['TCA']` is read-only after boot.** An extension mutating TCA from `ext_tables.php`,
      middleware or an event listener now fails — an architectural refactor, not a patch.
    - **Doctrine DBAL and Symfony majors moved.** Custom queries using removed DBAL APIs fail at
@@ -31,12 +35,18 @@ with this skill.
    variants per environment, language fallback type and order, route enhancers, per-site error
    handling, and site sets where the project uses them. A changed fallback silently changes which
    language renders; an error handler pointing at a page uid passes locally and 404s after deploy.
-6. Make TCA and schema v14-compliant, preserve localisation and relations, and add upgrade wizards
+6. **Migrate moved Form Framework definitions as data.** When a `*.form.yaml` file moves into a new
+   sitepackage, register its directory under `persistenceManager.allowedExtensionPaths` in the v14
+   form configuration. Then migrate the stored `settings.persistenceIdentifier` inside
+   `tt_content.pi_flexform` with a repeatable, structured-data-aware upgrade wizard — not a raw SQL or
+   regex replacement. Cover translated and workspace records, prove zero live references to the old
+   identifier, render and submit every migrated form, and verify its finishers and mail in Mailpit.
+7. Make TCA and schema v14-compliant, preserve localisation and relations, and add upgrade wizards
    for persisted data changes. Test migrations with representative data.
-7. Make record reads, writes, previews, overlays, file handling and rendering workspace-aware. Add
+8. Make record reads, writes, previews, overlays, file handling and rendering workspace-aware. Add
    tests for create, edit, preview, publish, discard, localisation and relations. Account explicitly
    for FAL's workspace limitations.
-8. Preserve extension behaviour unless the user approved a breaking change. Add regression tests
+9. Preserve extension behaviour unless the user approved a breaking change. Add regression tests
    **before** risky rewrites, not after.
 
 ## Exit
@@ -49,4 +59,3 @@ A guessed event name. A behaviour change without an approval.
 ## Note
 Historical mentions of v12/v13 may remain in upgrade documentation and the changelog — that is
 documentation, not executable code.
-

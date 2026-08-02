@@ -38,6 +38,7 @@ the people paying for the project, not to an agent three phases in.
 | It lives in `packages/` | Migrate it in place — it is a first-class target, not a special case | `updated` |
 | No v14 release, but an upstream branch, fork, or successor exists | Use it; a `dev-` branch needs the lockfile committed and an exit condition | `updated` |
 | No v14 release, and TYPO3 v14 Core now does the job | Remove the extension | `replaced` |
+| Only a small, stable provider surface is used | Extract that contract into a project-owned sitepackage, preserve legacy database/FAL identities, migrate stored textual references, then remove the provider with approval | `replaced` |
 | No v14 release and the feature must stay | **Fork it into `packages/` and maintain it yourself** | `forked` |
 | It still breaks after real migration attempts | Measure the impact of removal, then let the user decide | `removed-approved` |
 

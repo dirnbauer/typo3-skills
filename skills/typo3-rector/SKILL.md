@@ -108,6 +108,18 @@ ddev typo3 cache:flush
 ddev composer dump-autoload
 ```
 
+### Reach a fixed point
+
+One applied pass is not completion. A Rector rule can generate code that another rule only sees on
+the next pass; generated list-type-to-CType upgrade wizards have required a second namespace
+migration in real v14 work. Repeat **dry run → review → apply** until a fresh dry run reports zero
+changed files, including generated migration code.
+
+Do not apply a destructive semantic rule merely because it is automated. In particular, defer an
+icon-registration removal when the current provider (for example Font Awesome) has no proven SVG
+replacement yet. Skip that exact rule with a recorded manual follow-up, replace/register the icon,
+then rerun Rector to zero.
+
 ## 3. Version constraints and extra Rector sets
 
 ### Version constraints

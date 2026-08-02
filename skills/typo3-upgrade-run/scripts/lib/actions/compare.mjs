@@ -610,10 +610,11 @@ export async function gate({ values, paths, log }) {
   });
   const written = await writeReport(reportPath, report, { profile: values['redaction-profile'], dryRun: values['dry-run'] });
   if (!values['dry-run']) {
-    await new StateStore(paths).update((state) => {
-      state.loops[loopId] = verdict.verdict === 'green' ? 'green' : 'open';
-      state.open_findings = findings.filter((finding) => finding.status !== 'closed').length;
-    });
+    const store = new StateStore(paths);
+    const state = await store.read();
+    state.loops[loopId] = verdict.verdict === 'green' ? 'green' : 'open';
+    state.open_findings = await countActiveOpenFindings(paths, state);
+    await store.write(state);
   }
 
   if (verdict.verdict === 'green') {
@@ -626,6 +627,26 @@ export async function gate({ values, paths, log }) {
     blockingReasons: verdict.blockingReasons, reports: [written.path],
     message: `loop blocked by ${verdict.blockingReasons.length} reason(s)`,
   };
+}
+
+/** Count current findings from authoritative loop reports, never from historical
+ * stage/iteration artifacts. Superseded and aborted loops remain audit history. */
+export async function countActiveOpenFindings(paths, state) {
+  const loopDirs = await safeList(paths.loopsDir, '');
+  let total = 0;
+  for (const [id, status] of Object.entries(state.loops ?? {})) {
+    if (['planned', 'superseded', 'aborted'].includes(status)) continue;
+    const matches = loopDirs.filter((name) => name.startsWith(`${id}-`));
+    if (matches.length !== 1) {
+      throw new PreconditionError(`Expected one loop directory for ${id}, found ${matches.length}.`);
+    }
+    const loop = await readJson(paths.loopReport(matches[0]));
+    if (!loop?.kind) {
+      throw new PreconditionError(`Active loop ${matches[0]} has no authoritative report.json.`);
+    }
+    total += (loop?.findings ?? []).filter((finding) => finding.status !== 'closed').length;
+  }
+  return total;
 }
 
 /* ----------------------------------------------------------- helpers */

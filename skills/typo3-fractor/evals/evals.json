@@ -51,6 +51,14 @@
       "prompt": "Our XLF files have duplicate trans-unit ids after a merge.",
       "expect_skill": "typo3-translations",
       "note": "Hard case: this skill lists XLIFF among its file types, but editing label content is the translations skill."
+    },
+    {
+      "id": "typo3-fractor-trigger-pos-05",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "Fractor cannot boot because the TYPO3 extension registry is missing after a Composer --no-plugins recovery. Regenerate it and finish the non-PHP migration.",
+      "expect_skill": "typo3-fractor",
+      "note": "Fractor bootstrap recovery plus fixed-point completion."
     }
   ]
 }

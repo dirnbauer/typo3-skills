@@ -187,11 +187,11 @@
   {
     "directory": "typo3-content-blocks",
     "skill_name": "typo3-content-blocks",
-    "description": "Defines what a TYPO3 block IS: its field definitions in config.yaml, and how fields nest into collections or repeatable children. Covers Content Blocks for elements, records, page types and file types as the single source of truth. Use when creating a new block, writing or debugging config.yaml and make:content-block output, migrating legacy fluid_styled_content to the new format, fixing a block preview that renders blank in the backend, or working with IRRE, labels and friendsoftypo3/content-blocks behaviour. For visual design of blocks: typo3-shadcn-content-elements.",
+    "description": "Defines what a TYPO3 block IS: its field definitions in config.yaml, and how fields nest into collections or repeatable children. Covers Content Blocks for elements, records, page types and file types as the single source of truth. Use when creating a new block, writing or debugging config.yaml and make:content-block output, migrating Mask or legacy fluid_styled_content while preserving existing records, fixing a block preview that renders blank in the backend, or working with IRRE, labels and friendsoftypo3/content-blocks behaviour. For visual design of blocks: typo3-shadcn-content-elements.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-content-blocks/SKILL.md",
-    "line_count": 277,
+    "line_count": 280,
     "frontmatter_keys": [
       "name",
       "description",
@@ -309,7 +309,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-fractor/SKILL.md",
-    "line_count": 298,
+    "line_count": 309,
     "frontmatter_keys": [
       "name",
       "description",
@@ -403,7 +403,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-powermail/SKILL.md",
-    "line_count": 297,
+    "line_count": 300,
     "frontmatter_keys": [
       "name",
       "description",
@@ -439,7 +439,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-rector/SKILL.md",
-    "line_count": 355,
+    "line_count": 367,
     "frontmatter_keys": [
       "name",
       "description",
@@ -620,7 +620,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-v14-reference/SKILL.md",
-    "line_count": 346,
+    "line_count": 352,
     "frontmatter_keys": [
       "name",
       "description",
@@ -639,7 +639,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-visual-editor/SKILL.md",
-    "line_count": 363,
+    "line_count": 374,
     "frontmatter_keys": [
       "name",
       "description",

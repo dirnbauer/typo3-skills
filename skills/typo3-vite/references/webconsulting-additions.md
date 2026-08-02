@@ -38,3 +38,16 @@ choice is only about how the manifest reaches the template.
 Under `typo3-upgrade-run` the asset tags are emitted without the bridge, so the CSP nonce has to come
 from TYPO3's own API at render time rather than from the extension's ViewHelper. Verify nonce
 propagation explicitly — a working page with a silently violated CSP is a common outcome here.
+
+## Upgrade-parity traps
+
+- On the v12/v13 rungs, Bootstrap Package can re-enable all four legacy TYPO3 asset flags after an
+  earlier sitepackage setting. Load the theme override after Bootstrap Package and set
+  `concatenateCss`, `compressCss`, `concatenateJs` and `compressJs` explicitly to `0`. They become
+  inert on v14, but they still alter the source-rung baseline the Vite migration must preserve.
+- Use `base: './'` when Vite output is published under TYPO3's content-addressed extension path.
+  Root-relative `/assets/...` URLs escape that path and break CSS fonts/images even when entrypoint
+  CSS and JS load correctly.
+- During Contract A parity, set `cssMinify: false` for an already-minified legacy CSS input. A second
+  minification can change text rasterisation across hundreds of screenshots without changing layout
+  or content. Re-enable or change minification only in a measured Contract B performance loop.
