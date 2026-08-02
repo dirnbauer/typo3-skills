@@ -1,0 +1,10 @@
+# Safe baseline for the one main editor group.
+options.clearCache.pages = 1
+options.clearCache.all = 0
+
+admPanel {
+    hide = 0
+    enable {
+        preview = 1
+    }
+}

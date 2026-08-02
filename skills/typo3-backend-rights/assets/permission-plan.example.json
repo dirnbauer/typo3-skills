@@ -1,0 +1,61 @@
+{
+  "title": "Editorial Main",
+  "description": "One main editor group derived from the live project.",
+  "allowed_content_types": [
+    "header",
+    "text",
+    "textmedia"
+  ],
+  "content_type_exceptions": {
+    "vendor_list": "Site-wide list renderer; editors manage the underlying records instead.",
+    "vendor_detail": "Route/detail renderer configured by administrators."
+  },
+  "modules": [
+    "web_layout",
+    "records",
+    "page_preview",
+    "media_management",
+    "user_setup",
+    "about"
+  ],
+  "tables_modify": [
+    "pages",
+    "tt_content",
+    "sys_category",
+    "sys_file",
+    "sys_file_collection",
+    "sys_file_metadata",
+    "sys_file_reference"
+  ],
+  "tables_select": [
+    "pages",
+    "tt_content",
+    "sys_category",
+    "sys_file",
+    "sys_file_collection",
+    "sys_file_metadata",
+    "sys_file_reference"
+  ],
+  "page_types": [1, 4, 254],
+  "db_mountpoints": [1],
+  "file_mountpoints": [1],
+  "file_permissions": [
+    "readFolder",
+    "writeFolder",
+    "addFolder",
+    "renameFolder",
+    "moveFolder",
+    "copyFolder",
+    "deleteFolder",
+    "readFile",
+    "writeFile",
+    "addFile",
+    "renameFile",
+    "replaceFile",
+    "moveFile",
+    "copyFile",
+    "deleteFile"
+  ],
+  "tsconfig": "@import 'EXT:sitepackage/Configuration/TsConfig/User/BackendEditor/optimized.tsconfig'",
+  "workspace_perms": 1
+}

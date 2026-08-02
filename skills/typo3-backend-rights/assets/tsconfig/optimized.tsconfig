@@ -1,0 +1,31 @@
+# Trusted full-content editor profile.
+options {
+    clearCache.pages = 1
+    clearCache.all = 0
+    defaultResourcesViewMode = list
+
+    file_list {
+        enableClipBoard = selectable
+        displayColumnSelector = 1
+        enableDisplayThumbnails = selectable
+        primaryActions = view,metadata,translations,delete,copy,cut,rename,replace,download,upload
+    }
+
+    liveSearch.actions {
+        pages.default = layout
+        tt_content.default = layout
+    }
+}
+
+admPanel {
+    hide = 0
+    enable {
+        cache = 1
+        debug = 0
+        edit = 1
+        info = 1
+        preview = 1
+        publish = 0
+        tsdebug = 0
+    }
+}

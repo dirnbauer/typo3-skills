@@ -1,0 +1,100 @@
+{
+  "skill_name": "typo3-backend-rights",
+  "skill_type": "preference",
+  "spec": "SKILL-SPEC.md",
+  "note": "Owns backend editor group permission design and safe user conversion. Near typo3-security for MFA and installation hardening, typo3-datahandler for generic record writes, and typo3-content-blocks for defining content types rather than granting access to them.",
+  "evals": [
+    {
+      "id": "typo3-backend-rights-trigger-pos-01",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "Our editors can open the Page module but every existing content element type is missing when they try to edit it.",
+      "expect_skill": "typo3-backend-rights",
+      "note": "Real symptom of an incomplete explicit CType allow-list."
+    },
+    {
+      "id": "typo3-backend-rights-trigger-pos-02",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "Create one main backend group that can manage all normal site content, news records, and files across every mount.",
+      "expect_skill": "typo3-backend-rights",
+      "note": "Canonical full editor-group request."
+    },
+    {
+      "id": "typo3-backend-rights-trigger-pos-03",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "The frontend preview works for administrators only. Give trusted non-admin editors the safe Admin Panel sections and cache button.",
+      "expect_skill": "typo3-backend-rights",
+      "note": "User TSconfig and Admin Panel access."
+    },
+    {
+      "id": "typo3-backend-rights-trigger-pos-04",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "Convert this TYPO3 administrator into an editor without locking us out, and ask before replacing their current groups.",
+      "expect_skill": "typo3-backend-rights",
+      "note": "Admin-safety and group-membership transition."
+    },
+    {
+      "id": "typo3-backend-rights-trigger-neg-01",
+      "kind": "trigger-negative",
+      "status": "proposed",
+      "prompt": "Require multi-factor authentication for every TYPO3 administrator and review trusted hosts.",
+      "expect_skill": "typo3-security",
+      "note": "Installation hardening rather than editorial authorization design."
+    },
+    {
+      "id": "typo3-backend-rights-trigger-neg-02",
+      "kind": "trigger-negative",
+      "status": "proposed",
+      "prompt": "Import 200 news rows and their file references through the correct TYPO3 APIs.",
+      "expect_skill": "typo3-datahandler",
+      "note": "Record creation workflow, not backend group configuration."
+    },
+    {
+      "id": "typo3-backend-rights-trigger-neg-03",
+      "kind": "trigger-negative",
+      "status": "proposed",
+      "prompt": "Define a new accordion content type with a collection field and backend preview.",
+      "expect_skill": "typo3-content-blocks",
+      "note": "Content model definition, not authorization."
+    },
+    {
+      "id": "typo3-backend-rights-behaviour-01",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "The Redakteur group has no CType values at all. Is that an unrestricted setting, or a defect we have to repair?",
+      "assertions": [
+        "Treat an empty explicit_allowdeny CType list as blocking when tt_content.CType uses explicitAllow.",
+        "Compare every used editorial CType with explicit tt_content:CType permissions.",
+        "Require a documented reason for each infrastructure exception."
+      ],
+      "note": "Regression for the live defect reported on 2026-08-02."
+    },
+    {
+      "id": "typo3-backend-rights-behaviour-02",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Make the new editor role the only group for our administrator and turn off their admin flag now.",
+      "assertions": [
+        "Ask whether the main group should be the user's only group before replacing memberships.",
+        "Keep the current working administrator unchanged.",
+        "Demote an admin only after a separate enabled login-capable administrator is proven."
+      ],
+      "note": "Protects against lockout and unauthorized group removal."
+    },
+    {
+      "id": "typo3-backend-rights-behaviour-03",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "The group row was inserted, but the command crashed while trying to print the new UID after its transaction committed.",
+      "assertions": [
+        "Check for the uniquely titled group before retrying so a duplicate is not created.",
+        "Resolve the UID with a post-transaction SELECT instead of relying on lastInsertId.",
+        "Keep the apply operation idempotent by updating the existing uniquely titled group."
+      ],
+      "note": "Regression for the Doctrine identity reporting failure observed on 2026-08-02."
+    }
+  ]
+}
