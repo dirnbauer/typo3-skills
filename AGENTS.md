@@ -2,7 +2,7 @@
 
 Single source of truth for this collection: what each skill is for, when it triggers, and how they compose.
 
-**42 skills** · TYPO3 **14.3 LTS** target · PHP **8.4** standard (8.5 where it resolves)
+**45 skills** · TYPO3 **14.3 LTS** target · PHP **8.4** standard (8.5 where it resolves)
 
 ## Using a skill
 
@@ -63,6 +63,7 @@ Combine skills rather than merging them. `typo3-rector` + `typo3-testing` is the
 |---|---|---|
 | `typo3-ddev` | **Netresearch** (vendored) | Use when providing DDEV URLs, accessing TYPO3 backend in browser, performing any ddev command (e.g. start, stop, restart, describe, exec), setting up … |
 | `typo3-vite` | **Netresearch** (vendored) | Use when configuring Vite 7 for TYPO3 v13/v14 LTS projects, setting up SCSS architecture with Bootstrap 5.3 theming, creating entrypoints per content … |
+| `typo3-scheduler-jobs` | webconsulting | Audits, plans, configures, groups, and verifies TYPO3 14.3 Scheduler tasks for a specific installation, including safe Core, extension, and Solr jobs… |
 | `typo3-solr` | webconsulting | Configures and debugs Apache Solr search for TYPO3, including EXT:solr, configsets, indexing queues, Tika/file indexing, facets, suggest, routing, PSR… |
 | `typo3-seo` | webconsulting | Configures TYPO3 SEO for EXT:seo, metadata, hreflang, XML sitemaps, robots.txt, canonical URLs, structured data, Core Web Vitals, SEO extensions, and … |
 | `typo3-security` | webconsulting | Hardens TYPO3 v14 installations and extensions with secure configuration, trusted hosts, file permissions, Install Tool protection, backend user secur… |
@@ -90,7 +91,7 @@ Combine skills rather than merging them. `typo3-rector` + `typo3-testing` is the
 | **Migration** | `typo3-rector`, `typo3-fractor`, `typo3-extension-upgrade`, `php-modernization`, `typo3-batch` | Moving code forward |
 | **Quality gate** | `typo3-conformance`, `typo3-simplify`, `typo3-testing`, `security-audit`, `enterprise-readiness` | Pre-release review |
 | **Release** | `typo3-initial-release`, `typo3-docs`, `typo3-testing` | Publishing to TER/Packagist |
-| **Operations** | `typo3-ddev`, `typo3-solr`, `typo3-seo`, `typo3-security` | Running and hardening a site |
+| **Operations** | `typo3-ddev`, `typo3-scheduler-jobs`, `typo3-solr`, `typo3-seo`, `typo3-security` | Running and hardening a site |
 
 ## The rules layer
 

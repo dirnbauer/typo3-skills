@@ -2,7 +2,7 @@
 
 **Agent Skills for TYPO3 v14 development, upgrades and operations.**
 
-42 skills, plus an always-on rules layer, for AI coding agents working on TYPO3 projects — Claude
+45 skills, plus an always-on rules layer, for AI coding agents working on TYPO3 projects — Claude
 Code, Cursor, Codex, Gemini CLI, Windsurf, and anything else that reads `SKILL.md` files.
 
 This is the active repository for TYPO3 skills. It began as a focused extraction from
@@ -55,7 +55,7 @@ documents itself in its own numbered directory.
 
 ### Operations
 
-`typo3-ddev` · `typo3-solr` · `typo3-seo` · `typo3-security` · `security-audit` ·
+`typo3-ddev` · `typo3-scheduler-jobs` · `typo3-solr` · `typo3-seo` · `typo3-security` · `security-audit` ·
 `enterprise-readiness` · `typo3-accessibility` · `typo3-wcag22-aa-agentic` · `typo3-docs` ·
 `typo3-core-contributions` · `typo3-vite`
 
@@ -121,7 +121,7 @@ A rule answers *is this change allowed?*. A skill answers *how do I build this?*
 
 ## Vendored skills
 
-14 of the 42 are not authored by webconsulting and are vendored **byte-identical** so they stay
+14 of the 45 are not authored by webconsulting and are vendored **byte-identical** so they stay
 re-syncable and their attribution stays intact. Improvements live in separate
 `references/webconsulting-additions.md` overlays that never silently override upstream behaviour.
 

@@ -1,0 +1,145 @@
+{
+  "skill_name": "typo3-scheduler-jobs",
+  "skill_type": "preference",
+  "spec": "SKILL-SPEC.md",
+  "note": "Owns TYPO3 14 Scheduler task discovery, grouping, cadence, configuration, and operational verification. Solr search behavior beyond its Scheduler workers belongs to typo3-solr; DDEV lifecycle belongs to typo3-ddev.",
+  "evals": [
+    {
+      "id": "typo3-scheduler-jobs-trigger-pos-01",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "Audit this TYPO3 14 installation and add the maintenance jobs it actually needs to the backend Scheduler.",
+      "expect_skill": "typo3-scheduler-jobs",
+      "note": "Canonical installation-specific task request."
+    },
+    {
+      "id": "typo3-scheduler-jobs-trigger-pos-02",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "Our cache garbage collection, IP anonymization, table cleanup, and FAL metadata jobs are missing. Configure safe intervals and groups.",
+      "expect_skill": "typo3-scheduler-jobs",
+      "note": "Core task configuration and grouping."
+    },
+    {
+      "id": "typo3-scheduler-jobs-trigger-pos-03",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "The TYPO3 cron runs but Scheduler tasks are late and several jobs are still ungrouped. Find the cause and clean up the setup.",
+      "expect_skill": "typo3-scheduler-jobs",
+      "note": "Operational health and backend grouping."
+    },
+    {
+      "id": "typo3-scheduler-jobs-trigger-pos-04",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "Solr is installed on a multisite TYPO3 project. Create the right queue worker for each website root and choose a sensible frequency.",
+      "expect_skill": "typo3-scheduler-jobs",
+      "note": "Solr task topology belongs here; search schema remains typo3-solr."
+    },
+    {
+      "id": "typo3-scheduler-jobs-trigger-pos-05",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "After the v14 update some tx_scheduler_task rows have no tasktype and the old jobs cannot run.",
+      "expect_skill": "typo3-scheduler-jobs",
+      "note": "TYPO3 v14 task storage migration."
+    },
+    {
+      "id": "typo3-scheduler-jobs-trigger-neg-01",
+      "kind": "trigger-negative",
+      "status": "proposed",
+      "prompt": "Search results omit a new custom page type even though the Solr index worker is healthy.",
+      "expect_skill": "typo3-solr",
+      "note": "Index configuration and mapping, not worker scheduling."
+    },
+    {
+      "id": "typo3-scheduler-jobs-trigger-neg-02",
+      "kind": "trigger-negative",
+      "status": "proposed",
+      "prompt": "Start the DDEV project and show me the TYPO3 backend URL.",
+      "expect_skill": "typo3-ddev",
+      "note": "Container lifecycle and URLs."
+    },
+    {
+      "id": "typo3-scheduler-jobs-trigger-neg-03",
+      "kind": "trigger-negative",
+      "status": "proposed",
+      "prompt": "Require MFA for all TYPO3 administrators and harden trusted hosts.",
+      "expect_skill": "typo3-security",
+      "note": "Installation security policy."
+    },
+    {
+      "id": "typo3-scheduler-jobs-behaviour-01",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Copy all scheduler rows and intervals from our old TYPO3 12 site into the new v14 database.",
+      "assertions": [
+        "Refuse to copy serialized task rows or settings from the old installation.",
+        "Inventory task types and parameters from the selected TYPO3 14 runtime.",
+        "Use another site only as evidence for candidate categories."
+      ],
+      "note": "Protects the explicit v14-only boundary."
+    },
+    {
+      "id": "typo3-scheduler-jobs-behaviour-02",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Set every maintenance and cleanup job to run once per minute so nothing builds up.",
+      "assertions": [
+        "Classify one or two minutes as very frequent and reject it for broad maintenance.",
+        "Use five minutes only for latency-sensitive queues and daily, weekly, or monthly maintenance baselines.",
+        "Keep parallel execution disabled and compare duration with cadence."
+      ],
+      "note": "Cadence safety regression."
+    },
+    {
+      "id": "typo3-scheduler-jobs-behaviour-03",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Configure Solr Scheduler for sites rooted at pages 1, 40, and 90; shared news records are stored on page 200.",
+      "assertions": [
+        "Create one Index Queue Worker per indexed TYPO3 Site root.",
+        "Verify each root page is the Site root and has is_siteroot enabled.",
+        "Use additionalPageIds for the proven shared storage and explain outside-root monitoring cost.",
+        "Do not configure the removed forced-webroot field."
+      ],
+      "note": "Correct Solr website-start behavior on v14."
+    },
+    {
+      "id": "typo3-scheduler-jobs-behaviour-04",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Install every task type listed by TYPO3 and every active extension, then organize them later.",
+      "assertions": [
+        "Treat registration as capability rather than evidence that a recurring task is required.",
+        "Build and classify the complete candidate list before creating groups or jobs.",
+        "Record create, skip, keep, change, or remove evidence for every fixed Core task."
+      ],
+      "note": "Prevents indiscriminate Scheduler population."
+    },
+    {
+      "id": "typo3-scheduler-jobs-behaviour-05",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "The Scheduler backend shows green after I ran each job manually. Confirm the setup is complete.",
+      "assertions": [
+        "Verify the external runner invokes scheduler:run independently.",
+        "Require future next executions, no failures, and task group assignment.",
+        "Re-audit after a scheduled interval and a full weekly cycle."
+      ],
+      "note": "Manual execution does not prove cron health."
+    },
+    {
+      "id": "typo3-scheduler-jobs-behaviour-06",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "MySQL is installed, so select every table for OPTIMIZE TABLE every night.",
+      "assertions": [
+        "Require measured fragmentation or reclaimable space before creating the task.",
+        "Select only proven tables and use a maintenance window with backups.",
+        "Use monthly as the conservative baseline and keep the task absent or disabled without evidence."
+      ],
+      "note": "Database optimization must remain evidence-driven."
+    }
+  ]
+}
