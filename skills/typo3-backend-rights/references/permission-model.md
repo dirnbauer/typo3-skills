@@ -4,6 +4,8 @@ Read this reference before creating or changing a TYPO3 backend group or user.
 
 ## Invariants
 
+- Identify the user-selected TYPO3 installation first and apply the approved group, User TSconfig,
+  and user setting only there; do not stop at a generic permission plan.
 - Use one top-level main editor group; keep `be_groups.subgroup` empty.
 - Keep at least one separate enabled administrator that can log in.
 - Keep the account used to perform the work as an administrator.

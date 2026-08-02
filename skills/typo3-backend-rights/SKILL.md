@@ -12,23 +12,29 @@ not a copied backend record.
 
 ## Contract
 
-1. Create or maintain exactly **one main editor group**. Keep `subgroup` empty. Do not split
+1. Identify the TYPO3 installation selected by the user before writing. If several projects could
+   be meant, ask which one to use. Apply the approved group, User TSconfig, and user setting to that
+   installation; a permission plan without the requested live/local integration is incomplete.
+2. Create or maintain exactly **one main editor group**. Keep `subgroup` empty. Do not split
    required rights across inherited groups.
-2. Derive rights from installed TCA, existing records, backend modules, site roots, file mounts,
+3. Derive rights from installed TCA, existing records, backend modules, site roots, file mounts,
    and file storages. Never clone a legacy group without auditing every field.
-3. Allow every content type currently used for editorial content. Record every exception with
+4. Allow every content type currently used for editorial content. Record every exception with
    its CType and reason.
-4. Keep infrastructure content elements such as list/detail renderers, login endpoints, or
+5. Keep infrastructure content elements such as list/detail renderers, login endpoints, or
    system integration plugins admin-only when editors manage their underlying records instead.
    Decide from the actual record, FlexForm, page purpose, and workflow—not from the CType name
    alone.
-5. Grant all exclude fields needed to edit every allowed record type. Plugin placement rights and
+6. Grant all exclude fields needed to edit every allowed record type. Plugin placement rights and
    domain-record rights are separate: editors may edit news records while news list/detail content
    elements remain admin-only.
-6. Include every required web mount, every active file mount, and every referenced online file
+7. Include every required web mount, every active file mount, and every referenced online file
    storage. Do not replace real mounts with hard-coded example paths.
-7. Preserve a different enabled, login-capable administrator. Never demote the administrator used
+8. Preserve a different enabled, login-capable administrator. Never demote the administrator used
    for the current work or the last remaining administrator.
+
+Report the selected installation's DDEV/project name, root, TYPO3 version, and affected group/user
+UIDs. Never apply one installation's audited permissions to another installation.
 
 ## Audit first
 

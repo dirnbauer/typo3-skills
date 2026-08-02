@@ -1,0 +1,112 @@
+{
+  "skill_name": "typo3-design-system-page",
+  "skill_type": "preference",
+  "spec": "SKILL-SPEC.md",
+  "note": "Owns living brand/design-system overview pages inside TYPO3. Content model mechanics route to typo3-content-blocks; general product help and videos route to webconsulting-create-documentation.",
+  "evals": [
+    {
+      "id": "typo3-design-system-page-trigger-pos-01",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "Build a living style-guide page in our TYPO3 site with the real colors, ramps, fonts, spacing and component examples.",
+      "expect_skill": "typo3-design-system-page",
+      "note": "Canonical in-site design-system overview."
+    },
+    {
+      "id": "typo3-design-system-page-trigger-pos-02",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "Create downloadable design.md and tokens.json files plus a single-page brand overview PDF for this TYPO3 project.",
+      "expect_skill": "typo3-design-system-page",
+      "note": "Machine-readable sources and one-page deliverable."
+    },
+    {
+      "id": "typo3-design-system-page-trigger-pos-03",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "Audit the current corporate website and turn its verified visual language into an accessible design portal under the footer navigation.",
+      "expect_skill": "typo3-design-system-page",
+      "note": "Audit-to-portal workflow."
+    },
+    {
+      "id": "typo3-design-system-page-trigger-pos-04",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "I created page 184 for our brand system. Add the overview Content Block and its PDF and token downloads there.",
+      "expect_skill": "typo3-design-system-page",
+      "note": "User-created page handoff and actual integration."
+    },
+    {
+      "id": "typo3-design-system-page-trigger-neg-01",
+      "kind": "trigger-negative",
+      "status": "proposed",
+      "prompt": "Define a new TYPO3 Content Block with a collection field, reusable child records and a backend preview.",
+      "expect_skill": "typo3-content-blocks",
+      "note": "Content modeling without design-system documentation."
+    },
+    {
+      "id": "typo3-design-system-page-trigger-neg-02",
+      "kind": "trigger-negative",
+      "status": "proposed",
+      "prompt": "Run a WCAG 2.2 AA audit across every template and form on this website and fix the failures.",
+      "expect_skill": "typo3-accessibility",
+      "note": "Whole-site accessibility work rather than a design-system page."
+    },
+    {
+      "id": "typo3-design-system-page-trigger-neg-03",
+      "kind": "trigger-negative",
+      "status": "proposed",
+      "prompt": "Produce help-center articles, annotated screenshots and a narrated product tour video.",
+      "expect_skill": "webconsulting-create-documentation",
+      "note": "Product documentation system rather than brand documentation."
+    },
+    {
+      "id": "typo3-design-system-page-behaviour-01",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Please make a new page in the backend and put the style guide wherever you think it belongs.",
+      "assertions": [
+        "Ask the user to create the TYPO3 page and provide its UID and desired path.",
+        "Do not create or guess the page record.",
+        "Continue preparing audited sources, assets, component and PDF while waiting."
+      ],
+      "note": "Protects the explicit user-owned page-creation step."
+    },
+    {
+      "id": "typo3-design-system-page-behaviour-02",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "There are four DDEV projects running. Generate the docs and leave me instructions to install them later.",
+      "assertions": [
+        "Identify or ask for the selected TYPO3 installation before writing.",
+        "Modify only the selected installation and report its root, DDEV name, TYPO3 version and sitepackage.",
+        "Apply the approved content and assets there instead of stopping at generic installation instructions."
+      ],
+      "note": "Regression for ambiguous target installation and non-applied output."
+    },
+    {
+      "id": "typo3-design-system-page-behaviour-03",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Our pale logo color is used on white buttons even though the contrast looks weak. Document the system without changing the protected logo.",
+      "assertions": [
+        "Calculate the actual contrast and add a prominent proof when the intended role fails.",
+        "Keep the protected brand role distinct from an accessible functional action role.",
+        "Record both exact ratios, allowed uses and the replacement in tokens.json and the page."
+      ],
+      "note": "Conditional contrast evidence and role separation."
+    },
+    {
+      "id": "typo3-design-system-page-behaviour-04",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Use an image model to make the entire one-page PDF, including the logo, token labels and accessibility numbers.",
+      "assertions": [
+        "Generate only a supporting text-free raster visual with the image model.",
+        "Keep logos, text, tokens, contrast ratios and layout deterministic in the PDF renderer.",
+        "Verify the PDF contains exactly one page and inspect a rendered thumbnail."
+      ],
+      "note": "Prevents AI-rendered documentation text and unverifiable facts."
+    }
+  ]
+}

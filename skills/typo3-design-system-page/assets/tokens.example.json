@@ -1,0 +1,76 @@
+{
+  "meta": {
+    "project": "Example only — replace all values",
+    "version": "YYYY.N",
+    "example_only": true
+  },
+  "colors": {
+    "brand": "#7D9BC1",
+    "action": "#345273",
+    "link": "#234866",
+    "focus": "#8A4F00",
+    "ink": "#17202A",
+    "muted_ink": "#465563",
+    "canvas": "#F7F9FB",
+    "surface": "#FFFFFF",
+    "border": "#CBD5DE"
+  },
+  "color_ramp": {
+    "50": "#F7F9FB",
+    "100": "#EDF2F6",
+    "200": "#DCE5EC",
+    "300": "#CBD8E2",
+    "400": "#9CB2C5",
+    "500": "#6D8CA8",
+    "600": "#506F8B",
+    "700": "#345273",
+    "800": "#293F57",
+    "900": "#1E2F42",
+    "950": "#131F2C"
+  },
+  "contrast_evidence": [
+    {
+      "foreground": "brand",
+      "background": "surface",
+      "minimum": 4.5,
+      "purpose": "normal text",
+      "allowed": false
+    },
+    {
+      "foreground": "action",
+      "background": "surface",
+      "minimum": 4.5,
+      "purpose": "normal text and links",
+      "allowed": true
+    },
+    {
+      "foreground": "surface",
+      "background": "action",
+      "minimum": 4.5,
+      "purpose": "button label",
+      "allowed": true
+    }
+  ],
+  "typography": {
+    "display": {
+      "family": "Replace with audited display family",
+      "weights": [400, 600, 700],
+      "license": "Verify web, print, and PDF embedding"
+    },
+    "body": {
+      "family": "Replace with audited body family",
+      "weights": [400, 600, 700],
+      "license": "Verify web, print, and PDF embedding"
+    }
+  },
+  "spacing": {
+    "base_px": 8,
+    "scale_px": [4, 8, 16, 24, 32, 48, 64, 96]
+  },
+  "components": {
+    "action_min_height_px": 48,
+    "focus_width_px": 3,
+    "target_min_px": 24,
+    "target_preferred_px": 44
+  }
+}

@@ -108,6 +108,18 @@
         "Keep Visual Editor access distinct from admPanel.enable.edit."
       ],
       "note": "Covers friendsoftypo3/visual-editor permission and User TSconfig requirements."
+    },
+    {
+      "id": "typo3-backend-rights-behaviour-05",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "I have several TYPO3 DDEV sites. Write a permission proposal and I will install it somewhere later.",
+      "assertions": [
+        "Identify or ask for the selected TYPO3 installation before changing permissions.",
+        "Apply the approved group, User TSconfig and user setting only to that installation.",
+        "Report the selected project root, DDEV name, TYPO3 version and affected group/user UIDs."
+      ],
+      "note": "Regression for ambiguous installations and advice-only delivery."
     }
   ]
 }

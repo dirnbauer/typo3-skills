@@ -1,0 +1,4 @@
+interface:
+  display_name: "TYPO3 Design System Page"
+  short_description: "Build accessible TYPO3 design-system pages"
+  default_prompt: "Use $typo3-design-system-page to audit this TYPO3 site and build an accessible design-system overview with source files and a one-page PDF."
