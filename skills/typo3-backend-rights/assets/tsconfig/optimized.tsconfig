@@ -4,6 +4,12 @@ options {
     clearCache.all = 0
     defaultResourcesViewMode = list
 
+    # Keep Visual Editor labels unambiguous across pages and sites.
+    pageTree {
+        showPageIdWithTitle = 1
+        showDomainNameWithTitle = 1
+    }
+
     file_list {
         enableClipBoard = selectable
         displayColumnSelector = 1

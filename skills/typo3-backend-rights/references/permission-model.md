@@ -125,6 +125,19 @@ The frontend must separately enable:
 config.admPanel = 1
 ```
 
+For `friendsoftypo3/visual-editor`, grant the installed `web_edit` backend module and include this
+User TSconfig in both profiles:
+
+```typoscript
+options.pageTree.showPageIdWithTitle = 1
+```
+
+The extension reads this value directly for its editing context. The optimized profile may also
+set `options.pageTree.showDomainNameWithTitle = 1` for multi-site clarity. These are presentation
+settings, not permission bypasses: the Visual Editor separately checks language access, the web
+mount, `tables_modify`, `tt_content:CType:*`, and `non_exclude_fields` before exposing a field.
+Do not mistake `admPanel.enable.edit = 1` for Visual Editor access; they are separate interfaces.
+
 Keep the group TSconfig as a version-controlled import. Confirm the effective User TSconfig in
 System > Configuration as an administrator.
 

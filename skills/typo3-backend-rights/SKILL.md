@@ -1,6 +1,6 @@
 ---
 name: typo3-backend-rights
-description: "Build and audit one main non-admin TYPO3 backend user group: explicit CType permissions, domain-record fields, modules, web and file mounts, User TSconfig, Admin Panel, and safe privilege conversion for editors. Use when a module can open but existing record types are missing during editing, be_groups.explicit_allowdeny is blank, news records cannot be changed, mount trees are incomplete, or legacy groups must be consolidated. Always preserve a separate working administrator."
+description: "Build and audit one main non-admin TYPO3 backend user group: explicit CType permissions, domain-record fields, modules, web and file mounts, User TSconfig, Visual Editor, Admin Panel, and safe privilege conversion for editors. Use when a module can open but existing record types are missing during editing, be_groups.explicit_allowdeny is blank, Visual Editor fields are read-only, news records cannot be changed, mount trees are incomplete, or legacy groups must be consolidated. Always preserve a separate working administrator."
 ---
 
 # TYPO3 backend rights
@@ -90,6 +90,19 @@ Use the optimized profile by default for trusted content editors. Keep `debug`, 
 `publish` disabled. Verify the frontend TypoScript has `config.admPanel = 1`; User TSconfig alone
 cannot display the Admin Panel.
 
+When `friendsoftypo3/visual-editor` is installed, include its registered `web_edit` module and set:
+
+```typoscript
+options.pageTree.showPageIdWithTitle = 1
+```
+
+The Visual Editor consumes this option when building its editing context. In multi-site projects,
+also enable `options.pageTree.showDomainNameWithTitle = 1` to make destinations unambiguous.
+These options improve the editor context but do not grant write access. Visual editing additionally
+requires the page mount, language, `tables_modify`, `non_exclude_fields`, and explicit CType rights
+for each rendered record. `admPanel.enable.edit` controls the Admin Panel and is not a substitute
+for the `web_edit` backend module.
+
 Prefer a group import over duplicated inline TSconfig:
 
 ```typoscript
@@ -150,9 +163,11 @@ Use a real non-admin session and verify all of these:
 4. Editorial records such as news open with every required field and can be saved.
 5. All active file mounts appear in Media and in file selectors; upload, replace, metadata edit,
    move/copy, and delete behave according to the plan.
-6. Preview and the Admin Panel work; page cache clearing is available, while debugging and
+6. If installed, the Visual Editor module opens and every allowed rendered field can be changed
+   and saved; page IDs are present in its editing context and multi-site destinations are clear.
+7. Preview and the Admin Panel work; page cache clearing is available, while debugging and
    publishing controls remain unavailable.
-7. The separate administrator can still log in.
+8. The separate administrator can still log in.
 
 Re-run the audit with `--group-title` and `--strict`. Report the group UID, target user, remaining
 administrator, allowed/missing CTypes, exceptions, tables, fields, mounts, TSconfig profile, and

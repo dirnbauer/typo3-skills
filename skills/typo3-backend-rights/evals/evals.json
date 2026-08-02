@@ -95,6 +95,19 @@
         "Keep the apply operation idempotent by updating the existing uniquely titled group."
       ],
       "note": "Regression for the Doctrine identity reporting failure observed on 2026-08-02."
+    },
+    {
+      "id": "typo3-backend-rights-behaviour-04",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "The non-admin can open the TYPO3 Visual Editor, but rendered fields are read-only and page destinations are hard to identify.",
+      "assertions": [
+        "Require the installed web_edit module and options.pageTree.showPageIdWithTitle in User TSconfig.",
+        "Use options.pageTree.showDomainNameWithTitle for multi-site clarity without presenting it as a write permission.",
+        "Verify language, web mount, tables_modify, non_exclude_fields, and explicit CType access for every rendered record.",
+        "Keep Visual Editor access distinct from admPanel.enable.edit."
+      ],
+      "note": "Covers friendsoftypo3/visual-editor permission and User TSconfig requirements."
     }
   ]
 }

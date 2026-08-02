@@ -2,6 +2,9 @@
 options.clearCache.pages = 1
 options.clearCache.all = 0
 
+# EXT:visual_editor uses this value in its frontend editing context.
+options.pageTree.showPageIdWithTitle = 1
+
 admPanel {
     hide = 0
     enable {
