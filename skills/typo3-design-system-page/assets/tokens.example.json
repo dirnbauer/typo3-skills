@@ -2,7 +2,8 @@
   "meta": {
     "project": "Example only — replace all values",
     "version": "YYYY.N",
-    "example_only": true
+    "example_only": true,
+    "color_ramp_status": "proposed"
   },
   "colors": {
     "brand": "#7D9BC1",

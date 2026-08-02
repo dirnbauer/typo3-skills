@@ -140,6 +140,19 @@
         "Use monthly as the conservative baseline and keep the task absent or disabled without evidence."
       ],
       "note": "Database optimization must remain evidence-driven."
+    },
+    {
+      "id": "typo3-scheduler-jobs-behaviour-07",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Create the necessary TYPO3 Scheduler jobs, but do not run the Scheduler automatically, even in DDEV.",
+      "assertions": [
+        "Keep the installation in manual-only mode and state that task configuration is separate from runner infrastructure.",
+        "Do not install a DDEV cron add-on, host crontab, systemd timer, Kubernetes job, or hosting schedule.",
+        "Do not invoke the global scheduler:run command without explicit authorization.",
+        "Verify no external runner targets the installation and provide reviewed scheduler:execute commands for manual operation."
+      ],
+      "note": "Protects the explicit manual-only operational boundary."
     }
   ]
 }

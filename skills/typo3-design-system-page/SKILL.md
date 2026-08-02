@@ -56,6 +56,10 @@ example values with evidence from the selected installation.
   ownership in `design.md`.
 - Put semantic colors, the full light-to-dark ramp, approved contrast evidence, typography,
   spacing, motion, breakpoints, and component measurements in `tokens.json`.
+- Set `meta.color_ramp_status` to `approved`, `audited_existing`, or `proposed`. Never publish
+  extrapolated shades as approved. When no approved single-hue ramp exists, either order colors
+  already present in the implementation as `audited_existing`, or label a derived candidate
+  `proposed` everywhere it appears.
 - Render the on-page documentation from these sources or generated partials. Do not maintain a
   shortened hand-written copy that can drift.
 - Run `python3 scripts/audit_design_tokens.py /path/to/tokens.json` and resolve every error.
@@ -105,6 +109,9 @@ and disclose the lower automation level.
 
 ## Integrate in TYPO3
 
+- Before creating or changing a dedicated Content Block, read and compose the
+  `typo3-content-blocks` skill. This skill owns the audited content and artifact contract; the
+  Content Blocks skill owns `config.yaml`, templates, assets, registration, linting, and schema.
 - Prefer one dedicated Content Block in the sitepackage when the page anatomy is project-specific.
 - Keep editable message/version fields in `config.yaml`; keep audited design facts in synchronized
   sources or generated partials so editors cannot accidentally contradict the tokens.

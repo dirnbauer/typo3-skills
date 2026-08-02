@@ -27,6 +27,7 @@ audit; it means the task is listed with a recorded create/skip decision.
 | `form:cleanup:uploads` | daily `42 4 * * *` | Core Form uploads create `form_<hash>` folders. Discover every configured combined folder identifier. Start with the v14 default retention of 336 hours and run a CLI `--dry-run` before creating the non-interactive Scheduler task. | Forms do not upload files, or another approved process moves/retains those folders. |
 | `cleanup:previewlinks` | daily `52 4 * * *` | Workspaces shared previews are used. | Workspaces/shared previews are absent. |
 | `workspace:autopublish` | every 5 minutes | Workspaces use `publish_time` and publication latency of up to 5 minutes is acceptable. | Scheduled workspace publication is not used. |
+| `redirects:checkintegrity` | daily `2 6 * * *` | Redirects is active, records exist, and integrity/status reporting is operationally owned. The command is a non-destructive consistency check and is preferable to cleanup when retention is unresolved. | Redirects is unused, the command is not registered, or nobody reviews the result. |
 | `redirects:cleanup` | monthly/manual | Redirects has an approved policy for age, hits, domains, status, and creation type. Test the exact demand on a restored copy first because the command has no generic dry-run. | The constraints are unknown or redirects must remain indefinitely. |
 
 ## Jobs to reject by default

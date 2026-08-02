@@ -315,6 +315,15 @@ foreach ($groups as $group) {
     $groupMfaProviders = csvStrings((string)($group['mfa_providers'] ?? ''));
     $groupAllowedLanguages = csvIntegers((string)($group['allowed_languages'] ?? ''));
     $groupWorkspacePermissions = (int)($group['workspace_perms'] ?? 0);
+    $enabledEditorUserUids = array_values(array_map(
+        static fn(array $user): int => (int)$user['uid'],
+        array_filter(
+            $users,
+            static fn(array $user): bool => (int)$user['admin'] === 0
+                && (int)$user['disable'] === 0
+                && in_array((int)$rawGroup['uid'], csvIntegers((string)$user['usergroup']), true)
+        )
+    ));
 
     $groupFindings = [];
     if ($isTarget && $inheritanceError !== null) {
@@ -719,6 +728,13 @@ foreach ($groups as $group) {
             $pagesWithWrongGroup
         );
     }
+    if ($isTarget && $enabledEditorUserUids === []) {
+        $groupFindings[] = finding(
+            'warning',
+            'main-group-has-no-enabled-editor',
+            'No enabled non-admin user belongs directly to the main group. Do not change page ownership before membership and login are verified.'
+        );
+    }
     if ($isTarget && $pagesWithMissingEditorBits !== []) {
         $groupFindings[] = finding(
             'error',
@@ -758,6 +774,7 @@ foreach ($groups as $group) {
         'direct_permission_fields' => $directPermissionFields,
         'direct_leaf_assignments' => $directLeafAssignments,
         'users_missing_group_mount_inheritance' => $usersMissingGroupMountInheritance,
+        'enabled_editor_user_uids' => $enabledEditorUserUids,
         'allowed_content_types' => $allowedContentTypes,
         'missing_editorial_content_types' => $missingEditorialTypes,
         'allowed_exception_content_types' => $allowedExceptions,

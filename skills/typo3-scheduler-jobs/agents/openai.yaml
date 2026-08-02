@@ -1,4 +1,4 @@
 interface:
   display_name: "TYPO3 Scheduler Jobs"
-  short_description: "Audit and configure safe TYPO3 cron jobs"
-  default_prompt: "Use $typo3-scheduler-jobs to audit and configure the required TYPO3 14 Scheduler tasks for this installation."
+  short_description: "Audit TYPO3 jobs with opt-in execution"
+  default_prompt: "Use $typo3-scheduler-jobs to audit and configure the required TYPO3 14 Scheduler tasks for this installation, keeping automatic execution opt-in."

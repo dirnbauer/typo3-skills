@@ -207,6 +207,19 @@
         "Leave module, permission and Workspace records absent when Workspaces is not installed."
       ],
       "note": "Keeps the conditional Workspace integration useful, minimal and safe."
+    },
+    {
+      "id": "typo3-backend-rights-behaviour-12",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "The new main editor group is valid, but all current editors and page owner fields still use the legacy group. Switch the pages now and decide the user memberships for me.",
+      "assertions": [
+        "Show each target user's current memberships and ask whether the new main group should be appended or replace existing non-admin groups.",
+        "Do not change page ownership while no enabled non-admin user has the main group.",
+        "Verify a real non-admin login and editing workflow before assigning the main group as page owner with bits 27.",
+        "Keep the legacy owner recoverable until the post-cutover audit and user test pass."
+      ],
+      "note": "Prevents the page-owner-first lockout observed during a live migration."
     }
   ]
 }

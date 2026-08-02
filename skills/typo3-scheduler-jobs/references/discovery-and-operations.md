@@ -79,16 +79,28 @@ configuration while investigating. Disable a whole group only for an incident/ma
 record who will re-enable it. Delete a task only after its responsibility is removed or a verified
 replacement exists.
 
-## Verify the external runner
+## Verify the selected execution mode
 
-A correct task table is inert without cron. Confirm all layers:
+A correct task table is inert without an external runner. That is intentional in manual-only mode,
+not a defect to repair without permission.
 
-1. The hosting scheduler invokes the current release path's `vendor/bin/typo3 scheduler:run` under
-   the correct PHP binary, user, environment, and working directory.
-2. Runner cadence is one minute when any task has a five-minute SLA; task cadence still controls
-   whether TYPO3 executes the task.
+For **manual-only** operation:
+
+1. Inventory crontabs, hosting schedules, systemd/Kubernetes jobs, and container supervisors.
+2. Confirm none invokes this installation's `vendor/bin/typo3 scheduler:run`.
+3. Do not install a DDEV cron add-on or another runner. Provide reviewed per-task
+   `scheduler:execute --task=<uid>` commands instead.
+4. If an existing runner conflicts with the user's manual-only instruction, verify its exact owner
+   and target before disabling/removing it, then confirm it is absent.
+
+For explicitly approved **automatic** operation, confirm all layers:
+
+1. The hosting scheduler invokes the current release path under the correct PHP binary, user,
+   environment, and working directory.
+2. Runner cadence covers the shortest approved task cadence; task cadence still controls whether
+   TYPO3 executes the task.
 3. Prevent two infrastructure runners from calling the same installation concurrently.
-4. Capture non-zero exits and logs externally; TYPO3 task status alone does not prove cron health.
+4. Capture non-zero exits and logs externally; TYPO3 task status alone does not prove runner health.
 5. Alert when an enabled task is late by more than two expected intervals or records a failure.
 
 ## Migrate into v14 safely
@@ -108,11 +120,14 @@ Fail the handoff if any of these remain unexplained:
 
 - empty `tasktype`, unregistered task class/command, or failed v14 migration;
 - enabled task with last-execution failure;
-- required task absent, late, disabled, or in a disabled group;
+- required task absent or in a disabled group; in automatic mode also fail for a late task, while
+  in manual-only mode report lateness as the expected consequence of the selected execution mode;
 - duplicate worker for the same Site/storage/responsibility;
 - destructive task without retention owner and recovery path;
 - enabled task with no group;
-- Scheduler runner not independently verified.
+- execution mode not stated, or automatic execution claimed without an independently verified
+  runner;
+- manual-only mode requested but an external runner still targets the installation.
 
 Primary references: [task storage](https://docs.typo3.org/c/typo3/cms-scheduler/14.3/en-us/DevelopersGuide/TaskStorage/Index.html),
 [console tools](https://docs.typo3.org/c/typo3/cms-scheduler/14.3/en-us/Administration/ConsoleTools/Index.html),

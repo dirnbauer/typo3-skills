@@ -107,6 +107,19 @@
         "Verify the PDF contains exactly one page and inspect a rendered thumbnail."
       ],
       "note": "Prevents AI-rendered documentation text and unverifiable facts."
+    },
+    {
+      "id": "typo3-design-system-page-behaviour-05",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Our implementation has a handful of brand and UI colors but no approved 50–950 palette. Fill the missing shades and publish the ramp as final.",
+      "assertions": [
+        "Do not present extrapolated shades as approved brand tokens.",
+        "Use approved when a formally approved ramp exists, audited_existing when every listed value already exists, or proposed for a derived candidate.",
+        "Label a proposed ramp consistently in tokens.json, the page and the PDF.",
+        "Compose typo3-content-blocks before creating or changing the dedicated Content Block schema and templates."
+      ],
+      "note": "Resolves the full-ramp requirement without inventing approval and routes Content Block mechanics correctly."
     }
   ]
 }

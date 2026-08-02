@@ -43,9 +43,11 @@ not a copied backend record.
     Solr only when present. Allow the MFA providers `totp` and `recovery-codes`.
 11. Verify page ownership and permission bits throughout every mounted site tree; DB mounts alone
     do not grant access. Give the main group show, edit page, create page, and edit content rights
-    (`27`). Keep page deletion (`4`) off unless the user explicitly requests it.
+    (`27`). Keep page deletion (`4`) off unless the user explicitly requests it. Never switch page
+    ownership before at least one enabled non-admin editor has the main group and passes a login test.
 12. Preserve a different enabled, login-capable administrator. Never demote the administrator used
-   for the current work or the last remaining administrator.
+    for the current work or the last remaining administrator. Ask whether each target user's
+    existing groups should be appended to or replaced; do not infer a bulk membership cutover.
 13. Apply customer branding and the actual TYPO3 application context before and after login using
     supported Core configuration and a small sitepackage stylesheet. Keep it version-controlled.
 14. When `typo3/cms-workspaces` is installed, add the safe basic Workspace setup below. Do not
@@ -70,6 +72,23 @@ limit of four.
 
 Report the selected installation's DDEV/project name, root, TYPO3 version, and affected group/user
 UIDs. Never apply one installation's audited permissions to another installation.
+
+## Separate permission creation from the live cutover
+
+Treat group configuration, user membership, and page ownership as three distinct operations:
+
+1. Create/update the main group and leaves, then audit their effective permissions.
+2. For every named target user, show the current membership and ask whether the main group should
+   be **appended** or should **replace** the existing non-admin groups. Preserve unrelated groups
+   until the user answers. Set the group-mount inheritance option bits without clearing other bits.
+3. Log in as an enabled non-admin target and verify modules, page tree, content editing, Media/FAL,
+   language, and selectors. Only then assign the main group as page owner with bits `27`.
+4. Re-audit page ownership and repeat the non-admin test. Keep the prior owner group recoverable
+   until the cutover is accepted.
+
+If no enabled non-admin user belongs to the main group, page ownership remediation is blocked even
+when the permission model itself is valid. Do not create a temporary editor or guess membership to
+make the audit green.
 
 ## Audit first
 
@@ -127,8 +146,9 @@ explicitly protected types. Require each used editorial CType to appear as
 9. Include every page type already used below the editor's web mounts. Add unused types only when
    the workflow explicitly needs editors to create them.
 10. Audit every page below the site roots. Ensure the main group owns it with permission bits `27`,
-    or remediate through the Permissions module/DataHandler. Configure new pages to inherit the
-    parent group. Do not make `perms_everybody` broad to compensate for a missing group owner.
+    or remediate through the Permissions module/DataHandler **after the membership/login cutover
+    gate above passes**. Configure new pages to inherit the parent group. Do not make
+    `perms_everybody` broad to compensate for a missing group owner.
 
 ## Minimum installed modules
 

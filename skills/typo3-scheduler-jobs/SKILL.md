@@ -20,8 +20,9 @@ APIs. TYPO3 v14 stores task type, parameters, and execution details as structure
 
 1. Identify one installation and report its root, TYPO3 version, application context, and database
    platform before changing Scheduler data.
-2. Prove the system cron invokes `vendor/bin/typo3 scheduler:run`. The runner must execute at least
-   as often as the shortest task cadence. Do not confuse the runner cadence with each task cadence.
+2. Inventory any system cron, hosting job, systemd timer, or container runner that invokes
+   `vendor/bin/typo3 scheduler:run`. Configuring Scheduler records does **not** authorize creating,
+   enabling, changing, or removing that external runner; automatic execution is opt-in.
 3. Inventory runtime-registered task types, active Sites, storages, cache backends, installed
    extensions, existing groups/tasks, failures, late tasks, and v14 storage migration defects.
 4. Read [task-catalog.md](references/task-catalog.md) before selecting tasks. Include every fixed
@@ -35,9 +36,26 @@ APIs. TYPO3 v14 stores task type, parameters, and execution details as structure
    destructive jobs against verified backups and an approved retention policy.
 8. Create or edit tasks through the TYPO3 v14 Scheduler form/runtime model. Do not write v12 PHP
    serialized task objects, copy database rows, or install a generic command/SQL scheduler helper.
-9. Run each new task manually once, inspect its failure state and effect, then let cron execute it.
-10. Report configured, conditional, rejected, and project-specific tasks with the evidence and
-    effective interval for each.
+9. Run each new task manually once when its effect is safe and approved, then inspect its failure
+   state and effect. Do not invoke the global due-task runner or enable external cron by inference.
+10. Report configured, conditional, rejected, and project-specific tasks with the evidence,
+    effective interval, and execution mode for each.
+
+## Choose the execution mode explicitly
+
+Default to **manual-only** unless the user explicitly requests automatic Scheduler execution.
+Creating recurring task records is separate from installing the infrastructure runner.
+
+- Never install a DDEV cron add-on, write a host crontab, create a systemd/Kubernetes/hosting job,
+  or add a deployment schedule merely because the user asked to configure Scheduler jobs.
+- Audit an existing runner read-only. Change or remove it only when the user explicitly requests
+  that operational change and the exact owner/target has been verified.
+- In manual-only mode, verify that no external runner calls this installation. Leave the reviewed
+  Scheduler records available for explicit `scheduler:execute --task=<uid>` use.
+- In automatic mode, agree the runtime owner, working directory, logging, alerting, overlap policy,
+  and cadence before enabling the runner. The runner cadence must cover the shortest task cadence.
+- A DDEV project is not an exception. Development convenience does not imply permission for
+  unattended execution.
 
 ## Audit the selected installation
 
@@ -50,7 +68,7 @@ php /absolute/path/to/typo3-scheduler-jobs/scripts/audit-scheduler.php --pretty
 For DDEV, stream it into the project container:
 
 ```bash
-ddev exec php /dev/stdin -- --pretty \
+ddev exec php /dev/stdin --pretty \
   < /absolute/path/to/typo3-scheduler-jobs/scripts/audit-scheduler.php
 ```
 
@@ -133,14 +151,19 @@ recreate it from older installations.
 
 ## Verify and hand off
 
-1. Run `scheduler:list`; verify every enabled task has a group, future next execution, expected
-   frequency, and no failure.
+1. Run `scheduler:list`; verify every enabled task has a group, expected frequency, and no failure.
+   A future next execution describes the task schedule; it does not prove automatic execution.
 2. Execute each new task by UID with `scheduler:execute --task=<uid>` in a safe environment.
-3. Run `scheduler:run`, then verify `lastexecution_time`, next execution, logs, affected rows/files,
-   Solr queue age, and notification delivery as applicable.
-4. Confirm the external cron independently. A green manual run does not prove cron calls TYPO3.
-5. Re-audit after one full weekly cycle and after every TYPO3/extension major update.
+3. Verify `lastexecution_time`, next execution, logs, affected rows/files, Solr queue age, and
+   notification delivery as applicable. Run global `scheduler:run` only when the user explicitly
+   asks to simulate or operate the due-task runner.
+4. In automatic mode, confirm the external runner independently. In manual-only mode, confirm its
+   absence and provide the exact explicit command for each task.
+5. Re-audit after one full weekly cycle only in automatic mode, and after every TYPO3/extension
+   major update in either mode.
 
 Deliver a table with task/group, task type, parameters, cadence, applicability evidence, manual-run
-result, and keep/change/remove verdict. Never claim completion while a required task is late,
-failed, ungrouped, or dependent on an unverified runner.
+result, execution mode, and keep/change/remove verdict. Never claim automatic operation while a
+required task is late, failed, ungrouped, or dependent on an unverified runner. A manual-only
+configuration may be complete when the runner is intentionally absent and that limitation is
+reported prominently.

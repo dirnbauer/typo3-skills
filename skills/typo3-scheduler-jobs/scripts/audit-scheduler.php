@@ -204,13 +204,22 @@ foreach ($taskRows as $row) {
 
 $groups = [];
 if (in_array('tx_scheduler_task_group', $tableNames, true)) {
-    $groupColumns = columnNames($schemaManager->listTableColumns('tx_scheduler_task_group'));
+    $groupColumnMap = columnMap($schemaManager->listTableColumns('tx_scheduler_task_group'));
+    $groupColumns = array_keys($groupColumnMap);
     $groupSelect = array_values(array_intersect(
-        ['uid', 'groupName', 'description', 'color', 'sorting', 'hidden', 'deleted'],
+        ['uid', 'description', 'color', 'sorting', 'hidden', 'deleted'],
         $groupColumns
     ));
+    $groupNameColumn = $groupColumnMap['groupname'] ?? null;
+    $groupSelectSql = array_map(
+        static fn(string $column): string => $connection->quoteIdentifier($groupColumnMap[$column]),
+        $groupSelect
+    );
+    if ($groupNameColumn !== null) {
+        $groupSelectSql[] = $connection->quoteIdentifier($groupNameColumn) . ' AS group_name';
+    }
     $groupRows = $connection->fetchAllAssociative(
-        'SELECT ' . implode(', ', array_map($connection->quoteIdentifier(...), $groupSelect))
+        'SELECT ' . implode(', ', $groupSelectSql)
         . ' FROM tx_scheduler_task_group'
         . (in_array('deleted', $groupColumns, true) ? ' WHERE deleted = 0' : '')
         . ' ORDER BY sorting, uid'
@@ -218,7 +227,7 @@ if (in_array('tx_scheduler_task_group', $tableNames, true)) {
     foreach ($groupRows as $groupRow) {
         $groups[] = [
             'uid' => (int)$groupRow['uid'],
-            'name' => (string)($groupRow['groupName'] ?? ''),
+            'name' => (string)($groupRow['group_name'] ?? ''),
             'color' => (string)($groupRow['color'] ?? ''),
             'sorting' => (int)($groupRow['sorting'] ?? 0),
             'disabled' => (bool)($groupRow['hidden'] ?? false),
@@ -353,6 +362,7 @@ function buildCandidates(array $available, array $existingCounts, array $cacheBa
         ['form:cleanup:uploads', 'Privacy & retention', 'daily 04:42', 'conditional on Core Form file uploads'],
         ['cleanup:previewlinks', 'Project workflows', 'daily 04:52', 'conditional on shared workspace previews'],
         ['workspace:autopublish', 'Project workflows', 'every 5 minutes', 'conditional on scheduled workspace publishing'],
+        ['redirects:checkintegrity', 'Search & content quality', 'daily 06:02', 'conditional non-destructive check when redirects contain records'],
         ['redirects:cleanup', 'Privacy & retention', 'monthly or manual', 'conditional on approved redirect constraints'],
         ['ApacheSolrForTypo3\\Solr\\Task\\IndexQueueWorkerTask', 'Search & content quality', 'every 5 minutes', 'conditional one-per-indexed-Site root'],
         ['ApacheSolrForTypo3\\Solr\\Task\\EventQueueWorkerTask', 'Search & content quality', 'every 5 minutes', 'required only when Solr monitoringType is 1'],
@@ -437,6 +447,16 @@ function columnNames(array $columns): array
         $names[] = strtolower(is_string($key) ? $key : $column->getName());
     }
     return $names;
+}
+
+function columnMap(array $columns): array
+{
+    $map = [];
+    foreach ($columns as $key => $column) {
+        $name = is_string($key) ? $key : $column->getName();
+        $map[strtolower($name)] = $name;
+    }
+    return $map;
 }
 
 function baseReport(string $projectRoot, string $version, Connection $connection, array $findings): array

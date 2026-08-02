@@ -2,6 +2,23 @@
 
 Read this reference before creating or changing a TYPO3 backend group or user.
 
+## Contents
+
+- [Invariants](#invariants)
+- [`be_groups` field mapping](#be_groups-field-mapping)
+- [Flat group composition](#flat-group-composition)
+- [The empty CType allow-list defect](#the-empty-ctype-allow-list-defect)
+- [Classify content elements](#classify-content-elements)
+- [Separate plugin placement from record editing](#separate-plugin-placement-from-record-editing)
+- [Exclude fields](#exclude-fields)
+- [Mount coverage](#mount-coverage)
+- [Page group permissions](#page-group-permissions)
+- [Module baseline](#module-baseline)
+- [Workspaces baseline](#workspaces-baseline)
+- [Languages and MFA](#languages-and-mfa)
+- [User TSconfig profiles](#user-tsconfig-profiles)
+- [Verification queries](#verification-queries)
+
 ## Invariants
 
 - Identify the user-selected TYPO3 installation first and apply the approved group, User TSconfig,
@@ -12,6 +29,8 @@ Read this reference before creating or changing a TYPO3 backend group or user.
 - Keep at least one separate enabled administrator that can log in.
 - Keep the account used to perform the work as an administrator.
 - Ask before replacing a user's existing group list.
+- Assign and verify at least one enabled non-admin user in the main group before changing page
+  group ownership.
 - Build CType, table, field, module, and mount rights from the live project.
 - Mount every configured Site root and every non-deleted page with `is_siteroot = 1`.
 - Use all languages, both built-in MFA providers, and page group permission bits `27`.
@@ -187,6 +206,21 @@ show (1) + edit page (2) + create page (8) + edit content (16) = 27
 Keep delete page (`4`) disabled unless separately approved. Assign the main group as page group
 owner throughout each mounted tree; do not compensate with broad `perms_everybody`. Configure
 new pages to inherit the parent group and these bits through Page TSconfig.
+
+Apply this as a cutover, not as part of initial group creation:
+
+1. Inventory every intended editor's current `usergroup` list and option bits.
+2. Ask append-versus-replace for each target or explicitly named cohort. Never interpret
+   “consolidate” as permission to remove unrelated memberships.
+3. Assign only the main group, preserve required unrelated memberships according to that answer,
+   and set `be_users.options |= 3` without clearing other option bits.
+4. Verify a real non-admin login can see and edit the intended mounted tree.
+5. Only then change `pages.perms_groupid` to the main group and `pages.perms_group` to `27` through
+   DataHandler or the Permissions module. Re-audit before removing the legacy owner group.
+
+If the page tree still belongs to a legacy group while no enabled non-admin user has the new main
+group, report both states and stop. Changing page ownership first can lock every editor out even
+though the new group passes a static permission audit.
 
 ## Module baseline
 

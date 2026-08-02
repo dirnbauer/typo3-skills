@@ -34,12 +34,27 @@ spacing
 components
 ```
 
+Set `meta.color_ramp_status` to one of:
+
+- `approved`: a formally approved brand ramp whose shades are authoritative tokens;
+- `audited_existing`: every value already exists in project code or computed styles, arranged by
+  brightness for documentation without claiming it is a single-hue brand ramp;
+- `proposed`: a derived candidate that must be labelled as proposed on the page and PDF and must
+  not be consumed as an approved production token.
+
+Trace every ramp value to an approved source or mark the entire ramp `proposed`. Never fill missing
+50–950 steps by interpolation and silently present them as brand decisions.
+
 Each `contrast_evidence` item contains `foreground`, `background`, `minimum`, `purpose`, and
 `allowed`. The foreground/background may reference a key in `colors` or use a hex value. The audit
 script calculates the ratio and verifies that `allowed` agrees with the threshold.
 
 Treat `assets/tokens.example.json` as a shape, never as brand defaults. Replace every value and set
 `meta.example_only` to `false` before publishing.
+
+For every self-hosted font, preserve a public licence/copyright notice and record whether web use,
+print use, and PDF embedding are allowed. If evidence is missing, mark the right unresolved instead
+of inferring it from the file format.
 
 ## AI visual
 

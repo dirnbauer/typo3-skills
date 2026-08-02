@@ -50,7 +50,9 @@ instead of inventing a warning panel.
 
 Document semantic roles before raw hex values. A useful color system normally distinguishes brand,
 action, hover/active, link, focus, text, muted text, canvas, surface, border, success, warning, and
-error. Include the project's full ramp rather than extrapolating unapproved shades.
+error. Include an approved full ramp when one exists. Otherwise use only implemented values as an
+explicitly labelled `audited_existing` brightness sequence, or mark the complete derived ramp as
+`proposed`; never extrapolate unapproved shades and present them as approved.
 
 Show typography as used, not as a font list. Include H1–H4, body, small text, labels, method/code or
 data styles, weights, line heights, tracking, fallbacks, self-hosting, web licence, print licence,

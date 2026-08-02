@@ -69,6 +69,12 @@ def main() -> int:
 
     if meta.get("example_only") is True and not arguments.allow_example:
         errors.append("meta.example_only must be false before publication")
+    ramp_status = meta.get("color_ramp_status")
+    allowed_ramp_statuses = {"approved", "audited_existing", "proposed"}
+    if ramp_status not in allowed_ramp_statuses:
+        errors.append(
+            "meta.color_ramp_status must be approved, audited_existing, or proposed"
+        )
     for name, value in colors.items():
         resolve_color(value, {}, f"colors.{name}", errors)
     missing_ramp = sorted(REQUIRED_RAMP - set(ramp))
@@ -123,6 +129,8 @@ def main() -> int:
 
     for result in results:
         print(result)
+    if ramp_status in allowed_ramp_statuses:
+        print(f"color_ramp status: {ramp_status}")
     if errors:
         for error in errors:
             print(f"ERROR: {error}", file=sys.stderr)
