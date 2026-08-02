@@ -4,8 +4,10 @@
 declare(strict_types=1);
 
 use TYPO3\CMS\Core\Core\Bootstrap;
+use TYPO3\CMS\Backend\Module\ModuleRegistry;
 use TYPO3\CMS\Core\Core\SystemEnvironmentBuilder;
 use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 $options = getopt('', [
     'exceptions-json::',
@@ -31,6 +33,7 @@ $container = Bootstrap::init($classLoader);
 /** @var ConnectionPool $connectionPool */
 $connectionPool = $container->get(ConnectionPool::class);
 $connection = $connectionPool->getConnectionForTable('be_groups');
+$moduleRegistry = GeneralUtility::makeInstance(ModuleRegistry::class);
 
 $exceptions = [];
 if (isset($options['exceptions-json'], $options['exceptions-plan'])) {
@@ -134,6 +137,7 @@ $activeFileMountUids = array_map(
 );
 $rootPageUids = array_map(static fn(array $row): int => (int)$row['uid'], $rootPages);
 $exceptionContentTypes = array_keys($exceptions);
+$usedPageTypeValues = array_map(static fn(array $row): int => (int)$row['doktype'], $pageTypes);
 
 $findings = [];
 $normalizedGroups = [];
@@ -159,6 +163,12 @@ foreach ($groups as $group) {
     $unregisteredAllowedTypes = array_values(array_diff($allowedContentTypes, $registeredContentTypes));
     $groupFileMountUids = csvIntegers((string)($group['file_mountpoints'] ?? ''));
     $groupDbMountUids = csvIntegers((string)($group['db_mountpoints'] ?? ''));
+    $groupModules = csvStrings((string)($group['groupMods'] ?? ''));
+    $groupTablesSelect = csvStrings((string)($group['tables_select'] ?? ''));
+    $groupTablesModify = csvStrings((string)($group['tables_modify'] ?? ''));
+    $groupNonExcludeFields = csvStrings((string)($group['non_exclude_fields'] ?? ''));
+    $groupPageTypes = csvIntegers((string)($group['pagetypes_select'] ?? ''));
+    $groupSubgroups = csvIntegers((string)($group['subgroup'] ?? ''));
 
     $groupFindings = [];
     if ($isTarget && $authMode === 'explicitAllow' && $allowedContentTypes === []) {
@@ -192,6 +202,75 @@ foreach ($groups as $group) {
             $unregisteredAllowedTypes
         );
     }
+    if ($isTarget && $groupSubgroups !== []) {
+        $groupFindings[] = finding(
+            'error',
+            'subgroups-configured',
+            'The main editor group must not inherit subgroups.',
+            $groupSubgroups
+        );
+    }
+    $unregisteredModules = array_values(array_filter(
+        $groupModules,
+        static fn(string $identifier): bool => !$moduleRegistry->hasModule($identifier)
+    ));
+    if ($isTarget && $unregisteredModules !== []) {
+        $groupFindings[] = finding(
+            'error',
+            'unregistered-backend-modules',
+            'The group contains backend module identifiers absent from the runtime registry.',
+            $unregisteredModules
+        );
+    }
+    $modifyTablesWithoutSelect = array_values(array_diff($groupTablesModify, $groupTablesSelect));
+    if ($isTarget && $modifyTablesWithoutSelect !== []) {
+        $groupFindings[] = finding(
+            'error',
+            'modify-tables-not-selectable',
+            'tables_select must include every tables_modify value.',
+            $modifyTablesWithoutSelect
+        );
+    }
+    $unregisteredTables = array_values(array_filter(
+        array_unique([...$groupTablesSelect, ...$groupTablesModify]),
+        static fn(string $tableName): bool => !isset($GLOBALS['TCA'][$tableName])
+    ));
+    if ($isTarget && $unregisteredTables !== []) {
+        $groupFindings[] = finding(
+            'error',
+            'unregistered-tables',
+            'The group contains tables absent from runtime TCA.',
+            $unregisteredTables
+        );
+    }
+    $requiredNonExcludeFields = [];
+    foreach ($groupTablesModify as $tableName) {
+        foreach ($excludeFields[$tableName] ?? [] as $fieldName) {
+            $requiredNonExcludeFields[] = $tableName . ':' . $fieldName;
+        }
+    }
+    $missingNonExcludeFields = array_values(array_diff(
+        array_unique($requiredNonExcludeFields),
+        $groupNonExcludeFields
+    ));
+    sort($missingNonExcludeFields);
+    if ($isTarget && $missingNonExcludeFields !== []) {
+        $groupFindings[] = finding(
+            'error',
+            'runtime-exclude-fields-missing',
+            'Runtime TCA exclude fields are missing for editable tables.',
+            $missingNonExcludeFields
+        );
+    }
+    $missingUsedPageTypes = array_values(array_diff($usedPageTypeValues, $groupPageTypes));
+    if ($isTarget && $missingUsedPageTypes !== []) {
+        $groupFindings[] = finding(
+            'error',
+            'used-page-types-missing',
+            'Page types already used in the project are missing from the group.',
+            $missingUsedPageTypes
+        );
+    }
     $missingFileMountUids = array_values(array_diff($activeFileMountUids, $groupFileMountUids));
     if ($isTarget && $missingFileMountUids !== []) {
         $groupFindings[] = finding(
@@ -216,7 +295,7 @@ foreach ($groups as $group) {
         'uid' => (int)$group['uid'],
         'title' => (string)$group['title'],
         'hidden' => (bool)$group['hidden'],
-        'subgroup' => csvIntegers((string)($group['subgroup'] ?? '')),
+        'subgroup' => $groupSubgroups,
         'allowed_content_types' => $allowedContentTypes,
         'missing_editorial_content_types' => $missingEditorialTypes,
         'allowed_exception_content_types' => $allowedExceptions,
@@ -225,12 +304,16 @@ foreach ($groups as $group) {
         'missing_root_page_mountpoints' => $missingDbMountUids,
         'file_mountpoints' => $groupFileMountUids,
         'missing_active_file_mountpoints' => $missingFileMountUids,
-        'tables_select' => csvStrings((string)($group['tables_select'] ?? '')),
-        'tables_modify' => csvStrings((string)($group['tables_modify'] ?? '')),
-        'modules' => csvStrings((string)($group['groupMods'] ?? '')),
-        'page_types' => csvIntegers((string)($group['pagetypes_select'] ?? '')),
+        'tables_select' => $groupTablesSelect,
+        'tables_modify' => $groupTablesModify,
+        'modify_tables_without_select' => $modifyTablesWithoutSelect,
+        'modules' => $groupModules,
+        'unregistered_modules' => $unregisteredModules,
+        'page_types' => $groupPageTypes,
+        'missing_used_page_types' => $missingUsedPageTypes,
         'file_permissions' => csvStrings((string)($group['file_permissions'] ?? '')),
-        'non_exclude_fields' => csvStrings((string)($group['non_exclude_fields'] ?? '')),
+        'non_exclude_fields' => $groupNonExcludeFields,
+        'missing_runtime_non_exclude_fields' => $missingNonExcludeFields,
         'tsconfig' => (string)($group['TSconfig'] ?? ''),
         'findings' => $groupFindings,
     ];

@@ -4,9 +4,11 @@
 declare(strict_types=1);
 
 use Doctrine\DBAL\Connection;
+use TYPO3\CMS\Backend\Module\ModuleRegistry;
 use TYPO3\CMS\Core\Core\Bootstrap;
 use TYPO3\CMS\Core\Core\SystemEnvironmentBuilder;
 use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 $options = getopt('', ['dry-run', 'plan:']);
 if (!isset($options['plan']) || $options['plan'] === false || trim((string)$options['plan']) === '') {
@@ -46,6 +48,7 @@ $container = Bootstrap::init($classLoader);
 /** @var ConnectionPool $connectionPool */
 $connectionPool = $container->get(ConnectionPool::class);
 $connection = $connectionPool->getConnectionForTable('be_groups');
+$moduleRegistry = GeneralUtility::makeInstance(ModuleRegistry::class);
 
 $title = requireString($plan, 'title');
 if (mb_strlen($title) > 50) {
@@ -71,6 +74,14 @@ $fileMountpoints = requirePositiveIntegerList($plan, 'file_mountpoints');
 $filePermissions = requireStringList($plan, 'file_permissions');
 $tsconfig = requireString($plan, 'tsconfig');
 $workspacePermissions = isset($plan['workspace_perms']) ? (int)$plan['workspace_perms'] : 1;
+
+$unregisteredModules = array_values(array_filter(
+    $modules,
+    static fn(string $identifier): bool => !$moduleRegistry->hasModule($identifier)
+));
+if ($unregisteredModules !== []) {
+    fail('Backend modules missing from the runtime registry: ' . implode(', ', $unregisteredModules));
+}
 
 $selectMissingModify = array_values(array_diff($tablesModify, $tablesSelect));
 if ($selectMissingModify !== []) {
