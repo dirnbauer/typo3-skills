@@ -192,6 +192,21 @@
         "Keep status colors, focus indicators and structural backend layout intact."
       ],
       "note": "Protects accessible, upgrade-safe branding and truthful context display."
+    },
+    {
+      "id": "typo3-backend-rights-behaviour-11",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Workspaces is installed. Give the normal TYPO3 editors a useful basic Workspace setup without making them publishers.",
+      "assertions": [
+        "Grant workspaces_publish and workspace_perms Live bit 1 in the Extensions leaf only when the runtime module is installed.",
+        "Use the default stages, add the main editor group as a custom Workspace member, and keep it out of Workspace owners.",
+        "Set publish_access to owners only and ask who owns/publishes before creating a missing custom Workspace.",
+        "Set options.workspaces.previewLinkTTLHours to 48 and verify editing and preview without publishing.",
+        "Warn that physical FAL files are not versioned and require unique replacement filenames.",
+        "Leave module, permission and Workspace records absent when Workspaces is not installed."
+      ],
+      "note": "Keeps the conditional Workspace integration useful, minimal and safe."
     }
   ]
 }

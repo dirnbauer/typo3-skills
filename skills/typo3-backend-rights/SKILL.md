@@ -1,6 +1,6 @@
 ---
 name: typo3-backend-rights
-description: "Build and audit one main non-admin TYPO3 backend editor group composed from four simple leaf groups for Base, Content, Site access, and Extensions. Covers explicit CType/field permissions, roots, languages, modules, mounts, MFA, Forms/Powermail, User TSconfig, Visual Editor, Admin Panel, extensible site/extension packs, safe admin conversion, and customer branding for the TYPO3 login/backend with the Application Context. Use when record types or fields are missing/read-only, be_groups.explicit_allowdeny is blank, mounts/modules are incomplete, or legacy groups must be consolidated. Always preserve a separate working administrator."
+description: "Build and audit one main non-admin TYPO3 backend editor group composed from four simple leaf groups for Base, Content, Site access, and Extensions. Covers explicit CType/field permissions, roots, languages, modules, mounts, MFA, Forms/Powermail, conditional Workspaces access, User TSconfig, Visual Editor, Admin Panel, extensible site/extension packs, safe admin conversion, and customer branding for the TYPO3 login/backend with the Application Context. Use when record types or fields are missing/read-only, be_groups.explicit_allowdeny is blank, mounts/modules are incomplete, or legacy groups must be consolidated. Always preserve a separate working administrator."
 ---
 
 # TYPO3 backend rights
@@ -48,6 +48,8 @@ not a copied backend record.
    for the current work or the last remaining administrator.
 13. Apply customer branding and the actual TYPO3 application context before and after login using
     supported Core configuration and a small sitepackage stylesheet. Keep it version-controlled.
+14. When `typo3/cms-workspaces` is installed, add the safe basic Workspace setup below. Do not
+    write stale Workspace permissions or module identifiers when it is absent.
 
 ## Keep the group structure simple
 
@@ -55,10 +57,10 @@ Use one flat inheritance level:
 
 | Group | Owns |
 |---|---|
-| `<main> · Base` | Core editor modules, page types, all languages, MFA, file operations, workspace setting, User TSconfig |
+| `<main> · Base` | Core editor modules, page types, all languages, MFA, file operations, User TSconfig |
 | `<main> · Content` | Editorial CTypes, Core content/FAL/category tables, and their editor fields |
 | `<main> · Site` | Database mounts and file mounts |
-| `<main> · Extensions` | Installed extension modules, domain tables, and their editor fields |
+| `<main> · Extensions` | Installed extension modules, domain tables, editor fields, and conditional Workspace access |
 
 The main group contains only those subgroup references and remains the page group owner. To add a
 website later, attach one new leaf such as `<main> · Site: Example`; to add a separately maintained
@@ -139,6 +141,8 @@ Resolve identifiers from the runtime `ModuleRegistry`; never write identifiers f
 - Solr: `searchbackend` and the read-only `searchbackend_info` entry. Keep
   `searchbackend_coreoptimization`, `searchbackend_indexqueue`, and
   `searchbackend_indexadministration` admin-only.
+- Workspaces: `workspaces_publish` and Live access bit `workspace_perms = 1` in the **Extensions**
+  subgroup.
 
 When `typo3/cms-form` is installed, grant read/write access to `form_definition`; TYPO3 v14.3's
 Form persistence permission checker requires both lists even though its TCA display fields are
@@ -150,6 +154,28 @@ When Powermail is installed, grant read/write access and every editor-accessible
 `web_powermail` / `powermail_*` reporting module by default. Keep the `powermail_pi1` CType as a
 documented infrastructure exception so normal editors build forms but do not place or reconfigure
 the frontend plugin.
+
+## Use basic Workspaces settings when installed
+
+First confirm that `typo3/cms-workspaces` and its runtime module `workspaces_publish` are installed.
+If they are absent, keep `workspace_perms = 0`, do not add the module, and do not create Workspace
+records. If present, read [the Workspaces skill](../typo3-workspaces/SKILL.md) and use this baseline:
+
+- Put `workspaces_publish` and Live access bit `workspace_perms = 1` in the **Extensions** leaf.
+- Keep the Core default stages. Do not invent review stages, notifications, or scheduled publishing
+  for a basic editor role.
+- Add the main editor group—not individual users—as a member of the intended custom Workspace.
+  Do not make it an owner. Ask who should own and publish before creating a missing Workspace.
+- Set `publish_access = 2` so only approved Workspace owners can publish. Do not expose publishing
+  controls to normal editors.
+- Use the group's audited database and file mounts for the Workspace. Do not grant `sys_workspace`
+  table access; its TCA is administrator-only.
+- Set `options.workspaces.previewLinkTTLHours = 48` in User TSconfig.
+
+Create or update a custom Workspace through DataHandler, not raw SQL. Adding the group permission
+alone does not make the group a custom-Workspace member. Physical FAL files are not versioned:
+editors must upload replacements under new unique filenames instead of overwriting a shared file,
+and unpublished page content must never be treated as protection for a directly accessible file.
 
 ## Configure TSconfig
 
@@ -165,6 +191,9 @@ cannot display the Admin Panel.
 
 Both profiles recommend TOTP and make new pages inherit their parent's owner group with page bits
 `show,edit,new,editcontent`. They deliberately do not enable page deletion or force MFA.
+
+Both profiles set `options.workspaces.previewLinkTTLHours = 48`. TYPO3 ignores the option when
+Workspaces is absent; it does not grant Workspace access by itself.
 
 When `friendsoftypo3/visual-editor` is installed, include its registered `web_edit` module and set:
 
@@ -269,11 +298,14 @@ Use a real non-admin session and verify all of these:
 9. Preview, Status, Recycler, Media, and the Admin Panel work; page cache clearing is available,
    while debugging, page deletion, Solr index mutation, and
    publishing controls remain unavailable.
-10. TOTP and recovery codes can be configured in User Settings; MFA enforcement matches the
+10. When Workspaces is installed, the main group can enter the intended custom Workspace, edit and
+    preview versioned content, and create a 48-hour preview link, but cannot publish. Confirm the
+    group is a member rather than an owner and test file replacement with a new unique filename.
+11. TOTP and recovery codes can be configured in User Settings; MFA enforcement matches the
     separately approved policy.
-11. Login, password reset, MFA, and the logged-in top bar show the customer identity and exact
+12. Login, password reset, MFA, and the logged-in top bar show the customer identity and exact
     application context with accessible contrast.
-12. The separate administrator can still log in.
+13. The separate administrator can still log in.
 
 Re-run the audit with `--group-title` and `--strict`. Report the main and leaf group UIDs, target
 user, remaining administrator, allowed/missing CTypes, exceptions, tables, fields, mounts,
@@ -285,6 +317,8 @@ TSconfig profile, and the non-admin verification evidence.
   rules, and verification queries.
 - [backend-branding.md](references/backend-branding.md): supported login/backend branding,
   accessible color selection, application-context display, and verification.
+- [typo3-workspaces](../typo3-workspaces/SKILL.md): Workspace versioning, DataHandler setup,
+  preview, publishing, and the physical-file limitation.
 - `scripts/audit-backend-rights.php`: read-only runtime TCA/database audit.
 - `scripts/apply-backend-rights.php`: validate and transactionally create/update the main group
   and four required leaves from a reviewed plan; never changes users.

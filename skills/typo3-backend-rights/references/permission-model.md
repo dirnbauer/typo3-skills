@@ -15,6 +15,8 @@ Read this reference before creating or changing a TYPO3 backend group or user.
 - Build CType, table, field, module, and mount rights from the live project.
 - Mount every configured Site root and every non-deleted page with `is_siteroot = 1`.
 - Use all languages, both built-in MFA providers, and page group permission bits `27`.
+- When Workspaces is installed, give editors Live access and membership in the intended custom
+  Workspace, but keep ownership and publishing separate.
 - Keep page deletion, admin-only fields/tables, system-managed fields, and infrastructure plugins
   outside the editor role.
 
@@ -34,6 +36,7 @@ Read this reference before creating or changing a TYPO3 backend group or user.
 | `explicit_allowdeny` | Comma-separated auth-mode values, especially `tt_content:CType:<value>` |
 | `non_exclude_fields` | Comma-separated `<table>:<field>` values for TCA fields marked `exclude` |
 | `TSconfig` | Prefer one sitepackage import for the selected User TSconfig profile |
+| `workspace_perms` | Extensions leaf: `1` only when Workspaces is installed; otherwise `0` |
 | `subgroup` | Main: four required leaf UIDs plus preserved capability leaves; leaf groups: empty |
 
 ## Flat group composition
@@ -41,11 +44,11 @@ Read this reference before creating or changing a TYPO3 backend group or user.
 Keep the main group free of direct permission values. Split the initial permission set once:
 
 - **Base**: Core modules, page types, all-language mode, `totp,recovery-codes`, file operations,
-  workspace permission, and User TSconfig.
+  and User TSconfig.
 - **Content**: explicit editorial CTypes and the Core content, category, and FAL tables/fields.
 - **Site**: current database and file mount UIDs.
 - **Extensions**: installed extension modules and non-Core domain tables/fields, including News,
-  Core Form, and Powermail form definitions.
+  Core Form, Powermail form definitions, and conditional Workspaces access.
 
 All four are direct leaves of the main group. The user belongs only to the main group, and pages
 use the main group as group owner. Put routine extension changes into Extensions. For a later Site
@@ -193,6 +196,24 @@ installed. For Solr, expose the `searchbackend` parent and read-only `searchback
 optimization, index queue, or index administration. Do not expose any Powermail backend module;
 editors build form-definition records through the normal record workflow.
 
+## Workspaces baseline
+
+Apply this only when `typo3/cms-workspaces` and `workspaces_publish` are registered:
+
+- Extensions leaf: `groupMods += workspaces_publish` and `workspace_perms = 1` for Live access.
+- User TSconfig: `options.workspaces.previewLinkTTLHours = 48`.
+- Keep the default Editing and Ready to publish stages.
+- Add the main editor group as a custom Workspace **member**, never as an owner by default.
+- Use `publish_access = 2`; publishing remains an approved owner responsibility.
+- Use groups rather than individual users for Workspace membership and ownership.
+- Ask for the owner/publisher before creating a missing custom Workspace, then write it through
+  DataHandler. Do not grant editor access to the administrator-only `sys_workspace` table.
+
+If Workspaces is absent, leave `workspace_perms = 0`, omit its module, and create no Workspace
+record. If it is present, a group permission without custom Workspace membership is incomplete.
+Physical FAL files are not versioned even though `sys_file_reference` overlays are: upload a new
+unique filename for a Workspace replacement and never overwrite a shared file in place.
+
 ## Languages and MFA
 
 In TYPO3 v14, blank `allowed_languages` means all languages and automatically covers later Site
@@ -206,8 +227,9 @@ TSconfig, but require MFA only after explicit policy approval.
 
 Use the basic template for narrowly scoped editors. Use optimized for trusted editors who manage
 the whole content tree. Both profiles recommend TOTP and define inherited new-page group rights
-without page deletion. The optimized profile intentionally enables Admin Panel `preview`, `cache`,
-`edit`, and `info`, while disabling `debug`, `tsdebug`, and `publish`.
+without page deletion. Both set the basic Workspaces preview-link lifetime to 48 hours; this is
+inert when Workspaces is absent. The optimized profile intentionally enables Admin Panel `preview`,
+`cache`, `edit`, and `info`, while disabling `debug`, `tsdebug`, and `publish`.
 
 The frontend must separately enable:
 

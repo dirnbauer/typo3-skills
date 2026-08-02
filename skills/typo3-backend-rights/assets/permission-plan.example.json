@@ -63,6 +63,5 @@
     "totp",
     "recovery-codes"
   ],
-  "tsconfig": "@import 'EXT:sitepackage/Configuration/TsConfig/User/BackendEditor/optimized.tsconfig'",
-  "workspace_perms": 1
+  "tsconfig": "@import 'EXT:sitepackage/Configuration/TsConfig/User/BackendEditor/optimized.tsconfig'"
 }

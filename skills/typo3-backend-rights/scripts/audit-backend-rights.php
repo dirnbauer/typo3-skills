@@ -38,6 +38,7 @@ $connection = $connectionPool->getConnectionForTable('be_groups');
 $moduleRegistry = GeneralUtility::makeInstance(ModuleRegistry::class);
 $mfaProviderRegistry = GeneralUtility::makeInstance(MfaProviderRegistry::class);
 $siteFinder = GeneralUtility::makeInstance(SiteFinder::class);
+$workspacesInstalled = $moduleRegistry->hasModule('workspaces_publish');
 
 $exceptions = [];
 if (isset($options['exceptions-json'], $options['exceptions-plan'])) {
@@ -124,6 +125,11 @@ $pages = $connection->fetchAllAssociative(
 $pageTypes = $connection->fetchAllAssociative(
     'SELECT doktype, COUNT(*) AS records FROM pages WHERE deleted = 0 GROUP BY doktype ORDER BY doktype'
 );
+$workspaceRecords = $workspacesInstalled ? $connection->fetchAllAssociative(
+    'SELECT uid, title, adminusers, members, db_mountpoints, file_mountpoints, '
+    . 'publish_access, previewlink_lifetime, live_edit '
+    . 'FROM sys_workspace WHERE deleted = 0 ORDER BY uid'
+) : [];
 
 $editorExcludeFields = [];
 $adminOnlyExcludeFields = [];
@@ -212,6 +218,7 @@ $requiredModules = array_values(array_filter(
         'form_editor',
         'searchbackend',
         'searchbackend_info',
+        'workspaces_publish',
     ],
     static fn(string $identifier): bool => $moduleRegistry->hasModule($identifier)
 ));
@@ -307,6 +314,7 @@ foreach ($groups as $group) {
     $groupSubgroups = csvIntegers((string)($rawGroup['subgroup'] ?? ''));
     $groupMfaProviders = csvStrings((string)($group['mfa_providers'] ?? ''));
     $groupAllowedLanguages = csvIntegers((string)($group['allowed_languages'] ?? ''));
+    $groupWorkspacePermissions = (int)($group['workspace_perms'] ?? 0);
 
     $groupFindings = [];
     if ($isTarget && $inheritanceError !== null) {
@@ -432,6 +440,75 @@ foreach ($groups as $group) {
             'users-do-not-inherit-group-mounts',
             'Non-admin members must inherit page and file mounts from associated groups (options bits 1 and 2).',
             $usersMissingGroupMountInheritance
+        );
+    }
+    $workspaceMemberUids = [];
+    $workspaceOwnerUids = [];
+    $workspacePublishingTooBroad = [];
+    foreach ($workspaceRecords as $workspaceRecord) {
+        $groupToken = 'be_groups_' . (int)$rawGroup['uid'];
+        $isMember = in_array($groupToken, csvStrings((string)$workspaceRecord['members']), true);
+        $isOwner = in_array($groupToken, csvStrings((string)$workspaceRecord['adminusers']), true);
+        if ($isMember) {
+            $workspaceMemberUids[] = (int)$workspaceRecord['uid'];
+        }
+        if ($isOwner) {
+            $workspaceOwnerUids[] = (int)$workspaceRecord['uid'];
+        }
+        if (($isMember || $isOwner) && (int)$workspaceRecord['publish_access'] !== 2) {
+            $workspacePublishingTooBroad[] = (int)$workspaceRecord['uid'];
+        }
+    }
+    if ($isTarget && $workspacesInstalled && ($groupWorkspacePermissions & 1) !== 1) {
+        $groupFindings[] = finding(
+            'error',
+            'workspace-live-access-missing',
+            'EXT:workspaces is installed, so the editor role needs workspace_perms Live access bit 1.'
+        );
+    }
+    if ($isTarget && !$workspacesInstalled && $groupWorkspacePermissions !== 0) {
+        $groupFindings[] = finding(
+            'warning',
+            'stale-workspace-permission',
+            'workspace_perms is set although EXT:workspaces is not installed.',
+            [$groupWorkspacePermissions]
+        );
+    }
+    if ($isTarget && $workspacesInstalled && $workspaceRecords === []) {
+        $groupFindings[] = finding(
+            'warning',
+            'no-custom-workspace-configured',
+            'Workspace module and Live access are enabled, but no custom workspace exists.'
+        );
+    }
+    if (
+        $isTarget
+        && $workspacesInstalled
+        && $workspaceRecords !== []
+        && $workspaceMemberUids === []
+        && $workspaceOwnerUids === []
+    ) {
+        $groupFindings[] = finding(
+            'error',
+            'editor-group-not-in-custom-workspace',
+            'Add the main editor group as a member of the intended custom workspace.',
+            array_map(static fn(array $row): int => (int)$row['uid'], $workspaceRecords)
+        );
+    }
+    if ($isTarget && $workspaceOwnerUids !== []) {
+        $groupFindings[] = finding(
+            'warning',
+            'editor-group-is-workspace-owner',
+            'Basic editors should be workspace members; owner/publisher access needs explicit approval.',
+            $workspaceOwnerUids
+        );
+    }
+    if ($isTarget && $workspacePublishingTooBroad !== []) {
+        $groupFindings[] = finding(
+            'error',
+            'workspace-publishing-too-broad',
+            'Use publish_access 2 so only approved workspace owners can publish.',
+            $workspacePublishingTooBroad
         );
     }
     $unregisteredModules = array_values(array_filter(
@@ -705,6 +782,13 @@ foreach ($groups as $group) {
         'allowed_languages' => $groupAllowedLanguages === [] ? 'all' : $groupAllowedLanguages,
         'mfa_providers' => $groupMfaProviders,
         'missing_mfa_providers' => $missingMfaProviders,
+        'workspace' => [
+            'installed' => $workspacesInstalled,
+            'workspace_perms' => $groupWorkspacePermissions,
+            'member_workspace_uids' => $workspaceMemberUids,
+            'owner_workspace_uids' => $workspaceOwnerUids,
+            'publishing_too_broad_workspace_uids' => $workspacePublishingTooBroad,
+        ],
         'page_permission_audit' => [
             'wrong_group_owner' => $pagesWithWrongGroup,
             'missing_editor_bits_27' => $pagesWithMissingEditorBits,
@@ -842,6 +926,11 @@ $report = [
     'required_editor_modules' => $requiredModules,
     'required_editor_tables' => $requiredEditorTables,
     'registered_mfa_providers' => $registeredMfaProviders,
+    'workspaces' => [
+        'installed' => $workspacesInstalled,
+        'module' => $workspacesInstalled ? 'workspaces_publish' : null,
+        'records' => $workspaceRecords,
+    ],
     'findings' => $findings,
 ];
 

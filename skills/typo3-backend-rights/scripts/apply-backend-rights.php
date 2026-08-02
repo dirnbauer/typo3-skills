@@ -127,7 +127,12 @@ $fileMountpoints = requirePositiveIntegerList($plan, 'file_mountpoints');
 $filePermissions = requireStringList($plan, 'file_permissions');
 $mfaProviders = requireStringList($plan, 'mfa_providers');
 $tsconfig = requireString($plan, 'tsconfig');
-$workspacePermissions = isset($plan['workspace_perms']) ? (int)$plan['workspace_perms'] : 1;
+$workspacesInstalled = $moduleRegistry->hasModule('workspaces_publish');
+$workspacePermissions = $workspacesInstalled ? 1 : 0;
+if ($workspacesInstalled && !in_array('workspaces_publish', $modules, true)) {
+    $modules[] = 'workspaces_publish';
+    $modules = uniqueSorted($modules);
+}
 
 $requiredMfaProviders = ['recovery-codes', 'totp'];
 if ($mfaProviders !== $requiredMfaProviders) {
@@ -165,6 +170,7 @@ $requiredModules = array_values(array_filter(
         'form_editor',
         'searchbackend',
         'searchbackend_info',
+        'workspaces_publish',
     ],
     static fn(string $identifier): bool => $moduleRegistry->hasModule($identifier)
 ));
@@ -440,7 +446,6 @@ $leafFields = [
         'pagetypes_select' => implode(',', $pageTypes),
         'file_permissions' => implode(',', uniqueSorted($filePermissions)),
         'mfa_providers' => implode(',', $mfaProviders),
-        'workspace_perms' => $workspacePermissions,
         'TSconfig' => $tsconfig,
     ]),
     'content' => array_replace(emptyGroupFields($leafTitles['content'], $now), [
@@ -461,6 +466,7 @@ $leafFields = [
         'tables_select' => implode(',', uniqueSorted($extensionTablesSelect)),
         'tables_modify' => implode(',', uniqueSorted($extensionTablesModify)),
         'non_exclude_fields' => implode(',', uniqueSorted($extensionNonExcludeFields)),
+        'workspace_perms' => $workspacePermissions,
     ]),
 ];
 $mainFields = array_replace(emptyGroupFields($title, $now), [
@@ -569,6 +575,12 @@ echo json_encode([
     'effective_file_mountpoints' => $effectiveFileMountpoints,
     'enabled_administrator_count' => $enabledAdministratorCount,
     'required_user_options_bits' => 3,
+    'workspaces' => [
+        'installed' => $workspacesInstalled,
+        'module' => $workspacesInstalled ? 'workspaces_publish' : null,
+        'live_access' => $workspacesInstalled,
+        'custom_workspace_membership_changed' => false,
+    ],
     'users_changed' => false,
 ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR) . "\n";
 
