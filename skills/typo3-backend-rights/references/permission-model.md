@@ -33,7 +33,8 @@ Read this reference before creating or changing a TYPO3 backend group or user.
   group ownership.
 - Build CType, table, field, module, and mount rights from the live project.
 - Mount every configured Site root and every non-deleted page with `is_siteroot = 1`.
-- Use all languages, both built-in MFA providers, and page group permission bits `27`.
+- Use all languages, both built-in MFA providers, and the complete page baseline `31/27/1` for
+  the resolved default owner user, main editor group, and everybody.
 - When Workspaces is installed, give editors Live access and membership in the intended custom
   Workspace, but keep ownership and publishing separate.
 - Keep page deletion, admin-only fields/tables, system-managed fields, and infrastructure plugins
@@ -197,15 +198,29 @@ Do not use backend list-module URLs or session tokens as configuration input.
 
 ## Page group permissions
 
+Use this complete baseline on every page in every configured or flagged Site tree:
+
+```text
+owner user: 31 = show (1) + edit page (2) + delete page (4) + create page (8) + edit content (16)
+owner group: 27 = show (1) + edit page (2) + create page (8) + edit content (16)
+everybody:    1 = show (1)
+```
+
+Resolve the default owner user from the selected installation and report the account/UID. Never
+embed a reusable fixed UID in the skill or script, and never retain deleted or missing page owners
+as a supposed default. The main editor group is the group owner. Everybody remains view-only.
+
 Use group permission bits `27` for trusted full-content editors:
 
 ```text
 show (1) + edit page (2) + create page (8) + edit content (16) = 27
 ```
 
-Keep delete page (`4`) disabled unless separately approved. Assign the main group as page group
-owner throughout each mounted tree; do not compensate with broad `perms_everybody`. Configure
-new pages to inherit the parent group and these bits through Page TSconfig.
+Keep group delete-page bit (`4`) disabled unless separately approved. Assign the approved default
+user and main group throughout the deduplicated union of every configured Site tree and every tree
+whose root is marked `is_siteroot`; do not stop at the first homepage and do not compensate with
+broad `perms_everybody`. Configure new pages through Page/User TSconfig to inherit both owners and
+the `31/27/1` matrix.
 
 Apply this as a cutover, not as part of initial group creation:
 
@@ -215,8 +230,9 @@ Apply this as a cutover, not as part of initial group creation:
 3. Assign only the main group, preserve required unrelated memberships according to that answer,
    and set `be_users.options |= 3` without clearing other option bits.
 4. Verify a real non-admin login can see and edit the intended mounted tree.
-5. Only then change `pages.perms_groupid` to the main group and `pages.perms_group` to `27` through
-   DataHandler or the Permissions module. Re-audit before removing the legacy owner group.
+5. Only then change `pages.perms_userid` to the approved default user, `pages.perms_groupid` to the
+   main group, and the user/group/everybody bits to `31/27/1` through DataHandler or the Permissions
+   module. Re-audit before removing the legacy owner group.
 
 If the page tree still belongs to a legacy group while no enabled non-admin user has the new main
 group, report both states and stop. Changing page ownership first can lock every editor out even
@@ -260,9 +276,10 @@ TSconfig, but require MFA only after explicit policy approval.
 ## User TSconfig profiles
 
 Use the basic template for narrowly scoped editors. Use optimized for trusted editors who manage
-the whole content tree. Both profiles recommend TOTP and define inherited new-page group rights
-without page deletion. Both set the basic Workspaces preview-link lifetime to 48 hours; this is
-inert when Workspaces is absent. The optimized profile intentionally enables Admin Panel `preview`,
+the whole content tree. Both profiles recommend TOTP, inherit the parent owner user/group, and set
+the new-page baseline to owner user `31`, owner group `27`, and everybody view-only `1`. Group page
+deletion remains off. Both set the basic Workspaces preview-link lifetime to 48 hours; this is inert
+when Workspaces is absent. The optimized profile intentionally enables Admin Panel `preview`,
 `cache`, `edit`, and `info`, while disabling `debug`, `tsdebug`, and `publish`.
 
 The frontend must separately enable:
@@ -303,7 +320,8 @@ FROM be_groups
 WHERE deleted = 0
 ORDER BY uid;
 
-SELECT uid, pid, title, is_siteroot, perms_groupid, perms_group, perms_everybody
+SELECT uid, pid, title, is_siteroot, perms_userid, perms_user,
+       perms_groupid, perms_group, perms_everybody
 FROM pages
 WHERE deleted = 0
 ORDER BY pid, sorting, uid;

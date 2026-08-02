@@ -11,11 +11,13 @@ auth.mfa.recommendedProvider = totp
 # Basic EXT:workspaces preview-link lifetime; ignored when Workspaces is absent.
 options.workspaces.previewLinkTTLHours = 48
 
-# New pages inherit the parent group and the least-privilege editor page rights (27).
+# New pages inherit both owners and the standard user/group/everybody rights (31/27/1).
 page.TCEMAIN.permissions {
+    userid = copyFromParent
     groupid = copyFromParent
+    user = show,edit,delete,new,editcontent
     group = show,edit,new,editcontent
-    everybody = 0
+    everybody = show
 }
 
 admPanel {

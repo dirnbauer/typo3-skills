@@ -15,6 +15,7 @@ $options = getopt('', [
     'exceptions-json::',
     'exceptions-plan::',
     'group-title::',
+    'owner-username::',
     'pretty',
     'strict',
 ]);
@@ -112,6 +113,24 @@ $users = $connection->fetchAllAssociative(
     'SELECT uid, username, admin, disable, usergroup, options, lastlogin '
     . 'FROM be_users WHERE deleted = 0 ORDER BY uid'
 );
+$defaultOwnerUsername = isset($options['owner-username']) && $options['owner-username'] !== false
+    ? trim((string)$options['owner-username'])
+    : '';
+$defaultOwnerUserUid = null;
+if ($defaultOwnerUsername !== '') {
+    $ownerUsers = array_values(array_filter(
+        $users,
+        static fn(array $user): bool => (string)$user['username'] === $defaultOwnerUsername
+    ));
+    if (count($ownerUsers) !== 1 || (int)$ownerUsers[0]['disable'] !== 0) {
+        fwrite(STDERR, sprintf(
+            "Expected one enabled default owner user named \"%s\".\n",
+            $defaultOwnerUsername
+        ));
+        exit(64);
+    }
+    $defaultOwnerUserUid = (int)$ownerUsers[0]['uid'];
+}
 $fileMounts = $connection->fetchAllAssociative(
     'SELECT uid, title, hidden, read_only, identifier FROM sys_filemounts WHERE deleted = 0 ORDER BY uid'
 );
@@ -119,11 +138,13 @@ $fileStorages = $connection->fetchAllAssociative(
     'SELECT uid, name, is_browsable, is_writable, is_online FROM sys_file_storage WHERE deleted = 0 ORDER BY uid'
 );
 $pages = $connection->fetchAllAssociative(
-    'SELECT uid, pid, title, doktype, hidden, is_siteroot, perms_groupid, perms_group, perms_everybody '
-    . 'FROM pages WHERE deleted = 0 ORDER BY pid, sorting, uid'
+    'SELECT uid, pid, title, doktype, hidden, is_siteroot, perms_userid, perms_user, '
+    . 'perms_groupid, perms_group, perms_everybody '
+    . 'FROM pages WHERE deleted = 0 AND t3ver_wsid = 0 ORDER BY pid, sorting, uid'
 );
 $pageTypes = $connection->fetchAllAssociative(
-    'SELECT doktype, COUNT(*) AS records FROM pages WHERE deleted = 0 GROUP BY doktype ORDER BY doktype'
+    'SELECT doktype, COUNT(*) AS records FROM pages WHERE deleted = 0 AND t3ver_wsid = 0 '
+    . 'GROUP BY doktype ORDER BY doktype'
 );
 $workspaceRecords = $workspacesInstalled ? $connection->fetchAllAssociative(
     'SELECT uid, title, adminusers, members, db_mountpoints, file_mountpoints, '
@@ -702,11 +723,21 @@ foreach ($groups as $group) {
     }
 
     $pagesWithWrongGroup = [];
+    $pagesWithWrongOwnerUser = [];
+    $pagesWithNonStandardOwnerRights = [];
     $pagesWithMissingEditorBits = [];
+    $pagesWithNonStandardGroupRights = [];
     $pagesWithDeleteBit = [];
+    $pagesWithNonStandardEverybodyRights = [];
     $pagesWithBroadEverybodyRights = [];
     foreach ($mountedSitePages as $page) {
         $pageUid = (int)$page['uid'];
+        if ($defaultOwnerUserUid !== null && (int)$page['perms_userid'] !== $defaultOwnerUserUid) {
+            $pagesWithWrongOwnerUser[] = $pageUid;
+        }
+        if ((int)$page['perms_user'] !== 31) {
+            $pagesWithNonStandardOwnerRights[] = $pageUid;
+        }
         if ((int)$page['perms_groupid'] !== (int)$rawGroup['uid']) {
             $pagesWithWrongGroup[] = $pageUid;
         }
@@ -716,9 +747,38 @@ foreach ($groups as $group) {
         if (((int)$page['perms_group'] & 4) === 4) {
             $pagesWithDeleteBit[] = $pageUid;
         }
+        if ((int)$page['perms_group'] !== 27) {
+            $pagesWithNonStandardGroupRights[] = $pageUid;
+        }
+        if ((int)$page['perms_everybody'] !== 1) {
+            $pagesWithNonStandardEverybodyRights[] = $pageUid;
+        }
         if (((int)$page['perms_everybody'] & 30) !== 0) {
             $pagesWithBroadEverybodyRights[] = $pageUid;
         }
+    }
+    if ($isTarget && $defaultOwnerUserUid === null) {
+        $groupFindings[] = finding(
+            'warning',
+            'default-page-owner-not-audited',
+            'Pass --owner-username to verify one explicit default owner across every Site tree.'
+        );
+    }
+    if ($isTarget && $pagesWithWrongOwnerUser !== []) {
+        $groupFindings[] = finding(
+            'error',
+            'page-owner-user-mismatch',
+            'Pages below required Site roots do not use the approved default owner user.',
+            $pagesWithWrongOwnerUser
+        );
+    }
+    if ($isTarget && $pagesWithNonStandardOwnerRights !== []) {
+        $groupFindings[] = finding(
+            'error',
+            'page-owner-permissions-not-31',
+            'Pages below required Site roots do not use owner-user permission bits 31.',
+            $pagesWithNonStandardOwnerRights
+        );
     }
     if ($isTarget && $pagesWithWrongGroup !== []) {
         $groupFindings[] = finding(
@@ -743,6 +803,14 @@ foreach ($groups as $group) {
             $pagesWithMissingEditorBits
         );
     }
+    if ($isTarget && $pagesWithNonStandardGroupRights !== []) {
+        $groupFindings[] = finding(
+            'error',
+            'page-group-permissions-not-27',
+            'Pages below required Site roots do not use the standard owner-group permission bits 27.',
+            $pagesWithNonStandardGroupRights
+        );
+    }
     if ($isTarget && $pagesWithDeleteBit !== []) {
         $groupFindings[] = finding(
             'warning',
@@ -757,6 +825,14 @@ foreach ($groups as $group) {
             'broad-everybody-page-rights',
             'Write/create/delete rights must not be granted through perms_everybody.',
             $pagesWithBroadEverybodyRights
+        );
+    }
+    if ($isTarget && $pagesWithNonStandardEverybodyRights !== []) {
+        $groupFindings[] = finding(
+            'error',
+            'page-everybody-permissions-not-1',
+            'Pages below required Site roots must give everybody the view-only bit 1.',
+            $pagesWithNonStandardEverybodyRights
         );
     }
 
@@ -807,9 +883,15 @@ foreach ($groups as $group) {
             'publishing_too_broad_workspace_uids' => $workspacePublishingTooBroad,
         ],
         'page_permission_audit' => [
+            'default_owner_username' => $defaultOwnerUsername === '' ? null : $defaultOwnerUsername,
+            'default_owner_user_uid' => $defaultOwnerUserUid,
+            'wrong_owner_user' => $pagesWithWrongOwnerUser,
+            'owner_rights_not_31' => $pagesWithNonStandardOwnerRights,
             'wrong_group_owner' => $pagesWithWrongGroup,
             'missing_editor_bits_27' => $pagesWithMissingEditorBits,
+            'group_rights_not_27' => $pagesWithNonStandardGroupRights,
             'page_delete_bit_enabled' => $pagesWithDeleteBit,
+            'everybody_rights_not_1' => $pagesWithNonStandardEverybodyRights,
             'broad_everybody_write_bits' => $pagesWithBroadEverybodyRights,
         ],
         'tsconfig' => (string)($group['TSconfig'] ?? ''),

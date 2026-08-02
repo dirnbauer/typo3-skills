@@ -220,6 +220,20 @@
         "Keep the legacy owner recoverable until the post-cutover audit and user test pass."
       ],
       "note": "Prevents the page-owner-first lockout observed during a live migration."
+    },
+    {
+      "id": "typo3-backend-rights-behaviour-13",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Standardize page permissions for every website in this TYPO3, including future pages. Use the default owner, editor group, and everybody permissions, but do not hard-code IDs in the reusable skill.",
+      "assertions": [
+        "Resolve and report one explicit default owner user and the main editor group from the selected live installation rather than embedding fixed IDs.",
+        "Apply owner-user 31, owner-group 27, and everybody view-only 1 to every page in the deduplicated union of configured Site trees and roots marked is_siteroot.",
+        "Use the main editor group as group owner and keep its page-delete bit disabled.",
+        "Configure new pages to inherit both owners and the same 31/27/1 baseline through Page/User TSconfig.",
+        "Use DataHandler or the Permissions module for record writes and dry-run the cutover first."
+      ],
+      "note": "Covers complete multisite ACL propagation and future-page defaults without installation-specific IDs."
     }
   ]
 }

@@ -1,6 +1,6 @@
 ---
 name: typo3-backend-rights
-description: "Build and audit one main non-admin TYPO3 backend editor group composed from four simple leaf groups for Base, Content, Site access, and Extensions. Covers explicit CType/field permissions, roots, languages, modules, mounts, MFA, Forms/Powermail, conditional Workspaces access, User TSconfig, Visual Editor, Admin Panel, extensible site/extension packs, safe admin conversion, and customer branding for the TYPO3 login/backend with the Application Context. Use when record types or fields are missing/read-only, be_groups.explicit_allowdeny is blank, mounts/modules are incomplete, or legacy groups must be consolidated. Always preserve a separate working administrator."
+description: "Build and audit one main non-admin TYPO3 backend editor group composed from four simple leaf groups for Base, Content, Site access, and Extensions. Covers explicit CType/field permissions, multisite page owner/group/everybody ACL defaults, roots, languages, modules, mounts, MFA, Forms/Powermail, conditional Workspaces access, User TSconfig, Visual Editor, Admin Panel, extensible site/extension packs, safe admin conversion, and customer branding for the TYPO3 login/backend with the Application Context. Use when page permissions, record types or fields are missing/read-only, be_groups.explicit_allowdeny is blank, mounts/modules are incomplete, or legacy groups must be consolidated. Always preserve a separate working administrator."
 ---
 
 # TYPO3 backend rights
@@ -42,9 +42,11 @@ not a copied backend record.
 10. Allow exactly the installed editor modules defined below, including Forms, Visual Editor, and
     Solr only when present. Allow the MFA providers `totp` and `recovery-codes`.
 11. Verify page ownership and permission bits throughout every mounted site tree; DB mounts alone
-    do not grant access. Give the main group show, edit page, create page, and edit content rights
-    (`27`). Keep page deletion (`4`) off unless the user explicitly requests it. Never switch page
-    ownership before at least one enabled non-admin editor has the main group and passes a login test.
+    do not grant access. Resolve one explicit default owner user, make the main editor group the
+    group owner, and apply the complete baseline `31/27/1`: owner user `31`, owner group `27`, and
+    everybody view-only `1`. Apply it to the union of every configured Site tree and every tree
+    marked `is_siteroot`, not only the first homepage. Never switch ownership before at least one
+    enabled non-admin editor has the main group and passes a login test.
 12. Preserve a different enabled, login-capable administrator. Never demote the administrator used
     for the current work or the last remaining administrator. Ask whether each target user's
     existing groups should be appended to or replaced; do not infer a bulk membership cutover.
@@ -81,8 +83,9 @@ Treat group configuration, user membership, and page ownership as three distinct
 2. For every named target user, show the current membership and ask whether the main group should
    be **appended** or should **replace** the existing non-admin groups. Preserve unrelated groups
    until the user answers. Set the group-mount inheritance option bits without clearing other bits.
-3. Log in as an enabled non-admin target and verify modules, page tree, content editing, Media/FAL,
-   language, and selectors. Only then assign the main group as page owner with bits `27`.
+3. Resolve and report the default owner user. Log in as an enabled non-admin target and verify
+   modules, page tree, content editing, Media/FAL, language, and selectors. Only then assign that
+   user and the main group as owners with the `31/27/1` baseline.
 4. Re-audit page ownership and repeat the non-admin test. Keep the prior owner group recoverable
    until the cutover is accepted.
 
@@ -99,10 +102,11 @@ ddev exec php /dev/stdin --pretty \
   < /absolute/path/to/typo3-backend-rights/scripts/audit-backend-rights.php
 ```
 
-Add `--group-title='Editorial Main'` to check a target group and `--strict` to return non-zero for
-blocking findings. Add `--exceptions-plan=/container/path/to/permission-plan.json` to load the
-documented exception map used by the group. Read [permission-model.md](references/permission-model.md)
-before changing a group or user.
+Add `--group-title='Editorial Main'` to check a target group,
+`--owner-username='default-owner'` to verify the resolved page owner, and `--strict` to return
+non-zero for blocking findings. Add `--exceptions-plan=/container/path/to/permission-plan.json` to
+load the documented exception map used by the group. Read
+[permission-model.md](references/permission-model.md) before changing a group or user.
 
 Treat this result as a blocking defect:
 
@@ -145,10 +149,11 @@ explicitly protected types. Require each used editorial CType to appear as
    configuration, Powermail reporting/marketing, Solr index mutation, or infrastructure modules.
 9. Include every page type already used below the editor's web mounts. Add unused types only when
    the workflow explicitly needs editors to create them.
-10. Audit every page below the site roots. Ensure the main group owns it with permission bits `27`,
-    or remediate through the Permissions module/DataHandler **after the membership/login cutover
-    gate above passes**. Configure new pages to inherit the parent group. Do not make
-    `perms_everybody` broad to compensate for a missing group owner.
+10. Audit every page in the deduplicated union of all configured Site trees and every tree marked
+    `is_siteroot`. Ensure the approved default user owns it with bits `31`, the main group owns it
+    with bits `27`, and everybody has view-only bit `1`. Remediate through the Permissions module
+    or DataHandler **after the membership/login cutover gate above passes**. Configure new pages to
+    inherit both owners and the same `31/27/1` baseline. Never grant everybody write rights.
 
 ## Minimum installed modules
 
@@ -209,8 +214,10 @@ Use the optimized profile by default for trusted content editors. Keep `debug`, 
 `publish` disabled. Verify the frontend TypoScript has `config.admPanel = 1`; User TSconfig alone
 cannot display the Admin Panel.
 
-Both profiles recommend TOTP and make new pages inherit their parent's owner group with page bits
-`show,edit,new,editcontent`. They deliberately do not enable page deletion or force MFA.
+Both profiles recommend TOTP and make new pages inherit their parent owner user and owner group.
+They set owner user `show,edit,delete,new,editcontent` (`31`), owner group
+`show,edit,new,editcontent` (`27`), and everybody `show` (`1`). Group page deletion remains off;
+the profiles do not force MFA.
 
 Both profiles set `options.workspaces.previewLinkTTLHours = 48`. TYPO3 ignores the option when
 Workspaces is absent; it does not grant Workspace access by itself.
@@ -298,6 +305,23 @@ Ask the user this explicit question before replacing memberships:
 
 Changing one user's memberships does not authorize bulk changes to other users.
 
+After the approved membership/login gate, use the bundled DataHandler cutover script to apply the
+same default owner and `31/27/1` matrix to every configured or flagged Site tree. Start with a dry
+run and name the default owner explicitly; the script never guesses it:
+
+```bash
+ddev exec php /dev/stdin --dry-run \
+  --group-title='Editorial Main' --owner-username='default-owner' \
+  --usernames='editor-one,editor-two' --membership-mode=replace \
+  --replace-group-title='Legacy Editors' --apply-pages \
+  < /absolute/path/to/scripts/apply-page-permissions.php
+```
+
+Run without `--dry-run` only after review. Use `membership-mode=append` for the pre-cutover login
+test, then `replace` only when the user approved replacement. The script preserves unrelated group
+memberships, sets the two group-mount inheritance bits, deduplicates nested Site roots, and writes
+users/pages through DataHandler.
+
 ## Verify as a non-admin
 
 Use a real non-admin session and verify all of these:
@@ -306,8 +330,9 @@ Use a real non-admin session and verify all of these:
 2. Every used editorial CType can be opened, changed, saved, hidden/unhidden, copied, and created.
 3. Each documented infrastructure CType is unavailable for creation and cannot be reconfigured.
 4. Editorial records such as news open with every required field and can be saved.
-5. Every site root is mounted, every configured site language can be edited, and newly created
-   pages inherit the main group with bits `27`.
+5. Every Site tree is mounted and has the same default owner plus `31/27/1` page baseline, every
+   configured site language can be edited, and newly created pages inherit both owners and those
+   permissions.
 6. Core Forms can be created, edited, duplicated, and saved when installed. Powermail forms, pages,
    and fields can be created and changed when installed, while marketing/reporting modules and the
    frontend plugin remain unavailable.
@@ -342,4 +367,7 @@ TSconfig profile, and the non-admin verification evidence.
 - `scripts/audit-backend-rights.php`: read-only runtime TCA/database audit.
 - `scripts/apply-backend-rights.php`: validate and transactionally create/update the main group
   and four required leaves from a reviewed plan; never changes users.
+- `scripts/apply-page-permissions.php`: dry-run/apply the approved membership cutover and complete
+  default-owner/main-group/everybody `31/27/1` baseline across all configured Site trees via
+  DataHandler.
 - `assets/tsconfig/`: basic and optimized User TSconfig templates.
