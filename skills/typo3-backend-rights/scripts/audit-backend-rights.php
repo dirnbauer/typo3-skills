@@ -3,10 +3,12 @@
 
 declare(strict_types=1);
 
-use TYPO3\CMS\Core\Core\Bootstrap;
 use TYPO3\CMS\Backend\Module\ModuleRegistry;
+use TYPO3\CMS\Core\Authentication\Mfa\MfaProviderRegistry;
+use TYPO3\CMS\Core\Core\Bootstrap;
 use TYPO3\CMS\Core\Core\SystemEnvironmentBuilder;
 use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Site\SiteFinder;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 $options = getopt('', [
@@ -34,6 +36,8 @@ $container = Bootstrap::init($classLoader);
 $connectionPool = $container->get(ConnectionPool::class);
 $connection = $connectionPool->getConnectionForTable('be_groups');
 $moduleRegistry = GeneralUtility::makeInstance(ModuleRegistry::class);
+$mfaProviderRegistry = GeneralUtility::makeInstance(MfaProviderRegistry::class);
+$siteFinder = GeneralUtility::makeInstance(SiteFinder::class);
 
 $exceptions = [];
 if (isset($options['exceptions-json'], $options['exceptions-plan'])) {
@@ -99,7 +103,8 @@ sort($registeredContentTypes);
 $authMode = $GLOBALS['TCA']['tt_content']['columns']['CType']['config']['authMode'] ?? null;
 $groups = $connection->fetchAllAssociative(
     'SELECT uid, title, hidden, subgroup, groupMods, tables_select, tables_modify, pagetypes_select, '
-    . 'db_mountpoints, file_mountpoints, file_permissions, explicit_allowdeny, non_exclude_fields, TSconfig '
+    . 'db_mountpoints, file_mountpoints, file_permissions, allowed_languages, mfa_providers, '
+    . 'explicit_allowdeny, non_exclude_fields, TSconfig '
     . 'FROM be_groups WHERE deleted = 0 ORDER BY uid'
 );
 $users = $connection->fetchAllAssociative(
@@ -111,33 +116,142 @@ $fileMounts = $connection->fetchAllAssociative(
 $fileStorages = $connection->fetchAllAssociative(
     'SELECT uid, name, is_browsable, is_writable, is_online FROM sys_file_storage WHERE deleted = 0 ORDER BY uid'
 );
-$rootPages = $connection->fetchAllAssociative(
-    'SELECT uid, title, doktype, hidden FROM pages WHERE deleted = 0 AND pid = 0 ORDER BY uid'
+$pages = $connection->fetchAllAssociative(
+    'SELECT uid, pid, title, doktype, hidden, is_siteroot, perms_groupid, perms_group, perms_everybody '
+    . 'FROM pages WHERE deleted = 0 ORDER BY pid, sorting, uid'
 );
 $pageTypes = $connection->fetchAllAssociative(
     'SELECT doktype, COUNT(*) AS records FROM pages WHERE deleted = 0 GROUP BY doktype ORDER BY doktype'
 );
 
-$excludeFields = [];
+$editorExcludeFields = [];
+$adminOnlyExcludeFields = [];
+$systemManagedExcludeFields = [];
+$adminOnlyTables = [];
 foreach ($GLOBALS['TCA'] ?? [] as $tableName => $tableConfiguration) {
+    if ((bool)($tableConfiguration['ctrl']['adminOnly'] ?? false)) {
+        $adminOnlyTables[] = $tableName;
+    }
+    $editLockField = (string)($tableConfiguration['ctrl']['editlock'] ?? '');
     foreach (($tableConfiguration['columns'] ?? []) as $fieldName => $fieldConfiguration) {
-        if ((bool)($fieldConfiguration['exclude'] ?? false)) {
-            $excludeFields[$tableName][] = $fieldName;
+        if (!(bool)($fieldConfiguration['exclude'] ?? false)) {
+            continue;
+        }
+        $fieldConfig = is_array($fieldConfiguration['config'] ?? null) ? $fieldConfiguration['config'] : [];
+        if (
+            $fieldName === $editLockField
+            || containsAdminOnlyDisplayCondition($fieldConfiguration['displayCond'] ?? null)
+            || isRestrictedEditorField($tableName, $fieldName)
+        ) {
+            $adminOnlyExcludeFields[$tableName][] = $fieldName;
+        } elseif (
+            (bool)($fieldConfig['readOnly'] ?? false)
+            || in_array((string)($fieldConfig['type'] ?? ''), ['none', 'passthrough'], true)
+        ) {
+            $systemManagedExcludeFields[$tableName][] = $fieldName;
+        } else {
+            $editorExcludeFields[$tableName][] = $fieldName;
         }
     }
-    if (isset($excludeFields[$tableName])) {
-        sort($excludeFields[$tableName]);
-    }
 }
-ksort($excludeFields);
+$editorExcludeFields = sortFieldMap($editorExcludeFields);
+$adminOnlyExcludeFields = sortFieldMap($adminOnlyExcludeFields);
+$systemManagedExcludeFields = sortFieldMap($systemManagedExcludeFields);
+sort($adminOnlyTables);
 
 $activeFileMountUids = array_map(
     static fn(array $row): int => (int)$row['uid'],
     array_filter($fileMounts, static fn(array $row): bool => (int)$row['hidden'] === 0)
 );
-$rootPageUids = array_map(static fn(array $row): int => (int)$row['uid'], $rootPages);
+$configuredSites = array_map(
+    static fn(object $site): array => [
+        'identifier' => (string)$site->getIdentifier(),
+        'root_page_id' => (int)$site->getRootPageId(),
+        'language_ids' => array_map(
+            static fn(object $language): int => (int)$language->getLanguageId(),
+            $site->getAllLanguages()
+        ),
+    ],
+    $siteFinder->getAllSites(false)
+);
+$configuredSiteRootUids = array_map(
+    static fn(array $site): int => $site['root_page_id'],
+    $configuredSites
+);
+$flaggedSiteRootUids = array_map(
+    static fn(array $page): int => (int)$page['uid'],
+    array_filter($pages, static fn(array $page): bool => (int)$page['is_siteroot'] === 1)
+);
+$requiredSiteRootUids = array_values(array_unique([...$configuredSiteRootUids, ...$flaggedSiteRootUids]));
+sort($requiredSiteRootUids);
+$pagesByParent = [];
+$pagesByUid = [];
+foreach ($pages as $page) {
+    $pagesByUid[(int)$page['uid']] = $page;
+    $pagesByParent[(int)$page['pid']][] = $page;
+}
+$mountedSitePages = collectPageTree($requiredSiteRootUids, $pagesByUid, $pagesByParent);
 $exceptionContentTypes = array_keys($exceptions);
 $usedPageTypeValues = array_map(static fn(array $row): int => (int)$row['doktype'], $pageTypes);
+
+$requiredModules = array_values(array_filter(
+    [
+        'web_layout',
+        'records',
+        'page_preview',
+        'content_status',
+        'web_info_overview',
+        'web_info_translations',
+        'recycler',
+        'media_management',
+        'user_setup',
+        'web_edit',
+        'web_FormFormbuilder',
+        'form_manager',
+        'form_editor',
+        'searchbackend',
+        'searchbackend_info',
+    ],
+    static fn(string $identifier): bool => $moduleRegistry->hasModule($identifier)
+));
+$blockedModulePatterns = [
+    '/^(?:web_powermail|powermail_)/',
+    '/^searchbackend_(?:coreoptimization|indexqueue|indexadministration)$/',
+];
+$requiredEditorTables = [];
+foreach ([
+    'pages',
+    'tt_content',
+    'sys_category',
+    'sys_file',
+    'sys_file_collection',
+    'sys_file_metadata',
+    'sys_file_reference',
+    'tx_news_domain_model_news',
+    'tx_news_domain_model_link',
+    'tx_news_domain_model_tag',
+    'form_definition',
+    'tx_powermail_domain_model_form',
+    'tx_powermail_domain_model_page',
+    'tx_powermail_domain_model_field',
+] as $editorTable) {
+    if (isset($GLOBALS['TCA'][$editorTable])) {
+        $requiredEditorTables[] = $editorTable;
+    }
+}
+$requiredMfaProviders = ['recovery-codes', 'totp'];
+$registeredMfaProviders = array_keys($mfaProviderRegistry->getProviders());
+sort($registeredMfaProviders);
+$forbiddenNonExcludeFieldValues = [];
+foreach ([$adminOnlyExcludeFields, $systemManagedExcludeFields] as $fieldMap) {
+    foreach ($fieldMap as $tableName => $fieldNames) {
+        foreach ($fieldNames as $fieldName) {
+            $forbiddenNonExcludeFieldValues[] = $tableName . ':' . $fieldName;
+        }
+    }
+}
+$forbiddenNonExcludeFieldValues = array_values(array_unique($forbiddenNonExcludeFieldValues));
+sort($forbiddenNonExcludeFieldValues);
 
 $findings = [];
 $normalizedGroups = [];
@@ -169,6 +283,8 @@ foreach ($groups as $group) {
     $groupNonExcludeFields = csvStrings((string)($group['non_exclude_fields'] ?? ''));
     $groupPageTypes = csvIntegers((string)($group['pagetypes_select'] ?? ''));
     $groupSubgroups = csvIntegers((string)($group['subgroup'] ?? ''));
+    $groupMfaProviders = csvStrings((string)($group['mfa_providers'] ?? ''));
+    $groupAllowedLanguages = csvIntegers((string)($group['allowed_languages'] ?? ''));
 
     $groupFindings = [];
     if ($isTarget && $authMode === 'explicitAllow' && $allowedContentTypes === []) {
@@ -222,6 +338,34 @@ foreach ($groups as $group) {
             $unregisteredModules
         );
     }
+    $missingRequiredModules = array_values(array_diff($requiredModules, $groupModules));
+    if ($isTarget && $missingRequiredModules !== []) {
+        $groupFindings[] = finding(
+            'error',
+            'installed-editor-modules-missing',
+            'Installed minimum editor modules are missing from the group.',
+            $missingRequiredModules
+        );
+    }
+    $blockedModules = array_values(array_filter(
+        $groupModules,
+        static function (string $identifier) use ($blockedModulePatterns): bool {
+            foreach ($blockedModulePatterns as $pattern) {
+                if (preg_match($pattern, $identifier) === 1) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    ));
+    if ($isTarget && $blockedModules !== []) {
+        $groupFindings[] = finding(
+            'error',
+            'blocked-backend-modules-allowed',
+            'Powermail reporting/marketing or Solr index-mutation modules must remain unavailable.',
+            $blockedModules
+        );
+    }
     $modifyTablesWithoutSelect = array_values(array_diff($groupTablesModify, $groupTablesSelect));
     if ($isTarget && $modifyTablesWithoutSelect !== []) {
         $groupFindings[] = finding(
@@ -243,9 +387,43 @@ foreach ($groups as $group) {
             $unregisteredTables
         );
     }
+    $grantedAdminOnlyTables = array_values(array_intersect(
+        array_unique([...$groupTablesSelect, ...$groupTablesModify]),
+        $adminOnlyTables
+    ));
+    if ($isTarget && $grantedAdminOnlyTables !== []) {
+        $groupFindings[] = finding(
+            'error',
+            'admin-only-tables-granted',
+            'Tables marked TCA ctrl.adminOnly cannot be granted to non-admin editors.',
+            $grantedAdminOnlyTables
+        );
+    }
+    $missingWritableTables = array_values(array_diff($requiredEditorTables, $groupTablesModify));
+    $missingSelectableTables = array_values(array_diff($requiredEditorTables, $groupTablesSelect));
+    if ($isTarget && ($missingWritableTables !== [] || $missingSelectableTables !== [])) {
+        $groupFindings[] = finding(
+            'error',
+            'installed-editor-tables-missing',
+            'Installed content, file, News, Core Form, and Powermail editor tables must be present in both lists.',
+            array_values(array_unique([...$missingWritableTables, ...$missingSelectableTables]))
+        );
+    }
+    $grantedPowermailSubmissionTables = array_values(array_intersect(
+        ['tx_powermail_domain_model_mail', 'tx_powermail_domain_model_answer'],
+        array_unique([...$groupTablesSelect, ...$groupTablesModify])
+    ));
+    if ($isTarget && $grantedPowermailSubmissionTables !== []) {
+        $groupFindings[] = finding(
+            'error',
+            'powermail-submission-tables-granted',
+            'Powermail mail/answer submission data is outside the form-author role.',
+            $grantedPowermailSubmissionTables
+        );
+    }
     $requiredNonExcludeFields = [];
     foreach ($groupTablesModify as $tableName) {
-        foreach ($excludeFields[$tableName] ?? [] as $fieldName) {
+        foreach ($editorExcludeFields[$tableName] ?? [] as $fieldName) {
             $requiredNonExcludeFields[] = $tableName . ':' . $fieldName;
         }
     }
@@ -260,6 +438,19 @@ foreach ($groups as $group) {
             'runtime-exclude-fields-missing',
             'Runtime TCA exclude fields are missing for editable tables.',
             $missingNonExcludeFields
+        );
+    }
+    $grantedForbiddenFields = array_values(array_intersect(
+        $forbiddenNonExcludeFieldValues,
+        $groupNonExcludeFields
+    ));
+    sort($grantedForbiddenFields);
+    if ($isTarget && $grantedForbiddenFields !== []) {
+        $groupFindings[] = finding(
+            'error',
+            'admin-or-system-fields-granted',
+            'Admin-only or system-managed fields must not be added to non_exclude_fields.',
+            $grantedForbiddenFields
         );
     }
     $missingUsedPageTypes = array_values(array_diff($usedPageTypeValues, $groupPageTypes));
@@ -280,13 +471,91 @@ foreach ($groups as $group) {
             $missingFileMountUids
         );
     }
-    $missingDbMountUids = array_values(array_diff($rootPageUids, $groupDbMountUids));
+    $missingDbMountUids = array_values(array_diff($requiredSiteRootUids, $groupDbMountUids));
     if ($isTarget && $missingDbMountUids !== []) {
         $groupFindings[] = finding(
             'error',
-            'root-page-mounts-missing',
-            'Root pages are missing from the group database mounts.',
+            'site-root-mounts-missing',
+            'Configured Site roots or pages marked is_siteroot are missing from database mounts.',
             $missingDbMountUids
+        );
+    }
+    if ($isTarget && $groupAllowedLanguages !== []) {
+        $groupFindings[] = finding(
+            'error',
+            'languages-restricted',
+            'allowed_languages must be empty to cover all current and future Site languages.',
+            $groupAllowedLanguages
+        );
+    }
+    $missingMfaProviders = array_values(array_diff($requiredMfaProviders, $groupMfaProviders));
+    $extraMfaProviders = array_values(array_diff($groupMfaProviders, $requiredMfaProviders));
+    if ($isTarget && ($missingMfaProviders !== [] || $extraMfaProviders !== [])) {
+        $groupFindings[] = finding(
+            'error',
+            'mfa-provider-set-incorrect',
+            'mfa_providers must contain exactly totp and recovery-codes.',
+            array_values(array_unique([...$missingMfaProviders, ...$extraMfaProviders]))
+        );
+    }
+    if ($isTarget && in_array('powermail_pi1', $allowedContentTypes, true)) {
+        $groupFindings[] = finding(
+            'error',
+            'powermail-frontend-plugin-allowed',
+            'Powermail form authors must not place or reconfigure the frontend plugin.',
+            ['powermail_pi1']
+        );
+    }
+
+    $pagesWithWrongGroup = [];
+    $pagesWithMissingEditorBits = [];
+    $pagesWithDeleteBit = [];
+    $pagesWithBroadEverybodyRights = [];
+    foreach ($mountedSitePages as $page) {
+        $pageUid = (int)$page['uid'];
+        if ((int)$page['perms_groupid'] !== (int)$group['uid']) {
+            $pagesWithWrongGroup[] = $pageUid;
+        }
+        if (((int)$page['perms_group'] & 27) !== 27) {
+            $pagesWithMissingEditorBits[] = $pageUid;
+        }
+        if (((int)$page['perms_group'] & 4) === 4) {
+            $pagesWithDeleteBit[] = $pageUid;
+        }
+        if (((int)$page['perms_everybody'] & 30) !== 0) {
+            $pagesWithBroadEverybodyRights[] = $pageUid;
+        }
+    }
+    if ($isTarget && $pagesWithWrongGroup !== []) {
+        $groupFindings[] = finding(
+            'error',
+            'page-group-owner-mismatch',
+            'Pages below required Site roots are not assigned to the main editor group.',
+            $pagesWithWrongGroup
+        );
+    }
+    if ($isTarget && $pagesWithMissingEditorBits !== []) {
+        $groupFindings[] = finding(
+            'error',
+            'page-group-permissions-incomplete',
+            'Pages below required Site roots do not provide group permission bits 27.',
+            $pagesWithMissingEditorBits
+        );
+    }
+    if ($isTarget && $pagesWithDeleteBit !== []) {
+        $groupFindings[] = finding(
+            'warning',
+            'page-delete-permission-enabled',
+            'Page deletion is enabled and requires explicit approval.',
+            $pagesWithDeleteBit
+        );
+    }
+    if ($isTarget && $pagesWithBroadEverybodyRights !== []) {
+        $groupFindings[] = finding(
+            'error',
+            'broad-everybody-page-rights',
+            'Write/create/delete rights must not be granted through perms_everybody.',
+            $pagesWithBroadEverybodyRights
         );
     }
 
@@ -301,7 +570,7 @@ foreach ($groups as $group) {
         'allowed_exception_content_types' => $allowedExceptions,
         'unregistered_allowed_content_types' => $unregisteredAllowedTypes,
         'db_mountpoints' => $groupDbMountUids,
-        'missing_root_page_mountpoints' => $missingDbMountUids,
+        'missing_site_root_mountpoints' => $missingDbMountUids,
         'file_mountpoints' => $groupFileMountUids,
         'missing_active_file_mountpoints' => $missingFileMountUids,
         'tables_select' => $groupTablesSelect,
@@ -309,11 +578,23 @@ foreach ($groups as $group) {
         'modify_tables_without_select' => $modifyTablesWithoutSelect,
         'modules' => $groupModules,
         'unregistered_modules' => $unregisteredModules,
+        'missing_required_modules' => $missingRequiredModules,
+        'blocked_modules' => $blockedModules,
         'page_types' => $groupPageTypes,
         'missing_used_page_types' => $missingUsedPageTypes,
         'file_permissions' => csvStrings((string)($group['file_permissions'] ?? '')),
         'non_exclude_fields' => $groupNonExcludeFields,
         'missing_runtime_non_exclude_fields' => $missingNonExcludeFields,
+        'forbidden_non_exclude_fields' => $grantedForbiddenFields,
+        'allowed_languages' => $groupAllowedLanguages === [] ? 'all' : $groupAllowedLanguages,
+        'mfa_providers' => $groupMfaProviders,
+        'missing_mfa_providers' => $missingMfaProviders,
+        'page_permission_audit' => [
+            'wrong_group_owner' => $pagesWithWrongGroup,
+            'missing_editor_bits_27' => $pagesWithMissingEditorBits,
+            'page_delete_bit_enabled' => $pagesWithDeleteBit,
+            'broad_everybody_write_bits' => $pagesWithBroadEverybodyRights,
+        ],
         'tsconfig' => (string)($group['TSconfig'] ?? ''),
         'findings' => $groupFindings,
     ];
@@ -338,6 +619,7 @@ $storageByUid = [];
 foreach ($fileStorages as $storage) {
     $storageByUid[(int)$storage['uid']] = $storage;
 }
+$coveredStorageUids = [];
 foreach ($fileMounts as $fileMount) {
     if ((int)$fileMount['hidden'] !== 0) {
         continue;
@@ -353,6 +635,7 @@ foreach ($fileMounts as $fileMount) {
         continue;
     }
     $storageUid = (int)$matches[1];
+    $coveredStorageUids[] = $storageUid;
     if (!isset($storageByUid[$storageUid])) {
         $findings[] = finding(
             'error',
@@ -376,6 +659,22 @@ foreach ($fileMounts as $fileMount) {
             sprintf('Writable file mount %d uses non-writable storage %d.', (int)$fileMount['uid'], $storageUid)
         );
     }
+}
+$activeStorageUids = array_map(
+    static fn(array $storage): int => (int)$storage['uid'],
+    array_filter(
+        $fileStorages,
+        static fn(array $storage): bool => (int)$storage['is_online'] === 1 && (int)$storage['is_browsable'] === 1
+    )
+);
+$uncoveredStorageUids = array_values(array_diff($activeStorageUids, array_unique($coveredStorageUids)));
+if ($uncoveredStorageUids !== []) {
+    $findings[] = finding(
+        'error',
+        'online-file-storage-without-mount',
+        'Every online browsable file storage needs an active file mount for editor access.',
+        $uncoveredStorageUids
+    );
 }
 
 $enabledAdmins = array_values(array_map(
@@ -412,11 +711,20 @@ $report = [
         $users
     ),
     'enabled_administrators' => $enabledAdmins,
-    'root_pages' => $rootPages,
+    'configured_sites' => $configuredSites,
+    'flagged_site_root_uids' => $flaggedSiteRootUids,
+    'required_site_root_uids' => $requiredSiteRootUids,
+    'mounted_site_page_count' => count($mountedSitePages),
     'used_page_types' => $pageTypes,
     'file_mounts' => $fileMounts,
     'file_storages' => $fileStorages,
-    'runtime_exclude_fields' => $excludeFields,
+    'runtime_editor_exclude_fields' => $editorExcludeFields,
+    'runtime_admin_only_exclude_fields' => $adminOnlyExcludeFields,
+    'runtime_system_managed_exclude_fields' => $systemManagedExcludeFields,
+    'runtime_admin_only_tables' => $adminOnlyTables,
+    'required_editor_modules' => $requiredModules,
+    'required_editor_tables' => $requiredEditorTables,
+    'registered_mfa_providers' => $registeredMfaProviders,
     'findings' => $findings,
 ];
 
@@ -447,6 +755,72 @@ function csvIntegers(string $value): array
     $values = array_values(array_unique(array_filter($values, static fn(int $value): bool => $value > 0)));
     sort($values);
     return $values;
+}
+
+function containsAdminOnlyDisplayCondition(mixed $condition): bool
+{
+    if (is_string($condition)) {
+        return str_contains($condition, 'HIDE_FOR_NON_ADMINS');
+    }
+    if (!is_array($condition)) {
+        return false;
+    }
+    foreach ($condition as $nestedCondition) {
+        if (containsAdminOnlyDisplayCondition($nestedCondition)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function isRestrictedEditorField(string $tableName, string $fieldName): bool
+{
+    if ($tableName !== 'pages') {
+        return false;
+    }
+    return in_array($fieldName, [
+        'TSconfig',
+        'tsconfig_includes',
+        'is_siteroot',
+        'module',
+        'perms_userid',
+        'perms_groupid',
+        'perms_user',
+        'perms_group',
+        'perms_everybody',
+    ], true);
+}
+
+function sortFieldMap(array $fieldMap): array
+{
+    foreach ($fieldMap as &$fieldNames) {
+        sort($fieldNames);
+    }
+    unset($fieldNames);
+    ksort($fieldMap);
+    return $fieldMap;
+}
+
+function collectPageTree(array $rootUids, array $pagesByUid, array $pagesByParent): array
+{
+    $result = [];
+    $queue = $rootUids;
+    $seen = [];
+    while ($queue !== []) {
+        $pageUid = (int)array_shift($queue);
+        if ($pageUid < 1 || isset($seen[$pageUid])) {
+            continue;
+        }
+        $seen[$pageUid] = true;
+        if (!isset($pagesByUid[$pageUid])) {
+            continue;
+        }
+        $result[] = $pagesByUid[$pageUid];
+        foreach ($pagesByParent[$pageUid] ?? [] as $childPage) {
+            $queue[] = (int)$childPage['uid'];
+        }
+    }
+    return $result;
 }
 
 function finding(string $severity, string $code, string $message, array $values = []): array

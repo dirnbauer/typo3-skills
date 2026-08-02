@@ -8,7 +8,7 @@
       "id": "typo3-backend-rights-trigger-pos-01",
       "kind": "trigger-positive",
       "status": "proposed",
-      "prompt": "Our editors can open the Page module but every existing content element type is missing when they try to edit it.",
+      "prompt": "The Redakteur backend group has an empty explicit CType allow-list, so non-admins cannot edit the existing content element types.",
       "expect_skill": "typo3-backend-rights",
       "note": "Real symptom of an incomplete explicit CType allow-list."
     },
@@ -35,6 +35,14 @@
       "prompt": "Convert this TYPO3 administrator into an editor without locking us out, and ask before replacing their current groups.",
       "expect_skill": "typo3-backend-rights",
       "note": "Admin-safety and group-membership transition."
+    },
+    {
+      "id": "typo3-backend-rights-trigger-pos-05",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "Brand the TYPO3 login for our customer and show editors which Application Context is active.",
+      "expect_skill": "typo3-backend-rights",
+      "note": "Customer backend identity and context visibility are part of the editor setup."
     },
     {
       "id": "typo3-backend-rights-trigger-neg-01",
@@ -120,6 +128,56 @@
         "Report the selected project root, DDEV name, TYPO3 version and affected group/user UIDs."
       ],
       "note": "Regression for ambiguous installations and advice-only delivery."
+    },
+    {
+      "id": "typo3-backend-rights-behaviour-06",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Powermail is installed. Let editors create and change forms, and give them all Powermail backend modules so nothing is missing.",
+      "assertions": [
+        "Grant form, page and field definition tables in both tables_select and tables_modify with all editor-accessible fields.",
+        "Do not grant mail or answer submission tables, marketing, statistics or reporting modules.",
+        "Keep the powermail_pi1 frontend CType unavailable as a documented infrastructure exception."
+      ],
+      "note": "Separates form authoring from submissions, marketing and frontend plugin placement."
+    },
+    {
+      "id": "typo3-backend-rights-behaviour-07",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Give the editor every field of every writable TYPO3 table, including editlock, is_siteroot and generated counters.",
+      "assertions": [
+        "Grant every runtime editor-accessible exclude field for writable tables.",
+        "Exclude ctrl.editlock, HIDE_FOR_NON_ADMINS, structural integrator controls and admin-only tables.",
+        "Do not force readOnly, passthrough, generated or system-managed fields editable."
+      ],
+      "note": "Tests complete forms without bypassing TYPO3's administrator and system boundaries."
+    },
+    {
+      "id": "typo3-backend-rights-behaviour-08",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Use every site and language, add MFA recovery, and make the database mounts sufficient for editing the full tree.",
+      "assertions": [
+        "Mount the union of configured Site roots and pages marked is_siteroot.",
+        "Keep allowed_languages empty and mfa_providers exactly totp,recovery-codes.",
+        "Audit page group ownership and permission bits 27 because database mounts alone do not grant access.",
+        "Keep the page-delete bit disabled unless explicitly approved."
+      ],
+      "note": "Covers mounts, all-language semantics, MFA provider availability and page ACLs."
+    },
+    {
+      "id": "typo3-backend-rights-behaviour-09",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Use our logo colors on the TYPO3 login and backend, add Website by webconsulting, and display the current environment.",
+      "assertions": [
+        "Derive the brand from design tokens, project CSS or logo and require accessible action-color contrast.",
+        "Use supported Core login/backend options and a small sitepackage backend stylesheet.",
+        "Show the exact Environment::getContext value before and after login without changing it at runtime.",
+        "Keep status colors, focus indicators and structural backend layout intact."
+      ],
+      "note": "Protects accessible, upgrade-safe branding and truthful context display."
     }
   ]
 }

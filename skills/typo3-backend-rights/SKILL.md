@@ -1,6 +1,6 @@
 ---
 name: typo3-backend-rights
-description: "Build and audit one main non-admin TYPO3 backend user group: explicit CType permissions, domain-record fields, modules, web and file mounts, User TSconfig, Visual Editor, Admin Panel, and safe privilege conversion for editors. Use when a module can open but existing record types are missing during editing, be_groups.explicit_allowdeny is blank, Visual Editor fields are read-only, news records cannot be changed, mount trees are incomplete, or legacy groups must be consolidated. Always preserve a separate working administrator."
+description: "Build and audit one main non-admin TYPO3 backend user group plus a branded, context-aware editor backend: explicit CType and field permissions, all site roots and languages, modules, mounts, MFA providers, Forms/Powermail editing, User TSconfig, Visual Editor, Admin Panel, and safe admin conversion. Use when record types or fields are missing/read-only, be_groups.explicit_allowdeny is blank, mounts/modules are incomplete, the TYPO3 login/backend needs customer branding, or legacy groups must be consolidated. Always preserve a separate working administrator."
 ---
 
 # TYPO3 backend rights
@@ -17,21 +17,36 @@ not a copied backend record.
    installation; a permission plan without the requested live/local integration is incomplete.
 2. Create or maintain exactly **one main editor group**. Keep `subgroup` empty. Do not split
    required rights across inherited groups.
-3. Derive rights from installed TCA, existing records, backend modules, site roots, file mounts,
-   and file storages. Never clone a legacy group without auditing every field.
-4. Allow every content type currently used for editorial content. Record every exception with
+3. Derive rights from installed TCA, existing records, backend modules, configured sites, pages
+   marked `is_siteroot`, file mounts, and file storages. Never clone a legacy group without
+   auditing every field.
+4. Add every configured site root and every non-deleted page marked **Use as Root Page**
+   (`pages.is_siteroot = 1`) as a database mount. Use all site languages; in TYPO3 v14 an empty
+   `allowed_languages` value means unrestricted access to all current and future site languages.
+5. Allow every content type currently used for editorial content. Record every exception with
    its CType and reason.
-5. Keep infrastructure content elements such as list/detail renderers, login endpoints, or
+6. Keep infrastructure content elements such as list/detail renderers, login endpoints, or
    system integration plugins admin-only when editors manage their underlying records instead.
    Decide from the actual record, FlexForm, page purpose, and workflow—not from the CType name
    alone.
-6. Grant all exclude fields needed to edit every allowed record type. Plugin placement rights and
-   domain-record rights are separate: editors may edit news records while news list/detail content
-   elements remain admin-only.
-7. Include every required web mount, every active file mount, and every referenced online file
-   storage. Do not replace real mounts with hard-coded example paths.
-8. Preserve a different enabled, login-capable administrator. Never demote the administrator used
+7. For every table in `tables_modify`, grant every runtime editor-accessible exclude field. Never
+   grant fields hidden with `HIDE_FOR_NON_ADMINS`, a table's `ctrl.editlock` field, or read-only,
+   passthrough, generated, or otherwise system-managed fields. Do not present a read-only form as
+   successful editing. Plugin placement and domain-record rights remain separate.
+8. Make `tables_select` a superset of `tables_modify`. A table used in an editing workflow belongs
+   in both lists; select-only access is reserved for a documented lookup or reporting use case.
+9. Include every required web mount and every active file mount. Ensure every online, browsable
+   file storage is covered by an active file mount and works in Media and record selectors. Do not
+   replace real mounts with hard-coded example paths.
+10. Allow exactly the installed editor modules defined below, including Forms, Visual Editor, and
+    Solr only when present. Allow the MFA providers `totp` and `recovery-codes`.
+11. Verify page ownership and permission bits throughout every mounted site tree; DB mounts alone
+    do not grant access. Give the main group show, edit page, create page, and edit content rights
+    (`27`). Keep page deletion (`4`) off unless the user explicitly requests it.
+12. Preserve a different enabled, login-capable administrator. Never demote the administrator used
    for the current work or the last remaining administrator.
+13. Apply customer branding and the actual TYPO3 application context before and after login using
+    supported Core configuration and a small sitepackage stylesheet. Keep it version-controlled.
 
 Report the selected installation's DDEV/project name, root, TYPO3 version, and affected group/user
 UIDs. Never apply one installation's audited permissions to another installation.
@@ -71,18 +86,52 @@ explicitly protected types. Require each used editorial CType to appear as
    - **editorial**: add it to `explicit_allowdeny`;
    - **infrastructure**: omit it and record the specific reason and owner.
 4. Inventory editable tables. Make `tables_select` a superset of `tables_modify`. Include content,
-   FAL relations/metadata, categories, and the project's editorial domain tables.
-5. Add every TCA column marked `exclude` that the editor needs for those tables to
-   `non_exclude_fields`. For editorial domain records such as news, expose the complete editing
-   form unless a field has a documented security or workflow reason to remain admin-only.
-6. Use the actual page roots and storage folders as `db_mountpoints`. Use every active
+   FAL relations/metadata, categories, and the project's editorial domain tables. Require the
+   registered Core set `pages`, `tt_content`, `sys_category`, `sys_file`, `sys_file_collection`,
+   `sys_file_metadata`, and `sys_file_reference`. When EXT:news is installed, also require its
+   registered news, link, and tag tables in both lists.
+5. Add every runtime TCA column marked `exclude` that is genuinely editor-editable to
+   `non_exclude_fields`. Exclude Core-enforced admin-only and system-managed fields. Report
+   unexpected read-only fields instead of overriding them. For editorial records such as news,
+   expose the complete editing form apart from those verified exceptions.
+6. Use every configured Site root and every page with `is_siteroot = 1` as `db_mountpoints`.
+   Include extra storage folders only when the workflow requires them. Use every active
    `sys_filemounts.uid` as `file_mountpoints`, validate each identifier's storage UID against
-   `sys_file_storage`, and grant the file operations required by the workflow.
-7. Allow only installed backend module identifiers required for editing, preview, records, files,
-   redirects, and project-specific editorial modules. Do not grant administration or system
-   configuration modules.
-8. Include every page type already used below the editor's web mounts. Add unused types only when
+   `sys_file_storage`, ensure every online browsable storage has an active mount, and grant the
+   file operations required by the workflow.
+7. Set `allowed_languages` to an empty value for all languages and set `mfa_providers` to
+   `totp,recovery-codes`. Recommend TOTP in User TSconfig; requiring MFA is a separate security
+   policy and needs an explicit decision.
+8. Add the installed minimum modules listed below. Do not grant administration, system
+   configuration, Powermail reporting/marketing, Solr index mutation, or infrastructure modules.
+9. Include every page type already used below the editor's web mounts. Add unused types only when
    the workflow explicitly needs editors to create them.
+10. Audit every page below the site roots. Ensure the main group owns it with permission bits `27`,
+    or remediate through the Permissions module/DataHandler. Configure new pages to inherit the
+    parent group. Do not make `perms_everybody` broad to compensate for a missing group owner.
+
+## Minimum installed modules
+
+Resolve identifiers from the runtime `ModuleRegistry`; never write identifiers for absent modules.
+
+- Always when installed: `web_layout`, `records`, `page_preview`, `content_status`,
+  `web_info_overview`, `web_info_translations`, `recycler`, `media_management`, and `user_setup`.
+- Visual Editor: `web_edit`.
+- Core Form: `web_FormFormbuilder`, `form_manager`, and `form_editor`.
+- Solr: `searchbackend` and the read-only `searchbackend_info` entry. Keep
+  `searchbackend_coreoptimization`, `searchbackend_indexqueue`, and
+  `searchbackend_indexadministration` admin-only.
+
+When `typo3/cms-form` is installed, grant read/write access to `form_definition`; TYPO3 v14.3's
+Form persistence permission checker requires both lists even though its TCA display fields are
+read-only and the Form modules perform the controlled writes.
+
+When Powermail is installed, grant read/write access and every editor-accessible field for
+`tx_powermail_domain_model_form`, `tx_powermail_domain_model_page`, and
+`tx_powermail_domain_model_field`. Do not grant Powermail mail/answer/marketing tables or any
+`web_powermail` / `powermail_*` reporting module by default. Keep the `powermail_pi1` CType as a
+documented infrastructure exception so normal editors build forms but do not place or reconfigure
+the frontend plugin.
 
 ## Configure TSconfig
 
@@ -95,6 +144,9 @@ Keep User TSconfig in the sitepackage and import it from the main group. Copy on
 Use the optimized profile by default for trusted content editors. Keep `debug`, `tsdebug`, and
 `publish` disabled. Verify the frontend TypoScript has `config.admPanel = 1`; User TSconfig alone
 cannot display the Admin Panel.
+
+Both profiles recommend TOTP and make new pages inherit their parent's owner group with page bits
+`show,edit,new,editcontent`. They deliberately do not enable page deletion or force MFA.
 
 When `friendsoftypo3/visual-editor` is installed, include its registered `web_edit` module and set:
 
@@ -115,6 +167,19 @@ Prefer a group import over duplicated inline TSconfig:
 @import 'EXT:sitepackage/Configuration/TsConfig/User/BackendEditor/optimized.tsconfig'
 ```
 
+## Brand the login and backend
+
+Read [backend-branding.md](references/backend-branding.md), derive an accessible action color from
+the customer's design tokens/CSS/logo, and configure the Core login logo, logo alt text, highlight,
+background, footnote, backend logo, and favicon. Use the plain-text Core footnote for
+`Website by webconsulting.at`; TYPO3 already places it at the lower right on wide screens.
+
+Show the exact value of `Environment::getContext()` before login and in the logged-in backend by
+adding it to the instance sitename and login footnote. Do not infer the context from the hostname
+and do not try to set `TYPO3_CONTEXT` from `additional.php`; it is read earlier during bootstrap.
+Use `$GLOBALS['TYPO3_CONF_VARS']['BE']['stylesheets']` for a small sitepackage stylesheet. Do not
+override TYPO3's danger/success colors, focus indicators, or structural layout.
+
 ## Create the group
 
 Create or update one top-level group through the TYPO3 backend or a project command using TYPO3's
@@ -125,6 +190,8 @@ loaded TCA. Set a descriptive title such as `Editorial Main`, keep `subgroup` em
 - editable/selectable tables and non-exclude fields;
 - backend modules and page types;
 - database/file mounts and file operations;
+- all-languages mode and both MFA providers;
+- page group ownership and permission bits;
 - the selected TSconfig profile.
 
 Create the group before changing any user. Do not delete or repurpose old groups until the new
@@ -167,13 +234,23 @@ Use a real non-admin session and verify all of these:
 2. Every used editorial CType can be opened, changed, saved, hidden/unhidden, copied, and created.
 3. Each documented infrastructure CType is unavailable for creation and cannot be reconfigured.
 4. Editorial records such as news open with every required field and can be saved.
-5. All active file mounts appear in Media and in file selectors; upload, replace, metadata edit,
+5. Every site root is mounted, every configured site language can be edited, and newly created
+   pages inherit the main group with bits `27`.
+6. Core Forms can be created, edited, duplicated, and saved when installed. Powermail forms, pages,
+   and fields can be created and changed when installed, while marketing/reporting modules and the
+   frontend plugin remain unavailable.
+7. All active file mounts appear in Media and in file selectors; upload, replace, metadata edit,
    move/copy, and delete behave according to the plan.
-6. If installed, the Visual Editor module opens and every allowed rendered field can be changed
+8. If installed, the Visual Editor module opens and every allowed rendered field can be changed
    and saved; page IDs are present in its editing context and multi-site destinations are clear.
-7. Preview and the Admin Panel work; page cache clearing is available, while debugging and
+9. Preview, Status, Recycler, Media, and the Admin Panel work; page cache clearing is available,
+   while debugging, page deletion, Solr index mutation, and
    publishing controls remain unavailable.
-8. The separate administrator can still log in.
+10. TOTP and recovery codes can be configured in User Settings; MFA enforcement matches the
+    separately approved policy.
+11. Login, password reset, MFA, and the logged-in top bar show the customer identity and exact
+    application context with accessible contrast.
+12. The separate administrator can still log in.
 
 Re-run the audit with `--group-title` and `--strict`. Report the group UID, target user, remaining
 administrator, allowed/missing CTypes, exceptions, tables, fields, mounts, TSconfig profile, and
@@ -183,6 +260,8 @@ the non-admin verification evidence.
 
 - [permission-model.md](references/permission-model.md): database field mapping, classification
   rules, and verification queries.
+- [backend-branding.md](references/backend-branding.md): supported login/backend branding,
+  accessible color selection, application-context display, and verification.
 - `scripts/audit-backend-rights.php`: read-only runtime TCA/database audit.
 - `scripts/apply-backend-rights.php`: validate and transactionally create/update the one group
   from a reviewed plan; never changes users.

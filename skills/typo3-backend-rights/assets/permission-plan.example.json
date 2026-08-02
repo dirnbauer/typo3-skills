@@ -14,9 +14,12 @@
     "web_layout",
     "records",
     "page_preview",
+    "content_status",
+    "web_info_overview",
+    "web_info_translations",
+    "recycler",
     "media_management",
-    "user_setup",
-    "about"
+    "user_setup"
   ],
   "tables_modify": [
     "pages",
@@ -55,6 +58,10 @@
     "moveFile",
     "copyFile",
     "deleteFile"
+  ],
+  "mfa_providers": [
+    "totp",
+    "recovery-codes"
   ],
   "tsconfig": "@import 'EXT:sitepackage/Configuration/TsConfig/User/BackendEditor/optimized.tsconfig'",
   "workspace_perms": 1

@@ -23,6 +23,16 @@ options {
     }
 }
 
+# Make TOTP the recommended primary provider; recovery codes remain available as fallback.
+auth.mfa.recommendedProvider = totp
+
+# New pages inherit the parent group and the least-privilege editor page rights (27).
+page.TCEMAIN.permissions {
+    groupid = copyFromParent
+    group = show,edit,new,editcontent
+    everybody = 0
+}
+
 admPanel {
     hide = 0
     enable {

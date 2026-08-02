@@ -11,6 +11,10 @@ Read this reference before creating or changing a TYPO3 backend group or user.
 - Keep the account used to perform the work as an administrator.
 - Ask before replacing a user's existing group list.
 - Build CType, table, field, module, and mount rights from the live project.
+- Mount every configured Site root and every non-deleted page with `is_siteroot = 1`.
+- Use all languages, both built-in MFA providers, and page group permission bits `27`.
+- Keep page deletion, admin-only fields/tables, system-managed fields, and infrastructure plugins
+  outside the editor role.
 
 ## `be_groups` field mapping
 
@@ -23,6 +27,8 @@ Read this reference before creating or changing a TYPO3 backend group or user.
 | `db_mountpoints` | Root page UIDs that contain the complete editable tree |
 | `file_mountpoints` | UIDs of active `sys_filemounts` records, not storage UIDs or example paths |
 | `file_permissions` | Explicit folder/file operations allowed by the workflow |
+| `allowed_languages` | Keep empty in TYPO3 v14 to allow all current and future site languages |
+| `mfa_providers` | Exact provider identifiers `totp,recovery-codes` |
 | `explicit_allowdeny` | Comma-separated auth-mode values, especially `tt_content:CType:<value>` |
 | `non_exclude_fields` | Comma-separated `<table>:<field>` values for TCA fields marked `exclude` |
 | `TSconfig` | Prefer one sitepackage import for the selected User TSconfig profile |
@@ -75,7 +81,7 @@ and document the security consequence.
 ## Separate plugin placement from record editing
 
 An admin-only news list/detail CType must not remove access to news records. For EXT:news, consider
-the actual TCA and grant the installed editorial tables, commonly:
+the actual TCA and grant the installed editorial tables in both table lists, commonly:
 
 ```text
 tx_news_domain_model_news
@@ -85,9 +91,22 @@ sys_category
 sys_file_reference
 ```
 
-For Powermail, distinguish form-definition records (`form`, `page`, `field`) from submitted mail
-and answer records. Grant modification of submissions only when the editorial workflow requires
-it; read-only reporting is usually sufficient.
+For Powermail, grant complete read/write form-building access to:
+
+```text
+tx_powermail_domain_model_form
+tx_powermail_domain_model_page
+tx_powermail_domain_model_field
+```
+
+Do not grant `tx_powermail_domain_model_mail`, `tx_powermail_domain_model_answer`, Powermail
+marketing/statistics/reporting modules, or the `powermail_pi1` frontend plugin. Form authors can
+build definitions without receiving access to personal submissions, campaign data, or plugin
+placement.
+
+For Core Form, grant `form_definition` in both `tables_select` and `tables_modify` plus the Form
+manager/editor modules. TYPO3 v14.3's Form persistence layer checks both table lists even though
+the TCA representation is read-only and the module performs guarded writes.
 
 Include project inline/collection tables referenced by allowed content elements, such as Content
 Blocks, Bootstrap Package collections, or legacy Mask child tables. A content element is not
@@ -102,9 +121,25 @@ fields, relations, and all editorial domain fields required to complete a record
 Do not rely on a historical list. Extensions and Content Blocks add fields at runtime. The bundled
 audit reports runtime exclude fields so the permission plan can be compared with installed TCA.
 
+Never grant these categories to a non-admin editor:
+
+- a table's `ctrl.editlock` field, such as `editlock`;
+- a field whose runtime `displayCond` contains `HIDE_FOR_NON_ADMINS`;
+- fields with TCA types `passthrough`, `none`, or runtime `readOnly = true` when they are generated
+  or maintained by TYPO3/an extension;
+- fields of tables with `ctrl.adminOnly = true`;
+- structural integrator controls such as `pages.is_siteroot`, page `TSconfig`,
+  `tsconfig_includes`, backend module assignment, and page access ownership/permission fields.
+
+Do not force such fields editable by overriding TCA. Report unexpected read-only/system-managed
+fields separately. The success criterion is that every legitimate editor field is editable, not
+that every database column is exposed.
+
 ## Mount coverage
 
-Use all required site roots as `db_mountpoints`. For files:
+Use the union of configured Site roots and non-deleted `pages.is_siteroot = 1` records as
+`db_mountpoints`. A database mount does not itself grant page access; audit `perms_groupid` and
+`perms_group` throughout every mounted tree. For files:
 
 1. Select every active, non-deleted `sys_filemounts` record required by the user.
 2. Parse its identifier as `<storage uid>:<folder>/`.
@@ -112,14 +147,46 @@ Use all required site roots as `db_mountpoints`. For files:
    editors need write operations.
 4. Verify the folder exists through TYPO3 FAL or the backend Media module.
 5. Test the mounts both in Media and in FormEngine file selectors.
+6. Ensure every online, browsable storage is covered by at least one active file mount; backend
+   groups cannot receive useful storage access without a mount.
 
 Do not use backend list-module URLs or session tokens as configuration input.
+
+## Page group permissions
+
+Use group permission bits `27` for trusted full-content editors:
+
+```text
+show (1) + edit page (2) + create page (8) + edit content (16) = 27
+```
+
+Keep delete page (`4`) disabled unless separately approved. Assign the main group as page group
+owner throughout each mounted tree; do not compensate with broad `perms_everybody`. Configure
+new pages to inherit the parent group and these bits through Page TSconfig.
+
+## Module baseline
+
+Resolve module identifiers from the runtime registry. Include Layout, Records, Preview, Status,
+Recycler, Media, and User Settings when installed. Add Visual Editor and Core Form only when
+installed. For Solr, expose the `searchbackend` parent and read-only `searchbackend_info`, not core
+optimization, index queue, or index administration. Do not expose any Powermail backend module;
+editors build form-definition records through the normal record workflow.
+
+## Languages and MFA
+
+In TYPO3 v14, blank `allowed_languages` means all languages and automatically covers later Site
+Configuration additions. Do not freeze the group to today's numeric language IDs.
+
+Use exact `mfa_providers` values `totp,recovery-codes`. Recovery codes are a fallback and require
+a primary provider. Provider availability is distinct from enforcing MFA: recommend TOTP in User
+TSconfig, but require MFA only after explicit policy approval.
 
 ## User TSconfig profiles
 
 Use the basic template for narrowly scoped editors. Use optimized for trusted editors who manage
-the whole content tree. The optimized profile intentionally enables Admin Panel `preview`,
-`cache`, `edit`, and `info`, while disabling `debug`, `tsdebug`, and `publish`.
+the whole content tree. Both profiles recommend TOTP and define inherited new-page group rights
+without page deletion. The optimized profile intentionally enables Admin Panel `preview`, `cache`,
+`edit`, and `info`, while disabling `debug`, `tsdebug`, and `publish`.
 
 The frontend must separately enable:
 
@@ -154,10 +221,15 @@ WHERE deleted = 0
 ORDER BY admin DESC, uid;
 
 SELECT uid, title, subgroup, db_mountpoints, file_mountpoints,
-       explicit_allowdeny, non_exclude_fields, TSconfig
+       allowed_languages, mfa_providers, explicit_allowdeny, non_exclude_fields, TSconfig
 FROM be_groups
 WHERE deleted = 0
 ORDER BY uid;
+
+SELECT uid, pid, title, is_siteroot, perms_groupid, perms_group, perms_everybody
+FROM pages
+WHERE deleted = 0
+ORDER BY pid, sorting, uid;
 
 SELECT CType, COUNT(*) AS records
 FROM tt_content
