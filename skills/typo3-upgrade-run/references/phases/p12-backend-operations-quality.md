@@ -86,11 +86,14 @@ ddev mysql -N -e "SELECT COUNT(*) FROM be_users WHERE username='_t3u_upgrade_pro
   ```
 
   It checks who holds admin, whether `groupMods` still resolves, whether every CType **in use** is
-  editable, exclude-fields, table access, file permissions and mountpoints. Full strategy in
-  [`references/backend-permissions.md`](../backend-permissions.md) — including that **admin
-  retention is a question for the client, by name**, never an inference from who holds the flag
-  today, and that module identifiers must be enumerated from registered code rather than from the
-  module menu.
+  editable, table access, file permissions and mountpoints. See
+  [`references/backend-permissions.md`](../backend-permissions.md) — scoped to what an upgrade
+  breaks, including that module identifiers must be enumerated from registered code rather than
+  from the module menu.
+
+  **Designing an editor group is a different job.** The leaf-group structure, TSconfig, mounts,
+  MFA, login branding and converting an admin down to an editor belong to the
+  **`typo3-backend-rights`** skill. This phase audits; that skill builds.
 
   Then log in as a real editor and try it. The audit proves the configuration is coherent; only
   using the account proves an editor can work.

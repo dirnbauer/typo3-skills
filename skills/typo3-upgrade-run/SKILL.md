@@ -485,7 +485,7 @@ incomplete rather than claiming success. A gate that does not apply needs an exp
 | `references/metadata-and-social.md` | the `<head>` audit: minimum metadata, generated OG card, Impressum |
 | `references/image-formats.md` | **AVIF first, WebP fallback** — every processed image, and where not to |
 | `references/harness-contract.md`, `references/visual-regression.md` | running the harness |
-| `references/backend-permissions.md` | **loop 310** — who keeps admin, and what editors can actually edit |
+| `references/backend-permissions.md` | **loop 310** — what the upgrade broke for editors (building groups: `typo3-backend-rights`) |
 | `references/kpi-report.md` | the final report |
 | `scripts/backend-write-roundtrip.mjs`, `scripts/indexed-search-check.mjs`, `scripts/a11y-audit.mjs` | loop 310 write test, search index, loop 520 accessibility |
 | `architecture-decision-records` skill | writing an ADR into `decisions/` |
