@@ -106,18 +106,36 @@ export function createQuietDetector(page, { quietMs = 500, hardCapMs = 15000 } =
  * ends off-origin must abort the capture rather than quietly photograph a foreign site.
  */
 export function attachNavigationGuard(page, guard, trustedOrigin, { onViolation } = {}) {
+  const violations = [];
   const check = (url) => {
     try {
       guard.assertSameOrigin(url, trustedOrigin, { purpose: 'navigation' });
     } catch (err) {
+      violations.push({ url: String(url).slice(0, 200), error: err.message });
       onViolation?.(err, url);
       throw err;
     }
   };
-  const onNavigated = (frame) => { if (frame === page.mainFrame()) check(frame.url()); };
+  const onNavigated = (frame) => {
+    if (frame !== page.mainFrame()) return;
+    const url = frame.url();
+    // The browser's own inert states are not cross-origin escapes: about:blank fires
+    // framenavigated during page.close() teardown (racing dispose() in the caller's
+    // finally), and a blocked or aborted navigation ends with a null origin. Asserting
+    // them — or throwing at all inside Playwright's emitter, where nothing catches —
+    // crashed a 10-worker exhaustive run. Real escapes remain covered twice over: the
+    // synchronous post-goto assertSameOrigin, and the route policy aborting the network
+    // request itself. This event tripwire records and stays quiet.
+    if (url === '' || url === 'about:blank' || url === 'about:srcdoc') return;
+    try {
+      if (new URL(url).origin === 'null') return;
+    } catch { /* unparseable: fall through and record it as a violation */ }
+    try { check(url); } catch { /* recorded in `violations` and via onViolation */ }
+  };
   page.on('framenavigated', onNavigated);
   return {
     check,
+    violations,
     dispose() {
       page.off('framenavigated', onNavigated);
     },

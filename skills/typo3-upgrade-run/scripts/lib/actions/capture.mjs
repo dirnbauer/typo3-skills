@@ -478,6 +478,17 @@ export async function captureAll({
                       index.errors.push({ captureId: cap.captureId, stage: 'visual', attempts: attempt, error: err.message });
                     }
                   } finally {
+                    // A navigation-guard violation recorded during the capture is a real
+                    // finding even though the event path never throws (throwing inside
+                    // Playwright's emitter crashes the process). Surface it here so the
+                    // accounting blocks loop 000 exactly like any other capture error.
+                    if (navigationGuard?.violations?.length) {
+                      index.errors.push({
+                        captureId: cap.captureId, stage: 'visual',
+                        error: `navigation-guard: ${navigationGuard.violations[0].error}`,
+                        navigationViolations: navigationGuard.violations.length,
+                      });
+                    }
                     navigationGuard?.dispose();
                     if (!reusePage) await page?.close().catch(() => {});
                   }
