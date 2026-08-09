@@ -12,7 +12,7 @@ import { emptyState, StateStore } from '../run/state.mjs';
 import { UrlGuard, assertPlausibleBaseUrl } from '../net/url-guard.mjs';
 import { collectEnvironment, compareEnvironment } from '../fingerprint/environment.mjs';
 import { collectContent, compareContent } from '../fingerprint/content.mjs';
-import { listOpt } from '../cli/args.mjs';
+import { intOpt, listOpt } from '../cli/args.mjs';
 import { renderStatus } from '../run/status.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -48,7 +48,11 @@ export async function init({ values, paths, log, journal }) {
   await copyTemplate('config/thresholds.yml', paths.thresholds);
   await copyTemplate('gitignore', path.join(paths.root, '.gitignore'));
 
-  const state = emptyState({ runId, now: new Date().toISOString() });
+  const maxHours = intOpt(values, 'max-hours', 14);
+  if (maxHours < 1 || maxHours > 14) {
+    throw new PreconditionError('--max-hours must be between 1 and 14; the overnight ceiling is not extendable.');
+  }
+  const state = emptyState({ runId, now: new Date().toISOString(), maxHours });
   state.project = {
     name: projectName,
     trusted_origin: url.origin,
@@ -59,7 +63,7 @@ export async function init({ values, paths, log, journal }) {
   await new StateStore(paths).write(state);
   await journal.append('transition', { from: null, to: 'P00', note: 'run initialised' });
 
-  log.success(`Initialised ${paths.root} (run ${runId}, origin ${url.origin})`);
+  log.success(`Initialised ${paths.root} (run ${runId}, origin ${url.origin}, deadline ${state.runtime.deadline_at})`);
   log.info('Next: t3u env-fingerprint --write-baseline, then t3u selftest-determinism');
 
   return { exitCode: EXIT.PASS, verdict: 'pass', runId, trustedOrigin: url.origin, message: `run ${runId} initialised` };

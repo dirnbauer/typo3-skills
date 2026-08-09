@@ -6,7 +6,7 @@
  * kept by proving something about EVERY url and being explicit about what:
  *
  *   stage 1 (HTTP) and stage 2 (DOM): 100%, no exception
- *   stage 3 (pixels): tier 1 always, cluster representatives, then a seeded remainder
+ *   stage 3 (pixels): tier 1 first, cluster representatives, then a seeded remainder
  *
  * The honesty requirement is the load-bearing part: notCaptured records the actual URL ids
  * and a reason from a fixed set — never just a count. A report that covered 60% of a site
@@ -19,10 +19,11 @@ import { sample as seededSample, shuffle } from '../util/rng.mjs';
 export const MANIFEST_SCHEMA = 'typo3-upgrade-run/url-manifest@1';
 
 export const NOT_CAPTURED_REASONS = Object.freeze([
-  'tier3-budget', 'cluster-represented', 'excluded-by-config', 'guard-blocked', 'fetch-failed',
+  'visual-budget-cap', 'tier3-budget', 'cluster-represented',
+  'excluded-by-config', 'guard-blocked', 'fetch-failed',
 ]);
 
-/** Pages that are always pixel-compared, whatever the budget. */
+/** Pages that receive first priority inside the hard pixel budget. */
 export const TIER1_PATTERNS = Object.freeze([
   /^\/$/, /^\/[a-z]{2}\/?$/i,                       // homepage per language
   /404|not-?found/i, /search|suche/i, /login/i,
@@ -51,7 +52,7 @@ export function buildManifest({
   urlSources = new Map(),
   discovery = { mode: 'sitemap', degraded: false, knownLimitations: [] },
   signatures = new Map(),
-  visualBudget = 1500,
+  visualBudget = 360,
   lighthouseSample = 25,
   viewports = ['desktop', 'tablet', 'mobile'],
   states = ['default'],
@@ -76,7 +77,7 @@ export function buildManifest({
   const tier1Set = new Set(tier1);
 
   const clusterRecords = [];
-  const representatives = new Set();
+  const representativeCandidates = new Set();
   let clusterIndex = 0;
   for (const [sig, members] of [...clusters.entries()].sort()) {
     clusterIndex += 1;
@@ -89,7 +90,7 @@ export function buildManifest({
     // would silently bypass the capture budget on the largest sites, which is the one case
     // the tiering exists for.
     const reps = members.length > 1 ? seededSample(members, 2, `${seed}:${id}`) : [];
-    reps.forEach((r) => representatives.add(r));
+    reps.forEach((r) => representativeCandidates.add(r));
     clusterRecords.push({
       clusterId: id,
       signatureHash: sha256(sig),
@@ -99,10 +100,28 @@ export function buildManifest({
     });
   }
 
-  const mandatory = new Set([...tier1Set, ...representatives]);
-  const remainder = all.filter((u) => !mandatory.has(u));
-
   const perUrlCaptures = viewports.length * states.length;
+  const maxVisualUrls = Math.floor(Math.max(0, visualBudget) / Math.max(1, perUrlCaptures));
+  // Critical pages are first, then template representatives. The cap is hard: an unusually
+  // broad critical/cluster set must be reported as degraded coverage, never turn a declared
+  // 360-shot budget into thousands of screenshots.
+  const mandatoryCandidates = [
+    ...tier1,
+    ...[...representativeCandidates].filter((url) => !tier1Set.has(url)).sort(),
+  ];
+  const selectedMandatory = mandatoryCandidates.slice(0, maxVisualUrls);
+  const mandatoryDropped = mandatoryCandidates.slice(maxVisualUrls);
+  const mandatory = new Set(selectedMandatory);
+  const representatives = new Set(
+    [...representativeCandidates].filter((url) => mandatory.has(url)),
+  );
+  const representativeIds = new Set([...representatives].map((url) => ids.get(url)));
+  for (const cluster of clusterRecords) {
+    cluster.representatives = cluster.representatives.filter((id) => representativeIds.has(id));
+  }
+  const droppedMandatorySet = new Set(mandatoryDropped);
+  const remainder = all.filter((u) => !mandatory.has(u) && !droppedMandatorySet.has(u));
+
   const budgetLeft = Math.max(0, visualBudget - mandatory.size * perUrlCaptures);
   const remainderQuota = Math.floor(budgetLeft / Math.max(1, perUrlCaptures));
   const tier3 = remainderQuota > 0 ? seededSample(remainder, remainderQuota, `${seed}:tier3`) : [];
@@ -111,6 +130,12 @@ export function buildManifest({
   const visualUrls = [...mandatory, ...tier3Set].sort();
 
   const notCaptured = [];
+  if (mandatoryDropped.length) {
+    notCaptured.push({
+      reason: 'visual-budget-cap', count: mandatoryDropped.length,
+      url_ids: mandatoryDropped.map((u) => ids.get(u)),
+    });
+  }
   const clusterRepresented = remainder.filter((u) => !tier3Set.has(u) && clusters.size < all.length);
   const budgetDropped = remainder.filter((u) => !tier3Set.has(u) && !clusterRepresented.includes(u));
   if (clusterRepresented.length) {
@@ -160,12 +185,16 @@ export function buildManifest({
       domCompared: all.length,
       visualCaptured: visualUrls.length,
       lighthouseSampled: lighthouseUrls.length,
-      degraded: budgetDropped.length > 0,
+      degraded: mandatoryDropped.length > 0 || budgetDropped.length > 0,
       discoveryDegraded: discovery.degraded ?? false,
       discoveryKnownLimitations: discovery.knownLimitations ?? [],
       notCaptured,
     },
-    budget: { visualCaptureBudget: visualBudget, used: captures.length, exhausted: budgetDropped.length > 0 },
+    budget: {
+      visualCaptureBudget: visualBudget,
+      used: captures.length,
+      exhausted: mandatoryDropped.length > 0 || budgetDropped.length > 0,
+    },
     visualRegressionUrls: visualUrls.map((u) => ids.get(u)),
     lighthouseSampleUrls: lighthouseUrls.map((u) => ids.get(u)),
     captures,

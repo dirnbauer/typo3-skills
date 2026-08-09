@@ -562,6 +562,58 @@
         "Records discoveryDegraded and dynamic-routes-not-discoverable, then reconciles the repaired sitemap after sealing"
       ],
       "files": []
+    },
+    {
+      "id": "runtime-budgeted-visual-states",
+      "kind": "behaviour",
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "prompt": "The upgrade checks take far too long. During normal repair rounds, test the pages touched by the change and a few random pages in default state. At the proof boundaries use only the three authoritative states.",
+      "expected_output": "Uses the default visual state for intermediate checks over affected URLs plus a reproducible sentinel sample. It retains default, keyboard-focus, and nav-open for the exhaustive determinism proof, Baseline A, and final Contract A closure, while keeping final HTTP and DOM coverage complete.",
+      "assertions": [
+        "Intermediate visual checks capture only the default state",
+        "Affected URLs are combined with seed-selected sentinel URLs rather than trusted alone",
+        "The random seed and selected URL ids are recorded before comparison",
+        "Baseline A and final closure use the identical complete configured interaction-state matrix",
+        "Final HTTP and normalized DOM checks still cover every discovered URL"
+      ],
+      "files": []
+    },
+    {
+      "id": "upgrade-run-owns-the-only-fix-loop",
+      "kind": "behaviour",
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "prompt": "Rector, Fractor, testing, accessibility, and the upgrade process all say to repeat until clean. Avoid nesting those retry cycles while updating the site.",
+      "expected_output": "Makes the upgrade run the sole owner of iteration. Each routed skill performs one bounded pass and returns findings; any further pass becomes a recorded parent iteration. Only deterministic setup, stateful migration idempotence, and final closure receive unchanged reruns.",
+      "assertions": [
+        "Routed skills do not start autonomous repeat-until-clean cycles",
+        "Every additional tool pass is recorded as an upgrade-run iteration",
+        "Read-only and code-review work does not require a database snapshot",
+        "Snapshots remain mandatory before schema, wizard, data, or destructive changes",
+        "An unchanged visual rerun is required at final closure rather than after every intermediate loop"
+      ],
+      "files": []
+    },
+    {
+      "id": "overnight-fourteen-hour-fast-path",
+      "kind": "behaviour",
+      "status": "reviewed",
+      "reviewed_by": "dirnbauer",
+      "prompt": "The complete TYPO3 update must finish in one overnight run of at most 14 hours. Reduce the global interaction-state proof to the three most important states and remove avoidable repeated work without weakening the zero-difference Contract A verdict.",
+      "expected_output": "Runs the bounded overnight fast path with exactly default, keyboard-focus, and nav-open as the authoritative visual states; a 360-screenshot visual cap; three self-tested isolated browser workers; one combined comparison pass per proof boundary; exhaustive HTTP and normalized DOM coverage; and reserved closure time inside a hard 14-hour budget. Optional improvement programs do not run unless separately requested. An unresolved compatibility blocker is reported honestly rather than converted into a false pass.",
+      "assertions": [
+        "The authoritative interaction-state matrix contains exactly default, keyboard-focus, and nav-open",
+        "Intermediate visual checks still use only default over affected URLs plus seeded sentinels",
+        "The default final visual budget is at most 360 screenshots and the selected URLs remain reproducible",
+        "Authoritative visual capture defaults to three process-isolated workers that the determinism self-test must license",
+        "HTTP and normalized DOM final checks remain exhaustive over every discovered URL",
+        "HTTP, DOM, visual comparison, and gating share one live-input validation per proof pass",
+        "The phase schedule reserves final closure time and cannot silently run beyond 14 hours",
+        "Contract B and unrelated Vite, Bootstrap, accessibility, security, documentation, and quality programs are skipped unless required for compatibility or separately requested",
+        "A deadline or unresolved blocker cannot be reported as a passing Contract A result"
+      ],
+      "files": []
     }
   ]
 }

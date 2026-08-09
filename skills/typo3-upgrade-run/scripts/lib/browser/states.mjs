@@ -73,6 +73,25 @@ export const STATES = Object.freeze([
     },
   },
   {
+    name: 'form-empty',
+    selector: 'form',
+    async apply(page) {
+      const reset = await page.evaluate(() => {
+        const form = [...document.querySelectorAll('form')]
+          .find((candidate) => candidate.querySelector('input, select, textarea'));
+        if (!form) return false;
+        form.reset();
+        for (const control of form.querySelectorAll('input, select, textarea')) {
+          control.setCustomValidity?.('');
+        }
+        const active = document.activeElement;
+        if (active && active !== document.body && active !== document.documentElement) active.blur?.();
+        return true;
+      });
+      return { applied: reset };
+    },
+  },
+  {
     name: 'form-validation-error',
     selector: 'form',
     async apply(page) {
@@ -113,7 +132,15 @@ export const STATES = Object.freeze([
   },
 ]);
 
-export const DEFAULT_STATES = Object.freeze(['default']);
+/** Authoritative proof matrix. Intermediate capture filters this to `default`. */
+export const DEFAULT_STATES = Object.freeze([
+  'default',
+  'keyboard-focus',
+  'nav-open',
+]);
+
+/** A proof run may never expand into a site-wide interaction-state product above this size. */
+export const MAX_AUTHORITATIVE_STATES = 3;
 
 export function stateByName(name) {
   return STATES.find((s) => s.name === name) ?? null;

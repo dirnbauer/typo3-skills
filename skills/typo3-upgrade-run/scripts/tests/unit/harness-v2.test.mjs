@@ -17,17 +17,20 @@ import { RunPaths, captureId } from '../../lib/run/paths.mjs';
 import { sealBaseline, verifyBaseline, hashTree } from '../../lib/run/lockfile.mjs';
 import { browserArgs, launchOptions, SAFE_BROWSER_ARGS } from '../../lib/browser/launch.mjs';
 import { attachNavigationGuard, createQuietDetector, createRoutePolicy } from '../../lib/browser/route-policy.mjs';
-import { STATES } from '../../lib/browser/states.mjs';
+import { DEFAULT_STATES, MAX_AUTHORITATIVE_STATES, STATES } from '../../lib/browser/states.mjs';
 import { initScript, profileHash, settleScript, STABILIZE_CSS } from '../../lib/browser/stabilize.mjs';
 import { isSafeLink, escapeAttrValue } from '../../lib/actions/sweep.mjs';
 import { assertPlausibleBaseUrl } from '../../lib/net/url-guard.mjs';
 import { Journal } from '../../lib/run/journal.mjs';
 import { collectReports, renderSummary } from '../../lib/actions/report.mjs';
 import { countActiveOpenFindings } from '../../lib/actions/compare.mjs';
-import { discoverFromPages, parsePageTreeRows } from '../../lib/actions/discover.mjs';
+import { captureStates, discoverFromPages, parsePageTreeRows } from '../../lib/actions/discover.mjs';
 import { parse } from '../../lib/cli/args.mjs';
+import { assertWithinRuntimeBudget } from '../../lib/cli/command.mjs';
 import {
   captureAll,
+  selectCaptures,
+  selectUrls,
   triggerNeedles,
   DEFAULT_VISUAL_WORKERS,
   DIAGNOSTIC_VISUAL_WORKERS,
@@ -37,6 +40,24 @@ import {
 const tmp = () => mkdtemp(path.join(tmpdir(), 't3u-'));
 
 describe('browser settling', () => {
+  test('the authoritative proof matrix contains exactly the three overnight states', () => {
+    assert.deepEqual(DEFAULT_STATES, ['default', 'keyboard-focus', 'nav-open']);
+    assert.equal(DEFAULT_STATES.length, MAX_AUTHORITATIVE_STATES);
+  });
+
+  test('the authoritative matrix cannot be expanded, replaced, or shrunk', () => {
+    assert.deepEqual(captureStates({}), DEFAULT_STATES);
+    assert.throws(() => captureStates({ states: 'default' }), /matrix is fixed/);
+    assert.throws(
+      () => captureStates({ states: 'default,keyboard-focus,modal-open' }),
+      /matrix is fixed/,
+    );
+    assert.throws(
+      () => captureStates({ states: 'default,keyboard-focus,nav-open,modal-open' }),
+      /matrix is fixed/,
+    );
+  });
+
   test('default capture state removes page-driven autofocus', async () => {
     const defaultState = STATES.find((state) => state.name === 'default');
     let evaluated = false;
@@ -50,6 +71,19 @@ describe('browser settling', () => {
     const result = await defaultState.apply(page);
     assert.equal(evaluated, true);
     assert.deepEqual(result, { applied: true, blurred: true });
+  });
+
+  test('form-empty is implemented and resets a real form before capture', async () => {
+    const state = STATES.find((candidate) => candidate.name === 'form-empty');
+    assert.ok(state, 'configured form-empty state must have an implementation');
+    const page = {
+      evaluate: async (fn) => {
+        assert.match(fn.toString(), /form\.reset\(\)/);
+        assert.match(fn.toString(), /setCustomValidity/);
+        return true;
+      },
+    };
+    assert.deepEqual(await state.apply(page), { applied: true });
   });
 
   test('deterministic captures disable Chromium GPU rasterization', () => {
@@ -199,7 +233,7 @@ describe('browser settling', () => {
   });
 
   test('visual capture isolates final pages and bounds diagnostic workers', async () => {
-    assert.equal(DEFAULT_VISUAL_WORKERS, 1);
+    assert.equal(DEFAULT_VISUAL_WORKERS, 3);
     assert.equal(DIAGNOSTIC_VISUAL_WORKERS, 3);
     // 12 covers a 10-core capture host; any count above 1 still needs a green exhaustive
     // self-test at exactly that count before it may produce final evidence.
@@ -552,6 +586,19 @@ describe('manifest and tiered coverage', () => {
     assert.ok(m.coverage.visualCaptured < 400, 'pixels are budgeted');
   });
 
+  test('the visual screenshot budget is a hard cap even when critical pages exceed it', () => {
+    const urls = Array.from({ length: 100 }, (_, i) => `https://acme.ddev.site/search/${i}`);
+    const m = build(urls, {
+      visualBudget: 18,
+      viewports: ['desktop', 'mobile'],
+      states: ['default', 'keyboard-focus', 'nav-open'],
+    });
+    assert.equal(m.captures.length, 18);
+    assert.equal(m.budget.used, 18);
+    assert.equal(m.coverage.degraded, true);
+    assert.ok(m.coverage.notCaptured.some((entry) => entry.reason === 'visual-budget-cap'));
+  });
+
   test('declares database fallback coverage and page-tree URL sources', () => {
     const root = 'https://acme.ddev.site/';
     const detail = 'https://acme.ddev.site/news/detail';
@@ -595,6 +642,104 @@ describe('manifest and tiered coverage', () => {
     const cluster = m.clusters.find((c) => c.memberCount === 50);
     assert.ok(cluster, 'same-signature pages must form one cluster');
     assert.equal(cluster.representatives.length, 2, 'one representative is a single point of failure');
+  });
+
+  test('intermediate selection combines affected pages with critical and seeded sentinels', () => {
+    const urls = Array.from({ length: 200 }, (_, i) => ({
+      id: `u${String(i + 1).padStart(5, '0')}`,
+      url: `https://acme.ddev.site/p${i}`,
+      tier: i < 2 ? 1 : (i < 12 ? 2 : 3),
+    }));
+    const affected = urls.slice(50, 80).map((entry) => entry.id);
+    const a = selectUrls(urls, { scope: 'intermediate', seed: 'stable', affected });
+    const b = selectUrls(urls, { scope: 'intermediate', seed: 'stable', affected });
+
+    assert.deepEqual(a.urls.map((entry) => entry.id), b.urls.map((entry) => entry.id));
+    assert.equal(a.captured, 20);
+    assert.equal(a.affectedMatched, 30);
+    assert.ok(a.urls.some((entry) => affected.includes(entry.id)), 'affected pages are represented');
+    assert.ok(a.urls.some((entry) => entry.tier === 1), 'critical pages are retained');
+    assert.ok(a.sentinels >= 5, 'unrelated sentinels remain in the sample');
+  });
+
+  test('an unusually large critical tier cannot exceed the intermediate ceiling', () => {
+    const urls = Array.from({ length: 2000 }, (_, index) => ({
+      id: `u${String(index + 1).padStart(5, '0')}`,
+      url: `https://example.test/page-${index + 1}`,
+      tier: index < 500 ? 1 : 3,
+    }));
+    const affected = urls.slice(700, 900).map((entry) => entry.id);
+    const selection = selectUrls(urls, { scope: 'intermediate', seed: 'stable', affected });
+    assert.equal(selection.captured, 100);
+    assert.ok(selection.urls.some((entry) => entry.tier === 1));
+    assert.ok(selection.urls.some((entry) => affected.includes(entry.id)));
+    assert.ok(selection.sentinels >= 5);
+  });
+
+  test('intermediate browser checks use default only; final checks retain every state', () => {
+    const urls = [{ id: 'u00001' }, { id: 'u00002' }];
+    const manifest = {
+      captures: urls.flatMap((entry) => ['default', 'keyboard-focus', 'nav-open'].map((state) => ({
+        captureId: `${entry.id}-${state}`,
+        urlId: entry.id,
+        viewport: 'desktop',
+        state,
+      }))),
+    };
+    const selection = { urls };
+    const intermediate = selectCaptures(manifest, selection, { scope: 'intermediate' });
+    const final = selectCaptures(manifest, selection, { scope: 'final' });
+
+    assert.equal(intermediate.length, 2);
+    assert.ok(intermediate.every((capture) => capture.state === 'default'));
+    assert.equal(final.length, 6);
+  });
+
+  test('final HTTP and DOM selection stays exhaustive above one thousand URLs', () => {
+    const urls = Array.from({ length: 1200 }, (_, index) => ({
+      id: `u${String(index + 1).padStart(5, '0')}`,
+      url: `https://example.test/page-${index + 1}`,
+      tier: 0,
+    }));
+    const selection = selectUrls(urls, { scope: 'final', seed: 'stable' });
+    assert.equal(selection.captured, 1200);
+    assert.equal(selection.omitted, 0);
+    assert.equal(selection.strategy, 'all-http-dom+tiered-visual');
+  });
+});
+
+describe('overnight comparison command', () => {
+  test('combines all proof stages and gating under one command', async () => {
+    const parsed = parse([
+      'compare-all', '--loop', '300', '--before', '.typo3-update/baseline/A-original',
+      '--after', '.typo3-update/captures/after-final', '--idempotence-diff', '0',
+    ]);
+    assert.equal(parsed.command, 'compare-all');
+    assert.equal(parsed.values.loop, '300');
+    assert.equal(parsed.values['idempotence-diff'], '0');
+
+    const source = await readFile(new URL('../../lib/actions/compare.mjs', import.meta.url), 'utf8');
+    const combined = source.slice(source.indexOf('export async function compareAll'), source.indexOf('async function compareOne'));
+    assert.match(combined, /compareHttp/);
+    assert.match(combined, /compareDomAction/);
+    assert.match(combined, /compareVisual/);
+    assert.match(combined, /await gate\(ctx\)/);
+  });
+
+  test('the run deadline blocks false-green work after fourteen hours', () => {
+    const state = emptyState({
+      runId: '2026-07-25-acme',
+      now: '2026-07-25T00:00:00.000Z',
+      maxHours: 14,
+    });
+    assert.equal(state.runtime.deadline_at, '2026-07-25T14:00:00.000Z');
+    assert.equal(assertWithinRuntimeBudget(state, Date.parse('2026-07-25T13:59:59.999Z')), true);
+    assert.throws(
+      () => assertWithinRuntimeBudget(state, Date.parse('2026-07-25T14:00:00.000Z')),
+      /Contract A remains incomplete/,
+    );
+    state.contract_a.status = 'closed';
+    assert.equal(assertWithinRuntimeBudget(state, Date.parse('2026-07-26T00:00:00.000Z')), true);
   });
 });
 

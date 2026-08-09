@@ -17,13 +17,14 @@ visual:
 coverage:
   http_required_percent: 100
   dom_required_percent: 100
-  # Tier 1 and template-cluster representatives are always captured. Above this budget
-  # the remainder is a seeded sample, and every uncaptured URL id is named in the manifest.
-  visual_capture_budget: 1500
+  # Tier 1 then template-cluster representatives are prioritised inside this hard budget;
+  # every uncaptured URL id is named in the manifest.
+  visual_capture_budget: 360
   max_escalation_per_cluster: 50
   backend_module_required_coverage: 100
 
 budgets:
+  overnight:    { max_hours: 14, closure_reserve_hours: 4 }
   default:      { max_iterations: 6, time_budget_min: 90,  change_files: 10, change_lines: 400 }
   harness:      { max_iterations: 3, time_budget_min: 60,  change_files: 10, change_lines: 400 }
   closure_300:  { max_iterations: 8, time_budget_min: 240, change_files: 10, change_lines: 400 }

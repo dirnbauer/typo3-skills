@@ -139,8 +139,9 @@ dynamic report-endpoint query values are normalized before comparison; actual po
 remain comparable.
 
 `gate --loop` reads `loops/<selected>/artifacts/report.{http,dom,visual}.json`, requires all three
-stages and identical non-null input hashes, requires explicit idempotence evidence, and writes the
-result to that loop's `report.json`. Missing is never interpreted as pass.
+stages and identical non-null input hashes, and writes the result to that loop's `report.json`.
+Loop 300 additionally requires explicit idempotence evidence. Ordinary implementation loops do not
+repeat the whole browser measurement unchanged; missing final evidence is never interpreted as pass.
 
 ## Tests
 
@@ -160,32 +161,23 @@ An intermediate loop runs many times and exists to catch a fault fast. The closi
 once and is what the invariance claim rests on. They should not sample the same way.
 
 ```bash
-t3u capture --label after --scope intermediate   # seeded 10% slice
-t3u capture --label after                        # final: everything (default)
+t3u capture --label after --scope intermediate --affected page-17 --affected page-42
+t3u capture --label after                        # final proof (default)
 ```
 
 | Scope | Takes | Why |
 |---|---|---|
-| `intermediate` | seeded 10%, never fewer than **20**, never more than **100** | A loop iteration has to fit in its time budget. The floor matters more than the percentage — 10% of 40 URLs is 4, which proves nothing. |
-| `final` (default) | **all URLs** up to **1000** | A claim proven on a sample is a claim about the sample. The closing comparison is the evidence, so it takes everything. |
-| `final` above 1000 | seeded 1000, omission declared | A stop, not a target. Still reproducible, and the report names how many URLs were not captured and why. |
+| `intermediate` | affected URLs + critical/template representatives + seeded sentinels, normally 10% and **20–100 URLs**, `default` state only | A loop iteration has to fit in its time budget while still checking likely blast radius and unrelated regressions. Sites below the floor use all URLs. |
+| `final` (default) | **all URLs** for HTTP/DOM; sealed tiered visual URLs with the **3 authoritative states** | The closing comparison is the evidence. HTTP/DOM remain exhaustive while screenshots stay inside the declared visual budget. |
 
 Sampling is seeded from the manifest, so an intermediate slice re-runs identically before and after
-a change — the same URLs are compared, not a fresh random set each time. Every selection writes
-`selection: { scope, total, captured, omitted, reason }` into the capture index, and a run that
-omitted anything says so in the log rather than reporting a bare count.
+a change — the same URLs are compared, not a fresh random set each time. Pass URL ids or exact URLs
+with repeated `--affected`, or newline-separated values with `--affected-file`. Every selection
+records the seed, requested/matched/unmatched affected targets, critical representatives, sentinel
+ids, totals and reason in the capture index.
 
-**Above 1000 URLs, capturing everything must be asked for and confirmed twice.**
-
-```bash
-t3u capture --label after --all-urls
-```
-
-The flag exists because sometimes it is the right call — a relaunch, a site where the tail pages
-carry the value. It is gated because on a large site it can turn a ten-minute close into an
-overnight one, and because an agent should never quietly commit someone else's afternoon. Ask,
-state the URL count and the rough time, and ask again. If the answer is anything other than an
-explicit second yes, take the seeded 1000 and declare the omission.
+The expensive visual matrix remains bounded by the sealed manifest's tiered visual budget. There is
+no second cap on final HTTP/DOM, because those stages are parallel and do not start a browser.
 
 ## Determinism runtime
 
@@ -195,19 +187,21 @@ Run loop 000's deterministic intermediate diagnostic before its first exhaustive
 t3u selftest-determinism --sample intermediate --visual-workers 3
 ```
 
-The diagnostic uses the normal 10%/20–100 URL selection and captures every configured viewport
-for those URLs. It cannot write `selftest.lock.json` and cannot unlock comparisons. It is a fast
-fault detector, not evidence for closure.
+The diagnostic uses the normal affected/critical/seeded URL selection, every configured viewport,
+and the `default` state only. It cannot write `selftest.lock.json` and cannot unlock comparisons.
+It is a fast fault detector, not evidence for closure. The exhaustive proof covers `default`,
+`keyboard-focus`, and `nav-open`.
 
-Intermediate visual diagnostics use a fixed pool of independent Chromium processes. The default
-is three and the worker range is 1–12 (size it to the capture host's cores; a 10-core host
-carries 10 comfortably). A multi-worker pool must not share one Chromium process:
+The exhaustive command already produces two complete HTTP/DOM/visual passes. When they match at
+zero, the harness atomically promotes pass B to the unsealed `baseline/A-original`. Sealing reuses
+that proven capture instead of running an identical third full browser matrix.
+
+Visual captures use a fixed pool of three independent Chromium processes (range 1–12). A
+multi-worker pool must not share one Chromium process:
 isolated contexts still share renderer-global state and can produce workload-dependent fractional
-layout. Exhaustive self-tests and baseline captures default to one worker because sustained
-parallel load has introduced process-level capture failures and rendering differences on some
-machines. A count above one is **licensed, never assumed**: the exhaustive self-test may run at
-N workers, and only when that double-shoot proves zero does the lock seal `visualWorkers: N` —
-from then on every authoritative capture must use exactly N, and `compare-visual` refuses (exit 3)
+layout. Three workers are **licensed, never assumed**: only when the exhaustive double-shoot proves
+zero at that count does the lock seal `visualWorkers: 3` —
+from then on every authoritative capture must use exactly three, and `compare-visual` refuses (exit 3)
 when the lock and either side's capture index disagree on the count. A machine where parallel
 load flakes fails the self-test at N and falls back to serial; the proof is per-machine and
 expires with the lock. Record the count in capture metadata, capture indexes, self-test reports,

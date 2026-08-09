@@ -20,22 +20,23 @@ v14 `vendor/` tree. The install does not boot, and the run has no documented way
 
 ## The three anchors, taken together
 
-Before the first change (P01) and before every schema change, wizard run or data migration:
+At P01 take the complete anchor once. Before later schema changes, wizard runs or data migrations,
+take the cheapest anchor that can actually restore what that operation mutates:
 
 ```bash
-# 1. database
+# 1. database — snapshot before each stateful operation; external dump once at P01
 ddev snapshot --name <loop>-pre
-ddev export-db > ../<project>-<loop>-pre.sql.gz     # outside the container
+ddev export-db > ../<project>-pre-update.sql.gz     # P01 only, outside the container
 
-# 2. code — a commit or tag is the anchor; note the SHA in snapshots.json
+# 2. code — one parent-loop anchor, plus a new ref only when the code anchor changes
 git rev-parse HEAD
 
-# 3. files — only when the step can touch FAL
+# 3. files — only when this specific step can touch FAL
 tar czf ../<project>-<loop>-pre-fileadmin.tar.gz fileadmin/
 ```
 
-Record all three identifiers in `manifests/snapshots.json` as one entry. An anchor whose three parts
-are recorded separately invites restoring two of them.
+Record the applicable identifiers in `manifests/snapshots.json` as one operation entry. Do not
+repeat the external export or file archive for code-only, read-only, or database-only work.
 
 ## Restoring
 

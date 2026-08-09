@@ -29,7 +29,8 @@ export const COMMANDS = {
   init: { summary: 'Create the run directory and initial state', options: {
     'base-url': { type: 'string' }, 'project-name': { type: 'string' },
     'ddev-project': { type: 'string' },
-    languages: { type: 'string' }, force: { type: 'boolean', default: false },
+    languages: { type: 'string' }, 'max-hours': { type: 'string', default: '14' },
+    force: { type: 'boolean', default: false },
   }},
   doctor: { summary: 'Check the environment can run the harness', options: {
     'base-url': { type: 'string' }, 'ddev-project': { type: 'string' },
@@ -41,8 +42,9 @@ export const COMMANDS = {
     contract: { type: 'string' }, phase: { type: 'string' },
     'baseline-ref': { type: 'string' }, 'intent-ref': { type: 'string' },
   }},
-  'loop-open': { summary: 'Open a planned loop after snapshot and live freeze checks', options: {
-    snapshot: { type: 'string' },
+  'loop-open': { summary: 'Open a planned loop after rollback-anchor and live freeze checks', options: {
+    snapshot: { type: 'string' }, 'rollback-ref': { type: 'string' },
+    stateful: { type: 'boolean', default: false },
   }},
   'snapshot-create': { summary: 'Create and record the rollback snapshot for a loop', options: {
     name: { type: 'string' },
@@ -65,7 +67,7 @@ export const COMMANDS = {
   }},
   'discover-urls': { summary: 'Guarded sitemap/database discovery into a URL manifest', options: {
     'base-url': { type: 'string' }, languages: { type: 'string' }, seed: { type: 'string' },
-    'golden-file': { type: 'string' }, 'visual-budget': { type: 'string', default: '1500' },
+    'golden-file': { type: 'string' }, 'visual-budget': { type: 'string', default: '360' },
     'lighthouse-sample': { type: 'string', default: '3' },
     states: { type: 'string' }, viewports: { type: 'string' },
     'stabilization-config': { type: 'string' },
@@ -75,12 +77,13 @@ export const COMMANDS = {
   capture: { summary: 'Capture HTTP, DOM and screenshots for the manifest set', options: {
     label: { type: 'string' }, out: { type: 'string' }, states: { type: 'string' },
     viewports: { type: 'string' }, only: { type: 'string' },
+    affected: { type: 'string', multiple: true }, 'affected-file': { type: 'string' },
     resume: { type: 'boolean', default: false }, warmup: { type: 'boolean', default: true },
     stages: { type: 'string', default: 'http,dom,visual' },
-    // 'intermediate' = seeded 10% slice (min 20, max 100) for loop iterations;
-    // 'final' = everything, or a seeded 1000 above the hard cap. --all-urls lifts the cap and
-    // must be asked for and confirmed twice, because it can turn a short close into a long one.
+    // 'intermediate' = affected/critical/seeded URL slice in default state for loop iterations;
+    // 'final' = every URL at HTTP/DOM and the sealed tiered visual sample in three states max.
     scope: { type: 'string', default: 'final' },
+    // Retained as a backwards-compatible no-op: final HTTP/DOM are now always exhaustive.
     'all-urls': { type: 'boolean', default: false },
     'visual-workers': { type: 'string' },
     'http-workers': { type: 'string' },
@@ -108,6 +111,11 @@ export const COMMANDS = {
     report: { type: 'string' }, reshoots: { type: 'string', default: '1' },
     'compare-workers': { type: 'string' },
   }},
+  'compare-all': { summary: 'Compare HTTP, DOM and visuals, then gate with one live-input check', options: {
+    before: { type: 'string' }, after: { type: 'string' }, 'diff-dir': { type: 'string' },
+    'compare-workers': { type: 'string' }, 'idempotence-diff': { type: 'string' },
+    'require-idempotence': { type: 'boolean', default: false },
+  }},
   'backend-sweep': { summary: 'Open every backend module; require full coverage', options: {
     'base-url': { type: 'string' }, report: { type: 'string' },
     'expect-modules': { type: 'string' }, settle: { type: 'string', default: '1500' },
@@ -124,6 +132,7 @@ export const COMMANDS = {
   }},
   gate: { summary: 'Aggregate a loop verdict from its stage reports', options: {
     group: { type: 'string' }, 'idempotence-diff': { type: 'string' },
+    'require-idempotence': { type: 'boolean', default: false },
   }},
   report: { summary: 'Regenerate markdown from JSON reports', options: {} },
   help: { summary: 'Show help', options: {} },

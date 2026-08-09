@@ -17,10 +17,20 @@ export const STATE_SCHEMA = 'typo3-upgrade-run/state@1';
 
 export const LOOP_VERDICTS = Object.freeze(['planned', 'open', 'green', 'aborted', 'superseded', 'invalid']);
 
-export function emptyState({ runId, now }) {
+export function emptyState({ runId, now, maxHours = 14 }) {
+  const started = Date.parse(now);
+  const deadlineAt = Number.isFinite(started)
+    ? new Date(started + maxHours * 60 * 60 * 1000).toISOString()
+    : now;
   return {
     schema: STATE_SCHEMA,
     run_id: runId,
+    runtime: {
+      started_at: now,
+      deadline_at: deadlineAt,
+      max_hours: maxHours,
+      closure_reserve_hours: 4,
+    },
     project: { name: '', trusted_origin: '', ddev_project: '', languages: [], run_dir: '.typo3-update' },
     target: {
       kind: 'project', typo3_from: '', typo3_to: '14.3',

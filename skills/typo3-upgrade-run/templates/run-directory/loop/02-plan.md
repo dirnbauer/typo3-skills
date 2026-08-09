@@ -24,8 +24,9 @@ determinism_proof: "loops/000-harness-determinism-selftest/report.json#verdict"
 
 ## Measurement
 
-The exact command, run unchanged for every iteration of this loop. Changing the
-measurement mid-loop makes the iterations incomparable.
+Record the stable measurement profile: seed, viewports, thresholds and `default` state. The
+affected URL list changes with the root cause; the harness adds the same seeded sentinels. Baseline
+and final proof keep their sealed three-state matrix.
 
 ```bash
 

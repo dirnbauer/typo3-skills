@@ -16,7 +16,7 @@ created_at: "{{NOW}}"
 updated_at: "{{NOW}}"
 
 exit_criteria: []
-idempotence_rerun: { ran: false, diff_count: null }
+idempotence_rerun: { required: false, ran: false, diff_count: null }
 verdict: open              # green | aborted | superseded | invalid
 abort_condition: null
 residual_findings: []
@@ -39,17 +39,19 @@ be checkable by hand from `04-findings.md` and `05-evidence.md`.
 | EX-05 | `findingsByClass.unclassified == 0` | |
 | EX-06 | `coverage.http_compared == coverage.discovered` | |
 
-## Idempotence re-run
+## Idempotence re-run (final closure only)
 
-After all criteria pass, run the measurement once more **changing nothing**.
+Set `required: true` for loop 300. After all criteria pass there, run the full measurement once
+more **changing nothing**. Ordinary implementation iterations leave this section at
+`required: false`; stateful migration commands prove their own fixed point at the command boundary.
 
 | Field | Value |
 |---|---|
 | Ran | |
 | Diff count | |
 
-`diff_count` must be `0`. A green loop that is not idempotent is not green — it is
-`harness-noise`, and the noise is fixed before the loop closes.
+When required, `diff_count` must be `0`. A final closure loop that is not idempotent is not green —
+it is `harness-noise`, and the noise is fixed before closure.
 
 ## Budgets used
 
@@ -58,6 +60,7 @@ After all criteria pass, run the measurement once more **changing nothing**.
 | Iterations | | |
 | No-progress streak | | 2 |
 | Time (min) | | |
+| Whole run (h) | | 14, including 4h closure reserve |
 
 ## Verdict
 
@@ -68,7 +71,7 @@ After all criteria pass, run the measurement once more **changing nothing**.
 | Field | Value |
 |---|---|
 | Abort condition | |
-| Snapshot restored | `loop-{{LOOP_ID}}-pre` |
+| Rollback anchor restored | Git/file ref or operation snapshot |
 
 **Escalation to the user** — what was attempted, what the evidence shows, what is
 genuinely unresolved, and the specific decision being asked for. Aborting is a correct

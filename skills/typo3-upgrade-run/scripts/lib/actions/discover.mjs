@@ -16,6 +16,7 @@ import { walkSitemaps } from '../net/sitemap.mjs';
 import { StateStore } from '../run/state.mjs';
 import { buildManifest } from '../run/manifest.mjs';
 import { profileHash } from '../browser/stabilize.mjs';
+import { DEFAULT_STATES, MAX_AUTHORITATIVE_STATES, stateByName } from '../browser/states.mjs';
 import { intOpt, listOpt } from '../cli/args.mjs';
 import { readJson } from './core.mjs';
 
@@ -121,10 +122,10 @@ export async function discoverUrls({ values, paths, log, journal }) {
     goldenPaths,
     urlSources,
     discovery,
-    visualBudget: intOpt(values, 'visual-budget', 1500),
+    visualBudget: intOpt(values, 'visual-budget', 360),
     lighthouseSample: intOpt(values, 'lighthouse-sample', 3),
     viewports: listOpt(values, 'viewports', ['desktop', 'tablet', 'mobile']),
-    states: captureStates(values, stabilization),
+    states: captureStates(values),
     stabilization,
     stabilizationProfileHash: profileHash(stabilization),
   });
@@ -241,12 +242,19 @@ async function loadStabilization(file) {
   }
 }
 
-function captureStates(values, stabilization) {
-  const configured = listOpt(values, 'states', ['default']);
-  if ((stabilization.consent?.modalTriggerSelectors ?? []).length) {
-    configured.push('consent-modal-open');
+export function captureStates(values) {
+  const configured = listOpt(values, 'states', [...DEFAULT_STATES]);
+  const unique = [...new Set(configured)];
+  const fixed = new Set(DEFAULT_STATES);
+  if (unique.length !== MAX_AUTHORITATIVE_STATES || unique.some((name) => !fixed.has(name))) {
+    throw new PreconditionError(
+      `The authoritative matrix is fixed to exactly ${DEFAULT_STATES.join(', ')}. `
+      + 'Use targeted smoke checks for component-specific states.',
+    );
   }
-  return [...new Set(configured)];
+  const unknown = unique.filter((name) => !stateByName(name));
+  if (unknown.length) throw new PreconditionError(`Unknown interaction state(s): ${unknown.join(', ')}`);
+  return unique;
 }
 
 export { readJson };

@@ -8,7 +8,8 @@ contract: "{{CONTRACT}}"      # A | B | none
 phase: "{{PHASE}}"
 doc: charter
 baseline_ref: "{{BASELINE_REF}}"   # A-original for every Contract A loop
-snapshot: null                # filled at protocol step 5
+snapshot: null                # only for stateful work
+rollback_ref: null            # Git/file anchor for code-only or read-only work
 approval_ref: {{INTENT_REF}}  # intent approval required before every Contract B loop
 acceptance_ref: null          # observed-result approval; only after evidence exists
 status: planned
@@ -68,7 +69,7 @@ Loops that must be green first, and why.
 |---|---|
 | Approval | `{{APPROVAL_REF}}` (or "not required — automatic per rules/40") |
 | Baseline | `{{BASELINE_REF}}` |
-| Snapshot | filled at step 5 |
+| Rollback anchor | Git ref, or DDEV snapshot for stateful work |
 
 ## Budgets
 
@@ -77,6 +78,7 @@ Loops that must be green first, and why.
 | Max iterations | |
 | Change budget | ≤ files / ≤ lines per iteration |
 | Time budget | min |
+| Whole-run deadline | `state.runtime.deadline_at` (not extendable) |
 
-Exceeding a budget requires an approval recorded in `06-exit.md`. Aborting is the
-default and is a correct outcome.
+Exceeding a loop budget requires an approval recorded in `06-exit.md`; the whole-run deadline
+cannot be extended. Aborting is the default and is a correct outcome.

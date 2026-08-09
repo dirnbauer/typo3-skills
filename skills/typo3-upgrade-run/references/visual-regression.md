@@ -24,19 +24,21 @@ t3u env-fingerprint --write-baseline
 t3u content-fingerprint --write-baseline
 t3u discover-urls --seed "acme-2026"
 
-t3u selftest-determinism          # loop 000 — MUST reach zero before anything else
-t3u capture --label before --out .typo3-update/baseline/A-original
+t3u selftest-determinism          # pass B is atomically promoted to unsealed Baseline A
 t3u seal-baseline --id A-original # immutable from here
 
 # … the update …
 
+# ordinary fix iteration: affected URLs plus seeded sentinels, default state only
+t3u capture --label iter-1 --scope intermediate --affected page-17
+
+# final: all URLs for HTTP/DOM and the three authoritative states for visual targets
 t3u capture --label after
 # compare-* default to captures/before; point them at the sealed baseline
-t3u compare-http   --before .typo3-update/baseline/A-original/http
-t3u compare-dom    --before .typo3-update/baseline/A-original/dom
-t3u compare-visual --before .typo3-update/baseline/A-original/shots
-t3u backend-sweep --base-url "https://acme.ddev.site"
-t3u gate --loop 300-invariance-closure --idempotence-diff 0
+t3u compare-all --loop 300-invariance-closure \
+  --before .typo3-update/baseline/A-original \
+  --after .typo3-update/captures/after --idempotence-diff 0
+# backend-sweep is conditional on changed local backend modules/UI/permissions
 t3u report --loop 300-invariance-closure
 ```
 
@@ -68,8 +70,8 @@ site regression, and a guard refusal is not a broken tool.
 | `capture --label <l>` | Stage 1 (HTTP), stage 2 (DOM), stage 3 (screenshots) |
 | `selftest-determinism` | Double-shoot the untouched site; require zero |
 | `seal-baseline` / `verify-baseline` | `SHA256SUMS` + `LOCK.json`; there is no unseal |
-| `compare-http` / `compare-dom` / `compare-visual` | The three stages |
-| `backend-sweep` | Every module opened; 100% coverage required |
+| `compare-all` | The three stages plus gate behind one live-input validation |
+| `backend-sweep` | Conditional: every module opened when local backend modules/UI/permissions changed |
 | `smoke` | Deterministic read-only navigation |
 | `lighthouse` | Manifest sample, median of N runs |
 | `gate` | Aggregate a loop verdict |
@@ -88,7 +90,7 @@ Stage 1 and stage 2 cover **100% of discovered URLs, always**. If they cannot, t
 
 Stage 3 is tiered within a capture budget:
 
-- **Tier 1**, always: homepage per language, golden paths, 404, search, empty search, login,
+- **Tier 1**, first priority within the hard cap: homepage per language, golden paths, 404, search, empty search, login,
   password reset, forms — plus every URL a stage 1 or 2 finding touched.
 - **Tier 2**: two representatives per template cluster. The cluster signature is the
   normalised DOM skeleton with text removed, which stage 2 produces anyway, so 4,198 news
@@ -98,6 +100,11 @@ Stage 3 is tiered within a capture budget:
 **Coverage is declared, never implied.** The manifest records `coverage.notCaptured[]` with
 the actual URL ids and a reason from a fixed set. When a budget is exhausted, the generated
 summary says so in its first paragraph.
+
+Ordinary iterations do not run this full state matrix. They capture only `default` on affected
+pages plus critical/template representatives and seeded random sentinels. Baseline, exhaustive
+determinism, and final closure capture exactly `default`, `keyboard-focus`, and `nav-open`.
+Dropdown, accordion, form, modal, and consent behaviour use targeted flows only when affected.
 
 ## Determinism
 
@@ -157,11 +164,11 @@ report is a fabrication.
 | Variable / flag | Default | Purpose |
 |---|---|---|
 | `--seed` | run id | Sampling seed; recorded in the manifest |
-| `--visual-budget` | `1500` | Screenshot capture budget |
+| `--visual-budget` | `360` | Hard screenshot budget (40 URLs × 3 viewports × 3 states) |
 | `--lighthouse-sample` | `3` | Fixed final set: homepage plus two seeded random non-home pages |
 | `--runs` | `3` | Lighthouse runs per URL, median reported |
 | `--reshoots` | `1` | Immediate reproduction check; non-zero still blocks |
-| `--visual-workers` | 1 final · 3 diagnostic | Chromium process pool (max 12); counts above 1 for final evidence must be licensed by an exhaustive self-test at exactly that count |
+| `--visual-workers` | `3` | Isolated Chromium process pool (max 12); final evidence must be licensed by an exhaustive self-test at exactly that count |
 | `--http-workers` | `6` | Stage 1/2 fetch pool (max 16); renderer-free, order-stable output |
 | `--compare-workers` | `8` | odiff/pixelmatch pool (max 16); order-stable findings |
 | `--redaction-profile` | `local` | `local` or `share` (for the KPI document) |

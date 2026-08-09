@@ -3,7 +3,8 @@
 Track `invariance`. The loop the whole skill exists for.
 
 ## Preconditions
-Loops 140 and 200–230 green where they applied. Both fingerprints unchanged since sealing.
+Loop 100 green with every applicable stateful fixed point and feature check recorded. Both
+fingerprints unchanged since sealing.
 
 ## Allowed
 **Repair only.** No new features, no improvements, no "while I am here".
@@ -11,8 +12,9 @@ Loops 140 and 200–230 green where they applied. Both fingerprints unchanged si
 ## Steps
 1. Re-run stage 1 (HTTP and metadata) across all URLs.
 2. Re-run stage 2 (normalised DOM) across all URLs.
-3. Re-shoot stage 3 with the identical sample file, viewport matrix and settings.
-4. Compare against `A-original`.
+3. Re-shoot stage 3 on the sealed tiered visual set with the identical viewport matrix and the three
+   authoritative states: `default`, `keyboard-focus`, `nav-open`.
+4. Compare all three stages and gate once with `compare-all` against `A-original`.
 5. For every difference: identify the cause, fix it, re-shoot the affected pages. One cause per
    iteration.
 6. Finish with one full pass, then the idempotence re-run.
@@ -29,8 +31,8 @@ into a short fix:
 
 ## Exit
 0 open `regression` findings · 0 `declared-change` without an approval · 0 `harness-noise` ·
-comparison coverage equals the sample · idempotence re-run diff count 0 · accessibility re-audit
-still 0 serious/critical.
+HTTP/DOM coverage equals every discovered URL · visual coverage equals the sealed tiered set across
+all three states · idempotence re-run diff count 0.
 
 ## Blocking
 Re-baselining. Threshold changes. Sample reduction. Excluding a page. None of these is grantable —
@@ -39,4 +41,3 @@ see `rules/20-baseline-integrity.md`.
 Budgets here are larger than elsewhere (8 iterations, 240 minutes) because this loop legitimately has
 more to do. They are still budgets: exceeding one needs an approval, and aborting is a correct
 outcome.
-

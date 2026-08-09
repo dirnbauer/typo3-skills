@@ -1,6 +1,7 @@
-# P08 — Manual v14 migration (loop 130)
+# P08 — Manual v14 migration (iterations in loop 100)
 
-Track `invariance`. Everything Rector and Fractor could not do.
+Track `invariance`. Everything Rector and Fractor could not do. Work one root cause per parent
+iteration and run the intermediate `default`-state check on affected pages plus seeded sentinels.
 
 Load `typo3-v14-reference` here as the **v14 API reference** — but constraints, PHP target and process stay
 with this skill.

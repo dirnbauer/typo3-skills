@@ -1,6 +1,7 @@
 # P14 — Elevation (loops 500–560)
 
-Track `elevation`. Contract B. This is where "a top-10 TYPO3 project" is actually delivered.
+Track `elevation`. Contract B. Entirely optional and run only after the user explicitly requests a
+separate improvement programme. A normal TYPO3 upgrade ends after Contract A and its handover.
 
 Targets in `references/quality-bars.md`; commands in `references/measurement-recipes.md`.
 

@@ -16,7 +16,7 @@ import { init, doctor, status, envFingerprint, contentFingerprint } from './lib/
 import { discoverUrls } from './lib/actions/discover.mjs';
 import { capture } from './lib/actions/capture.mjs';
 import {
-  compareHttp, compareDomAction, compareVisual,
+  compareHttp, compareDomAction, compareVisual, compareAll,
   selftestDeterminism, sealBaselineAction, verifyBaselineAction, gate,
 } from './lib/actions/compare.mjs';
 import { backendSweep, smoke, lighthouse } from './lib/actions/sweep.mjs';
@@ -48,6 +48,7 @@ const ACTIONS = {
   'compare-http': compareHttp,
   'compare-dom': compareDomAction,
   'compare-visual': compareVisual,
+  'compare-all': compareAll,
   'backend-sweep': backendSweep,
   smoke,
   lighthouse,

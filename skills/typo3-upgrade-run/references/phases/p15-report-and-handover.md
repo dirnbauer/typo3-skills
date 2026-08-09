@@ -1,25 +1,21 @@
-# P15 — Report and handover (loop 900)
+# P15 — Concise report and handover (no fix loop)
 
 Track `report`.
 
 ## Preconditions
-P13 closed. All approved Contract B tracks green or explicitly stopped.
+P13 closed. Any separately requested Contract B tracks are green or explicitly stopped.
 
 ## Steps
-1. Rewrite `README.md` as a concise entry point: purpose, features, TYPO3/PHP requirements,
-   installation, quick start, configuration, workspace behaviour, testing, limitations, links.
-2. Update `Documentation/` per TYPO3 conventions with a v12/v13-to-v14 upgrade guide, migration
-   commands, data upgrade steps, breaking changes and removed features.
-3. Add a `CHANGELOG.md` entry: the 14.3-only requirement, dropped versions, dependency changes,
-   workspace support, migrations. **Do not invent a release date or tag.**
-4. Write `report/contract-b-summary.md`.
-5. Generate the KPI document per `references/kpi-report.md`, **including the run-statistics
+1. Update only README, Documentation, changelog, or operator instructions directly made inaccurate
+   by the migration. Do not rewrite the documentation system as a completion prerequisite.
+2. If Contract B ran, write its concise summary.
+3. Generate the evidence summary, **including the run-statistics
    section**: loops run, iterations per loop, aborts and their triggers, self-test re-runs,
    wall-clock per phase, repaired against approved findings, and everything the run did not cover.
    Assemble it from `journal.jsonl` and the per-loop `report.json` files — a number nobody can
    trace back to a recorded entry does not belong in the report.
-6. Write `report/handover-deployment.md` using `references/deployment-handover.md`, including the
-   audited Deployer recipe and `EXT:deployer_information` mode/version/first-real-deploy checks.
+4. Write `report/handover-deployment.md` with only the commands, environment requirements,
+   migrations, indexing needs and known gaps the deploying party actually needs.
 
 ## The handover is information only
 This skill executes none of it. It lists: the Composer, schema, wizard, reference-index, language and
@@ -43,4 +39,5 @@ Recommendations are proposals for the user, not changes this skill made. Keep ob
 assumptions and recommendations visually separate.
 
 ## Exit
-`gate-check --group ALL` exits 0.
+Contract A closure validates and the concise handover artifacts exist. Reporting never starts
+another implementation loop.

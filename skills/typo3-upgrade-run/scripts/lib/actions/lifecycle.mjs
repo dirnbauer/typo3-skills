@@ -80,18 +80,31 @@ export async function loopOpen({ values, paths, log, journal, liveAssert = asser
   const loopName = await resolveLoop(paths, values.loop);
   const id = loopName.slice(0, 3);
   const snapshot = values.snapshot;
-  if (!snapshot) throw new PreconditionError('--snapshot is required before a loop may open.');
+  const rollbackRef = values['rollback-ref'];
+  const stateful = values.stateful === true;
+  if (stateful && !snapshot) {
+    throw new PreconditionError('--snapshot is required before a stateful loop may open.');
+  }
+  if (!snapshot && !rollbackRef) {
+    throw new PreconditionError('Open a loop with --snapshot for stateful work or --rollback-ref for code/read-only work.');
+  }
   const store = new StateStore(paths);
   const state = await store.read();
   assertLoopTransition(state.loops[id], 'open');
-  if (!state.snapshots.includes(snapshot)) {
+  if (snapshot && !state.snapshots.includes(snapshot)) {
     throw new PreconditionError(`Snapshot ${snapshot} is not recorded. Run snapshot-create first.`);
   }
   await liveAssert(paths);
   await store.update((current) => { current.loops[id] = 'open'; });
-  await journal?.append('transition', { loop_id: id, from: 'planned', to: 'open', snapshot });
+  await journal?.append('transition', {
+    loop_id: id, from: 'planned', to: 'open', snapshot: snapshot ?? null,
+    rollback_ref: rollbackRef ?? null, stateful,
+  });
   log.success(`Loop ${loopName} opened against live-verified sealed inputs.`);
-  return { exitCode: EXIT.PASS, verdict: 'pass', loop: loopName, status: 'open', message: `${loopName} open` };
+  return {
+    exitCode: EXIT.PASS, verdict: 'pass', loop: loopName, status: 'open',
+    rollbackAnchor: snapshot ?? rollbackRef, stateful, message: `${loopName} open`,
+  };
 }
 
 export async function snapshotCreate({ values, paths, log, journal, runner = runDdev }) {

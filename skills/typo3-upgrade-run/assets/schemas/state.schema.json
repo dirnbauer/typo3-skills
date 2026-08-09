@@ -4,7 +4,7 @@
   "title": "typo3-upgrade-run run state",
   "description": "The single source of truth for loop preconditions. Never derived from the transcript; always read from disk.",
   "type": "object",
-  "required": ["schema", "run_id", "target", "contract_a", "contract_b", "baselines", "fingerprints", "loops", "updated_at"],
+  "required": ["schema", "run_id", "runtime", "target", "contract_a", "contract_b", "baselines", "fingerprints", "loops", "updated_at"],
   "additionalProperties": false,
   "properties": {
     "schema": { "const": "typo3-upgrade-run/state@1" },
@@ -12,6 +12,17 @@
       "type": "string",
       "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z0-9][a-z0-9-]*$",
       "description": "YYYY-MM-DD-<project-slug>"
+    },
+    "runtime": {
+      "type": "object",
+      "required": ["started_at", "deadline_at", "max_hours", "closure_reserve_hours"],
+      "additionalProperties": false,
+      "properties": {
+        "started_at": { "type": "string", "format": "date-time" },
+        "deadline_at": { "type": "string", "format": "date-time" },
+        "max_hours": { "type": "number", "exclusiveMinimum": 0, "maximum": 14 },
+        "closure_reserve_hours": { "type": "number", "minimum": 2, "maximum": 4 }
+      }
     },
     "project": {
       "type": "object",

@@ -2,6 +2,11 @@
 # Copied into .typo3-update/config/run.yml at phase P00 and filled in there.
 schema: typo3-upgrade-run/run-config@1
 
+runtime:
+  max_hours: 14
+  closure_reserve_hours: 4
+  # At T+10h stop starting migration iterations and spend the reserve on proof and handover.
+
 project:
   name: ""
   # Scheme included and never rewritten. This is the ONE origin credentials and
@@ -52,11 +57,6 @@ capture:
     - default
     - keyboard-focus
     - nav-open
-    - dropdown-open
-    - accordion-open
-    - form-empty
-    - form-validation-error
-    - modal-open
   locale: "de-AT"
   timezone: "Europe/Vienna"
   color_scheme: "light"
@@ -65,7 +65,7 @@ capture:
   page_random_seed: 20260725
   frozen_clock_epoch: 1774425600000
   # Store the adapter in a JSON file passed to discover-urls --stabilization-config.
-  # It is sealed into the manifest. Default = accepted; modal-open is a separate capture state.
+  # It is sealed into the manifest. Default = accepted; modal behaviour is a targeted smoke check.
   consent_adapter:
     file: ""
     required_keys:

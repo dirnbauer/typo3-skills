@@ -23,8 +23,8 @@ import {
   assertLiveInputs,
   readEvidenceContext,
 } from '../../lib/run/evidence.mjs';
-import { gate } from '../../lib/actions/compare.mjs';
-import { approvalRecord, loopStart, validateRun } from '../../lib/actions/lifecycle.mjs';
+import { gate, promoteSelftestBaseline } from '../../lib/actions/compare.mjs';
+import { approvalRecord, loopOpen, loopStart, validateRun } from '../../lib/actions/lifecycle.mjs';
 
 const tmp = () => mkdtemp(path.join(tmpdir(), 't3u-contract-'));
 const log = new Proxy({}, { get: () => () => {} });
@@ -223,6 +223,20 @@ describe('evidence inputs and live assertions', () => {
 });
 
 describe('state, loop paths, and approval choreography', () => {
+  test('a proven self-test pass is promoted atomically without overwriting Baseline A', async () => {
+    const dir = await tmp();
+    const source = path.join(dir, 'selftest-b');
+    const target = path.join(dir, 'baseline', 'A-original');
+    await mkdir(source, { recursive: true });
+    await writeFile(path.join(source, 'capture-index.json'), '{"label":"selftest-b"}\n');
+
+    assert.equal(await promoteSelftestBaseline(source, target), true);
+    assert.match(await readFile(path.join(target, 'capture-index.json'), 'utf8'), /selftest-b/);
+    await writeFile(path.join(target, 'sentinel.txt'), 'keep');
+    assert.equal(await promoteSelftestBaseline(source, target), false);
+    assert.equal(await readFile(path.join(target, 'sentinel.txt'), 'utf8'), 'keep');
+  });
+
   test('invalid is a first-class loop verdict and state is fully schema validated', async () => {
     assert.ok(LOOP_VERDICTS.includes('invalid'));
     const dir = await tmp();
@@ -264,6 +278,59 @@ describe('state, loop paths, and approval choreography', () => {
     assert.equal((await new StateStore(paths).read()).loops['300'], 'green');
     const report = JSON.parse(await readFile(paths.loopReport(loop), 'utf8'));
     assert.equal(report.run.loopId, '300');
+    assert.deepEqual(report.idempotence, { required: true, ran: true, diffCount: 0 });
+  });
+
+  test('ordinary loops accept a code rollback reference without a database snapshot or unchanged rerun', async () => {
+    const dir = await tmp();
+    const paths = new RunPaths('.typo3-update', dir);
+    const loop = '100-migration-core';
+    await mkdir(paths.loopArtifacts(loop), { recursive: true });
+    const state = emptyState({ runId: '2026-07-29-acme', now: '2026-07-29T00:00:00Z' });
+    state.loops['100'] = 'planned';
+    await new StateStore(paths).write(state);
+
+    const journalEntries = [];
+    const opened = await loopOpen({
+      values: { loop, 'rollback-ref': 'git:abc123' }, paths, log,
+      journal: { append: async (...entry) => journalEntries.push(entry) },
+      liveAssert: async () => {},
+    });
+    assert.equal(opened.rollbackAnchor, 'git:abc123');
+    assert.equal(opened.stateful, false);
+    assert.equal(journalEntries[0][1].snapshot, null);
+
+    for (const kind of ['http', 'dom', 'visual']) {
+      const report = envelope({
+        kind,
+        run: { runId: state.run_id, loopId: '100', track: 'invariance' },
+        inputs: evidenceInputs,
+        verdict: 'pass',
+        counts: { checked: 1 },
+        findings: [],
+      });
+      await writeFile(path.join(paths.loopArtifacts(loop), `report.${kind}.json`), JSON.stringify(report));
+    }
+
+    const result = await gate({ values: { loop }, paths, log });
+    assert.equal(result.exitCode, 0);
+    const report = JSON.parse(await readFile(paths.loopReport(loop), 'utf8'));
+    assert.deepEqual(report.idempotence, { required: false, ran: false, diffCount: null });
+  });
+
+  test('a stateful loop still requires a recorded database snapshot', async () => {
+    const dir = await tmp();
+    const paths = new RunPaths('.typo3-update', dir);
+    await mkdir(paths.root, { recursive: true });
+    await mkdir(paths.loop('100-migration-core'), { recursive: true });
+    const state = emptyState({ runId: '2026-07-29-acme', now: '2026-07-29T00:00:00Z' });
+    state.loops['100'] = 'planned';
+    await new StateStore(paths).write(state);
+
+    await assert.rejects(() => loopOpen({
+      values: { loop: '100-migration-core', stateful: true, 'rollback-ref': 'git:abc123' },
+      paths, log, liveAssert: async () => {},
+    }), /snapshot is required before a stateful loop/i);
   });
 
   test('loop-start scaffolds all protocol documents and acceptance needs evidence', async () => {

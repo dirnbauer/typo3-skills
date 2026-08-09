@@ -1,28 +1,27 @@
-# P07 — Mechanical migration (loop 120)
+# P07 — Mechanical migration (iterations in loop 100)
 
 Track `invariance`. Rector and Fractor.
 
 ## Preconditions
-The correct rung reached; loop 110 green where it applied.
+The correct rung reached; the P06 fixed point is recorded where it applied.
 
 ## Steps
-1. Configure TYPO3 Rector for the actual source-to-v14 path. Dry-run → **read the diff** → apply →
-   second dry-run.
-2. Configure Fractor for the same path. Dry-run → review the non-PHP changes → apply → second
-   dry-run.
+1. Configure TYPO3 Rector for the actual source-to-v14 path. One parent iteration performs dry-run →
+   **read the diff** → bounded apply → report remaining findings and stop.
+2. In a following parent iteration when applicable, Fractor performs dry-run → reviewed bounded
+   apply → reports remaining findings and stops.
 3. Run code style and syntax checks immediately after each tool, not once at the end — a style pass
    over a broken transformation just hides it.
 4. **Never accept a bulk transformation blindly.** Split ambiguous DBAL, Extbase, TCA, Fluid or
    dependency changes into independently verifiable units.
 
-## Why the second dry-run
-A tool that still has work to do after applying has either failed on something or found new work its
-own change created. Both are worth knowing before the next phase builds on it.
+## Fixed point without a nested loop
+A later parent iteration runs the dry check again. Remaining work is evidence for that iteration,
+not permission for Rector or Fractor to repeat autonomously inside it.
 
 ## Exit
-Second dry-run empty for both tools; lint and code style clean.
+Final dry checks empty for each applicable tool; lint and code style clean.
 
 ## Blocking
 A bulk transformation accepted without reading the diff. An iteration over the change budget — split
 it instead.
-

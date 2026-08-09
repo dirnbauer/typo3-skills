@@ -41,9 +41,13 @@ scope and stage; a previous approval never generalises to the next action.
 
 ## 00.4 Reversibility
 
-Take `ddev snapshot` before **every** schema change, upgrade wizard run, and data migration, and before every loop that changes anything. Keep an exported dump of the pre-update state outside the container.
+Take `ddev snapshot` before **every** schema change, upgrade wizard run, data migration, extension
+setup, or other database mutation. Code-only and read-only work uses a recorded Git/file rollback
+anchor and must not pay for a database snapshot. Keep an exported dump of the pre-update state
+outside the container.
 
-Record every snapshot in `manifests/snapshots.json` with the loop that created it and the reason. A loop that changes state without a recorded snapshot may not proceed — its rollback anchor does not exist.
+Record every snapshot in `manifests/snapshots.json` with the parent loop, operation, and reason. A
+stateful operation without a recorded snapshot may not proceed.
 
 If a step fails, restore the snapshot, fix the cause, and rerun. Never continue on a half-migrated local database.
 

@@ -51,6 +51,7 @@ export async function capture({ values, paths, log, journal }) {
   const stages = new Set(listOpt(values, 'stages', ['http', 'dom', 'visual']));
   const guard = await UrlGuard.create({ allowedOrigins: manifest.allowedOrigins });
   const scope = values.scope === 'intermediate' ? 'intermediate' : 'final';
+  const affected = await affectedTargets(values);
 
   // A worker count above 1 for final evidence is licensed only by the sealed self-test
   // lock: the exhaustive double-shoot proved zero at exactly that count on this machine.
@@ -64,6 +65,7 @@ export async function capture({ values, paths, log, journal }) {
     manifest, guard, outRoot, stages, log, journal,
     resume: values.resume, warmup: values.warmup !== false,
     scope,
+    affected,
     allowAll: values['all-urls'] === true,
     visualWorkers: intOpt(
       values,
@@ -107,28 +109,28 @@ export async function capture({ values, paths, log, journal }) {
  * slice never drops below 20 (or the whole set, if smaller). The ceiling keeps a loop iteration
  * inside its time budget on a large site.
  *
- * FINAL_HARD_CAP is a stop, not a target. Above it the final comparison still samples — seeded,
- * so it is reproducible — and the report must say so. Capturing every URL beyond that point is
- * possible but has to be asked for explicitly, and confirmed twice, because it can turn a
- * ten-minute close into an overnight one.
+ * Final HTTP and DOM are cheap, parallel, and exhaustive. The manifest already limits the
+ * expensive visual URL set through its declared tiered capture budget, so a second URL cap here
+ * would only make the equality claim weaker without saving meaningful renderer time.
  */
 export const SAMPLING = Object.freeze({
   INTERMEDIATE_PERCENT: 0.10,
   INTERMEDIATE_MIN: 20,
   INTERMEDIATE_MAX: 100,
-  FINAL_HARD_CAP: 1000,
 });
 
-// Authoritative full captures default to serial: sustained parallel renderer load has
-// produced non-determinism on unchanged sites. A worker count above 1 is not forbidden —
-// it is LICENSED: only a count that an exhaustive determinism double-shoot has proven to
+// Authoritative full captures default to three isolated Chromium processes. That count is
+// LICENSED: only a count that an exhaustive determinism double-shoot has proven to
 // zero (and sealed into selftest.lock.json as `visualWorkers`) may produce final evidence,
 // and every later authoritative capture and comparison must use that same count. The
 // self-test itself passes its own count as `provenWorkers` — it is the proof instrument.
 // Intermediate diagnostics deliberately trade authority for fast feedback.
-export const DEFAULT_VISUAL_WORKERS = 1;
+export const DEFAULT_VISUAL_WORKERS = 3;
 export const DIAGNOSTIC_VISUAL_WORKERS = 3;
 export const MAX_VISUAL_WORKERS = 12;
+
+/** Intermediate checks reserve room for unrelated pages that detect an underestimated blast radius. */
+export const INTERMEDIATE_SENTINEL_MIN = 5;
 
 // Stage 1/2 runs over plain HTTP with no renderer involved, so parallel fetches cannot
 // change pixel evidence; they only load the application server. The pool is still
@@ -157,25 +159,113 @@ export function triggerNeedles(selectors) {
 }
 
 /** Returns the URL entries to capture, plus a declaration of what was left out. */
-export function selectUrls(allUrls, { scope = 'final', seed = 'sample', allowAll = false } = {}) {
+export function selectUrls(allUrls, {
+  scope = 'final', seed = 'sample', affected = [],
+} = {}) {
   const total = allUrls.length;
   if (scope === 'intermediate') {
+    const affectedSet = new Set(affected.map(String));
+    const affectedMatches = allUrls.filter((entry) => affectedSet.has(entry.id) || affectedSet.has(entry.url));
+    const affectedMatchedKeys = new Set(affectedMatches.flatMap((entry) => [entry.id, entry.url]));
+    const affectedUnmatched = [...affectedSet].filter((target) => !affectedMatchedKeys.has(target));
     const want = Math.min(
       SAMPLING.INTERMEDIATE_MAX,
       Math.max(SAMPLING.INTERMEDIATE_MIN, Math.ceil(total * SAMPLING.INTERMEDIATE_PERCENT)),
     );
-    if (want >= total) return { urls: allUrls, scope, total, captured: total, omitted: 0, reason: null };
-    const picked = sample(allUrls, want, seed);
-    return { urls: picked, scope, total, captured: picked.length, omitted: total - picked.length,
-      reason: 'intermediate-loop-sample' };
+    if (want >= total) {
+      return {
+        urls: allUrls, scope, total, captured: total, omitted: 0, reason: null,
+        strategy: 'all-small-site', affectedRequested: affected.length,
+        affectedMatched: affectedMatches.length, affectedUnmatched, sentinels: 0,
+      };
+    }
+
+    const critical = allUrls.filter((entry) => entry.tier === 1);
+    const picked = [];
+    const pickedIds = new Set();
+
+    // Reserve five unrelated sentinels. Impact pages get most of the remaining budget, while
+    // critical and template representatives keep the check from becoming blind outside the
+    // named component. Every pool is capped, so an unusually large tier 1 cannot break the
+    // intermediate ceiling.
+    const sentinelReserve = Math.min(
+      INTERMEDIATE_SENTINEL_MIN,
+      Math.max(0, want - (affectedMatches.length ? 1 : 0)),
+    );
+    const affectedQuota = affectedMatches.length
+      ? Math.max(1, want - sentinelReserve - Math.min(5, critical.length))
+      : 0;
+    const chosenAffected = sample(
+      affectedMatches,
+      Math.min(affectedMatches.length, affectedQuota),
+      `${seed}:affected`,
+    );
+    for (const entry of chosenAffected) {
+      if (!pickedIds.has(entry.id)) { picked.push(entry); pickedIds.add(entry.id); }
+    }
+    const criticalPool = critical.filter((entry) => !pickedIds.has(entry.id));
+    const criticalQuota = Math.min(
+      criticalPool.length,
+      Math.max(0, Math.min(10, want - picked.length - sentinelReserve)),
+    );
+    for (const entry of sample(criticalPool, criticalQuota, `${seed}:critical`)) {
+      picked.push(entry); pickedIds.add(entry.id);
+    }
+
+    // Preserve template diversity before filling the remainder randomly. Tier 2 entries are
+    // already seed-selected representatives of DOM-signature clusters.
+    const representativePool = allUrls.filter((entry) => entry.tier === 2 && !pickedIds.has(entry.id));
+    const representativeQuota = Math.min(
+      representativePool.length,
+      Math.max(0, Math.min(5, want - picked.length - sentinelReserve)),
+    );
+    for (const entry of sample(representativePool, representativeQuota, `${seed}:representatives`)) {
+      picked.push(entry); pickedIds.add(entry.id);
+    }
+
+    const remainder = allUrls.filter((entry) => (
+      !pickedIds.has(entry.id) && !affectedSet.has(entry.id) && !affectedSet.has(entry.url)
+    ));
+    const remainderQuota = Math.max(0, want - picked.length);
+    const chosenRemainder = sample(remainder, remainderQuota, `${seed}:sentinels`);
+    picked.push(...chosenRemainder);
+    const fallbackQuota = Math.max(0, want - picked.length);
+    if (fallbackQuota) {
+      const fallback = allUrls.filter((entry) => !pickedIds.has(entry.id)
+        && !chosenRemainder.some((sentinel) => sentinel.id === entry.id));
+      picked.push(...sample(fallback, fallbackQuota, `${seed}:fill`));
+    }
+    picked.sort((a, b) => a.id.localeCompare(b.id));
+
+    return {
+      urls: picked,
+      scope,
+      total,
+      captured: picked.length,
+      omitted: total - picked.length,
+      reason: affectedMatches.length
+        ? 'intermediate-affected-plus-seeded-sentinels'
+        : 'intermediate-stratified-seeded-sample',
+      strategy: affectedMatches.length ? 'affected+critical+representatives+sentinels' : 'critical+representatives+seeded',
+      affectedRequested: affected.length,
+      affectedMatched: affectedMatches.length,
+      affectedUnmatched,
+      sentinels: chosenRemainder.length,
+    };
   }
-  // final
-  if (total <= SAMPLING.FINAL_HARD_CAP || allowAll) {
-    return { urls: allUrls, scope, total, captured: total, omitted: 0, reason: null };
-  }
-  const picked = sample(allUrls, SAMPLING.FINAL_HARD_CAP, seed);
-  return { urls: picked, scope, total, captured: picked.length, omitted: total - picked.length,
-    reason: 'above-final-hard-cap' };
+  // Final HTTP/DOM cover every discovered URL. Visual work is independently bounded by the
+  // manifest's tiered capture set and therefore does not scale with this full list.
+  return { urls: allUrls, scope, total, captured: total, omitted: 0, reason: null,
+    strategy: 'all-http-dom+tiered-visual' };
+}
+
+/** Select the expensive browser matrix. Intermediate work uses default state only. */
+export function selectCaptures(manifest, selection, { scope = 'final' } = {}) {
+  const selectedIds = new Set(selection.urls.map((entry) => entry.id));
+  return manifest.captures.filter((capture) => (
+    selectedIds.has(capture.urlId)
+    && (scope !== 'intermediate' || capture.state === 'default')
+  ));
 }
 
 export async function captureAll({
@@ -188,6 +278,7 @@ export async function captureAll({
   resume = false,
   warmup = true,
   scope = 'final',
+  affected = [],
   allowAll = false,
   visualWorkers = DEFAULT_VISUAL_WORKERS,
   provenWorkers = null,
@@ -199,7 +290,7 @@ export async function captureAll({
   if (!Number.isInteger(visualWorkers) || visualWorkers < 1 || visualWorkers > MAX_VISUAL_WORKERS) {
     throw new HarnessError(`visualWorkers must be an integer from 1 to ${MAX_VISUAL_WORKERS}`);
   }
-  if (scope === 'final' && visualWorkers !== DEFAULT_VISUAL_WORKERS && visualWorkers !== provenWorkers) {
+  if (scope === 'final' && visualWorkers > 1 && visualWorkers !== provenWorkers) {
     throw new PreconditionError(
       `Final visual evidence at ${visualWorkers} workers requires that exact count proven by an `
       + 'exhaustive determinism self-test (selftest.lock.json visualWorkers); serial (1) is always permitted.',
@@ -228,7 +319,9 @@ export async function captureAll({
         origin: stabilization.consent.origin ?? manifest.allowedOrigins[0],
       })
     : undefined;
-  const selection = selectUrls(manifest.allUrls, { scope, seed: manifest.seed ?? 'sample', allowAll });
+  const selection = selectUrls(manifest.allUrls, {
+    scope, seed: manifest.seed ?? 'sample', allowAll, affected,
+  });
   const urls = selection.urls.map((u) => u.url);
   const nonHtmlUrls = new Set();
   // Stage 1 fetches every page body anyway; use it to decide `consent-modal-open`
@@ -237,13 +330,13 @@ export async function captureAll({
   // HTML yields identical skips, and a wobbling body is caught by the DOM stage.
   const modalNeedles = triggerNeedles(stabilization.consent?.modalTriggerSelectors);
   const modalTriggerByUrl = new Map();
-  index.selection = selection && { scope: selection.scope, total: selection.total,
-    captured: selection.captured, omitted: selection.omitted, reason: selection.reason };
+  const { urls: _selectedUrls, ...selectionEvidence } = selection;
+  index.selection = selectionEvidence;
   if (selection.omitted) {
     log.info(`scope ${selection.scope}: ${selection.captured} of ${selection.total} URLs (${selection.omitted} not captured — ${selection.reason})`);
   }
 
-  /* ---- stage 1 + 2: every URL, over plain HTTP. No browser needed, so it scales. ---- */
+  /* ---- stage 1 + 2: selected URLs during iterations; every URL at final closure. ---- */
   // Fetches run in a bounded pool: no renderer is involved, so concurrency cannot touch
   // pixel evidence — it only parallelises application-server renders. Everything ORDER-
   // SENSITIVE (counters, signatures, errors, journal entries, warnings) is applied in a
@@ -331,10 +424,7 @@ export async function captureAll({
   // Restrict to the sampled URLs too. Sampling stage 1+2 while stage 3 shot everything meant an
   // "intermediate" run still paid the full screenshot cost — which is the only expensive part.
   // Captures reference the manifest by urlId, not by url.
-  const sampledIds = new Set(selection.urls.map((u) => u.id));
-  const selectedCaptures = selection.omitted
-    ? manifest.captures.filter((c) => sampledIds.has(c.urlId))
-    : manifest.captures;
+  const selectedCaptures = selectCaptures(manifest, selection, { scope });
   const notApplicable = [];
   const captureSet = selectedCaptures.filter((capture) => {
     const url = urlById(manifest, capture.urlId);
@@ -517,6 +607,21 @@ export async function captureAll({
   }
 
   return { index };
+}
+
+async function affectedTargets(values) {
+  const inline = listOpt(values, 'affected', []);
+  if (!values['affected-file']) return inline;
+  let raw;
+  try {
+    raw = await readFile(values['affected-file'], 'utf8');
+  } catch (error) {
+    throw new PreconditionError(`Cannot read --affected-file: ${error.message}`);
+  }
+  const fromFile = raw.split(/\r?\n/)
+    .map((value) => value.trim())
+    .filter((value) => value && !value.startsWith('#'));
+  return [...new Set([...inline, ...fromFile])];
 }
 
 function keyOf(url) { return captureId({ url, viewport: 'http', state: 'record' }); }

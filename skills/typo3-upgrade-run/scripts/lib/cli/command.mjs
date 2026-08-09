@@ -24,11 +24,24 @@ import { assertLiveInputs } from '../run/evidence.mjs';
 
 /** Commands that may not run without a proven-deterministic harness. */
 const REQUIRES_SELFTEST = new Set([
-  'compare-http', 'compare-dom', 'compare-visual', 'gate',
+  'compare-http', 'compare-dom', 'compare-visual', 'compare-all', 'gate',
   'backend-sweep', 'smoke', 'lighthouse',
 ]);
 
 const SELFTEST_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const AFTER_DEADLINE_COMMANDS = new Set(['status', 'report', 'validate-run']);
+
+export function assertWithinRuntimeBudget(runState, timestamp = Date.now()) {
+  const deadline = Date.parse(runState?.runtime?.deadline_at ?? '');
+  if (!Number.isFinite(deadline)) return true;
+  if (timestamp >= deadline && runState?.contract_a?.status !== 'closed') {
+    throw new PreconditionError(
+      `The ${runState.runtime.max_hours}h run deadline (${runState.runtime.deadline_at}) has passed. `
+      + 'Contract A remains incomplete; write the blocker and do not report a pass.',
+    );
+  }
+  return true;
+}
 
 export async function runCommand({ command, values, positionals, argv, actions, now = Date.now }) {
   const log = createLogger({ quiet: values.quiet, verbose: values.verbose });
@@ -43,7 +56,8 @@ export async function runCommand({ command, values, positionals, argv, actions, 
   let environmentFingerprintHash = null;
 
   try {
-    environmentFingerprintHash = (await state.read().catch(() => null))?.fingerprints?.environment ?? null;
+    const runState = await state.read().catch(() => null);
+    environmentFingerprintHash = runState?.fingerprints?.environment ?? null;
     await journal.commandStart({
       argv,
       cwd: process.cwd(),
@@ -51,6 +65,10 @@ export async function runCommand({ command, values, positionals, argv, actions, 
       envFp: environmentFingerprintHash,
     })
       .catch(() => { /* the journal must never be the reason a command fails */ });
+
+    if (runState && !AFTER_DEADLINE_COMMANDS.has(command)) {
+      assertWithinRuntimeBudget(runState, now());
+    }
 
     if (REQUIRES_SELFTEST.has(command) && !values['dry-run']) {
       await assertSelftestValid(paths, now);
@@ -62,6 +80,9 @@ export async function runCommand({ command, values, positionals, argv, actions, 
     if (!action) throw new HarnessError(`No implementation registered for command: ${command}`);
 
     result = await action(ctx);
+    if (runState && !AFTER_DEADLINE_COMMANDS.has(command)) {
+      assertWithinRuntimeBudget(await state.read(), now());
+    }
     exitCode = result?.exitCode ?? EXIT.PASS;
 
     if (values.json && result) log.json(result);

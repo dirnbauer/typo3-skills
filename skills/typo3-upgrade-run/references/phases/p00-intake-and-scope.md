@@ -13,6 +13,12 @@ to start with and what each will cost, and leaves this phase to the one you choo
 ## Allowed
 Read-only inspection. Creating `.typo3-update/` from `templates/run-directory/`. Asking questions.
 
+## Overnight clock
+`t3u init --max-hours 14` starts the non-extendable deadline. Budget 1.5h for intake/baseline,
+2h dependencies, 5h migration, 1.5h affected parity/operations, and protect the final 4h for loop
+300, handover, and contingency. At T+10h start no new migration cause; unresolved work becomes an
+honest blocker, never a shortened proof or a false pass.
+
 ## Steps
 0. **Read [`references/fleet-profile.md`](../fleet-profile.md) and work down it.** These projects
    repeat themselves, and most of its checks take seconds. Record every answer in the intake,

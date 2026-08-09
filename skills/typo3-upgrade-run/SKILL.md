@@ -7,15 +7,16 @@ description: >-
   set up visual regression around an upgrade, confirm visitors can see no difference
   after the update, prove nothing broke, or asks whether a pixel difference after the
   upgrade is acceptable. Owns the TYPO3 version constraint, the PHP target and the
-  ext_emconf.php policy for the upgrade it runs. Runs the update as bounded loops against a baseline frozen before any change, with a snapshot to roll back to and a documented verdict per
-  loop; approved performance, SEO, accessibility and security work starts only afterwards.
+  ext_emconf.php policy for the upgrade it runs. Runs bounded parent loops against a baseline frozen
+  before change, with rollback anchors and documented verdicts; database snapshots are taken only
+  before stateful operations. Approved performance,
+  SEO, accessibility and security work is a separate opt-in programme afterwards.
   Never deploys to staging or live.
 ---
 
 # TYPO3 14 update
 
 > Source: https://github.com/dirnbauer/typo3-skills
-
 Update a project, sitepackage, or extension from TYPO3 v12/v13 to supported TYPO3 14.3 LTS, inside a local DDEV clone. Produce v14-only code — no v12/v13 compatibility branches or shims.
 
 ## Start here
@@ -27,32 +28,36 @@ The whole method in one screen. Everything below this section explains *why* the
 cd skills/typo3-upgrade-run/scripts && npm ci && npm test
 
 # 1. freeze what "before" means
-t3u init --base-url "https://acme.ddev.site" --ddev-project acme --languages de,en
+t3u init --base-url "https://acme.ddev.site" --ddev-project acme --languages de,en --max-hours 14
 t3u doctor                              # host renderer + DDEV application introspection
 t3u env-fingerprint --write-baseline
 t3u content-fingerprint --write-baseline
 t3u discover-urls --seed "acme-2026"    # add --stabilization-config for consent adapters
-t3u selftest-determinism                # shoot twice, require zero diff. Not optional.
-t3u capture --label before --out .typo3-update/baseline/A-original
+t3u selftest-determinism                # two equal passes; pass B becomes unsealed Baseline A
 t3u seal-baseline --id A-original       # immutable from here
 
-# 2. open each bounded loop mechanically, then do the update
+# 2. open the one parent migration loop, then do bounded passes
 t3u loop-start --id 100 --track invariance --slug target-dependencies \
   --contract A --phase P05 --baseline-ref A-original
-t3u snapshot-create --loop 100
-t3u loop-open --loop 100 --snapshot loop-100-pre
+t3u loop-open --loop 100 --rollback-ref git:<pre-upgrade-sha>
+
+# before each schema/wizard/data mutation only
+t3u snapshot-create --loop 100 --name loop-100-extension-setup-pre
+# after a code fix: affected pages + seeded sentinels, default state only
+t3u capture --label iter-1 --scope intermediate --affected page-17
 
 # 3. prove nothing changed for visitors
-t3u capture --label after
-t3u compare-http   --loop 300 --before .typo3-update/baseline/A-original/http
-t3u compare-dom    --loop 300 --before .typo3-update/baseline/A-original/dom
-t3u compare-visual --loop 300 --before .typo3-update/baseline/A-original/shots
-t3u backend-sweep --base-url "https://acme.ddev.site"
-t3u gate --loop 300 --idempotence-diff 0
+t3u loop-start --id 300 --track invariance --slug closure \
+  --contract A --phase P11 --baseline-ref A-original
+t3u loop-open --loop 300 --rollback-ref git:<post-migration-sha>
+t3u capture --label after-final --out after-final
+t3u compare-all --loop 300 --before .typo3-update/baseline/A-original \
+  --after .typo3-update/captures/after-final --idempotence-diff 0
+# backend-sweep only when local backend modules, permissions, or backend UI config changed
 t3u report --loop 300-invariance-closure
 t3u validate-run
 
-# 4. after Contract A is countersigned: approved performance loop, then final report
+# 4. optional, only when separately requested after A: approved Contract B work
 t3u lighthouse --loop 500 --label before --runs 3  # homepage + two seeded random pages
 ```
 
@@ -61,6 +66,9 @@ Read the exit code, not the log: **0** pass · **1** fix the site · **2** fix t
 
 `t3u status` prints where the run stands at any time. Every step writes to `.typo3-update/`,
 so a resumed session reads state from disk rather than from the conversation.
+
+The overnight fast path is a hard **14-hour** run: 1.5h intake/baseline, 2h dependencies, 5h migration, 1.5h affected parity/operations, then a protected 4h for closure, handover and contingency.
+At T+10h start no new migration cause; cross the deadline incomplete rather than claim a pass.
 
 Three rules that decide most questions: the baseline is sealed before any change and never
 refreshed to make a diff go away; a difference is either repaired or approved as a declared
@@ -115,13 +123,14 @@ Full text in [`rules/00-scope-and-prohibitions.md`](rules/00-scope-and-prohibiti
   DNS, CDN, proxies, or hosting panels; never change remote infrastructure or remote data.
 - **Never** overwrite, edit, or delete `baseline/A-original/`.
 - **Never** raise a threshold, shrink the sample, or exclude a page to make a comparison pass.
-- Loop iterations sample (seeded 10%, floor 20, ceiling 100); the **closing comparison takes every
-  URL** up to 1000. Above that it samples 1000 and declares the omission — capturing everything
-  needs an explicit request confirmed **twice**, because it can turn a short close into an
-  overnight one. See `references/harness-contract.md`.
+- Ordinary loop iterations capture only `default` on affected URLs plus critical/template pages
+  and seeded random sentinels (normally 10%, floor 20, ceiling 100). Baseline, exhaustive
+  determinism, and final closure capture exactly `default`, `keyboard-focus`, and `nav-open`. Final HTTP/DOM covers every
+  discovered URL; final pixels use the sealed tiered visual set. See `references/harness-contract.md`.
 - **Never** commit credentials, dumps, or `.env` values.
 - **Never** claim a command, test, or browser flow passed unless it ran and succeeded.
-- Snapshot before every schema change, wizard run, data migration, and state-changing loop.
+- Snapshot before every schema change, wizard run, data migration, extension setup, or other
+  database mutation; use a Git/file anchor for code-only and read-only work.
 - **Name every extension without a v14 release at P00, at the top of the plan, before migrating
   anything.** `ddev composer why-not typo3/cms-core "^14.3"` lists them. One such extension blocks
   the whole install and can change the project's cost and shape, so it is an intake finding, never
@@ -176,21 +185,22 @@ reported separately and never merged into one claim.
 
 ## The loop protocol
 
-Full text in [`rules/10-loop-protocol.md`](rules/10-loop-protocol.md). Every loop — harness,
-invariance, elevation, reporting — is an instance of this one protocol.
+Full text in [`rules/10-loop-protocol.md`](rules/10-loop-protocol.md). The upgrade run owns the only
+iterative control loop. Routed skills do one bounded pass and return findings; a rerun is the next
+parent iteration, never a nested loop.
 
-1. **Scaffold** with `t3u loop-start`; all seven documents are mandatory.
+1. **Scaffold work loops** with `t3u loop-start`; loop 000 and baseline sealing are machine-managed.
 2. **Charter** — objective, contract, in/out of scope, budgets, authorising approval.
 3. **Preconditions** — evaluated against `state.json` and the manifests on disk, never memory.
 4. **Freeze check** — recompute both fingerprints; drift is `INVALID`, not a site failure.
-5. **Rollback anchor** — `t3u snapshot-create`, then `t3u loop-open` performs the live freeze check.
+5. **Rollback anchor** — Git for code/read-only work; DDEV snapshot immediately before stateful work.
 6. **Baseline binding** — Contract A loops bind to `A-original`; anything else is a violation.
-7. **Measure** — the recorded command, pinned versions, frozen sample and viewport matrix.
+7. **Measure** — intermediate `default` on affected+sentinels; full three-state matrix at proof boundaries.
 8. **Classify** every finding. Unclassified is a blocking state.
-9. **Iterate** — one cause per iteration, ≤10 files or ≤400 lines.
+9. **Iterate** — one cause and one routed-skill/tool pass per parent iteration, ≤10 files or ≤400 lines.
 10. **Progress** — open findings must strictly decrease.
-11. **Abort** on any trigger below: restore the snapshot, write the verdict, escalate.
-12. **Exit**, then **re-run unchanged**; `idempotence_rerun.diff_count` must be 0.
+11. **Abort** on any trigger below: restore the relevant Git/file/database anchor, write the verdict, escalate.
+12. **Exit** — unchanged rerun only for determinism and final loop 300; stateful tools prove their fixed point.
 
 | Abort trigger | Default |
 |---|---|
@@ -198,7 +208,7 @@ invariance, elevation, reporting — is an instance of this one protocol.
 | No progress | 2 consecutive iterations |
 | Oscillation | any finding reopening once |
 | Fingerprint drift | environment or content changed mid-loop |
-| Time budget | 90 min · 240 min for loop 000 and loop 300 |
+| Time budget | 90 min · 240 min for loop 000/300 · 14h whole run, 4h closure reserve |
 | Budget breach | an iteration exceeded the change budget |
 | Unclassifiable finding | fits no class |
 
@@ -210,10 +220,10 @@ could not resolve is worth more than one that thrashes for twenty.
 Before any baseline exists, shoot the untouched site twice and require **zero** differences; non-zero
 is a harness defect, and shrinking the sample or raising a threshold is forbidden.
 Run `selftest-determinism --sample intermediate --visual-workers 3` first; it keeps strict
-thresholds but cannot close loop 000. Then run exhaustive `--sample all` twice unchanged.
-Diagnostics use three process-isolated browsers; authoritative proofs default to serial, and a
-higher worker count is licensed only by the exhaustive double-shoot proving zero at exactly that
-count (sealed into the lock, enforced on every later capture and comparison). See the normative
+thresholds but cannot close loop 000. Then run exhaustive `--sample all` once; that command performs
+the two unchanged passes and requires zero differences.
+Diagnostics and authoritative proofs use three process-isolated browsers; the exhaustive
+double-shoot must license that exact count (sealed into the lock, enforced later). See the normative
 lifecycle in [`references/harness-contract.md`](references/harness-contract.md).
 **Only a harness that proves zero against itself may judge an update.** Comparisons refuse without a valid self-test lock.
 
@@ -245,7 +255,7 @@ Full text in [`rules/30-finding-classification.md`](rules/30-finding-classificat
   Normalise **only** CSRF tokens, nonces, session ids, random element ids, timestamps, debug
   comments and asset hashes — never text, element order, visually meaningful classes, semantic
   or ARIA attributes, image sources, `srcset`, link targets, or form structure.
-- **Stage 3 — screenshots, tiered.** Tier 1 always: homepage per language, golden paths,
+- **Stage 3 — screenshots, tiered.** Tier 1 first within the hard cap: homepage per language, golden paths,
   404/search/empty-search/login/password-reset/form pages, one representative per backend
   layout, plus every URL stage 1 or 2 flagged. Tier 2: template-signature clusters from stage 2,
   compared through representatives. Tier 3: seeded remainder within the capture budget.
@@ -254,9 +264,11 @@ Run them in order. The stage that catches a difference already narrows the cause
 differ → routing or template; DOM+pixels only → markup; pixels only → CSS, assets, fonts, or image
 processing.
 
-Interaction states are first-class captures: default, keyboard focus, nav open/closed,
-dropdown, accordion, form empty, form with validation errors, modal, search results, empty
-results, pagination, login, password reset, 404.
+The configured eight visual interaction states are `default`, `keyboard-focus`, `nav-open`,
+`dropdown-open`, `accordion-open`, `form-empty`, `form-validation-error`, and `modal-open`.
+Ordinary checks use only `default`; baseline, exhaustive determinism, and final closure use all
+eight. Search, empty results, pagination, login, password reset, and 404 are page targets, not
+additional interaction states.
 
 Consent behavior is a sealed adapter, never project-specific harness code. Seed accepted
 cookies/localStorage for the default state and configure `consent-modal-open` trigger selectors so
@@ -272,7 +284,7 @@ Full detail in [`references/run-directory.md`](references/run-directory.md). Pro
 `.typo3-update/`: `STATUS.md`, `state.json`, `journal.jsonl`, `config/`, `manifests/`,
 `baseline/`, `loops/`, `approvals/`, `decisions/`, `report/`.
 
-**One directory per loop, seven fixed documents per directory** — `00-charter`,
+**One directory per scaffolded work loop, seven fixed documents per directory** — `00-charter`,
 `01-preconditions`, `02-plan`, `03-iterations`, `04-findings`, `05-evidence`, `06-exit`, plus
 `report.json` and `artifacts/`. Each maps to one protocol stage, so a gate reads one file instead
 of parsing prose. `03` and `05` are append-only, so rewritten history shows in git; `00` and `01`
@@ -288,20 +300,20 @@ freeze, so a loop relaxing its own preconditions is detectable.
 |---|---|---|
 | P00 intake and scope lock | — | target, source version, sync freshness recorded; **v14 blockers named** |
 | P01 environment capture and freeze | — | both fingerprints sealed, `pre-update` snapshot + dump |
-| P02 determinism self-test | 000 | two consecutive double-shoots at zero |
-| P03 baseline A capture and seal | 001 | `MANIFEST.sha256` + `SEAL.md`; **no site change yet made** |
-| P04 pre-update stabilisation | 010 sitemap · 020 Vite · 030 Bootstrap 5 · 040 a11y | 0 unclassified vs A; declared changes approved |
-| P05 target and dependencies | 100 | `why-not` empty; every extension resolved |
-| P06 rung 13.4 (v12 sources) | 110 | `upgrade:list` empty |
-| P07 mechanical migration | 120 | second Rector and Fractor dry-run empty |
-| P08 manual v14 migration | 130 | 0 strong scanner matches; no v12/v13 branches |
-| P09 rung 14.3 execution | 140 | schema clean; no #108345 warm-up deprecation |
-| P10 feature parity | 200 Solr · 210 Visual Editor · 220 RTE | verified; rendering unchanged or approved |
+| P02 determinism self-test | 000 | one exhaustive double-shoot at zero |
+| P03 baseline A capture and seal | machine-managed, no work loop | `MANIFEST.sha256` + `SEAL.md`; **no site change yet made** |
+| P04 blocker-only stabilisation | iteration in 100 when required | repair discovery/build blocker only; improvements deferred |
+| P05 target and dependencies | 100 starts | `why-not` empty; every extension resolved |
+| P06 rung 13.4 (v12 sources) | iteration(s) in 100 | stateful commands reach fixed point |
+| P07 mechanical migration | iteration(s) in 100 | one reviewed Rector/Fractor pass per iteration |
+| P08 manual v14 migration | iteration(s) in 100 | 0 strong scanner matches; no v12/v13 branches |
+| P09 rung 14.3 execution | iteration(s) in 100 | schema clean; no #108345 warm-up deprecation |
+| P10 feature parity | conditional iteration(s) in 100 | installed affected features verified |
 | P11 invariance closure | 300 | 0 regressions; idempotence re-run 0 |
-| P12 backend, ops and quality | 310 · 320 | every module opens; PHPStan ≥9; audits clean |
+| P12 essential operational checks | closure work in 300 | affected editor/write/runtime paths work; canonical tests pass |
 | P13 Contract A closure certificate | — | `gate-check --group A` exits 0 |
-| P14 elevation | 500–560, including security headers in 530 | per-track bars met or justified |
-| P15 report and handover | 900 | KPI document and handover delivered |
+| P14 optional elevation | 500–560 only if separately requested | approved per-track bars met or justified |
+| P15 concise report and handover | — | evidence-backed closure and deployment notes |
 
 Playbooks: `references/phases/p00-…p15-….md`. Load the one for the current phase, not all of them.
 
@@ -321,22 +333,23 @@ Playbooks: `references/phases/p00-…p15-….md`. Load the one for the current p
 
 ## Routing
 
-Run sequentially so each pass sees the previous fixes. **Constraints in this skill override
-anything the routed skill says.**
+Route only when inventory or a finding makes the skill relevant. Each routed skill performs one
+bounded pass and returns findings to loop 100 or 300; it may not own a repeat-until-green loop.
+**Constraints in this skill override anything the routed skill says.**
 
 | Order | Skill | When |
 |---|---|---|
 | 0 | `typo3-v14-reference` | v14 API reference during P08 only |
-| 1 | `typo3-ddev` | always — URLs, PHP/database versions, container workflow |
-| 2 | `typo3-extension-upgrade` | always — inventory, dependency planning, sequence |
-| 3 | `typo3-rector` | always — PHP migration, dry-run then reviewed apply |
-| 4 | `typo3-fractor` | always — Fluid, TypoScript, FlexForm, YAML |
-| 5 | `php-modernization` | PHP types, language level, PHPStan, code style |
-| 6 | `typo3-workspaces` | always audit; explicit behaviour where records or publishing are involved |
-| 7 | `typo3-conformance`, `typo3-simplify` | always — v14 architecture, obsolete files, clarity |
-| 8 | `typo3-security`, `security-audit` | always |
-| 9 | `typo3-testing` | always — preserve behaviour, add missing coverage |
-| 10 | `typo3-docs` | always — README, documentation, upgrade notes, changelog |
+| 1 | `typo3-ddev` | DDEV inspection or command execution |
+| 2 | `typo3-extension-upgrade` | extension inventory has compatibility work |
+| 3 | `typo3-rector` | affected PHP has applicable transformations |
+| 4 | `typo3-fractor` | affected Fluid, TypoScript, FlexForm, YAML or Composer files |
+| 5 | `php-modernization` | target PHP compatibility blocks or touched code needs it |
+| 6 | `typo3-workspaces` | records, localisation, preview or publishing are affected |
+| 7 | `typo3-conformance`, `typo3-simplify` | a concrete architecture/obsolete-code finding blocks v14 |
+| 8 | `typo3-security`, `security-audit` | a dependency advisory or touched security boundary requires it; broader audit is Contract B |
+| 9 | `typo3-testing` | existing tests or risky changed behaviour require targeted coverage |
+| 10 | `typo3-docs` | user-facing installation or migration instructions changed |
 | 11 | `architecture-decision-records` | whenever a decision goes into `decisions/` — format, status lifecycle, and the bundled validator |
 
 After inventory add as needed: `typo3-batch`, `typo3-content-blocks`, `typo3-datahandler`,
@@ -371,8 +384,8 @@ database work, dropping a table or field, contacting a non-allow-listed origin, 
 budget, accepting a residual finding, the closure certificate, unlocking Contract B, each B track,
 each derived baseline, commits, and — separately — pushes, tags, publication and pull requests.
 
-Not grantable: changing a threshold or the sample after sealing, editing `baseline/A-original/`,
-touching staging, live, or remote infrastructure.
+Not grantable: changing a threshold or the sample after sealing, extending the 14h deadline,
+editing `baseline/A-original/`, or touching staging, live, or remote infrastructure.
 
 ## Harness
 
@@ -391,7 +404,7 @@ touching staging, live, or remote infrastructure.
 Codes 3 and 5 are distinct on purpose: a fingerprint drift is not a site regression, and a guard
 refusal is not a broken harness. Both must be greppable in `journal.jsonl`.
 
-Every comparison validates the self-test lock and then re-collects the live renderer and semantic
+`compare-all` validates the self-test lock and re-collects the live renderer and semantic
 content fingerprints. Reports without a run id or any of the four input hashes are rejected. The
 immutable renderer hash excludes the PHP and TYPO3 versions being upgraded, records them as the
 experiment subject, and includes both `package-lock.json` and the harness source hash.
@@ -405,56 +418,47 @@ login POST.
 
 Group A must pass before Contract B starts.
 
-**A1 Run integrity** — run directory complete with all seven documents per loop; every
-`report.json` and front matter validates; fingerprints unchanged since sealing or journalled;
-every schema change, wizard run and migration has a snapshot.
+**A1 Run integrity** — work loops 100 and 300 have their seven documents; loop 000 and the Baseline A
+seal are machine-managed evidence units; every `report.json` and front matter validates;
+fingerprints are unchanged or journalled; every schema change, wizard run,
+data migration and stateful operation has a snapshot. Code/read-only work has a Git rollback ref.
 
 **A2 Baseline integrity** — `A-original` manifest verifies; sample hash matches `SEAL.md`; loop 000
-green and earlier than loop 001; no Contract A loop names another baseline; thresholds identical
+green and earlier than the Baseline A seal; no Contract A loop names another baseline; thresholds identical
 across all A loops; `A-supplemental` URLs excluded from the claim and named in the certificate.
 
-**A3 Loop discipline** — every loop green or aborted with an approved residual; no budget exceeded
-without aborting; **0 unclassified findings**; every `declared-change` has an approval; every green
-loop idempotent; **0 `harness-noise` in Contract A**.
+**A3 Loop discipline** — loops 000, 100 and 300 are green or have an approved residual; Baseline A
+is sealed; no nested routed-skill loops; no budget exceeded without aborting;
+**0 unclassified findings**; every
+`declared-change` has an approval; loop 000, stateful fixed points and loop 300 are idempotent;
+**0 `harness-noise` in Contract A**.
 
-**A4 Invariance** — loop 300 green with 0 open regressions; comparison coverage equals the sample;
-accessibility 0 serious/critical before and after; every backend module opened; smoke, forms and
-recovery mail in Mailpit, 404, `robots.txt` and sitemap entry points pass; scheduler, redirects and
-link checks pass where installed.
+**A4 Invariance** — loop 300 green with 0 open regressions; final HTTP/DOM covers every discovered
+URL; the sealed tiered visual set covers the three authoritative states; affected editor/write/runtime
+paths, 404, robots, sitemap entry points, search and forms pass where the upgrade touched them; the
+unchanged final rerun has zero differences.
 
 **A5 Technical target** — resolves to `^14.3`; backend, frontend and CLI verified; `why-not php 8.4`
-empty and the 8.5 attempt recorded with its outcome; `composer validate --strict`, `composer audit`
-and a fresh install from the lockfile pass; schema clean and every wizard run or consciously
-skipped with a reason; deprecation log clean with no #108345 warm-up deprecation; PHPStan ≥9 with a
-strictly shrinking baseline and no new suppressions on touched code; Rector and Fractor dry-runs
-empty; every extension resolved and every removal approved; workspace behaviour passes where
-relevant; `deployer_information` installed and locally verified; no v12/v13 compatibility in executable code; reusable extensions carry a 14.3 CI job.
+empty and the 8.5 attempt recorded; `composer validate --strict`, `composer audit`, the project's
+canonical lint/static-analysis/test commands, and a fresh lockfile install pass; schema and wizard
+lists are clean; deprecation log has no new v14 blocker; Rector/Fractor have no applicable remainder;
+every extension is resolved and every removal approved; no v12/v13 compatibility remains in
+executable code.
 
-**A6 Feature parity** — Solr on the matrix-supported version with a full reindex and an active Info
-module; Visual Editor inline editing verified with unchanged frontend rendering; RTE preset loads
-with language and abbreviation controls, `abbr[title]` and `span[lang]` styled in `contentsCss` and
-the frontend with language spans left undecorated.
+**A6 Feature parity** — only installed and upgrade-affected features are checked. Solr, Visual
+Editor, RTE, workspaces, forms, search, scheduler and editor permissions are not blanket programmes;
+each is gated when inventory or changed code/configuration gives it a subject.
 
 **A7 Boundaries** — nothing touched staging, live, remote databases or infrastructure; no commit,
 push, tag, publication or pull request without authorisation; no credentials or dumps committed.
 
-**B1 Elevation** — closure timestamp precedes every elevation loop; every track approved with its
+**B1 Optional elevation** — only when explicitly requested: closure timestamp precedes every loop; every track approved with its
 own baseline; security headers are introduced here, not during invariance; bars met or each miss
 justified; nothing written into `A-original`; zero regressions against A introduced by elevation work.
 
-### Lighthouse improvement handoff
-
-The good moment is immediately after Contract A closes and before P15 reporting, inside approved
-loop 500. `t3u lighthouse` always selects exactly three reproducible pages: the homepage plus two
-seeded random non-home pages. `--label before|after|final` keeps each measurement. Its JSON contains measured opportunities and an `agentBrief`. Feed
-that report into the next iteration; add regression tests before changing one cause, run project
-tests, rerun the identical three pages, and keep the change only when the target improves without
-new Contract A differences. Otherwise restore the loop snapshot. Final reporting uses the same
-three-page evidence and labels local scores as indicative.
-
-**C Delivery** — `README.md`, `Documentation/` and `CHANGELOG.md` agree with `composer.json` and
-actual behaviour; the KPI document carries before/after, data and recommendations; the handover is
-marked information-only.
+**C Delivery** — update only documentation affected by the migration and produce a concise,
+evidence-backed closure/handover. A full README/Documentation/KPI improvement programme belongs to
+separately requested Contract B work.
 
 If a gate cannot run, state which one, why, and what evidence exists, then leave the task
 incomplete rather than claiming success. A gate that does not apply needs an explicit
@@ -477,7 +481,7 @@ incomplete rather than claiming success. A gate that does not apply needs an exp
 | `references/known-problems.md` | **a 500, a warning or a Composer refusal you have not seen before** |
 | `references/fleet-profile.md` | **P00, before diagnosing anything** — what these projects usually turn out to be |
 | `references/fleet-survey.md` | **before any run** — read-only triage across several projects: order, blockers, where the effort is |
-| `scripts/sitemap-audit.mjs` | proving the sitemap across every site and language (loop 010) |
+| `scripts/sitemap-audit.mjs` | conditional sitemap/routing blocker recipe in P04 |
 | `references/quality-bars.md`, `references/measurement-recipes.md` | Contract B |
 | `references/extension-strategy.md`, `references/native-fluid-components.md` | classifying, routing or replacing an extension; migrating fluid-components |
 | `scripts/extension-usage.mjs`, `scripts/local-extension-audit.mjs` | **P00/P08** — usage evidence; local Composer metadata, `ext_emconf.php` policy and legacy TCA signatures |
@@ -492,9 +496,4 @@ incomplete rather than claiming success. A gate that does not apply needs an exp
 | `scripts/backend-write-roundtrip.mjs`, `scripts/indexed-search-check.mjs`, `scripts/a11y-audit.mjs` | loop 310 write test, search index, loop 520 accessibility |
 | `architecture-decision-records` skill | writing an ADR into `decisions/` |
 
-## Verification sources
-
-- [TYPO3 14.3 system requirements](https://docs.typo3.org/m/typo3/reference-coreapi/14.3/en-us/Administration/Installation/SystemRequirements/Index.html)
-- [Upgrading extensions](https://docs.typo3.org/m/typo3/reference-coreapi/14.3/en-us/Administration/Upgrade/UpgradingExtensions/Index.html)
-- [Version support](https://docs.typo3.org/m/typo3/reference-coreapi/14.3/en-us/Security/Versions/Index.html)
-- [`composer.json` reference](https://docs.typo3.org/m/typo3/reference-coreapi/14.3/en-us/ExtensionArchitecture/FileStructure/ComposerJson.html)
+**Verification sources:** [system requirements](https://docs.typo3.org/m/typo3/reference-coreapi/14.3/en-us/Administration/Installation/SystemRequirements/Index.html) · [upgrading extensions](https://docs.typo3.org/m/typo3/reference-coreapi/14.3/en-us/Administration/Upgrade/UpgradingExtensions/Index.html) · [version support](https://docs.typo3.org/m/typo3/reference-coreapi/14.3/en-us/Security/Versions/Index.html) · [`composer.json`](https://docs.typo3.org/m/typo3/reference-coreapi/14.3/en-us/ExtensionArchitecture/FileStructure/ComposerJson.html)

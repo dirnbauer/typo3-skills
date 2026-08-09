@@ -10,7 +10,8 @@ Harness configuration, stabilisation settings, masking. **No site code changes a
 
 ## Procedure
 Shoot the untouched site twice — same sample, same viewports, same settings, browser fully closed
-between passes — and require **zero** differences.
+between passes — with three isolated browser workers and exactly `default`, `keyboard-focus`, and
+`nav-open` — and require **zero** differences.
 
 Assertions, all of which must hold:
 1. Pixel-identical at threshold 0 for every capture.
@@ -31,9 +32,8 @@ ADR, accepting "close enough". Each destroys the harness's ability to tell a rea
 own noise, which is the only thing it is for.
 
 ## Exit
-Two consecutive double-shoots at zero. Writes `selftest.lock.json`; every `compare-*` command refuses
+One exhaustive double-shoot (two unchanged passes) at zero. Writes `selftest.lock.json`; every `compare-*` command refuses
 without it.
 
 ## Blocking
 Three iterations without reaching zero — abort and escalate with the unstable captures named.
-

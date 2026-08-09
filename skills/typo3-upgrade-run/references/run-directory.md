@@ -9,7 +9,7 @@ Nothing in this skill is "remembered". It is written down, and the gates read wh
 ```
 .typo3-update/
 ├── STATUS.md                       human dashboard, regenerated from state.json
-├── state.json                      the machine state — the ONLY precondition source
+├── state.json                      the machine state, including the 14h deadline — the ONLY precondition source
 ├── journal.jsonl                   append-only: every command, argv, cwd, exit code, duration
 ├── .gitignore                      ignores artifacts and shots; keeps every .md and .json
 ├── config/
@@ -56,19 +56,21 @@ Nothing in this skill is "remembered". It is written down, and the gates read wh
     └── handover-deployment.md
 ```
 
-## One directory per loop, seven documents per directory
+## One directory per scaffolded work loop, seven documents per directory
 
-Every loop directory contains **exactly the same seven markdown documents, always all seven**, even when a document is nearly empty. Fixed names mean the agent never invents a path and a gate never parses prose to find out what happened.
+Every scaffolded work-loop directory contains the same seven documents. Default Contract A creates
+them only for loops 100 and 300. Machine-managed determinism 000 and Baseline A sealing use their
+own schema-validated reports, locks and manifests and do not duplicate those seven documents.
 
 | File | Holds | Written at protocol step | Mutability |
 |---|---|---|---|
 | `00-charter.md` | Objective, contract, track, in/out of scope, `depends_on`, budgets, authorising approval, the baseline it measures against | 2 | frozen after writing |
-| `01-preconditions.md` | The `checks[]` table evaluated against `state.json`, both fingerprints, and the snapshot id; gate verdict | 3–5 | frozen after writing |
+| `01-preconditions.md` | The `checks[]` table evaluated against `state.json`, both fingerprints, and the Git/file or stateful snapshot anchor; gate verdict | 3–5 | frozen after writing |
 | `02-plan.md` | Ranked hypotheses, the ordered cause list, the measurement command, the loop-000 result it relies on | 6–7 | extended between iterations |
 | `03-iterations.md` | One section per iteration: cause, change set, files/lines, measurement ref, `open_before`/`open_after`, `progress` | 9–10 | **append-only** |
 | `04-findings.md` | The findings register: id, target, class, severity, status, cause, fix ref, evidence ref, `reopened_count` | 8 onward | rows updated in place |
 | `05-evidence.md` | Tool versions, exact commands, artifacts with SHA-256, sample ref, viewport matrix | 7 onward | **append-only** |
-| `06-exit.md` | `exit_criteria[]` with results, the idempotence re-run, verdict, residual findings, next loop; on abort the condition and the escalation text | 12 | written once |
+| `06-exit.md` | `exit_criteria[]`, conditional idempotence evidence, verdict, residual findings; on abort the condition and escalation | 12 | written once |
 
 Plus `report.json` — the machine mirror, validated against `assets/schemas/loop-report.schema.json` — and `artifacts/`.
 
@@ -97,6 +99,7 @@ sample_ref: config/sample.txt@sha256:1f0c…
 env_fingerprint: sha256:9ab3…
 content_fingerprint: sha256:4d71…
 snapshot: loop-300-pre
+rollback_ref: git:6d78e9a
 status: green
 frozen: false
 created_at: 2026-07-25T09:02:11+02:00
@@ -113,12 +116,12 @@ The schema enforces two rules mechanically rather than by convention: a Contract
 | Band | Purpose |
 |---|---|
 | `000–009` | harness (determinism self-test, baseline sealing) |
-| `010–099` | pre-update stabilisation |
-| `100–199` | migration |
-| `200–299` | feature parity |
+| `010–099` | reserved; blocker remediation normally stays in loop 100 |
+| `100–199` | parent migration loop (default: 100) |
+| `200–299` | reserved; conditional feature parity normally stays in loop 100 |
 | `300–399` | closure |
 | `500–899` | elevation (Contract B) |
-| `900–999` | reporting |
+| `900–999` | legacy reporting ids; current reporting has no fix loop |
 
 Ids are never reused. A superseded loop keeps its directory with `verdict: superseded` — deleting it would remove the record of an attempt that was made.
 

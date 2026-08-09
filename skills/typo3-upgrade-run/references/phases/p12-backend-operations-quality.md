@@ -1,8 +1,14 @@
-# P12 — Backend, operations and quality gates (loops 310, 320)
+# P12 — Essential backend, operations and quality checks (inside loop 300)
 
 Track `invariance`.
 
-## Loop 310 — backend and operations
+This is a risk-routed closure checklist, not a mandatory independent programme. Run the project's
+canonical tests and the checks whose subject was changed by the upgrade. Keep the detailed recipes
+below for those cases; record the rest `not-applicable` with inventory evidence. A full security,
+conformance, simplification, editor-permission, search, CI, and documentation programme is optional
+Contract B work unless a concrete blocker or touched boundary makes it necessary for v14 parity.
+
+## Backend and operations recipes
 
 ### A disposable backend user
 
@@ -33,7 +39,8 @@ Verify the teardown rather than assuming it:
 ddev mysql -N -e "SELECT COUNT(*) FROM be_users WHERE username='_t3u_upgrade_probe';"   # 0
 ```
 
-- **Backend module sweep**: every module opens without exception output, server errors or severe
+- **Backend module sweep** (only when local backend modules, permissions, or backend UI configuration
+  changed): every module opens without exception output, server errors or severe
   console errors. **100% coverage is required** — module *groups* are distinguished from real
   modules, and an unexpected skip fails the run. A sweep that reports "12 ok, 3 skipped" and exits 0
   is how unchecked modules ship.
@@ -137,21 +144,22 @@ ddev mysql -N -e "SELECT COUNT(*) FROM be_users WHERE username='_t3u_upgrade_pro
 The smoke test is a **deterministic read-only flow**, not random link clicking. Even GET links can
 trigger logout, cache clearing, deletion, unsubscribe, scheduler actions or large downloads.
 
-## Loop 320 — static analysis and tests
-- PHPStan level 9+ (10 for `packages/`); never lower an existing stricter level. No new suppressions
-  or baseline entries for new or touched code; the baseline must shrink.
+## Static analysis and tests
+- Run the existing project PHPStan level; do not lower it or add suppressions for touched code.
+  Raising the whole project to level 9/10 is optional modernization work.
 - PHP lint, code style, Rector dry-run, Fractor dry-run, unit, functional/integration and E2E tests
   through the repository's canonical commands inside DDEV.
-- Conformance, simplification, `typo3-security` and `security-audit` passes. Fix verified actionable
-  findings, then rerun the affected gate.
+- Route conformance, simplification or security review only for concrete migration findings or
+  touched security boundaries; broad audits are Contract B.
 - `ddev composer audit` — unresolved advisories block completion.
 - Prove a clean install: a fresh `ddev composer install` from the committed lockfile resolves against
   14.3 and the claimed PHP versions.
 - Verify the PHP target across the whole extension set: `why-not php 8.4` empty, every local or
   forked package declares the target, PHPStan runs with `phpVersion` set to it, and lint plus all
   suites execute in the target container with a clean deprecation log.
-- Reusable extensions keep a CI matrix with a 14.3 job and every claimed PHP version.
+- Update reusable-extension CI only when those packages are in the requested upgrade scope.
 
 ## Exit
-Every sweep item green · 0 unresolved advisories · deprecation log clean · PHPStan baseline strictly
-smaller than before the update.
+Every applicable, risk-routed check is green; canonical project tests pass; unresolved advisories
+and new deprecations that affect the target are zero. No unchanged rerun here—the loop 300 final
+rerun is the authoritative idempotence proof.

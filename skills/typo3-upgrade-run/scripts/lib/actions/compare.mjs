@@ -6,7 +6,7 @@
  * regression from its own noise.
  */
 
-import { readdir, readFile, writeFile, mkdir, rm } from 'node:fs/promises';
+import { readdir, readFile, writeFile, mkdir, rm, cp, rename, access } from 'node:fs/promises';
 import path from 'node:path';
 import { EXIT, HarnessError, PreconditionError, InvalidRunError } from '../cli/exit-codes.mjs';
 
@@ -325,6 +325,46 @@ export async function compareVisual({ values, paths, log }) {
   };
 }
 
+/**
+ * Run the complete proof comparison behind one command-wrapper preflight. Calling the three
+ * stage commands and `gate` separately recollects the live environment/content fingerprints
+ * four times even though no mutation is allowed between them. This action validates once in
+ * the wrapper, writes the same independent stage reports, and then applies the unchanged gate.
+ */
+export async function compareAll(ctx) {
+  const { values, paths } = ctx;
+  if (!values.loop) throw new PreconditionError('--loop is required for compare-all.');
+  const beforeRoot = values.before ?? paths.baseline('A-original');
+  const afterRoot = values.after ?? path.join(paths.root, 'captures', 'after');
+
+  const http = await compareHttp({
+    ...ctx,
+    values: { ...values, before: path.join(beforeRoot, 'http'), after: path.join(afterRoot, 'http') },
+  });
+  const dom = await compareDomAction({
+    ...ctx,
+    values: { ...values, before: path.join(beforeRoot, 'dom'), after: path.join(afterRoot, 'dom') },
+  });
+  const visual = await compareVisual({
+    ...ctx,
+    values: {
+      ...values,
+      'before-dir': path.join(beforeRoot, 'shots'),
+      'after-dir': path.join(afterRoot, 'shots'),
+    },
+  });
+  const gated = await gate(ctx);
+
+  return {
+    ...gated,
+    stages: { http: http.verdict, dom: dom.verdict, visual: visual.verdict },
+    reports: [...http.reports, ...dom.reports, ...visual.reports, ...gated.reports],
+    message: gated.verdict === 'pass'
+      ? 'HTTP, DOM and visual proof identical; loop gate green'
+      : gated.message,
+  };
+}
+
 async function compareOne(bPath, aPath, diffPath, log) {
   // odiff requires an output path and reports layout mismatches through a distinct exit
   // code. The self-test deliberately has no diff output path, so use the in-process engine
@@ -409,6 +449,17 @@ export async function selftestDeterminism({ values, paths, log, journal }) {
   } finally {
     await releaseMachineLock();
   }
+
+  // Both passes are complete capture sets, not disposable screenshots. Persist their instrument
+  // metadata so either side remains independently auditable and worker-count checks can compare it.
+  await Promise.all([
+    writeFile(path.join(rootA, 'capture-index.json'), `${JSON.stringify({
+      label: 'selftest-a', manifestHash: manifest.manifestHash, ...captureA.index,
+    }, null, 2)}\n`, 'utf8'),
+    writeFile(path.join(rootB, 'capture-index.json'), `${JSON.stringify({
+      label: 'selftest-b', manifestHash: manifest.manifestHash, ...captureB.index,
+    }, null, 2)}\n`, 'utf8'),
+  ]);
 
   const unstable = [];
   const captureErrors = [
@@ -555,13 +606,43 @@ export async function selftestDeterminism({ values, paths, log, journal }) {
     harnessVersion: '2.0.0',
   };
   await writeFile(paths.selftestLock, `${JSON.stringify(lock, null, 2)}\n`, 'utf8');
+
+  // Pass B has just proven byte/pixel-identical to pass A with the same HTTP, DOM and full visual
+  // matrix. Reuse it as the unsealed Baseline A capture instead of paying for a third exhaustive
+  // browser pass. Copy through a temporary directory and never overwrite an existing baseline.
+  const promotedToBaseline = await promoteSelftestBaseline(rootB, paths.baseline('A-original'));
   await new StateStore(paths).update((s) => {
     s.selftest = { status: 'green', at: lock.passedAt, lock_hash: selftestHash, coverage: lock.coverage, quarantined_captures: [] };
     s.loops['000'] = 'green';
   });
 
-  log.success(`Determinism proven over ${pairs.length} captures. Comparisons are now permitted.`);
-  return { exitCode: EXIT.PASS, verdict: 'pass', captures: pairs.length, reports: [reportPath], message: 'determinism proven' };
+  log.success(
+    `Determinism proven over ${pairs.length} captures. Comparisons are now permitted.`
+    + (promotedToBaseline ? ' Pass B was promoted to the unsealed Baseline A capture.' : ''),
+  );
+  return {
+    exitCode: EXIT.PASS, verdict: 'pass', captures: pairs.length,
+    promotedToBaseline, reports: [reportPath], message: 'determinism proven',
+  };
+}
+
+export async function promoteSelftestBaseline(source, target) {
+  try {
+    await access(target);
+    return false;
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+  }
+  const pending = `${target}.pending`;
+  await rm(pending, { recursive: true, force: true });
+  try {
+    await cp(source, pending, { recursive: true, errorOnExist: true, force: false });
+    await rename(pending, target);
+    return true;
+  } catch (error) {
+    await rm(pending, { recursive: true, force: true });
+    throw error;
+  }
 }
 
 function suggest(cmp) {
@@ -624,11 +705,13 @@ export async function verifyBaselineAction({ values, paths, log }) {
 
 export async function gate({ values, paths, log }) {
   if (!values.loop) throw new PreconditionError('--loop is required for gate.');
-  if (values['idempotence-diff'] === undefined) {
-    throw new PreconditionError('--idempotence-diff is required; a missing rerun is not zero.');
-  }
   const loopDirName = await resolveLoopDir(paths, values.loop);
   const loopId = loopDirName.slice(0, 3);
+  const idempotenceRequired = loopId === '300' || values['require-idempotence'] === true;
+  const idempotenceRan = values['idempotence-diff'] !== undefined;
+  if (idempotenceRequired && !idempotenceRan) {
+    throw new PreconditionError('--idempotence-diff is required for final closure; a missing rerun is not zero.');
+  }
   const artifacts = paths.loopArtifacts(loopDirName);
   const reports = [];
   const missingStages = [];
@@ -648,7 +731,7 @@ export async function gate({ values, paths, log }) {
   }
 
   const findings = reports.flatMap((r) => r.findings ?? []);
-  const idempotenceDiff = intOpt(values, 'idempotence-diff', null);
+  const idempotenceDiff = idempotenceRan ? intOpt(values, 'idempotence-diff', null) : null;
   const verdict = loopVerdict(findings, { idempotenceDiff });
   const counts = countByClass(findings);
 
@@ -664,7 +747,7 @@ export async function gate({ values, paths, log }) {
       findingsByClass: counts,
       blockingReasons: verdict.blockingReasons,
       residualFindings: verdict.residual,
-      idempotence: { ran: true, diffCount: idempotenceDiff },
+      idempotence: { required: idempotenceRequired, ran: idempotenceRan, diffCount: idempotenceDiff },
     },
   });
   const written = await writeReport(reportPath, report, { profile: values['redaction-profile'], dryRun: values['dry-run'] });

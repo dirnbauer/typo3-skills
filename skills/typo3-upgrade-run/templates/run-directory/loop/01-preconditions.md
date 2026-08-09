@@ -13,6 +13,7 @@ acceptance_ref: null
 env_fingerprint: null
 content_fingerprint: null
 snapshot: null
+rollback_ref: null
 status: planned
 frozen: false
 created_at: "{{NOW}}"
@@ -43,8 +44,9 @@ Standard checks for a Contract A loop:
 | PRE-03 | `state.loops["000"] == "green"` |
 | PRE-04 | `env_fingerprint == manifests.environment.sealed` |
 | PRE-05 | `content_fingerprint == manifests.content.sealed` |
-| PRE-06 | `snapshot != null` |
+| PRE-06 | `rollback_ref != null`; `snapshot != null` before stateful work |
 | PRE-07 | every loop in `depends_on` is `green` |
+| PRE-08 | loop 100: `now < deadline_at - closure_reserve`; loop 300: `now < deadline_at` |
 
 Contract B loops add:
 
@@ -68,7 +70,9 @@ hunting a regression the environment invented.
 
 ## Rollback anchor
 
-`ddev snapshot --name loop-{{LOOP_ID}}-pre` → recorded in `manifests/snapshots.json`.
+Code/read-only work: a recorded Git or file anchor. Stateful work: `ddev snapshot --name
+loop-{{LOOP_ID}}-<operation>-pre` immediately before the operation, recorded in
+`manifests/snapshots.json`.
 
 ## Gate verdict
 

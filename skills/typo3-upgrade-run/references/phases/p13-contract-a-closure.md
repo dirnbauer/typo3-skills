@@ -3,7 +3,7 @@
 Gate, no loop. The document that lets Contract B start.
 
 ## Preconditions
-Loops 000–320 all `green`, or `aborted` with a user-approved residual.
+Loops 000, 100 and 300 are `green` or carry an explicitly approved residual; Baseline A is sealed.
 
 ## Steps
 1. Run `gate-check --group A`.
@@ -32,4 +32,3 @@ coverage is worse than a narrower claim stated honestly.
 ## Blocking
 Any Contract B work before this file exists is a rules violation and must be reverted. Gate B1.1
 compares timestamps, so it is detectable after the fact.
-

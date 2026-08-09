@@ -25,6 +25,7 @@ Each is a memory failure, and none of them is fixed by remembering harder. They 
 {
   "schema": "typo3-upgrade-run/state@1",
   "run_id": "2026-07-25-acme",
+  "runtime": { "started_at": "…", "deadline_at": "…", "max_hours": 14, "closure_reserve_hours": 4 },
   "project": { "name": "acme", "trusted_origin": "https://acme.ddev.site", "languages": ["de","en"] },
   "target": { "kind": "project", "typo3_from": "12.4.31", "typo3_to": "14.3",
               "php_from": "8.1", "php_to": "8.4", "php_85_evaluated": true, "php_85_blockers": [] },
@@ -33,7 +34,7 @@ Each is a memory failure, and none of them is fixed by remembering harder. They 
   "baselines": { "A-original": { "sealed": true, "sealed_at": "…", "manifest": "sha256:…", "urls": 87 } },
   "fingerprints": { "environment": "sha256:…", "content": "sha256:…", "sealed_at": "…" },
   "selftest": { "status": "green", "at": "…", "lock_hash": "…", "coverage": "all" },
-  "loops": { "000": "green", "001": "green", "010": "green", "300": "open" },
+  "loops": { "000": "green", "100": "green", "300": "open" },
   "approvals": ["APR-001"], "decisions": ["ADR-001"],
   "snapshots": ["pre-update", "loop-300-pre"],
   "open_findings": 4, "blocked": null, "updated_at": "…"
@@ -45,6 +46,7 @@ Each is a memory failure, and none of them is fixed by remembering harder. They 
 | Field | Why it matters |
 |---|---|
 | `project.trusted_origin` | The one origin credentials and navigation may reach. Scheme included and never rewritten — rewriting the scheme is how an `http://` DDEV project silently discovers zero URLs. |
+| `runtime.deadline_at` | Hard overnight ceiling. The last four hours are reserved for closure; passing the deadline cannot produce a green result. |
 | `target.php_to` / `php_85_evaluated` | 8.4 is the standard target. `php_85_evaluated` is `null` until `composer why-not php 8.5` has actually run, so "we could not use 8.5" is never confused with "we never checked". |
 | `contract_a.closed_at` | Gate B1.1 compares this timestamp against every elevation loop's `created_at`. It is the mechanical answer to "did improvement work leak into the migration?" |
 | `contract_b.unlocked` | Set only by the closure certificate. No elevation loop may start while it is false. |

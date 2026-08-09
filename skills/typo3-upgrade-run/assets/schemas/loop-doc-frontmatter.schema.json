@@ -25,6 +25,7 @@
     "env_fingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
     "content_fingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
     "snapshot": { "type": ["string", "null"] },
+    "rollback_ref": { "type": ["string", "null"] },
     "approval_ref": {
       "type": ["string", "null"],
       "pattern": "^APR-[0-9]{3}$",

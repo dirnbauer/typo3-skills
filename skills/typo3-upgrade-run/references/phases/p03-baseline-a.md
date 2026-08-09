@@ -1,6 +1,9 @@
-# P03 — Baseline A capture and seal (loop 001)
+# P03 — Baseline A capture and seal (machine-managed evidence unit)
 
 Track `harness`. The single most order-sensitive phase in the skill.
+
+Do not scaffold a seven-document work loop for this phase. The manifest, capture index, checksums,
+lock and seal are the structured evidence.
 
 ## Preconditions
 Loop 000 green. **No site change of any kind has been made yet.**
@@ -18,12 +21,13 @@ exists can never be audited. **Seal first, remediate second.**
 1. Validate sitemaps read-only: each language has a reachable variant, entries use the right base and
    language prefixes, hreflang and canonical are consistent, URLs answer 200 and are indexable, the
    expected page tree is covered with no excluded doktypes leaking. **Record the defects as findings
-   for loop 010; fix nothing.**
+   for loop 100 or Contract B; fix nothing.**
 2. Discover URLs through the guarded walker, with the seed from `config/run.yml`.
-3. Derive the sample: tier 1 mandatory pages, template-cluster representatives, seeded remainder
-   within the capture budget. Persist `config/sample.txt`.
-4. Capture stage 1 (HTTP), stage 2 (DOM) and stage 3 (screenshots) across the viewport and state
-   matrix.
+3. Derive the sample: tier 1 first, then template-cluster representatives and a seeded remainder,
+   all inside the hard 360-screenshot budget. Persist `config/sample.txt`; name every omitted id.
+4. Reuse exhaustive self-test pass B, which already contains stage 1, stage 2 and the full viewport
+   and state matrix and was proven identical to pass A. The harness promotes it atomically to the
+   unsealed `baseline/A-original`; do not capture an identical third browser pass.
 5. Seal: `MANIFEST.sha256` over every artifact, `LOCK.json`, and `SEAL.md` recording who, when, both
    fingerprints and the sample hash.
 

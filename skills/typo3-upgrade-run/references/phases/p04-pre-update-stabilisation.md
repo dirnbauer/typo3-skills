@@ -1,34 +1,35 @@
-# P04 — Pre-update stabilisation (loops 010, 020, 030, 040)
+# P04 — Conditional blocker remediation (iteration in loop 100)
 
-Track `invariance`. These changes happen **after** the baseline is sealed, and each is measured
-against it.
+Track `invariance`. Do not run a general sitemap, Vite, Bootstrap, or accessibility improvement
+programme before the upgrade. Use the recipes below only when intake evidence shows that the issue
+blocks TYPO3 14.3 or prevents a truthful equality proof. Otherwise record it as a Contract B
+candidate and continue.
 
-| Loop | Slug | Scope |
+| Recipe | Run only when |
 |---|---|---|
-| 010 | `sitemap-and-routing` | per-language sitemaps, hreflang, canonicals, excluded doktypes, `EXT:seo` |
-| 020 | `build-pipeline-vite` | plain Vite: hashed output plus a manifest, referenced from Fluid/TypoScript, no bridge extension |
-| 030 | `bootstrap-5-latest` | latest 5.x, in small verified steps |
-| 040 | `accessibility-automated-green` | axe-core to 0 serious/critical per language |
+| Sitemap/routing | discovery cannot produce an adequate declared URL set, or the upgrade changes routing |
+| Vite | removed Core concatenation/compression is actively configured and assets would otherwise break |
+| Bootstrap | the installed version blocks the resolved v14 dependency set or changed code needs migration |
+| Accessibility | the upgrade caused an accessibility regression; broad remediation is Contract B |
 
 ## First: does the loop have a subject?
 
-Three of these four loops are frequently **inapplicable**, and running one anyway is not neutral —
-it changes a site that did not need changing, and every change then has to be proven invariant.
-Measure before deciding, and record the measurement:
+Running an inapplicable recipe is not neutral: it changes a site that did not need changing and
+creates more parity work. Measure before deciding and record the decision:
 
-| Loop | Skip when | How to know |
+| Recipe | Skip when | How to know |
 |---|---|---|
 | 020 Vite | the site uses no core concatenation or compression | `compressCss`, `compressJs`, `concatenateCss`, `concatenateJs` appear in no TypoScript file and no `sys_template` row. v14 removes those features — if they are unused, the removal breaks nothing and a build would be introduced solely to have one. |
 | 030 Bootstrap | Bootstrap is not used | zero Bootstrap class names or variables in the shipped CSS and templates. A `bootstrap*` entry in `package.json` proves nothing: unused npm dependencies outlive their use, and a **Bootstrap 3** package is not a Bootstrap 5 upgrade waiting to happen. |
-| 010 sitemap | never — the sitemap is the sampling source for every later loop | |
+| 010 sitemap | guarded sitemap or page-tree discovery already yields an adequate declared set | degraded discovery is allowed only with its limitations recorded in the closure claim |
 
-Write the decision as an ADR with the evidence in it. "We skipped it" and "there was nothing to
-skip" read identically in a report six months later, and only one of them is defensible.
+Use an ADR only for a consequential limitation or trade-off. A normal not-applicable decision goes
+in loop 100 evidence; do not create seven documents and a separate loop for it.
 
-## Expectation per loop
-- **010 and 020 must be pixel-identical.** They change routing metadata and asset delivery, not
+## Expectation when a recipe runs
+- **Sitemap and Vite must be pixel-identical.** They change routing metadata and asset delivery, not
   rendering. Any difference is a `regression`.
-- **030 and 040 are declared-change loops.** Differences are expected, but each needs an approval per
+- **Bootstrap and accessibility changes** may render differently, and each needs an approval per
   difference class with before/after evidence.
 
 ## Loop 010 — Sitemap and routing
@@ -147,10 +148,9 @@ in P08 makes that explicit attribute redundant. Do the cheap fix now and note th
 not depend on a doctype change that has not happened yet.
 
 ## Exit
-Compared against `A-original`: 0 unclassified findings, every `declared-change` carrying an approval,
-idempotence re-run clean.
+The blocking subject is resolved inside loop 100. Run one intermediate `default`-state check over
+affected URLs plus seeded sentinels. Do not add an unchanged rerun.
 
 ## Blocking
 Any difference without a cause. Any attempt to update `baseline/A-original/`. Newly reachable URLs go
 to `A-supplemental/` and are excluded from the invariance claim.
-
