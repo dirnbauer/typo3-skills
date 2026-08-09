@@ -21,6 +21,17 @@ P00 complete.
    or tag marking the code state, and a `fileadmin` (and other storages) archive, because wizards
    that move or rename FAL files are otherwise irreversible and mutating files after sealing voids
    the content fingerprint.
+2b. **Pin the harness into the run.** Copy the skill's `typo3-upgrade-run` tree at one committed
+   revision into `<run-dir>/harness/` (`git archive <rev> | tar -x`, then `npm ci && npm test`
+   inside `harness/scripts/`), record the revision in `manifests/tooling.json`, and invoke
+   **only** `node <run-dir>/harness/scripts/t3u.mjs` from then on. The skill directory is a
+   live working tree (often shared by several concurrent runs and editing sessions); running
+   it directly means the measuring instrument can change — or break — mid-run, and the
+   environment fingerprint will correctly void the run when it does. Two independent runs
+   derived this pin under fire on the same day; it is a rule, not a workaround. Re-pinning at
+   a newer revision is allowed **only before the baseline is sealed**, and re-seals the
+   environment fingerprint.
+
 3. **Check the container against the target's minimums, not against what boots today.** A v12-era
    DDEV project routinely runs a database the target cannot use, and the failure mode is nasty:
    the update installs cleanly, the backend works, and the frontend returns 500 with an SQL

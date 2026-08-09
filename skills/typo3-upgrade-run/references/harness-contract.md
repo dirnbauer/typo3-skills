@@ -220,6 +220,12 @@ order-sensitive effect â€” counters, signatures, finding ids, journal entries â€
 pass in item order, so their reports are byte-identical to a serial run's, and the HTTP pool
 size is recorded in the capture index.
 
+**The harness is pinned per run.** Every run copies this skill at one committed revision into
+`<run-dir>/harness/` (P01 step 2b) and executes only that copy. The skill checkout itself is a
+live tree shared by concurrent runs and editing sessions; the pin is what makes the
+environment fingerprint's harness hash stable, and a fingerprint that moves because the
+*instrument* moved voids comparisons exactly as designed. Never point a run at the live tree.
+
 **Several runs, one machine.** Visual stages across concurrent runs (different projects on the
 same host) are serialised by a machine-wide lock (`$TMPDIR/t3u-visual-capture.lock`): a second
 run's Chromium fleet competing for cores during a double-shoot turns real determinism into
