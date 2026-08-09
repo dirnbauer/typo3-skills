@@ -8,7 +8,13 @@
 
 import { readdir, readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import path from 'node:path';
-import { EXIT, PreconditionError, InvalidRunError } from '../cli/exit-codes.mjs';
+import { EXIT, HarnessError, PreconditionError, InvalidRunError } from '../cli/exit-codes.mjs';
+
+// Pixel comparisons are independent read-only jobs (odiff subprocess or pixelmatch);
+// a bounded pool only changes wall-clock, never a verdict. Order-sensitive assembly
+// stays serial — see compareVisual.
+export const DEFAULT_COMPARE_WORKERS = 8;
+export const MAX_COMPARE_WORKERS = 16;
 import { compareRecords } from '../compare/http-meta.mjs';
 import { compareDom } from '../compare/dom-normalize.mjs';
 import {
@@ -22,6 +28,8 @@ import { StateStore } from '../run/state.mjs';
 import { intOpt } from '../cli/args.mjs';
 import { sha256 } from '../run/paths.mjs';
 import { readJson } from './core.mjs';
+import { mapPool } from '../util/pool.mjs';
+import { acquireMachineLock, releaseMachineLock } from '../util/machine-lock.mjs';
 import { readEvidenceContext } from '../run/evidence.mjs';
 
 const nextId = (loopId, n) => `F-${String(loopId ?? '000').padStart(3, '0')}-${String(n).padStart(3, '0')}`;
@@ -187,6 +195,22 @@ export async function compareVisual({ values, paths, log }) {
   const diffDir = values['diff-dir'] ?? path.join(paths.root, 'captures', 'diff');
   const reportPath = values.report ?? await stageReportPath(paths, values.loop, 'visual');
 
+  // Environment equality includes the capture instrument. Both sides and the sealed
+  // self-test lock must agree on the worker count; a comparison across differing counts
+  // compares two different instruments and is INVALID, not evidence.
+  const lockWorkers = (await readJson(paths.selftestLock))?.visualWorkers ?? null;
+  const workersOf = async (shotsDir) => (await readJson(path.join(path.dirname(shotsDir), 'capture-index.json')))?.visualWorkers ?? null;
+  const [beforeWorkers, afterWorkers] = await Promise.all([workersOf(beforeDir), workersOf(afterDir)]);
+  const workerCounts = [['selftest lock', lockWorkers], ['before capture', beforeWorkers], ['after capture', afterWorkers]]
+    .filter(([, workers]) => Number.isInteger(workers));
+  if (new Set(workerCounts.map(([, workers]) => workers)).size > 1) {
+    const { InvalidRunError } = await import('../cli/exit-codes.mjs');
+    throw new InvalidRunError(
+      `Visual worker counts differ between ${workerCounts.map(([who, workers]) => `${who}=${workers}`).join(', ')} — `
+      + 'the captures were produced by different instruments and cannot be compared.',
+    );
+  }
+
   const [bFiles, aFiles] = await Promise.all([listShots(beforeDir), listShots(afterDir)]);
   if (!bFiles.length && !aFiles.length) {
     throw new PreconditionError(`No screenshots in ${beforeDir} or ${afterDir}.`);
@@ -207,7 +231,26 @@ export async function compareVisual({ values, paths, log }) {
   const sampledAfter = pairs.some((p) => p.status === 'pair');
   const notCaptured = [];
 
-  for (const p of pairs) {
+  // Pixel work (byte pre-check, then odiff/pixelmatch) runs in a bounded pool: each pair
+  // is an independent read-only comparison writing only its own diff artifact, so
+  // concurrency cannot change any single verdict. Everything ORDER-SENSITIVE — finding
+  // ids, counters, report arrays — is assembled afterwards in one stable pass over
+  // `pairs` in file order, so the report is byte-identical to the serial one.
+  const compareWorkers = intOpt(values, 'compare-workers', DEFAULT_COMPARE_WORKERS);
+  if (!Number.isInteger(compareWorkers) || compareWorkers < 1 || compareWorkers > MAX_COMPARE_WORKERS) {
+    throw new HarnessError(`compare-workers must be an integer from 1 to ${MAX_COMPARE_WORKERS}`);
+  }
+  const pixelOutcomes = await mapPool(pairs, compareWorkers, async (p) => {
+    if (p.status !== 'pair') return null;
+    const bPath = path.join(beforeDir, p.file);
+    const aPath = path.join(afterDir, p.file);
+    if (await quickIdentical(bPath, aPath)) return { identical: true };
+    const cmp = await compareOne(bPath, aPath, path.join(diffDir, `diff_${p.file}`), log);
+    return { identical: false, cmp };
+  });
+
+  for (let i = 0; i < pairs.length; i += 1) {
+    const p = pairs[i];
     if (p.status !== 'pair') {
       if (p.status === STATUS.MISSING_AFTER && sampledAfter) { notCaptured.push(p.file); continue; }
       n += 1;
@@ -220,12 +263,12 @@ export async function compareVisual({ values, paths, log }) {
       continue;
     }
 
-    const bPath = path.join(beforeDir, p.file);
-    const aPath = path.join(afterDir, p.file);
+    const outcome = pixelOutcomes[i];
+    if (!outcome.ok) throw outcome.error;
+    const { identical, cmp } = outcome.value;
 
-    if (await quickIdentical(bPath, aPath)) { match += 1; results.push({ file: p.file, status: STATUS.MATCH, diffPixels: 0 }); continue; }
+    if (identical) { match += 1; results.push({ file: p.file, status: STATUS.MATCH, diffPixels: 0 }); continue; }
 
-    const cmp = await compareOne(bPath, aPath, path.join(diffDir, `diff_${p.file}`), log);
     const status = statusFor({ diffPixels: cmp.diffPixels ?? 1, error: !cmp.ok });
     results.push({ file: p.file, status, ...cmp });
 
@@ -314,6 +357,7 @@ export async function selftestDeterminism({ values, paths, log, journal }) {
     captureAll,
     DEFAULT_VISUAL_WORKERS,
     DIAGNOSTIC_VISUAL_WORKERS,
+    DEFAULT_HTTP_WORKERS,
   } = await import('./capture.mjs');
   const guard = await UrlGuard.create({ allowedOrigins: manifest.allowedOrigins });
   const stages = new Set(['http', 'dom', 'visual']);
@@ -338,18 +382,33 @@ export async function selftestDeterminism({ values, paths, log, journal }) {
     rm(rootB, { recursive: true, force: true }),
   ]);
 
-  log.step('self-test pass A');
-  const captureA = await captureAll({
-    manifest, guard, outRoot: rootA, stages, log, journal,
-    warmup: true, visualWorkers, scope,
-  });
-  log.step('self-test pass B (fresh browser)');
-  // Both sides must enter capture from the same client-side lifecycle. A warm pass versus a
-  // cold pass compares different consent/focus/carousel states even on identical code.
-  const captureB = await captureAll({
-    manifest, guard, outRoot: rootB, stages, log, journal,
-    warmup: true, visualWorkers, scope,
-  });
+  // The self-test is the proof instrument: it licenses its own worker count. A green
+  // exhaustive double-shoot seals that count into the lock, and only that count may then
+  // produce final evidence elsewhere.
+  const httpWorkers = intOpt(values, 'http-workers', DEFAULT_HTTP_WORKERS);
+  // Hold the machine lock across BOTH passes: another run's captures landing between
+  // pass A and pass B would change machine load mid-proof, which is exactly the
+  // condition the double-shoot exists to exclude. captureAll's own acquisition is
+  // re-entrant under this hold.
+  await acquireMachineLock({ runId: `selftest:${paths.root}`, log });
+  let captureA;
+  let captureB;
+  try {
+    log.step('self-test pass A');
+    captureA = await captureAll({
+      manifest, guard, outRoot: rootA, stages, log, journal,
+      warmup: true, visualWorkers, scope, provenWorkers: visualWorkers, httpWorkers,
+    });
+    log.step('self-test pass B (fresh browser)');
+    // Both sides must enter capture from the same client-side lifecycle. A warm pass versus a
+    // cold pass compares different consent/focus/carousel states even on identical code.
+    captureB = await captureAll({
+      manifest, guard, outRoot: rootB, stages, log, journal,
+      warmup: true, visualWorkers, scope, provenWorkers: visualWorkers, httpWorkers,
+    });
+  } finally {
+    await releaseMachineLock();
+  }
 
   const unstable = [];
   const captureErrors = [

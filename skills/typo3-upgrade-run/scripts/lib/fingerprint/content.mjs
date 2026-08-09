@@ -39,9 +39,10 @@ export async function collectContent({
   fileadmin = 'fileadmin',
   tables = null,
   allowMissing = false,
+  excludeTables = [],
   runner = ddevSql,
 } = {}) {
-  const database = await collectDatabase({ ddevProject, tables, runner });
+  const database = await collectDatabase({ ddevProject, tables, excludeTables, runner });
 
   if (!database.available && !allowMissing) {
     throw new InvalidRunError(
@@ -55,7 +56,15 @@ export async function collectContent({
   const files = await collectFiles(fileadmin);
   const body = {
     database: database.available
-      ? { tables: database.tables, excludedTables: [...EXCLUDED_TABLES], collectedVia: database.via }
+      ? {
+          tables: database.tables,
+          excludedTables: [...EXCLUDED_TABLES],
+          // Project-declared exclusions (run.yml fingerprint.exclude_tables / --exclude-tables):
+          // request-driven log tables that mutate under capture load. Declared here so the
+          // sealed manifest shows exactly what the fingerprint chose not to see.
+          projectExcludedTables: [...excludeTables].sort(),
+          collectedVia: database.via,
+        }
       : { available: false, error: database.error },
     files,
   };
@@ -69,12 +78,12 @@ export async function collectContent({
   };
 }
 
-async function collectDatabase({ ddevProject, tables, runner }) {
+async function collectDatabase({ ddevProject, tables, excludeTables = [], runner }) {
   const rows = [];
   try {
     const selected = tables?.length ? tables : await discoverTrackedTables(runner, ddevProject);
     for (const table of selected) {
-      if (!safeIdentifier(table) || excluded(table)) continue;
+      if (!safeIdentifier(table) || excluded(table) || excludeTables.includes(table)) continue;
       const columnsRaw = await runner(`SHOW COLUMNS FROM \`${table}\``, ddevProject);
       const columns = parseTable(columnsRaw).map((row) => ({
         name: row.Field,

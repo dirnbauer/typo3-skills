@@ -28,6 +28,7 @@ import { discoverFromPages, parsePageTreeRows } from '../../lib/actions/discover
 import { parse } from '../../lib/cli/args.mjs';
 import {
   captureAll,
+  triggerNeedles,
   DEFAULT_VISUAL_WORKERS,
   DIAGNOSTIC_VISUAL_WORKERS,
   MAX_VISUAL_WORKERS,
@@ -177,6 +178,19 @@ describe('browser settling', () => {
     assert.doesNotMatch(selftest, /onlyInBefore|onlyInAfter/);
   });
 
+  test('modal trigger needles: ids and attribute selectors derive, anything else disables skipping', () => {
+    assert.deepEqual(triggerNeedles(['#supi__choose']), ['id="supi__choose"']);
+    assert.deepEqual(
+      triggerNeedles(['#a', '[data-open-consent="1"]']),
+      ['id="a"', 'data-open-consent="1"'],
+    );
+    // One underivable selector must disable skipping for the whole set — never guess.
+    assert.equal(triggerNeedles(['#a', '.class-selector']), null);
+    assert.equal(triggerNeedles(['button.consent']), null);
+    assert.equal(triggerNeedles([]), null);
+    assert.equal(triggerNeedles(undefined), null);
+  });
+
   test('self-test has no pixel-dust quarantine: any changed pixel blocks', async () => {
     const source = await readFile(new URL('../../lib/actions/compare.mjs', import.meta.url), 'utf8');
     const selftest = source.slice(source.indexOf('export async function selftestDeterminism'));
@@ -187,14 +201,35 @@ describe('browser settling', () => {
   test('visual capture isolates final pages and bounds diagnostic workers', async () => {
     assert.equal(DEFAULT_VISUAL_WORKERS, 1);
     assert.equal(DIAGNOSTIC_VISUAL_WORKERS, 3);
-    assert.equal(MAX_VISUAL_WORKERS, 6);
+    // 12 covers a 10-core capture host; any count above 1 still needs a green exhaustive
+    // self-test at exactly that count before it may produce final evidence.
+    assert.equal(MAX_VISUAL_WORKERS, 12);
     await assert.rejects(
       captureAll({ visualWorkers: 0 }),
-      /visualWorkers must be an integer from 1 to 6/,
+      /visualWorkers must be an integer from 1 to 12/,
     );
     await assert.rejects(
+      captureAll({ visualWorkers: 1, httpWorkers: 0 }),
+      /httpWorkers must be an integer from 1 to 16/,
+    );
+    // Unproven parallel counts are refused for final evidence …
+    await assert.rejects(
       captureAll({ visualWorkers: 3 }),
-      /Final visual evidence requires exactly 1 worker/,
+      /Final visual evidence at 3 workers requires that exact count proven/,
+    );
+    await assert.rejects(
+      captureAll({ visualWorkers: 3, provenWorkers: 2 }),
+      /Final visual evidence at 3 workers requires that exact count proven/,
+    );
+    // … while the licensed count and serial both proceed past the gate (they then fail
+    // on the missing manifest, which is the next check in line).
+    await assert.rejects(
+      captureAll({ visualWorkers: 3, provenWorkers: 3 }),
+      (err) => !/Final visual evidence/.test(err.message),
+    );
+    await assert.rejects(
+      captureAll({ visualWorkers: 1 }),
+      (err) => !/Final visual evidence/.test(err.message),
     );
 
     const source = await readFile(new URL('../../lib/actions/capture.mjs', import.meta.url), 'utf8');
@@ -242,8 +277,8 @@ describe('browser settling', () => {
   test('capture accounting errors block determinism even if a PNG was left behind', async () => {
     const source = await readFile(new URL('../../lib/actions/compare.mjs', import.meta.url), 'utf8');
     const selftest = source.slice(source.indexOf('export async function selftestDeterminism'));
-    assert.match(selftest, /const captureA = await captureAll/);
-    assert.match(selftest, /const captureB = await captureAll/);
+    assert.match(selftest, /captureA = await captureAll/);
+    assert.match(selftest, /captureB = await captureAll/);
     assert.match(selftest, /reason: 'capture-error'/);
     assert.match(selftest, /const problems = \[\.\.\.unstable, \.\.\.captureProblems\]/);
     assert.match(selftest, /captureErrors: captureErrors\.length/);

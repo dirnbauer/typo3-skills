@@ -60,6 +60,7 @@ export const COMMANDS = {
     'write-baseline': { type: 'boolean', default: false }, assert: { type: 'boolean', default: false },
     'ddev-project': { type: 'string' }, fileadmin: { type: 'string', default: 'fileadmin' },
     tables: { type: 'string' },
+    'exclude-tables': { type: 'string' },
     'allow-missing': { type: 'boolean', default: false },
   }},
   'discover-urls': { summary: 'Guarded sitemap/database discovery into a URL manifest', options: {
@@ -82,11 +83,13 @@ export const COMMANDS = {
     scope: { type: 'string', default: 'final' },
     'all-urls': { type: 'boolean', default: false },
     'visual-workers': { type: 'string' },
+    'http-workers': { type: 'string' },
   }},
   'selftest-determinism': { summary: 'Shoot the untouched site twice; require zero differences', options: {
     repeats: { type: 'string', default: '2' }, 'fresh-browser': { type: 'boolean', default: true },
     sample: { type: 'string', default: 'all' },
     'visual-workers': { type: 'string' },
+    'http-workers': { type: 'string' },
   }},
   'seal-baseline': { summary: 'Write MANIFEST.sha256 and LOCK.json; make a baseline immutable', options: {
     dir: { type: 'string' }, id: { type: 'string', default: 'A-original' },
@@ -103,6 +106,7 @@ export const COMMANDS = {
   'compare-visual': { summary: 'Compare screenshots with strict-zero pixel evidence', options: {
     'before-dir': { type: 'string' }, 'after-dir': { type: 'string' }, 'diff-dir': { type: 'string' },
     report: { type: 'string' }, reshoots: { type: 'string', default: '1' },
+    'compare-workers': { type: 'string' },
   }},
   'backend-sweep': { summary: 'Open every backend module; require full coverage', options: {
     'base-url': { type: 'string' }, report: { type: 'string' },

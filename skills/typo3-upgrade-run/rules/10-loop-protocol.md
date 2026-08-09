@@ -85,10 +85,11 @@ twice unchanged.
 The intermediate diagnostic uses three independent Chromium processes concurrently by default.
 Contexts inside one shared process are forbidden for a multi-worker diagnostic: renderer-global
 state can make fractional layout allocation depend on concurrent workload. Exhaustive proofs
-and baseline captures always use one worker. Parallel workers may be benchmarked from 1 through
-6 for diagnostics, but they are never authoritative evidence. The worker count is recorded in
-capture metadata and the self-test report and remains unchanged between both sides and both
-exhaustive proofs.
+and baseline captures default to one worker; a higher count is permitted **only as a proven
+property** — the exhaustive double-shoot itself runs at that count and must reach zero, which
+seals the count into the self-test lock, and every authoritative capture and comparison of the
+run must then use exactly that count. The worker count is recorded in capture metadata and the
+self-test report and remains unchanged between both sides and both exhaustive proofs.
 
 A non-zero result is **always** a harness or stabilisation defect. It is never a site defect, because nothing changed between the two passes. Fix it in the harness or in the stabilisation configuration (`references/determinism-stabilization.md`), never in the site.
 

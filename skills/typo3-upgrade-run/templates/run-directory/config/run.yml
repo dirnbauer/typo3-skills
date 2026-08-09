@@ -35,6 +35,14 @@ network:
   allowed_origins: []
   block_third_party: true
 
+fingerprint:
+  # Project tables the content fingerprint must NOT track: request-driven log tables
+  # (view counters, hit statistics) mutate on every crawl, so tracking one makes every
+  # capture look like content drift. Each entry is recorded in the sealed manifest as
+  # projectExcludedTables — the exclusion is declared evidence, never silent. Only pure
+  # log tables belong here; anything rendered to visitors must stay tracked.
+  exclude_tables: []
+
 capture:
   viewports:
     - { name: desktop, width: 1920, height: 1080, device_scale_factor: 1 }

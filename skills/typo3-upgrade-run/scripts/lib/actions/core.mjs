@@ -181,6 +181,11 @@ export async function contentFingerprint({ values, paths, log, journal }) {
     throw new PreconditionError('No sealed content fingerprint. Run with --write-baseline first.');
   }
   const configuredTables = listOpt(values, 'tables', []);
+  // Project-declared exclusions: request-driven log tables (view counters and the like)
+  // mutate on every crawl and can never be stable under capture load. They come from
+  // --exclude-tables or run.yml `fingerprint.exclude_tables` and are recorded in the
+  // sealed manifest as projectExcludedTables.
+  const projectExcludes = listOpt(values, 'exclude-tables', await runConfigExcludeTables(paths));
   const current = await collectContent({
     ddevProject: values['ddev-project'] ?? state.project?.ddev_project ?? null,
     fileadmin: values.fileadmin ?? sealed?.files?.root ?? 'fileadmin',
@@ -188,6 +193,7 @@ export async function contentFingerprint({ values, paths, log, journal }) {
       ? configuredTables
       : sealed?.database?.tables?.map((table) => table.table) ?? null,
     allowMissing: values['allow-missing'] ?? false,
+    excludeTables: projectExcludes,
   });
 
   if (values['write-baseline']) {
@@ -218,6 +224,18 @@ export async function contentFingerprint({ values, paths, log, journal }) {
 async function copyTemplate(rel, dest) {
   try { await cp(path.join(TEMPLATES, rel), dest, { force: false, errorOnExist: false }); }
   catch { /* templates are a convenience, not a precondition */ }
+}
+
+/** run.yml `fingerprint.exclude_tables` — absent file or key means no exclusions. */
+async function runConfigExcludeTables(paths) {
+  try {
+    const { parse: parseYaml } = await import('yaml');
+    const cfg = parseYaml(await readFile(paths.runConfig, 'utf8'));
+    const list = cfg?.fingerprint?.exclude_tables;
+    return Array.isArray(list) ? list.map(String) : [];
+  } catch {
+    return [];
+  }
 }
 
 export async function readJson(p) {

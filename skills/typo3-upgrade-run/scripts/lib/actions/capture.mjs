@@ -22,6 +22,8 @@ import { captureId } from '../run/paths.mjs';
 import { intOpt, listOpt } from '../cli/args.mjs';
 import { readJson } from './core.mjs';
 import { consentStateFor } from '../browser/stabilize.mjs';
+import { mapPool } from '../util/pool.mjs';
+import { acquireMachineLock, releaseMachineLock } from '../util/machine-lock.mjs';
 
 export async function capture({ values, paths, log, journal }) {
   const label = values.label;
@@ -50,6 +52,14 @@ export async function capture({ values, paths, log, journal }) {
   const guard = await UrlGuard.create({ allowedOrigins: manifest.allowedOrigins });
   const scope = values.scope === 'intermediate' ? 'intermediate' : 'final';
 
+  // A worker count above 1 for final evidence is licensed only by the sealed self-test
+  // lock: the exhaustive double-shoot proved zero at exactly that count on this machine.
+  let provenWorkers = null;
+  if (scope === 'final') {
+    const lock = await readJson(paths.selftestLock);
+    if (lock?.verdict === 'pass' && Number.isInteger(lock.visualWorkers)) provenWorkers = lock.visualWorkers;
+  }
+
   const result = await captureAll({
     manifest, guard, outRoot, stages, log, journal,
     resume: values.resume, warmup: values.warmup !== false,
@@ -58,8 +68,10 @@ export async function capture({ values, paths, log, journal }) {
     visualWorkers: intOpt(
       values,
       'visual-workers',
-      scope === 'intermediate' ? DIAGNOSTIC_VISUAL_WORKERS : DEFAULT_VISUAL_WORKERS,
+      scope === 'intermediate' ? DIAGNOSTIC_VISUAL_WORKERS : (provenWorkers ?? DEFAULT_VISUAL_WORKERS),
     ),
+    provenWorkers,
+    httpWorkers: intOpt(values, 'http-workers', DEFAULT_HTTP_WORKERS),
   });
 
   await writeFile(
@@ -107,12 +119,42 @@ export const SAMPLING = Object.freeze({
   FINAL_HARD_CAP: 1000,
 });
 
-// Authoritative full captures are serial: sustained parallel renderer load proved
-// non-deterministic on the same unchanged site. Intermediate diagnostics deliberately
-// trade authority for fast feedback and use a small process-isolated pool.
+// Authoritative full captures default to serial: sustained parallel renderer load has
+// produced non-determinism on unchanged sites. A worker count above 1 is not forbidden —
+// it is LICENSED: only a count that an exhaustive determinism double-shoot has proven to
+// zero (and sealed into selftest.lock.json as `visualWorkers`) may produce final evidence,
+// and every later authoritative capture and comparison must use that same count. The
+// self-test itself passes its own count as `provenWorkers` — it is the proof instrument.
+// Intermediate diagnostics deliberately trade authority for fast feedback.
 export const DEFAULT_VISUAL_WORKERS = 1;
 export const DIAGNOSTIC_VISUAL_WORKERS = 3;
-export const MAX_VISUAL_WORKERS = 6;
+export const MAX_VISUAL_WORKERS = 12;
+
+// Stage 1/2 runs over plain HTTP with no renderer involved, so parallel fetches cannot
+// change pixel evidence; they only load the application server. The pool is still
+// recorded in the capture index (`httpWorkers`) so every report names its instrument.
+export const DEFAULT_HTTP_WORKERS = 6;
+export const MAX_HTTP_WORKERS = 16;
+
+/**
+ * Derive plain-text needles from consent modal trigger selectors so stage 1's already
+ * fetched HTML can decide `consent-modal-open` applicability without a navigation.
+ * Supported forms: `#id` and `[attr="value"]`. Any other selector form returns null,
+ * which disables skipping entirely — never guess against an expression we cannot match.
+ */
+export function triggerNeedles(selectors) {
+  if (!Array.isArray(selectors) || selectors.length === 0) return null;
+  const needles = [];
+  for (const raw of selectors) {
+    const sel = String(raw).trim();
+    const id = /^#([A-Za-z_][\w-]*)$/.exec(sel);
+    const attr = /^\[([\w-]+)=["']?([^"'\]]+)["']?\]$/.exec(sel);
+    if (id) needles.push(`id="${id[1]}"`);
+    else if (attr) needles.push(`${attr[1]}="${attr[2]}"`);
+    else return null;
+  }
+  return needles;
+}
 
 /** Returns the URL entries to capture, plus a declaration of what was left out. */
 export function selectUrls(allUrls, { scope = 'final', seed = 'sample', allowAll = false } = {}) {
@@ -148,14 +190,19 @@ export async function captureAll({
   scope = 'final',
   allowAll = false,
   visualWorkers = DEFAULT_VISUAL_WORKERS,
+  provenWorkers = null,
+  httpWorkers = DEFAULT_HTTP_WORKERS,
 }) {
+  if (!Number.isInteger(httpWorkers) || httpWorkers < 1 || httpWorkers > MAX_HTTP_WORKERS) {
+    throw new HarnessError(`httpWorkers must be an integer from 1 to ${MAX_HTTP_WORKERS}`);
+  }
   if (!Number.isInteger(visualWorkers) || visualWorkers < 1 || visualWorkers > MAX_VISUAL_WORKERS) {
     throw new HarnessError(`visualWorkers must be an integer from 1 to ${MAX_VISUAL_WORKERS}`);
   }
-  if (scope === 'final' && visualWorkers !== DEFAULT_VISUAL_WORKERS) {
+  if (scope === 'final' && visualWorkers !== DEFAULT_VISUAL_WORKERS && visualWorkers !== provenWorkers) {
     throw new PreconditionError(
-      `Final visual evidence requires exactly ${DEFAULT_VISUAL_WORKERS} worker; `
-      + 'parallel workers are diagnostic-only.',
+      `Final visual evidence at ${visualWorkers} workers requires that exact count proven by an `
+      + 'exhaustive determinism self-test (selftest.lock.json visualWorkers); serial (1) is always permitted.',
     );
   }
   await mkdir(outRoot, { recursive: true });
@@ -168,6 +215,7 @@ export async function captureAll({
     domSkipped: 0,
     shots: 0,
     visualWorkers,
+    httpWorkers,
     errors: [],
     retries: [],
     signatures: {},
@@ -183,6 +231,12 @@ export async function captureAll({
   const selection = selectUrls(manifest.allUrls, { scope, seed: manifest.seed ?? 'sample', allowAll });
   const urls = selection.urls.map((u) => u.url);
   const nonHtmlUrls = new Set();
+  // Stage 1 fetches every page body anyway; use it to decide `consent-modal-open`
+  // applicability per URL so trigger-less pages never pay a duplicate navigation and
+  // screenshot for a state that cannot render. Deterministic across passes: identical
+  // HTML yields identical skips, and a wobbling body is caught by the DOM stage.
+  const modalNeedles = triggerNeedles(stabilization.consent?.modalTriggerSelectors);
+  const modalTriggerByUrl = new Map();
   index.selection = selection && { scope: selection.scope, total: selection.total,
     captured: selection.captured, omitted: selection.omitted, reason: selection.reason };
   if (selection.omitted) {
@@ -190,51 +244,80 @@ export async function captureAll({
   }
 
   /* ---- stage 1 + 2: every URL, over plain HTTP. No browser needed, so it scales. ---- */
+  // Fetches run in a bounded pool: no renderer is involved, so concurrency cannot touch
+  // pixel evidence — it only parallelises application-server renders. Everything ORDER-
+  // SENSITIVE (counters, signatures, errors, journal entries, warnings) is applied in a
+  // single stable pass in `urls` order afterwards, so the capture index and journal are
+  // byte-identical whatever order the pool finished in.
   if (stages.has('http') || stages.has('dom')) {
-    for (const url of urls) {
-      try {
-        await guard.assertUrl(url, { purpose: 'capture-http' });
-        // TYPO3 can emit session cookies while populating a cold page cache and omit them
-        // once that same response is cached. Recording the first request therefore makes an
-        // unchanged second run look different. Match the browser lifecycle: warm once, then
-        // record a fresh guarded response.
-        if (warmup) {
-          await safeFetch(guard, url, { purpose: 'capture-http-warmup', accept: 'any' });
-          index.httpWarmup += 1;
-        }
-        const res = await safeFetch(guard, url, { purpose: 'capture-http', accept: 'any' });
-        const html = ['text/html', 'application/xhtml+xml'].includes(res.contentType);
-        if (!html) nonHtmlUrls.add(url);
+    index.httpWorkers = httpWorkers;
+    const fetchOne = async (url) => {
+      await guard.assertUrl(url, { purpose: 'capture-http' });
+      // TYPO3 can emit session cookies while populating a cold page cache and omit them
+      // once that same response is cached. Recording the first request therefore makes an
+      // unchanged second run look different. Match the browser lifecycle: warm once, then
+      // record a fresh guarded response.
+      let warmed = false;
+      if (warmup) {
+        await safeFetch(guard, url, { purpose: 'capture-http-warmup', accept: 'any' });
+        warmed = true;
+      }
+      const res = await safeFetch(guard, url, { purpose: 'capture-http', accept: 'any' });
+      const html = ['text/html', 'application/xhtml+xml'].includes(res.contentType);
+      const modalTrigger = html && modalNeedles
+        ? modalNeedles.some((needle) => res.body.includes(needle))
+        : null;
 
-        if (stages.has('http')) {
-          const record = extractRecord({
-            requestedUrl: url, url: res.url, status: res.status, headers: res.headers,
-            body: res.body, redirects: res.redirects,
-          });
-          await writeFile(path.join(outRoot, 'http', `${keyOf(url)}.json`), `${JSON.stringify(record, null, 2)}\n`, 'utf8');
-          index.http += 1;
-        }
-        if (stages.has('dom')) {
-          if (!html) {
-            index.domSkipped += 1;
-            continue;
-          }
-          const { normalized, hits, overreach } = domHash(res.body);
-          await writeFile(path.join(outRoot, 'dom', `${keyOf(url)}.html`), normalized, 'utf8');
-          const sig = templateSignature(res.body);
-          index.signatures[url] = sig.hash;
-          if (overreach.length) {
-            log.warn(`normalisation overreach on ${url}: ${overreach.join(', ')}`);
-          }
-          await writeFile(
-            path.join(outRoot, 'dom', `${keyOf(url)}.meta.json`),
-            `${JSON.stringify({ hits, overreach, signature: sig.hash, tagCount: sig.tagCount }, null, 2)}\n`, 'utf8',
-          );
-          index.dom += 1;
-        }
-      } catch (err) {
+      let wroteHttp = false;
+      if (stages.has('http')) {
+        const record = extractRecord({
+          requestedUrl: url, url: res.url, status: res.status, headers: res.headers,
+          body: res.body, redirects: res.redirects,
+        });
+        await writeFile(path.join(outRoot, 'http', `${keyOf(url)}.json`), `${JSON.stringify(record, null, 2)}\n`, 'utf8');
+        wroteHttp = true;
+      }
+      let dom = null;
+      if (stages.has('dom') && html) {
+        const { normalized, hits, overreach } = domHash(res.body);
+        await writeFile(path.join(outRoot, 'dom', `${keyOf(url)}.html`), normalized, 'utf8');
+        const sig = templateSignature(res.body);
+        await writeFile(
+          path.join(outRoot, 'dom', `${keyOf(url)}.meta.json`),
+          `${JSON.stringify({ hits, overreach, signature: sig.hash, tagCount: sig.tagCount }, null, 2)}\n`, 'utf8',
+        );
+        dom = { signature: sig.hash, overreach };
+      }
+      return { warmed, html, modalTrigger, wroteHttp, dom };
+    };
+
+    const outcomes = await mapPool(urls, httpWorkers, fetchOne);
+
+    // Stable application pass — the ONLY writer of order-sensitive state.
+    for (let i = 0; i < urls.length; i += 1) {
+      const url = urls[i];
+      const outcome = outcomes[i];
+      if (!outcome.ok) {
+        const err = outcome.error;
         index.errors.push({ url: '(redacted)', stage: 'http/dom', error: err.message });
         if (err.exitCode === 5) await journal?.policyBlock({ reason: err.message, target: url, purpose: 'capture' });
+        continue;
+      }
+      const { warmed, html, modalTrigger, wroteHttp, dom } = outcome.value;
+      if (warmed) index.httpWarmup += 1;
+      if (!html) nonHtmlUrls.add(url);
+      if (modalTrigger !== null) modalTriggerByUrl.set(url, modalTrigger);
+      if (wroteHttp) index.http += 1;
+      if (stages.has('dom')) {
+        if (!html) {
+          index.domSkipped += 1;
+        } else {
+          index.signatures[url] = dom.signature;
+          if (dom.overreach.length) {
+            log.warn(`normalisation overreach on ${url}: ${dom.overreach.join(', ')}`);
+          }
+          index.dom += 1;
+        }
       }
     }
     log.step(
@@ -252,13 +335,33 @@ export async function captureAll({
   const selectedCaptures = selection.omitted
     ? manifest.captures.filter((c) => sampledIds.has(c.urlId))
     : manifest.captures;
+  const notApplicable = [];
   const captureSet = selectedCaptures.filter((capture) => {
     const url = urlById(manifest, capture.urlId);
-    return url && !nonHtmlUrls.has(url);
+    if (!url || nonHtmlUrls.has(url)) return false;
+    // Declarative skip, never silent: the capture id lands in index.notApplicable with its
+    // reason. Skips only happen when stage 1 saw this URL's HTML and none of the derivable
+    // trigger needles appear — no body seen or underivable selector means capture anyway.
+    if (capture.state === 'consent-modal-open' && modalNeedles && modalTriggerByUrl.get(url) === false) {
+      notApplicable.push({ captureId: capture.captureId, state: capture.state, reason: 'modal-trigger-absent' });
+      return false;
+    }
+    return true;
   });
+  notApplicable.sort(byCaptureId);
+  index.notApplicable = notApplicable;
+  if (notApplicable.length) {
+    log.info(`${notApplicable.length} planned capture(s) not applicable (modal trigger absent) — declared in capture-index`);
+  }
   if (stages.has('visual') && captureSet.length) {
     const byViewport = groupBy(captureSet, (c) => c.viewport);
     const routeReports = [];
+    // Screenshots from concurrent runs on one machine contend for cores and can flake
+    // each other's zero-pixel proofs. The machine-wide lock queues visual stages across
+    // runs (re-entrant in-process; a dead holder is stolen), while fetches, comparisons
+    // and application work still overlap freely.
+    await acquireMachineLock({ runId: outRoot, log });
+    try {
     for (const [viewport, caps] of byViewport) {
       if (!VIEWPORTS[viewport]) { log.warn(`unknown viewport ${viewport}, skipped`); continue; }
       const workerCount = Math.min(visualWorkers, caps.length);
@@ -391,6 +494,9 @@ export async function captureAll({
       } finally {
         await Promise.all(browsers.map((browser) => browser.close().catch(() => {})));
       }
+    }
+    } finally {
+      await releaseMachineLock();
     }
     index.routePolicy = mergeRoutePolicyReports(routeReports);
     index.errors.sort(byCaptureId);

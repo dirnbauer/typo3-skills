@@ -9,7 +9,7 @@ import {
   compareEnvironment,
   hashComponents,
 } from '../../lib/fingerprint/environment.mjs';
-import { compareContent } from '../../lib/fingerprint/content.mjs';
+import { compareContent, collectContent } from '../../lib/fingerprint/content.mjs';
 import { compareDom } from '../../lib/compare/dom-normalize.mjs';
 import { compareRecords, extractRecord } from '../../lib/compare/http-meta.mjs';
 import { envelope, validateReport } from '../../lib/report/write.mjs';
@@ -100,6 +100,26 @@ describe('semantic content fingerprinting', () => {
     const cmp = compareContent(before, after);
     assert.equal(cmp.match, false);
     assert.equal(cmp.drifted[0].key, 'table:tt_content');
+  });
+
+  test('project-declared exclusions drop request-log tables and are recorded as evidence', async () => {
+    const queried = [];
+    const runner = async (sql) => {
+      queried.push(sql);
+      if (sql.startsWith('SHOW TABLES')) return 'Tables_in_db\npages\ntx_articles_log';
+      if (sql.startsWith('SHOW COLUMNS')) return 'Field\tType\tNull\tKey\tDefault\tExtra\nuid\tint\tNO\tPRI\tNULL\t';
+      if (sql.startsWith('SELECT COUNT(*)')) return 'row_count\tmax_tstamp\tmax_uid\n1\t0\t1';
+      return 'uid\n1';
+    };
+    const result = await collectContent({
+      ddevProject: 'test', fileadmin: '/nonexistent-fileadmin-dir',
+      excludeTables: ['tx_articles_log'], runner,
+    });
+    const tracked = result.database.tables.map((entry) => entry.table);
+    assert.ok(tracked.includes('pages'));
+    assert.ok(!tracked.includes('tx_articles_log'), 'excluded log table must not be tracked');
+    assert.deepEqual(result.database.projectExcludedTables, ['tx_articles_log']);
+    assert.ok(!queried.some((sql) => sql.includes('tx_articles_log') && sql.startsWith('SELECT')), 'excluded table must never be read');
   });
 });
 

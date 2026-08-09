@@ -200,11 +200,32 @@ for those URLs. It cannot write `selftest.lock.json` and cannot unlock compariso
 fault detector, not evidence for closure.
 
 Intermediate visual diagnostics use a fixed pool of independent Chromium processes. The default
-is three and the diagnostic range is 1–6. A multi-worker pool must not share one Chromium process:
+is three and the worker range is 1–12 (size it to the capture host's cores; a 10-core host
+carries 10 comfortably). A multi-worker pool must not share one Chromium process:
 isolated contexts still share renderer-global state and can produce workload-dependent fractional
-layout. Exhaustive self-tests and baseline captures always use one worker because sustained
-parallel load can introduce process-level capture failures and rendering differences. Record the
-count in capture metadata, capture indexes, self-test reports, and the self-test lock.
+layout. Exhaustive self-tests and baseline captures default to one worker because sustained
+parallel load has introduced process-level capture failures and rendering differences on some
+machines. A count above one is **licensed, never assumed**: the exhaustive self-test may run at
+N workers, and only when that double-shoot proves zero does the lock seal `visualWorkers: N` —
+from then on every authoritative capture must use exactly N, and `compare-visual` refuses (exit 3)
+when the lock and either side's capture index disagree on the count. A machine where parallel
+load flakes fails the self-test at N and falls back to serial; the proof is per-machine and
+expires with the lock. Record the count in capture metadata, capture indexes, self-test reports,
+and the self-test lock.
+
+Stage 1/2 fetches and pixel comparisons parallelise without a licence, because no renderer is
+involved: `--http-workers` (default 6, max 16) pools the guarded HTTP fetches, and
+`--compare-workers` (default 8, max 16) pools odiff/pixelmatch pairs. Both apply every
+order-sensitive effect — counters, signatures, finding ids, journal entries — in one stable
+pass in item order, so their reports are byte-identical to a serial run's, and the HTTP pool
+size is recorded in the capture index.
+
+**Several runs, one machine.** Visual stages across concurrent runs (different projects on the
+same host) are serialised by a machine-wide lock (`$TMPDIR/t3u-visual-capture.lock`): a second
+run's Chromium fleet competing for cores during a double-shoot turns real determinism into
+apparent flake, so screenshots queue while fetches, comparisons and application work still
+overlap freely. A self-test holds the lock across both passes. The wait is announced with the
+holder's run id, and a holder whose process is gone is stolen automatically.
 
 Intermediate workers reuse one page for the whole viewport. Dispose the per-navigation guard and
 quiet detector after each capture, and close/recreate the page before retrying a failed capture.

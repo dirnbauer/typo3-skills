@@ -211,7 +211,9 @@ Before any baseline exists, shoot the untouched site twice and require **zero** 
 is a harness defect, and shrinking the sample or raising a threshold is forbidden.
 Run `selftest-determinism --sample intermediate --visual-workers 3` first; it keeps strict
 thresholds but cannot close loop 000. Then run exhaustive `--sample all` twice unchanged.
-Diagnostics use three process-isolated browsers; authoritative proofs are serial. See the normative
+Diagnostics use three process-isolated browsers; authoritative proofs default to serial, and a
+higher worker count is licensed only by the exhaustive double-shoot proving zero at exactly that
+count (sealed into the lock, enforced on every later capture and comparison). See the normative
 lifecycle in [`references/harness-contract.md`](references/harness-contract.md).
 **Only a harness that proves zero against itself may judge an update.** Comparisons refuse without a valid self-test lock.
 
