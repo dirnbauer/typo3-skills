@@ -251,10 +251,28 @@ export class UrlGuard {
     if (net.isIP(host)) {
       addresses = [host];
     } else {
-      try {
-        addresses = await this._resolve(host);
-      } catch (err) {
-        throw new PolicyError(`DNS resolution failed for ${host}`, { purpose, host, cause: String(err) });
+      // `ddev.site` names resolve over PUBLIC DNS even though they point at loopback, so a
+      // long capture run sees occasional resolver blips. A blip is not a policy event:
+      // retry briefly, then — for a host whose addresses are already pinned — fall back to
+      // the pinned set. That is strictly conservative: pinned addresses were validated at
+      // guard creation, and rebinding requires NEW addresses, which the fallback never
+      // introduces. A host with no pin still fails closed exactly as before.
+      let lastErr = null;
+      addresses = null;
+      for (let attempt = 1; attempt <= 3 && !addresses; attempt += 1) {
+        try {
+          addresses = await this._resolve(host);
+        } catch (err) {
+          lastErr = err;
+          if (attempt < 3) await new Promise((resolve) => setTimeout(resolve, 200 * attempt));
+        }
+      }
+      if (!addresses && pinned?.length) {
+        this.dnsFallbacks = (this.dnsFallbacks ?? 0) + 1;
+        addresses = [...pinned];
+      }
+      if (!addresses) {
+        throw new PolicyError(`DNS resolution failed for ${host}`, { purpose, host, cause: String(lastErr) });
       }
     }
     if (!addresses.length) {

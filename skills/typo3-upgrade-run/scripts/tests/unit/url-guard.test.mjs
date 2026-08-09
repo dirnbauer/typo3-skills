@@ -211,3 +211,47 @@ describe('UrlGuard - redirects and same-origin assertions', () => {
     assert.throws(() => guard.assertSameOrigin('http://acme.ddev.site/x', DDEV));
   });
 });
+
+describe('UrlGuard - DNS resilience', () => {
+  test('a transient resolver blip is retried, not treated as a policy event', async () => {
+    let calls = 0;
+    const resolver = async (host) => {
+      if (host !== 'blip.ddev.site') throw new Error(`ENOTFOUND ${host}`);
+      calls += 1;
+      if (calls === 2) throw new Error('EAI_AGAIN blip.ddev.site'); // first post-pin lookup blips
+      return ['127.0.0.1'];
+    };
+    const guard = await UrlGuard.create({ allowedOrigins: ['https://blip.ddev.site'], resolver });
+    const { url } = await guard.assertUrl('https://blip.ddev.site/page');
+    assert.equal(url.hostname, 'blip.ddev.site');
+    assert.equal(guard.dnsFallbacks ?? 0, 0, 'retry succeeded; pinned fallback must not engage');
+  });
+
+  test('persistent resolver failure falls back to PINNED addresses only', async () => {
+    let created = false;
+    const resolver = async (host) => {
+      if (host !== 'pinned.ddev.site') throw new Error(`ENOTFOUND ${host}`);
+      if (!created) { created = true; return ['127.0.0.1']; } // pin at create
+      throw new Error('EAI_AGAIN pinned.ddev.site');          // resolver down afterwards
+    };
+    const guard = await UrlGuard.create({ allowedOrigins: ['https://pinned.ddev.site'], resolver });
+    const { url } = await guard.assertUrl('https://pinned.ddev.site/');
+    assert.equal(url.hostname, 'pinned.ddev.site');
+    assert.ok(guard.dnsFallbacks >= 1, 'fallback must be counted for the report');
+  });
+
+  test('persistent resolver failure with NO pin still fails closed', async () => {
+    const guard = new UrlGuard({
+      allowedOrigins: ['https://nopin.ddev.site'],
+      resolver: async () => { throw new Error('EAI_AGAIN nopin.ddev.site'); },
+    });
+    await assert.rejects(
+      () => guard.assertUrl('https://nopin.ddev.site/'),
+      (err) => {
+        assert.equal(err.exitCode, EXIT.BLOCKED_BY_POLICY);
+        assert.match(err.message, /DNS resolution failed/);
+        return true;
+      },
+    );
+  });
+});
