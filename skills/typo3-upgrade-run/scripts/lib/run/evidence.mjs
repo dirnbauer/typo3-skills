@@ -11,38 +11,59 @@ import { InvalidRunError, PreconditionError } from '../cli/exit-codes.mjs';
 import { collectEnvironment, compareEnvironment } from '../fingerprint/environment.mjs';
 import { collectContent, compareContent } from '../fingerprint/content.mjs';
 import { StateStore } from './state.mjs';
+import { sha256 } from './paths.mjs';
 
 export async function readEvidenceContext(paths) {
   const state = await new StateStore(paths).read();
-  const [environment, content, manifest, selftest] = await Promise.all([
+  const [environment, contentBaseline, contentTarget, transition, manifest, selftest] = await Promise.all([
     readJsonRequired(paths.envFingerprint, 'environment fingerprint'),
     readJsonRequired(paths.contentFingerprint, 'content fingerprint'),
+    readJsonOptional(paths.targetContentFingerprint),
+    readJsonOptional(paths.contentTransition),
     readJsonRequired(paths.urlManifest, 'URL manifest'),
     readJsonRequired(paths.selftestLock, 'self-test lock'),
   ]);
+  const targetActive = state.fingerprints?.content_active === 'target';
+  if (targetActive && !contentTarget) {
+    throw new InvalidRunError('state.json activates a target content epoch whose manifest is missing.');
+  }
+  if (targetActive) {
+    const { transitionHash: recordedHash, ...transitionBody } = transition ?? {};
+    const actualHash = transition ? `sha256:${sha256(JSON.stringify(transitionBody))}` : null;
+    if (!transition || recordedHash !== actualHash
+      || recordedHash !== state.fingerprints?.content_transition_hash
+      || contentTarget.transitionHash !== recordedHash) {
+      throw new InvalidRunError('The active content transition ledger is missing, edited, or not bound to the target epoch.');
+    }
+  }
+  const content = targetActive ? contentTarget : contentBaseline;
 
   const inputs = {
     manifestHash: manifest.manifestHash ?? null,
     environmentFingerprintHash: environment.fingerprintHash ?? null,
     contentFingerprintHash: content.fingerprintHash ?? null,
+    baselineContentFingerprintHash: contentBaseline.fingerprintHash ?? null,
+    targetContentFingerprintHash: targetActive ? contentTarget?.fingerprintHash ?? null : null,
+    contentTransitionHash: targetActive ? state.fingerprints?.content_transition_hash ?? null : null,
     selftestLockHash: state.selftest?.lock_hash ?? selftest.selftestHash ?? null,
   };
   const mismatches = [];
   compareRef(mismatches, 'state.fingerprints.environment', state.fingerprints?.environment, inputs.environmentFingerprintHash);
-  compareRef(mismatches, 'state.fingerprints.content', state.fingerprints?.content, inputs.contentFingerprintHash);
+  compareRef(mismatches, 'state.fingerprints.content', state.fingerprints?.content, inputs.baselineContentFingerprintHash);
+  compareRef(mismatches, 'state.fingerprints.content_target', state.fingerprints?.content_target, inputs.targetContentFingerprintHash);
   compareRef(mismatches, 'state.manifest.hash', state.manifest?.hash, inputs.manifestHash);
   if (mismatches.length) {
     throw new InvalidRunError('state.json does not match the sealed evidence manifests.', { mismatches });
   }
-  for (const [key, value] of Object.entries(inputs)) {
-    if (!value) throw new PreconditionError(`Evidence input ${key} is missing; seal the run inputs first.`);
+  for (const key of ['manifestHash', 'environmentFingerprintHash', 'contentFingerprintHash', 'baselineContentFingerprintHash', 'selftestLockHash']) {
+    if (!inputs[key]) throw new PreconditionError(`Evidence input ${key} is missing; seal the run inputs first.`);
   }
 
   return {
     run: { runId: state.run_id },
     inputs,
     state,
-    sealed: { environment, content, manifest, selftest },
+    sealed: { environment, content, contentBaseline, contentTarget, transition, manifest, selftest },
   };
 }
 
@@ -87,6 +108,14 @@ async function readJsonRequired(file, label) {
   } catch (error) {
     if (error.code === 'ENOENT') throw new PreconditionError(`Missing ${label}: ${file}`);
     throw new InvalidRunError(`Unreadable ${label}: ${error.message}`);
+  }
+}
+
+async function readJsonOptional(file) {
+  try { return JSON.parse(await readFile(file, 'utf8')); }
+  catch (error) {
+    if (error.code === 'ENOENT') return null;
+    throw new InvalidRunError(`Unreadable optional evidence ${file}: ${error.message}`);
   }
 }
 

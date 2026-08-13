@@ -106,6 +106,13 @@ pages plus critical/template representatives and seeded random sentinels. Baseli
 determinism, and final closure capture exactly `default`, `keyboard-focus`, and `nav-open`.
 Dropdown, accordion, form, modal, and consent behaviour use targeted flows only when affected.
 
+Those targeted flows are not optional when inventory finds the component. Use the sealed
+`config/interactions.yml`: fresh-context consent (initial/details/reject/accept with local tracker
+interception), each slider's settled first item plus one next/return action, search ordering/empty/
+pagination, form validation and Mailpit delivery, and the project's real high-value modal/filter/
+quiz flow. Capture representative evidence before A and after the target. Cluster failures by
+root cause, template, component, state and viewport; never create one diagnosis per URL.
+
 ## Determinism
 
 Sampling uses a seeded sfc32 + Fisher-Yates shuffle. The seed is recorded in the manifest,
@@ -127,6 +134,10 @@ Two that carry most of the weight and are easy to miss:
 
 `networkidle` is not used. A quiet-period detector counts in-flight requests, so a page that
 never settles reports what it was waiting for.
+
+Every screenshot and browser audit uses a newly created isolated context. The harness refuses a
+TYPO3 Admin Panel/debug toolbar or `be_typo_user` cookie in frontend evidence; a selected operator
+browser with a production login made an unchanged site look structurally different on every URL.
 
 ## Security
 
@@ -168,7 +179,7 @@ report is a fabrication.
 | `--lighthouse-sample` | `3` | Fixed final set: homepage plus two seeded random non-home pages |
 | `--runs` | `3` | Lighthouse runs per URL, median reported |
 | `--reshoots` | `1` | Immediate reproduction check; non-zero still blocks |
-| `--visual-workers` | `3` | Isolated Chromium process pool (max 12); final evidence must be licensed by an exhaustive self-test at exactly that count |
+| `--visual-workers` | `12` | Isolated Chromium process pool (max 12); final evidence must be licensed by an exhaustive self-test at exactly that count |
 | `--http-workers` | `6` | Stage 1/2 fetch pool (max 16); renderer-free, order-stable output |
 | `--compare-workers` | `8` | odiff/pixelmatch pool (max 16); order-stable findings |
 | `--redaction-profile` | `local` | `local` or `share` (for the KPI document) |

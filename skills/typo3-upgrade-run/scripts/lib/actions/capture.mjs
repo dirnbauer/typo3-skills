@@ -24,6 +24,7 @@ import { readJson } from './core.mjs';
 import { consentStateFor } from '../browser/stabilize.mjs';
 import { mapPool } from '../util/pool.mjs';
 import { acquireMachineLock, releaseMachineLock } from '../util/machine-lock.mjs';
+import { assertCleanFrontendSession } from '../browser/session.mjs';
 
 export async function capture({ values, paths, log, journal }) {
   const label = values.label;
@@ -119,14 +120,16 @@ export const SAMPLING = Object.freeze({
   INTERMEDIATE_MAX: 100,
 });
 
-// Authoritative full captures default to three isolated Chromium processes. That count is
+// Authoritative full captures default to twelve isolated Chromium processes. That count is
 // LICENSED: only a count that an exhaustive determinism double-shoot has proven to
 // zero (and sealed into selftest.lock.json as `visualWorkers`) may produce final evidence,
 // and every later authoritative capture and comparison must use that same count. The
 // self-test itself passes its own count as `provenWorkers` — it is the proof instrument.
 // Intermediate diagnostics deliberately trade authority for fast feedback.
-export const DEFAULT_VISUAL_WORKERS = 3;
-export const DIAGNOSTIC_VISUAL_WORKERS = 3;
+// Proven on the exhaustive Saferinternet 1,357-URL / 360-capture matrix on 2026-08-10.
+// Final evidence still requires the exact count recorded by selftest.lock.json.
+export const DEFAULT_VISUAL_WORKERS = 12;
+export const DIAGNOSTIC_VISUAL_WORKERS = 12;
 export const MAX_VISUAL_WORKERS = 12;
 
 /** Intermediate checks reserve room for unrelated pages that detect an underestimated blast radius. */
@@ -516,6 +519,10 @@ export async function captureAll({
                     // window.load rather than DOMContentLoaded. Stabilising before that event races
                     // the site's own initialisation and can produce two internally consistent layouts.
                     await page.waitForLoadState('load', { timeout: 45000 });
+                    // A backend-authenticated interactive browser can inject the TYPO3 Admin Panel
+                    // into every production page. That is neither a site regression nor valid
+                    // anonymous evidence, so refuse it before it reaches DOM/pixel comparison.
+                    await assertCleanFrontendSession(page);
                     // Start tracking after the optional warm-up navigation. Requests abandoned by
                     // the reload do not always emit a terminal event and would otherwise poison the
                     // quiet detector with a stale request.

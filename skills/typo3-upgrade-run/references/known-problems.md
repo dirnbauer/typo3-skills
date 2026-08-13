@@ -111,11 +111,31 @@ see `harness-contract.md`.
 `found typo3/cms-core[v13.4.x] but these were not loaded, because they are affected by security
 advisories`.
 
-**Cause.** Composer's audit is blocking known-vulnerable releases. This is correct behaviour and
-should not be disabled — the resolver is trying to protect the site.
+**Do not diagnose from that sentence.** It proves that the active Composer policy rejected some
+candidates; it does not prove every target patch is vulnerable, that the repository metadata is
+current, or that security is the reason no safe candidate resolves. A real run incorrectly turned
+this solver prose into a TYPO3 security blocker; the independently executed audit later reported
+zero advisories and the supported target patch installed normally.
 
-**Fix.** Let it resolve to the newest patch. If it cannot, something *else* is pinning the version
-back; find that, do not add the advisories to an ignore list.
+Collect the evidence in the application container:
+
+```bash
+ddev composer audit --locked --format=json
+ddev composer show --all typo3/cms-core
+ddev composer why-not typo3/cms-core "^14.3"
+ddev composer config --list --source
+```
+
+Then verify the candidate against the official TYPO3 release notes and linked security advisory.
+A confirmed blocker names the advisory ID, package, affected constraint, installed/candidate
+version, policy source and command exit code. `composer audit` describes the lock; `why-not` and
+`show --all` explain candidate resolution. Keep those questions separate.
+
+**Fix the constraint, policy provenance or stale metadata—not the safety control.** Keep the root
+requirement at `^14.3` and let the lock record the tested patch. Never add an advisory ignore, turn
+off `policy.advisories.block`, set `COMPOSER_NO_BLOCKING`, or use `--no-blocking` merely to make the
+solver move. When the evidence confirms an affected release, move to the first supported fixed
+patch; when it does not, retract the security claim and continue diagnosing the actual constraint.
 
 ---
 

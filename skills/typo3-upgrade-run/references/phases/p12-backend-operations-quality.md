@@ -145,13 +145,26 @@ The smoke test is a **deterministic read-only flow**, not random link clicking. 
 trigger logout, cache clearing, deletion, unsubscribe, scheduler actions or large downloads.
 
 ## Static analysis and tests
+- When frontend source, Fluid asset inclusion or build configuration changed, run the canonical
+  clean Vite production build, then `node scripts/vite-production-check.mjs --manifest …
+  --public-root …`. Require every declared entry/import/CSS/asset to exist with a content hash.
+  Walk the representative pages with zero failed requests, missing fonts/images, dev/HMR clients,
+  stale legacy bundles or severe console errors. `base: './'`, a manifest and a green build in
+  isolation are not proof that TYPO3 emitted the right URLs.
+- Run the interaction sentinels from `config/interactions.yml`. Consent and sliders are mandatory
+  when present; stabilisation metadata showing a component with no journey is a coverage failure.
+  Search checks include deterministic first-page ordering, empty results and pagination—not merely
+  “some documents exist”.
 - Run the existing project PHPStan level; do not lower it or add suppressions for touched code.
   Raising the whole project to level 9/10 is optional modernization work.
 - PHP lint, code style, Rector dry-run, Fractor dry-run, unit, functional/integration and E2E tests
   through the repository's canonical commands inside DDEV.
 - Route conformance, simplification or security review only for concrete migration findings or
   touched security boundaries; broad audits are Contract B.
-- `ddev composer audit` — unresolved advisories block completion.
+- `ddev composer audit --locked --format=json` — unresolved advisories block completion. A solver
+  sentence alone does not establish a security blocker: also record advisory IDs/constraints,
+  `composer show --all typo3/cms-core`, `why-not`, policy configuration with sources, and official
+  TYPO3 release/advisory evidence. Never disable or ignore dependency policy to pass.
 - Prove a clean install: a fresh `ddev composer install` from the committed lockfile resolves against
   14.3 and the claimed PHP versions.
 - Verify the PHP target across the whole extension set: `why-not php 8.4` empty, every local or

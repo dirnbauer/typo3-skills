@@ -39,6 +39,9 @@ export function envelope({ kind, run, inputs = {}, verdict, counts = {}, finding
       manifestHash: inputs.manifestHash ?? null,
       environmentFingerprintHash: inputs.environmentFingerprintHash ?? null,
       contentFingerprintHash: inputs.contentFingerprintHash ?? null,
+      baselineContentFingerprintHash: inputs.baselineContentFingerprintHash ?? inputs.contentFingerprintHash ?? null,
+      targetContentFingerprintHash: inputs.targetContentFingerprintHash ?? null,
+      contentTransitionHash: inputs.contentTransitionHash ?? null,
       selftestLockHash: inputs.selftestLockHash ?? null,
     },
     verdict,
@@ -107,7 +110,7 @@ const INPUT_KEYS = [
 ];
 const EVIDENCE_KINDS = new Set([
   'http', 'dom', 'visual', 'selftest', 'loop',
-  'backend-sweep', 'smoke', 'lighthouse',
+  'backend-sweep', 'smoke', 'lighthouse', 'axe',
 ]);
 
 /** Recursive redaction. `local` keeps paths and non-secret query names; `share` also

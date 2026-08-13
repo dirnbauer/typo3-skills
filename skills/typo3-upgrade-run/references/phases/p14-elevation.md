@@ -24,6 +24,8 @@ Each track has its own approval and its own derived baseline `B-<n>`.
 ```bash
 node scripts/t3u.mjs lighthouse --run-dir .typo3-update \
   --runs 3 --form-factor mobile --loop 500 --label before
+node scripts/t3u.mjs lighthouse --run-dir .typo3-update \
+  --runs 3 --form-factor desktop --loop 500 --label before
 ```
 
 The command uses exactly three reproducible pages: the homepage and two seeded random non-home
@@ -64,9 +66,16 @@ before/after delta on the same machine is the evidence. TBT is a lab **proxy** f
 ## Loop 520 — accessibility, split by whether the fix moves pixels
 
 ```bash
-node scripts/a11y-audit.mjs --base-url https://site.ddev.site --ddev-dir . \
-  --count 12 --seed 1 --report .typo3-update/report.a11y-before.json
+node scripts/t3u.mjs axe --run-dir .typo3-update --loop 520 --label before \
+  --sample 12 --viewports desktop,tablet,mobile \
+  --states default,nav-open,consent-modal-open
 ```
+
+The integrated command uses the sealed URL manifest, origin guard, isolated contexts, consent
+adapter and deterministic settle logic. It clusters repeated failures by rule, viewport and visible
+state rather than emitting one ticket per URL. Run component-specific states from
+`config/interactions.yml` as focused Playwright journeys as well; axe must execute whenever a new
+piece of UI becomes visible. `incomplete` results remain manual-review work.
 
 The report separates findings into two groups, because during an invariance run that
 distinction decides what may be fixed without a new baseline:

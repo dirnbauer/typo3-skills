@@ -25,7 +25,7 @@ import { assertLiveInputs } from '../run/evidence.mjs';
 /** Commands that may not run without a proven-deterministic harness. */
 const REQUIRES_SELFTEST = new Set([
   'compare-http', 'compare-dom', 'compare-visual', 'compare-all', 'gate',
-  'backend-sweep', 'smoke', 'lighthouse',
+  'backend-sweep', 'smoke', 'lighthouse', 'axe',
 ]);
 
 const SELFTEST_MAX_AGE_MS = 24 * 60 * 60 * 1000;

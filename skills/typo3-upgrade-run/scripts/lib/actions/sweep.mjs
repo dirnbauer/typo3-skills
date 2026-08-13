@@ -13,17 +13,23 @@
 
 import path from 'node:path';
 import { readFile, readdir } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import { parse as parseYaml } from 'yaml';
 import { EXIT, HarnessError, PreconditionError, PolicyError } from '../cli/exit-codes.mjs';
 import { UrlGuard } from '../net/url-guard.mjs';
-import { launchBrowser, newContext } from '../browser/launch.mjs';
+import { launchBrowser, newContext, stabilizePage } from '../browser/launch.mjs';
 import { createRoutePolicy } from '../browser/route-policy.mjs';
 import { envelope, writeReport } from '../report/write.mjs';
 import { untrusted } from '../util/redact.mjs';
-import { intOpt } from '../cli/args.mjs';
+import { intOpt, listOpt } from '../cli/args.mjs';
 import { readJson } from './core.mjs';
 import { readEvidenceContext } from '../run/evidence.mjs';
 import { sample as seededSample } from '../util/rng.mjs';
+import { applyState, stateByName } from '../browser/states.mjs';
+import { assertCleanFrontendSession } from '../browser/session.mjs';
+import { consentStateFor } from '../browser/stabilize.mjs';
+
+const require_ = createRequire(import.meta.url);
 
 export const ERROR_MARKERS = Object.freeze([
   'Oops, an error occurred', 'Uncaught TYPO3 Exception', 'Fatal error:', 'Parse error:',
@@ -364,7 +370,8 @@ export async function lighthouse({ values, paths, log }) {
   const chrome = await chromeLauncher.launch({
     chromeFlags: [
       '--headless=new', '--disable-dev-shm-usage', '--disable-gpu',
-      '--ignore-certificate-errors', '--no-sandbox',
+      '--ignore-certificate-errors',
+      ...(process.env.T3U_ALLOW_NO_SANDBOX === '1' ? ['--no-sandbox'] : []),
     ],
   });
 
@@ -466,6 +473,191 @@ export async function lighthouse({ values, paths, log }) {
   };
 }
 
+/* --------------------------------------------------------------- axe */
+
+export async function axeAudit({ values, paths, log }) {
+  const manifest = await readJson(paths.urlManifest);
+  if (!manifest) throw new PreconditionError('No URL manifest. Run "t3u discover-urls" first.');
+  const evidenceContext = await readEvidenceContext(paths);
+  if (evidenceContext.state.contract_a?.status !== 'closed' || !evidenceContext.state.contract_b?.unlocked) {
+    throw new PreconditionError('axe quality work starts after Contract A closes and Contract B is unlocked.');
+  }
+  const loopName = await resolveElevationLoop(paths, values.loop, evidenceContext.state);
+  const loopId = loopName.slice(0, 3);
+  const urls = finalAxeSample(manifest, intOpt(values, 'sample', 12));
+  const viewports = listOpt(values, 'viewports', ['desktop', 'tablet', 'mobile']);
+  const states = listOpt(values, 'states', ['default', 'nav-open', 'consent-modal-open']);
+  const unknown = states.filter((state) => !stateByName(state));
+  if (unknown.length) throw new HarnessError(`Unknown axe interaction state(s): ${unknown.join(', ')}`);
+  const tags = listOpt(values, 'tags', ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']);
+  const failImpacts = new Set(listOpt(values, 'fail-impacts', ['critical', 'serious']));
+  const guard = await UrlGuard.create({ allowedOrigins: manifest.allowedOrigins });
+  const stabilization = manifest.stabilization ?? {};
+  const consent = stabilization.consent
+    ? consentStateFor({
+        ...stabilization.consent,
+        origin: stabilization.consent.origin ?? manifest.allowedOrigins[0],
+      })
+    : undefined;
+  const axeSource = await readFile(require_.resolve('axe-core/axe.min.js'), 'utf8');
+  const { browser } = await launchBrowser({ log });
+  const observations = [];
+  const coverageFailures = [];
+
+  try {
+    for (const viewport of viewports) {
+      const context = await newContext(browser, { viewport, storageState: consent, stabilize: stabilization });
+      const policy = createRoutePolicy({ allowedOrigins: manifest.allowedOrigins });
+      await policy.attach(context);
+      try {
+        for (const url of urls) {
+          for (const state of states) {
+            const page = await context.newPage();
+            try {
+              await guard.assertUrl(url, { purpose: 'axe-goto' });
+              await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+              guard.assertSameOrigin(page.url(), new URL(url).origin, { purpose: 'axe-post-goto' });
+              await page.waitForLoadState('load', { timeout: 45_000 });
+              await assertCleanFrontendSession(page);
+              await stabilizePage(page, stabilization);
+              const stateResult = await applyState(page, state, stabilization);
+              if (stateResult.skipped) {
+                observations.push({ url, viewport, state, skipped: true, reason: stateResult.reason });
+                continue;
+              }
+              if (!stateResult.applied) {
+                coverageFailures.push({ url, viewport, state, reason: stateResult.reason });
+                continue;
+              }
+              await page.addScriptTag({ content: axeSource });
+              const result = await page.evaluate(async (runTags) => {
+                const report = await globalThis.axe.run(document, {
+                  runOnly: { type: 'tag', values: runTags },
+                  resultTypes: ['violations', 'incomplete'],
+                });
+                const slim = (item) => ({
+                  id: item.id,
+                  impact: item.impact,
+                  nodes: item.nodes.length,
+                  targets: item.nodes.slice(0, 5).map((node) => node.target.join(' ')),
+                });
+                return {
+                  violations: report.violations.map(slim),
+                  incomplete: report.incomplete.map(slim),
+                };
+              }, tags);
+              observations.push({ url, viewport, state, skipped: false, ...result });
+            } catch (error) {
+              coverageFailures.push({ url, viewport, state, reason: error.message.slice(0, 300) });
+            } finally {
+              await page.close().catch(() => {});
+            }
+          }
+        }
+      } finally {
+        await context.close();
+      }
+    }
+  } finally {
+    await browser.close().catch(() => {});
+  }
+
+  const clusters = aggregateAxeViolations(observations);
+  const blocking = clusters.filter((cluster) => failImpacts.has(cluster.impact));
+  const reportClusters = clusters.map(({ targets, ...cluster }) => ({
+    ...cluster,
+    untrustedTargets: targets.map(untrusted),
+  }));
+  const reportCoverageFailures = coverageFailures.map(({ reason, ...failure }) => ({
+    ...failure,
+    untrustedReason: untrusted(reason),
+  }));
+  const findings = blocking.map((cluster, index) => ({
+    id: `F-${loopId}-${String(index + 1).padStart(3, '0')}`,
+    target: `${cluster.rule}:${cluster.state}:${cluster.viewport}`,
+    class: 'improvement',
+    severity: ['critical', 'serious'].includes(cluster.impact) ? 'major' : 'minor',
+    status: 'open',
+    impact: cluster.impact,
+    affectedPages: cluster.pages,
+    affectedNodes: cluster.nodes,
+    untrustedTargets: cluster.targets.map(untrusted),
+  }));
+  for (const failure of coverageFailures) {
+    findings.push({
+      id: `F-${loopId}-${String(findings.length + 1).padStart(3, '0')}`,
+      target: `${failure.viewport}:${failure.state}`,
+      class: 'improvement', severity: 'major', status: 'open',
+      coverageFailure: true, untrustedReason: untrusted(failure.reason),
+    });
+  }
+  const verdict = findings.length ? 'findings' : 'pass';
+  const label = String(values.label ?? 'final');
+  const reportPath = values.report
+    ?? path.join(paths.loopArtifacts(loopName), `report.axe.${label}.json`);
+  const written = await writeReport(reportPath, envelope({
+    kind: 'axe',
+    run: { ...evidenceContext.run, loopId, track: 'elevation' },
+    inputs: evidenceContext.inputs,
+    verdict,
+    counts: {
+      urls: urls.length, viewports: viewports.length, states: states.length,
+      observations: observations.length, violationClusters: clusters.length,
+      blockingClusters: blocking.length,
+      incomplete: observations.reduce((n, item) => n + (item.incomplete?.length ?? 0), 0),
+      coverageFailures: coverageFailures.length,
+    },
+    findings,
+    extra: {
+      axe: { tags, failImpacts: [...failImpacts], sample: urls, viewports, states },
+      clusters: reportClusters,
+      coverageFailures: reportCoverageFailures,
+      caveat: 'No automated violations is not WCAG conformance; incomplete results and manual criteria remain.',
+    },
+  }), { profile: values['redaction-profile'], dryRun: values['dry-run'] });
+
+  log[findings.length ? 'finding' : 'success'](
+    `axe: ${urls.length} URL(s) × ${viewports.length} viewport(s) × ${states.length} state(s), `
+    + `${blocking.length} blocking cluster(s), ${coverageFailures.length} coverage failure(s)`,
+  );
+  return {
+    exitCode: findings.length ? EXIT.FINDINGS : EXIT.PASS,
+    verdict, reports: [written.path],
+    message: findings.length ? `${findings.length} axe quality finding(s)` : 'axe automated checks green',
+  };
+}
+
+export function finalAxeSample(manifest, limit = 12) {
+  if (!Number.isInteger(limit) || limit < 3) throw new PreconditionError('axe --sample must be at least 3.');
+  const all = manifest.allUrls?.map((entry) => entry.url) ?? [];
+  const sample = stratifyByTemplate(all, Math.min(limit, Math.max(3, all.length)), manifest.baseUrl);
+  if (new Set(sample).size < 3) {
+    throw new PreconditionError('axe requires at least three distinct frontend URLs.');
+  }
+  return sample;
+}
+
+export function aggregateAxeViolations(observations) {
+  const grouped = new Map();
+  for (const observation of observations) {
+    for (const violation of observation.violations ?? []) {
+      const key = `${violation.id}\0${violation.impact}\0${observation.viewport}\0${observation.state}`;
+      const current = grouped.get(key) ?? {
+        rule: violation.id, impact: violation.impact, viewport: observation.viewport,
+        state: observation.state, pages: 0, nodes: 0, targets: [],
+      };
+      current.pages += 1;
+      current.nodes += violation.nodes;
+      current.targets.push(...violation.targets);
+      current.targets = [...new Set(current.targets)].slice(0, 8);
+      grouped.set(key, current);
+    }
+  }
+  return [...grouped.values()].sort((a, b) => (
+    `${a.rule}:${a.viewport}:${a.state}`.localeCompare(`${b.rule}:${b.viewport}:${b.state}`)
+  ));
+}
+
 /** Reject rather than hang. A gate that never returns cannot be distinguished from a slow one. */
 export function withDeadline(promise, ms, message) {
   let timer;
@@ -541,6 +733,7 @@ export function lighthouseBudgetFindings(results, budget, loopId = '500', formFa
   const checks = [
     ['scores.performance.median', `performance.lighthouse_performance_${formFactor}`, 'min'],
     ['scores.accessibility.median', 'accessibility.lighthouse_accessibility', 'min'],
+    ['scores.bestPractices.median', 'performance.lighthouse_best_practices', 'min'],
     ['scores.seo.median', 'seo.lighthouse_seo', 'min'],
     ['metrics.lcp.median', `performance.lcp_${formFactor}_ms`, 'max'],
     ['metrics.cls.median', 'performance.cls', 'max'],

@@ -28,7 +28,7 @@ The whole method in one screen. Everything below this section explains *why* the
 cd skills/typo3-upgrade-run/scripts && npm ci && npm test
 
 # 1. freeze what "before" means
-t3u init --base-url "https://acme.ddev.site" --ddev-project acme --languages de,en --max-hours 14
+t3u init --base-url "https://acme.ddev.site" --ddev-project acme --languages de,en --max-hours 20
 t3u doctor                              # host renderer + DDEV application introspection
 t3u env-fingerprint --write-baseline
 t3u content-fingerprint --write-baseline
@@ -59,6 +59,7 @@ t3u validate-run
 
 # 4. optional, only when separately requested after A: approved Contract B work
 t3u lighthouse --loop 500 --label before --runs 3  # homepage + two seeded random pages
+t3u axe --loop 520 --label before                  # representative URLs × visible states
 ```
 
 Read the exit code, not the log: **0** pass · **1** fix the site · **2** fix the harness ·
@@ -67,8 +68,8 @@ Read the exit code, not the log: **0** pass · **1** fix the site · **2** fix t
 `t3u status` prints where the run stands at any time. Every step writes to `.typo3-update/`,
 so a resumed session reads state from disk rather than from the conversation.
 
-The overnight fast path is a hard **14-hour** run: 1.5h intake/baseline, 2h dependencies, 5h migration, 1.5h affected parity/operations, then a protected 4h for closure, handover and contingency.
-At T+10h start no new migration cause; cross the deadline incomplete rather than claim a pass.
+The extended overnight fast path is a hard **20-hour** run: 1.5h intake/baseline, 2h dependencies, up to 11h migration and affected parity/operations, 1.5h operational checks and buffer, then a protected 4h for closure, handover and contingency.
+At T+16h start no new migration cause; cross the deadline incomplete rather than claim a pass. Read [`references/recent-run-lessons.md`](references/recent-run-lessons.md) at P00.
 
 Three rules that decide most questions: the baseline is sealed before any change and never
 refreshed to make a diff go away; a difference is either repaired or approved as a declared
@@ -208,7 +209,7 @@ parent iteration, never a nested loop.
 | No progress | 2 consecutive iterations |
 | Oscillation | any finding reopening once |
 | Fingerprint drift | environment or content changed mid-loop |
-| Time budget | 90 min · 240 min for loop 000/300 · 14h whole run, 4h closure reserve |
+| Time budget | 90 min · 240 min for loop 000/300 · 20h whole run, 4h closure reserve |
 | Budget breach | an iteration exceeded the change budget |
 | Unclassifiable finding | fits no class |
 
@@ -219,10 +220,10 @@ could not resolve is worth more than one that thrashes for twenty.
 
 Before any baseline exists, shoot the untouched site twice and require **zero** differences; non-zero
 is a harness defect, and shrinking the sample or raising a threshold is forbidden.
-Run `selftest-determinism --sample intermediate --visual-workers 3` first; it keeps strict
+Run `selftest-determinism --sample intermediate --visual-workers 12` first; it keeps strict
 thresholds but cannot close loop 000. Then run exhaustive `--sample all` once; that command performs
 the two unchanged passes and requires zero differences.
-Diagnostics and authoritative proofs use three process-isolated browsers; the exhaustive
+Diagnostics and authoritative proofs use twelve process-isolated browsers; the exhaustive
 double-shoot must license that exact count (sealed into the lock, enforced later). See the normative
 lifecycle in [`references/harness-contract.md`](references/harness-contract.md).
 **Only a harness that proves zero against itself may judge an update.** Comparisons refuse without a valid self-test lock.
@@ -264,20 +265,19 @@ Run them in order. The stage that catches a difference already narrows the cause
 differ → routing or template; DOM+pixels only → markup; pixels only → CSS, assets, fonts, or image
 processing.
 
-The configured eight visual interaction states are `default`, `keyboard-focus`, `nav-open`,
-`dropdown-open`, `accordion-open`, `form-empty`, `form-validation-error`, and `modal-open`.
-Ordinary checks use only `default`; baseline, exhaustive determinism, and final closure use all
-eight. Search, empty results, pagination, login, password reset, and 404 are page targets, not
-additional interaction states.
+The authoritative visual states are exactly `default`, `keyboard-focus`, and `nav-open`.
+Dropdowns, accordions, forms, consent, modals and sliders use inventory-driven sentinel journeys
+on representative URLs; never multiply them across the sitemap. Search, empty results, pagination,
+login, password reset, and 404 are page targets, not additional global states.
 
 Consent behavior is a sealed adapter, never project-specific harness code. Seed accepted
 cookies/localStorage for the default state and configure `consent-modal-open` trigger selectors so
-the visible modal is captured separately. Fallback selectors and scroll-lock classes live in the
-stabilization JSON and participate in the manifest hash.
+settings are captured separately. A second fresh context must capture first visit and test reject /
+accept with tracker requests locally intercepted. Fallback selectors and scroll-lock classes live
+in stabilization JSON and participate in the manifest hash.
 
 **Coverage is declared, never implied.** The manifest records `coverage.notCaptured[]` with the
 actual URL ids and reason. When a budget was exhausted, the summary says so in its first paragraph.
-
 ## The run directory
 
 Full detail in [`references/run-directory.md`](references/run-directory.md). Project-local
@@ -361,8 +361,8 @@ Do not run unrelated domain skills merely because they exist.
 requires **plain Vite without the bridge extension** — hashed entrypoints plus a manifest referenced
 directly from Fluid or TypoScript. Use `typo3-vite` for build configuration and skip its
 extension-based integration. v14 removed core asset concatenation and compression, so the Vite
-build owns bundling and minification.
-
+build owns bundling and minification. A touched frontend must pass a clean production build,
+`scripts/vite-production-check.mjs`, and a guarded browser walk with no stale/dev/missing assets.
 Before using any skill, establish its filesystem path, that it belongs to the approved repository,
 and its git revision. A skill with the expected name from an unexpected directory is not the skill
 you meant.
@@ -384,7 +384,7 @@ database work, dropping a table or field, contacting a non-allow-listed origin, 
 budget, accepting a residual finding, the closure certificate, unlocking Contract B, each B track,
 each derived baseline, commits, and — separately — pushes, tags, publication and pull requests.
 
-Not grantable: changing a threshold or the sample after sealing, extending the 14h deadline,
+Not grantable: changing a threshold or the sample after sealing, extending the 20h deadline,
 editing `baseline/A-original/`, or touching staging, live, or remote infrastructure.
 
 ## Harness
@@ -480,6 +480,7 @@ incomplete rather than claiming success. A gate that does not apply needs an exp
 | `references/rollback.md` | restoring an anchor — database, code and files together |
 | `references/known-problems.md` | **a 500, a warning or a Composer refusal you have not seen before** |
 | `references/fleet-profile.md` | **P00, before diagnosing anything** — what these projects usually turn out to be |
+| `references/recent-run-lessons.md` | **P00** — Solr/advisory safety, interaction sentinels, fast quality profile |
 | `references/fleet-survey.md` | **before any run** — read-only triage across several projects: order, blockers, where the effort is |
 | `scripts/sitemap-audit.mjs` | conditional sitemap/routing blocker recipe in P04 |
 | `references/quality-bars.md`, `references/measurement-recipes.md` | Contract B |
@@ -491,8 +492,7 @@ incomplete rather than claiming success. A gate that does not apply needs an exp
 | `references/metadata-and-social.md` | the `<head>` audit: minimum metadata, generated OG card, Impressum |
 | `references/image-formats.md` | **AVIF first, WebP fallback** — every processed image, and where not to |
 | `references/harness-contract.md`, `references/visual-regression.md` | running the harness |
-| `references/backend-permissions.md` | **loop 310** — what the upgrade broke for editors (building groups: `typo3-backend-rights`) |
-| `references/kpi-report.md` | the final report |
+| `references/backend-permissions.md`, `references/kpi-report.md` | loop 310 editor audit; final report |
 | `scripts/backend-write-roundtrip.mjs`, `scripts/indexed-search-check.mjs`, `scripts/a11y-audit.mjs` | loop 310 write test, search index, loop 520 accessibility |
 | `architecture-decision-records` skill | writing an ADR into `decisions/` |
 

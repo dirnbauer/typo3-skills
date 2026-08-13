@@ -1,0 +1,18 @@
+{
+  "schema": "typo3-upgrade-run/content-transition@1",
+  "source_fingerprint": "sha256:replace-with-source-content-fingerprint",
+  "snapshot_ref": "replace-with-recorded-state-snapshot",
+  "commands": [
+    {
+      "argv": ["ddev", "typo3", "extension:setup"],
+      "exit_code": 0
+    }
+  ],
+  "checks": {
+    "upgrade_fixed_point": true,
+    "schema_reviewed": true,
+    "reference_index_clean": true,
+    "row_counts_reconciled": true
+  },
+  "declared_transitions": []
+}

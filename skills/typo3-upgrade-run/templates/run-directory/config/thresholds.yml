@@ -24,7 +24,7 @@ coverage:
   backend_module_required_coverage: 100
 
 budgets:
-  overnight:    { max_hours: 14, closure_reserve_hours: 4 }
+  overnight:    { max_hours: 20, closure_reserve_hours: 4 }
   default:      { max_iterations: 6, time_budget_min: 90,  change_files: 10, change_lines: 400 }
   harness:      { max_iterations: 3, time_budget_min: 60,  change_files: 10, change_lines: 400 }
   closure_300:  { max_iterations: 8, time_budget_min: 240, change_files: 10, change_lines: 400 }
@@ -44,8 +44,9 @@ contract_b:
     tbt_ms: 200              # an INP PROXY, not INP. Never claim "INP passing" from lab data.
     fcp_ms: 1800
     speed_index_ms: 3400
-    lighthouse_performance_mobile: 90
-    lighthouse_performance_desktop: 95
+    lighthouse_performance_mobile: 95
+    lighthouse_performance_desktop: 100
+    lighthouse_best_practices: 100
     critical_js_kb: 170
     critical_css_kb: 60
     runs_per_url: 3

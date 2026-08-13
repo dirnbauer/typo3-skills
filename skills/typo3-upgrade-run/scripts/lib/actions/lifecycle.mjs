@@ -203,6 +203,9 @@ export async function validateRun({ paths, log }) {
   const loopDirs = await readdir(paths.loopsDir).catch(() => []);
   const approvalFiles = await readdir(paths.approvalsDir).catch(() => []);
   for (const [id, status] of Object.entries(state.loops)) {
+    // Loop 000 is represented by selftest.json and selftest.lock.json. It is a
+    // machine-managed evidence unit and deliberately has no scaffolded loop directory.
+    if (id === '000') continue;
     const matches = loopDirs.filter((name) => name.startsWith(`${id}-`));
     if (matches.length !== 1) issues.push(`loop ${id} (${status}) has ${matches.length} directories`);
     if (matches.length === 1) {

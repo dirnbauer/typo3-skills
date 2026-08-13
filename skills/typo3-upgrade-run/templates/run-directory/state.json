@@ -40,6 +40,9 @@
   "fingerprints": {
     "environment": null,
     "content": null,
+    "content_target": null,
+    "content_active": "baseline",
+    "content_transition_hash": null,
     "sealed_at": null
   },
   "selftest": {

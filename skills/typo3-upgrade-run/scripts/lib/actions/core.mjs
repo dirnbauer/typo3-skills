@@ -14,6 +14,7 @@ import { collectEnvironment, compareEnvironment } from '../fingerprint/environme
 import { collectContent, compareContent } from '../fingerprint/content.mjs';
 import { intOpt, listOpt } from '../cli/args.mjs';
 import { renderStatus } from '../run/status.mjs';
+import { sha256 } from '../run/paths.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const TEMPLATES = path.resolve(HERE, '../../../templates/run-directory');
@@ -46,11 +47,16 @@ export async function init({ values, paths, log, journal }) {
 
   await copyTemplate('config/run.yml', paths.runConfig);
   await copyTemplate('config/thresholds.yml', paths.thresholds);
+  await copyTemplate('config/interactions.yml', path.join(paths.configDir, 'interactions.yml'));
+  await copyTemplate(
+    'config/content-transition.example.json',
+    path.join(paths.configDir, 'content-transition.example.json'),
+  );
   await copyTemplate('gitignore', path.join(paths.root, '.gitignore'));
 
-  const maxHours = intOpt(values, 'max-hours', 14);
-  if (maxHours < 1 || maxHours > 14) {
-    throw new PreconditionError('--max-hours must be between 1 and 14; the overnight ceiling is not extendable.');
+  const maxHours = intOpt(values, 'max-hours', 20);
+  if (maxHours < 1 || maxHours > 20) {
+    throw new PreconditionError('--max-hours must be between 1 and 20; the extended overnight ceiling is not extendable.');
   }
   const state = emptyState({ runId, now: new Date().toISOString(), maxHours });
   state.project = {
@@ -180,9 +186,25 @@ export async function envFingerprint({ values, paths, log, journal }) {
 export async function contentFingerprint({ values, paths, log, journal }) {
   const store = new StateStore(paths);
   const state = await store.read();
-  const sealed = values['write-baseline'] ? null : await readJson(paths.contentFingerprint);
-  if (!values['write-baseline'] && !sealed) {
+  const writeBaseline = values['write-baseline'] === true;
+  const writeTarget = values['write-target'] === true;
+  if (writeBaseline && writeTarget) {
+    throw new PreconditionError('--write-baseline and --write-target are mutually exclusive.');
+  }
+  if (writeBaseline && state.baselines?.['A-original']?.sealed) {
+    throw new PreconditionError('Baseline A is sealed; its source content fingerprint cannot be rewritten.');
+  }
+  const baseline = await readJson(paths.contentFingerprint);
+  const target = await readJson(paths.targetContentFingerprint);
+  const sealed = state.fingerprints?.content_active === 'target' ? target : baseline;
+  if (!writeBaseline && !writeTarget && !sealed) {
     throw new PreconditionError('No sealed content fingerprint. Run with --write-baseline first.');
+  }
+  if (writeTarget && !baseline) {
+    throw new PreconditionError('A target content epoch requires the immutable source fingerprint first.');
+  }
+  if (writeTarget && !state.baselines?.['A-original']?.sealed) {
+    throw new PreconditionError('Seal Baseline A before recording the post-migration target content epoch.');
   }
   const configuredTables = listOpt(values, 'tables', []);
   // Project-declared exclusions: request-driven log tables (view counters and the like)
@@ -192,21 +214,60 @@ export async function contentFingerprint({ values, paths, log, journal }) {
   const projectExcludes = listOpt(values, 'exclude-tables', await runConfigExcludeTables(paths));
   const current = await collectContent({
     ddevProject: values['ddev-project'] ?? state.project?.ddev_project ?? null,
-    fileadmin: values.fileadmin ?? sealed?.files?.root ?? 'fileadmin',
+    fileadmin: values.fileadmin ?? sealed?.files?.root ?? baseline?.files?.root ?? 'fileadmin',
     tables: configuredTables.length
       ? configuredTables
-      : sealed?.database?.tables?.map((table) => table.table) ?? null,
+      : (writeTarget ? null : sealed?.database?.tables?.map((table) => table.table) ?? null),
     allowMissing: values['allow-missing'] ?? false,
     excludeTables: projectExcludes,
   });
 
-  if (values['write-baseline']) {
+  if (writeBaseline) {
     await mkdir(paths.manifestsDir, { recursive: true });
     await writeFile(paths.contentFingerprint, `${JSON.stringify(current, null, 2)}\n`, 'utf8');
-    await store.update((s) => { s.fingerprints.content = current.fingerprintHash; });
+    await store.update((s) => {
+      s.fingerprints.content = current.fingerprintHash;
+      s.fingerprints.content_target = null;
+      s.fingerprints.content_active = 'baseline';
+      s.fingerprints.content_transition_hash = null;
+    });
     if (current.degraded) log.warn('Content fingerprint is DEGRADED (database unavailable) — recorded in the report.');
     log.success(`Content fingerprint sealed: ${current.fingerprintHash}`);
     return { exitCode: EXIT.PASS, verdict: 'pass', fingerprint: current.fingerprintHash, degraded: current.degraded, message: 'content sealed' };
+  }
+
+  if (writeTarget) {
+    if (!values.transition) {
+      throw new PreconditionError('--transition is required with --write-target.');
+    }
+    let transition;
+    try { transition = JSON.parse(await readFile(values.transition, 'utf8')); }
+    catch (error) { throw new PreconditionError(`Cannot read content transition ledger: ${error.message}`); }
+    validateContentTransition(transition, state, baseline.fingerprintHash);
+    const transitionHash = `sha256:${sha256(JSON.stringify(transition))}`;
+    current.sourceFingerprintHash = baseline.fingerprintHash;
+    current.transitionHash = transitionHash;
+    await mkdir(paths.manifestsDir, { recursive: true });
+    await Promise.all([
+      writeFile(paths.targetContentFingerprint, `${JSON.stringify(current, null, 2)}\n`, 'utf8'),
+      writeFile(paths.contentTransition, `${JSON.stringify({ ...transition, transitionHash }, null, 2)}\n`, 'utf8'),
+    ]);
+    await store.update((s) => {
+      s.fingerprints.content_target = current.fingerprintHash;
+      s.fingerprints.content_active = 'target';
+      s.fingerprints.content_transition_hash = transitionHash;
+    });
+    await journal.append('content-transition', {
+      source: baseline.fingerprintHash,
+      target: current.fingerprintHash,
+      transitionHash,
+      snapshot: transition.snapshot_ref,
+    });
+    log.success(`Target content epoch sealed: ${current.fingerprintHash}`);
+    return {
+      exitCode: EXIT.PASS, verdict: 'pass', fingerprint: current.fingerprintHash,
+      transitionHash, message: 'target content epoch sealed',
+    };
   }
 
   const cmp = compareContent(sealed, current);
@@ -221,6 +282,30 @@ export async function contentFingerprint({ values, paths, log, journal }) {
   }
   log.success('Content fingerprint matches the sealed value.');
   return { exitCode: EXIT.PASS, verdict: 'pass', message: 'content matches' };
+}
+
+export function validateContentTransition(transition, state, sourceFingerprintHash) {
+  if (transition?.schema !== 'typo3-upgrade-run/content-transition@1') {
+    throw new PreconditionError('Content transition schema must be typo3-upgrade-run/content-transition@1.');
+  }
+  if (transition.source_fingerprint !== sourceFingerprintHash) {
+    throw new PreconditionError('Content transition source_fingerprint does not match Baseline A.');
+  }
+  if (!transition.snapshot_ref || !(state.snapshots ?? []).includes(transition.snapshot_ref)) {
+    throw new PreconditionError('Content transition snapshot_ref is not recorded in state.json.');
+  }
+  if (!Array.isArray(transition.commands) || !transition.commands.length
+    || transition.commands.some((command) => command?.exit_code !== 0 || !Array.isArray(command?.argv))) {
+    throw new PreconditionError('Content transition commands must be recorded as argv arrays with exit_code 0.');
+  }
+  const requiredChecks = [
+    'upgrade_fixed_point', 'schema_reviewed', 'reference_index_clean', 'row_counts_reconciled',
+  ];
+  const missing = requiredChecks.filter((key) => transition.checks?.[key] !== true);
+  if (missing.length) {
+    throw new PreconditionError(`Content transition checks are incomplete: ${missing.join(', ')}.`);
+  }
+  return true;
 }
 
 /* --------------------------------------------------------------- helpers */

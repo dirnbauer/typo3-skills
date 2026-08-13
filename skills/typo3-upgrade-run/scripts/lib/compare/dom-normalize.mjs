@@ -39,6 +39,11 @@ export const RULES = Object.freeze([
   // compared through the rendered inputs and labels, so adding, removing or renaming a field
   // remains a difference.
   { id: 'typo3-form-trusted-properties', why: 'EXT:form per-request HMAC and field-list serialisation', re: /(\[__trustedProperties\]"[^>]*?\svalue=")[^"]*(")/gi, to: '$1<TRUSTED>$2' },
+  // Extbase signs its serialised referrer payload. TYPO3 v12 used a 40-character SHA-1
+  // MAC while v14 uses a 64-character SHA3-256 MAC, and the secret may also rotate.
+  // Preserve the payload byte-for-byte and mask only the trailing hexadecimal MAC on
+  // the two signed fields. Controller, action, extension and form structure stay visible.
+  { id: 'typo3-extbase-referrer-hmac', why: 'Extbase referrer payload MAC changes with framework algorithm and application secret', re: /(name=["'][^"']+\[__referrer\]\[(?:arguments|@request)\]["'][^>]*?\svalue=["'][^"']*?)(?:[a-f0-9]{64}|[a-f0-9]{40})(["'])/gi, to: '$1<HMAC>$2' },
   // Removed, not masked: EXT:form also inserts the honeypot at a random POSITION among the
   // fields, so replacing it in place still leaves two different documents. It is an
   // aria-hidden anti-spam input with no visible content, and it is removed from both sides,

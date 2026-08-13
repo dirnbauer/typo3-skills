@@ -17,7 +17,8 @@ Contract B cannot start before the Contract A closure certificate exists.
 | CLS | ≤0.05 (hard fail >0.1) | The most transferable of the three — a local CLS regression is a real regression. |
 | INP proxy | TBT ≤200 ms; scripted interaction latency ≤200 ms p95 | TBT is a **proxy**. Never write "INP passing" from lab data; INP is a field metric. |
 | FCP / Speed Index / TTFB | ≤1.8 s / ≤3.4 s / ≤600 ms | Local TTFB is unrealistically low — no network, warm caches. Record it, flag it as non-transferable. |
-| Lighthouse Performance | ≥90 mobile, ≥95 desktop | Indicative only. Act on the concrete audits, not the score. |
+| Lighthouse Performance | ≥95 mobile, 100 desktop | Indicative only. Act on the concrete audits, not the score; never round a miss up. |
+| Lighthouse Best Practices | 100 on every sampled page | A browser audit, not a security assessment. |
 | Critical-path payload | ≤170 KB compressed JS, ≤60 KB CSS per template | Unaffected by locality — a real bar. |
 
 Levers, in the order they usually pay: give the measured LCP image `fetchpriority="high"` and eager
@@ -44,7 +45,7 @@ Automated and manual results are reported **separately** and never merged into o
 
 | Bar | Target | Local caveat |
 |---|---|---|
-| axe-core | 0 serious/critical across sample × 3 viewports × all languages; minor/moderate triaged with a written decision | Automation reaches roughly a third of WCAG criteria. This alone is never conformance. |
+| axe-core | 0 serious/critical across sample × 3 viewports × all languages × applicable visible states; minor/moderate and every `incomplete` result triaged | Automation reaches only part of WCAG. This alone is never conformance. |
 | Lighthouse Accessibility | 100 | A subset of axe — not independent evidence. |
 | Keyboard | 5 primary journeys completable keyboard-only, visible focus throughout, 0 traps, working skip link | Needs a human. The skill produces the checklist and the evidence slots, not the verdict. |
 | 1.4.10 Reflow | no horizontal scroll or content loss at 320 px and at 400% zoom on 1280 px | Screenshot evidence per page. |

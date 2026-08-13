@@ -25,6 +25,7 @@ import {
 } from '../../lib/run/evidence.mjs';
 import { gate, promoteSelftestBaseline } from '../../lib/actions/compare.mjs';
 import { approvalRecord, loopOpen, loopStart, validateRun } from '../../lib/actions/lifecycle.mjs';
+import { validateContentTransition } from '../../lib/actions/core.mjs';
 
 const tmp = () => mkdtemp(path.join(tmpdir(), 't3u-contract-'));
 const log = new Proxy({}, { get: () => () => {} });
@@ -203,7 +204,12 @@ describe('evidence inputs and live assertions', () => {
 
     const ctx = await readEvidenceContext(paths);
     assert.equal(ctx.run.runId, '2026-07-29-acme');
-    assert.deepEqual(ctx.inputs, evidenceInputs);
+    assert.deepEqual(ctx.inputs, {
+      ...evidenceInputs,
+      baselineContentFingerprintHash: evidenceInputs.contentFingerprintHash,
+      targetContentFingerprintHash: null,
+      contentTransitionHash: null,
+    });
 
     let envCollected = 0;
     let contentCollected = 0;
@@ -223,6 +229,28 @@ describe('evidence inputs and live assertions', () => {
 });
 
 describe('state, loop paths, and approval choreography', () => {
+  test('a target content epoch requires a recorded rollback anchor and reconciled migration ledger', () => {
+    const state = emptyState({ runId: '2026-07-29-acme', now: '2026-07-29T00:00:00Z' });
+    state.snapshots.push('pre-v14-migration');
+    const ledger = {
+      schema: 'typo3-upgrade-run/content-transition@1',
+      source_fingerprint: evidenceInputs.contentFingerprintHash,
+      snapshot_ref: 'pre-v14-migration',
+      commands: [{ argv: ['ddev', 'typo3', 'extension:setup'], exit_code: 0 }],
+      checks: {
+        upgrade_fixed_point: true,
+        schema_reviewed: true,
+        reference_index_clean: true,
+        row_counts_reconciled: true,
+      },
+    };
+    assert.equal(validateContentTransition(ledger, state, evidenceInputs.contentFingerprintHash), true);
+    assert.throws(
+      () => validateContentTransition({ ...ledger, checks: { ...ledger.checks, row_counts_reconciled: false } }, state, evidenceInputs.contentFingerprintHash),
+      /row_counts_reconciled/,
+    );
+  });
+
   test('a proven self-test pass is promoted atomically without overwriting Baseline A', async () => {
     const dir = await tmp();
     const source = path.join(dir, 'selftest-b');
@@ -424,6 +452,19 @@ describe('state, loop paths, and approval choreography', () => {
       'loop_id: "301"',
     ));
     await assert.rejects(() => validateRun({ paths, log }), /loop_id does not match directory/);
+  });
+
+  test('validate-run accepts machine-managed loop 000 without a scaffold directory', async () => {
+    const dir = await tmp();
+    const paths = new RunPaths('.typo3-update', dir);
+    await mkdir(paths.root, { recursive: true });
+    const state = emptyState({
+      runId: '2026-07-29-acme',
+      now: '2026-07-29T00:00:00Z',
+    });
+    state.loops['000'] = 'green';
+    await new StateStore(paths).write(state);
+    assert.equal((await validateRun({ paths, log })).verdict, 'pass');
   });
 
   test('Contract B scaffolding requires a sealed derived baseline and carries intent approval', async () => {

@@ -20,7 +20,7 @@
       "properties": {
         "started_at": { "type": "string", "format": "date-time" },
         "deadline_at": { "type": "string", "format": "date-time" },
-        "max_hours": { "type": "number", "exclusiveMinimum": 0, "maximum": 14 },
+        "max_hours": { "type": "number", "exclusiveMinimum": 0, "maximum": 20 },
         "closure_reserve_hours": { "type": "number", "minimum": 2, "maximum": 4 }
       }
     },
@@ -122,6 +122,9 @@
       "properties": {
         "environment": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
         "content": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
+        "content_target": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
+        "content_active": { "enum": ["baseline", "target"] },
+        "content_transition_hash": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
         "sealed_at": { "type": ["string", "null"], "format": "date-time" }
       }
     },

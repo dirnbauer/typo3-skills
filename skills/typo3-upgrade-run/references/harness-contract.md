@@ -184,7 +184,7 @@ no second cap on final HTTP/DOM, because those stages are parallel and do not st
 Run loop 000's deterministic intermediate diagnostic before its first exhaustive proof:
 
 ```bash
-t3u selftest-determinism --sample intermediate --visual-workers 3
+t3u selftest-determinism --sample intermediate --visual-workers 12
 ```
 
 The diagnostic uses the normal affected/critical/seeded URL selection, every configured viewport,
@@ -196,12 +196,12 @@ The exhaustive command already produces two complete HTTP/DOM/visual passes. Whe
 zero, the harness atomically promotes pass B to the unsealed `baseline/A-original`. Sealing reuses
 that proven capture instead of running an identical third full browser matrix.
 
-Visual captures use a fixed pool of three independent Chromium processes (range 1–12). A
+Visual captures use a fixed pool of twelve independent Chromium processes (range 1–12). A
 multi-worker pool must not share one Chromium process:
 isolated contexts still share renderer-global state and can produce workload-dependent fractional
-layout. Three workers are **licensed, never assumed**: only when the exhaustive double-shoot proves
-zero at that count does the lock seal `visualWorkers: 3` —
-from then on every authoritative capture must use exactly three, and `compare-visual` refuses (exit 3)
+layout. Twelve workers are **licensed, never assumed**: only when the exhaustive double-shoot proves
+zero at that count does the lock seal `visualWorkers: 12` —
+from then on every authoritative capture must use exactly twelve, and `compare-visual` refuses (exit 3)
 when the lock and either side's capture index disagree on the count. A machine where parallel
 load flakes fails the self-test at N and falls back to serial; the proof is per-machine and
 expires with the lock. Record the count in capture metadata, capture indexes, self-test reports,
@@ -226,6 +226,16 @@ run's Chromium fleet competing for cores during a double-shoot turns real determ
 apparent flake, so screenshots queue while fetches, comparisons and application work still
 overlap freely. A self-test holds the lock across both passes. The wait is announced with the
 holder's run id, and a holder whose process is gone is stolen automatically.
+
+Before starting an exhaustive proof, inspect the lock owner and schedule the slot. Do not launch a
+second proof merely to leave it queued for hours; run renderer-free HTTP/DOM work or migration while
+the live holder finishes. The intended expensive sequence is one intermediate diagnostic, one
+exhaustive double-shoot whose pass B becomes Baseline A, and one final capture—not two independent
+baseline matrices and not one proof per reporting consumer.
+
+Every frontend browser context is new and isolated. A TYPO3 Admin Panel/debug toolbar or backend
+session cookie makes the evidence non-representative and is a precondition failure, never a
+site-wide DOM regression.
 
 Intermediate workers reuse one page for the whole viewport. Dispose the per-navigation guard and
 quiet detector after each capture, and close/recreate the page before retrying a failed capture.

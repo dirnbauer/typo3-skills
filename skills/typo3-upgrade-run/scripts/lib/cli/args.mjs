@@ -29,7 +29,7 @@ export const COMMANDS = {
   init: { summary: 'Create the run directory and initial state', options: {
     'base-url': { type: 'string' }, 'project-name': { type: 'string' },
     'ddev-project': { type: 'string' },
-    languages: { type: 'string' }, 'max-hours': { type: 'string', default: '14' },
+    languages: { type: 'string' }, 'max-hours': { type: 'string', default: '20' },
     force: { type: 'boolean', default: false },
   }},
   doctor: { summary: 'Check the environment can run the harness', options: {
@@ -59,7 +59,8 @@ export const COMMANDS = {
     'ddev-project': { type: 'string' },
   }},
   'content-fingerprint': { summary: 'Record or assert the content fingerprint', options: {
-    'write-baseline': { type: 'boolean', default: false }, assert: { type: 'boolean', default: false },
+    'write-baseline': { type: 'boolean', default: false }, 'write-target': { type: 'boolean', default: false },
+    transition: { type: 'string' }, assert: { type: 'boolean', default: false },
     'ddev-project': { type: 'string' }, fileadmin: { type: 'string', default: 'fileadmin' },
     tables: { type: 'string' },
     'exclude-tables': { type: 'string' },
@@ -128,6 +129,14 @@ export const COMMANDS = {
     report: { type: 'string' }, runs: { type: 'string', default: '3' },
     sample: { type: 'string', default: '3' }, timeout: { type: 'string', default: '120' },
     'form-factor': { type: 'string', default: 'mobile' }, budget: { type: 'string' },
+    label: { type: 'string', default: 'final' },
+  }},
+  axe: { summary: 'axe-core over representative URLs, viewports, and visible states', options: {
+    report: { type: 'string' }, sample: { type: 'string', default: '12' },
+    viewports: { type: 'string', default: 'desktop,tablet,mobile' },
+    states: { type: 'string', default: 'default,nav-open,consent-modal-open' },
+    tags: { type: 'string', default: 'wcag2a,wcag2aa,wcag21a,wcag21aa,wcag22aa' },
+    'fail-impacts': { type: 'string', default: 'critical,serious' },
     label: { type: 'string', default: 'final' },
   }},
   gate: { summary: 'Aggregate a loop verdict from its stage reports', options: {

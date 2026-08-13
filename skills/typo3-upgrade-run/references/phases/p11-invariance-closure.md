@@ -3,21 +3,26 @@
 Track `invariance`. The loop the whole skill exists for.
 
 ## Preconditions
-Loop 100 green with every applicable stateful fixed point and feature check recorded. Both
-fingerprints unchanged since sealing.
+Loop 100 green with every applicable stateful fixed point and feature check recorded. The renderer
+fingerprint is unchanged. The immutable source content fingerprint still matches the Baseline A
+seal, and the active target content epoch matches its reviewed transition ledger.
 
 ## Allowed
 **Repair only.** No new features, no improvements, no "while I am here".
 
 ## Steps
-1. Re-run stage 1 (HTTP and metadata) across all URLs.
-2. Re-run stage 2 (normalised DOM) across all URLs.
-3. Re-shoot stage 3 on the sealed tiered visual set with the identical viewport matrix and the three
+1. After the last approved stateful migration reaches a fixed point, complete
+   `config/content-transition.example.json` and run `t3u content-fingerprint --write-target
+   --transition <ledger>`. The source fingerprint is never overwritten; the command requires a
+   recorded snapshot, successful argv and the schema/reference/row-count reconciliation checks.
+2. Re-run stage 1 (HTTP and metadata) across all URLs.
+3. Re-run stage 2 (normalised DOM) across all URLs.
+4. Re-shoot stage 3 on the sealed tiered visual set with the identical viewport matrix and the three
    authoritative states: `default`, `keyboard-focus`, `nav-open`.
-4. Compare all three stages and gate once with `compare-all` against `A-original`.
-5. For every difference: identify the cause, fix it, re-shoot the affected pages. One cause per
+5. Compare all three stages and gate once with `compare-all` against `A-original`.
+6. For every difference: identify the cause, fix it, re-shoot the affected pages. One cause per
    iteration.
-6. Finish with one full pass, then the idempotence re-run.
+7. Finish with one full pass, then the idempotence re-run.
 
 ## Reading the stages
 The stage that caught a difference already narrows the cause — this is what turns a long pixel hunt

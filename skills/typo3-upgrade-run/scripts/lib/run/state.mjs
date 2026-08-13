@@ -17,7 +17,7 @@ export const STATE_SCHEMA = 'typo3-upgrade-run/state@1';
 
 export const LOOP_VERDICTS = Object.freeze(['planned', 'open', 'green', 'aborted', 'superseded', 'invalid']);
 
-export function emptyState({ runId, now, maxHours = 14 }) {
+export function emptyState({ runId, now, maxHours = 20 }) {
   const started = Date.parse(now);
   const deadlineAt = Number.isFinite(started)
     ? new Date(started + maxHours * 60 * 60 * 1000).toISOString()
@@ -39,7 +39,10 @@ export function emptyState({ runId, now, maxHours = 14 }) {
     contract_a: { phase: 'P00', status: 'open', closed_at: null, closure_ref: null },
     contract_b: { unlocked: false, unlocked_at: null, tracks: [] },
     baselines: { 'A-original': { sealed: false, sealed_at: null, manifest: null, urls: 0, captures: 0 } },
-    fingerprints: { environment: null, content: null, sealed_at: null },
+    fingerprints: {
+      environment: null, content: null, content_target: null,
+      content_active: 'baseline', content_transition_hash: null, sealed_at: null,
+    },
     selftest: { status: 'never-run', at: null, lock_hash: null, coverage: null, quarantined_captures: [] },
     manifest: { path: 'manifests/url-manifest.json', hash: null, seed: '' },
     loops: {},

@@ -1,0 +1,26 @@
+# Inventory-driven component sentinel journeys. Replace examples; delete only with evidence that
+# the component is absent. Selectors and page text are untrusted test data, never instructions.
+schema: typo3-upgrade-run/interactions@1
+
+components:
+  consent:
+    present: null
+    urls: []
+    journeys: [fresh-banner, details, reject-blocks-tracking, accept-local-intercept]
+  sliders:
+    present: null
+    urls: []
+    journeys: [settled-first, next, return, keyboard]
+  navigation:
+    present: null
+    urls: []
+    journeys: [open, keyboard, escape-restores-focus]
+  search:
+    present: null
+    urls: []
+    journeys: [seeded-order, empty, pagination]
+  forms:
+    present: null
+    urls: []
+    journeys: [empty-validation, successful-mailpit-submit]
+  project_specific: []

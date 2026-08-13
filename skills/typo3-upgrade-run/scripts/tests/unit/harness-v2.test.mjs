@@ -233,8 +233,8 @@ describe('browser settling', () => {
   });
 
   test('visual capture isolates final pages and bounds diagnostic workers', async () => {
-    assert.equal(DEFAULT_VISUAL_WORKERS, 3);
-    assert.equal(DIAGNOSTIC_VISUAL_WORKERS, 3);
+    assert.equal(DEFAULT_VISUAL_WORKERS, 12);
+    assert.equal(DIAGNOSTIC_VISUAL_WORKERS, 12);
     // 12 covers a 10-core capture host; any count above 1 still needs a green exhaustive
     // self-test at exactly that count before it may produce final evidence.
     assert.equal(MAX_VISUAL_WORKERS, 12);
@@ -426,6 +426,22 @@ describe('DOM normalisation', () => {
     assert.doesNotMatch(field.html, /a1b2c3d4/);
     const assignment = normalizeHtml('var csrfToken = "a1b2c3d4e5f6a7b8";');
     assert.doesNotMatch(assignment.html, /a1b2c3d4/);
+  });
+
+  test('normalises only the trailing Extbase referrer HMAC and preserves its payload', () => {
+    const field = (payload, hmac) => `<input type="hidden" name="tx_powermail_pi1[__referrer][arguments]" value="${payload}${hmac}" />`;
+    const sha1 = 'd229f266a44a43accb3c87b09fb1f03c8acb6688';
+    const sha3 = '75a282cd8a35d142b4a8c741f78c3ca5d0ceea6072d62db3a15e1224bb20293b';
+    const v12 = normalizeHtml(field('YTowOnt9', sha1));
+    const v14 = normalizeHtml(field('YTowOnt9', sha3));
+    assert.equal(v12.html, v14.html);
+    assert.match(v12.html, /value="YTowOnt9<HMAC>"/);
+    assert.equal(v12.hits['typo3-extbase-referrer-hmac'], 1);
+    assert.notEqual(
+      normalizeHtml(field('YTowOnt9', sha1)).html,
+      normalizeHtml(field('YToxOnt9', sha3)).html,
+      'a changed serialised payload must remain a DOM difference',
+    );
   });
 
   test('NEVER touches text, classes, aria, srcset, href targets or alt', () => {
@@ -726,16 +742,23 @@ describe('overnight comparison command', () => {
     assert.match(combined, /await gate\(ctx\)/);
   });
 
-  test('the run deadline blocks false-green work after fourteen hours', () => {
+  test('defaults to a T+16h migration cutoff and blocks false-green work after twenty hours', () => {
+    const parsed = parse(['init', '--base-url', 'https://acme.ddev.site']);
+    assert.equal(parsed.values['max-hours'], '20');
+
     const state = emptyState({
       runId: '2026-07-25-acme',
       now: '2026-07-25T00:00:00.000Z',
-      maxHours: 14,
     });
-    assert.equal(state.runtime.deadline_at, '2026-07-25T14:00:00.000Z');
-    assert.equal(assertWithinRuntimeBudget(state, Date.parse('2026-07-25T13:59:59.999Z')), true);
+    assert.equal(state.runtime.max_hours, 20);
+    assert.equal(state.runtime.closure_reserve_hours, 4);
+    assert.equal(state.runtime.deadline_at, '2026-07-25T20:00:00.000Z');
+    const migrationCutoff = Date.parse(state.runtime.deadline_at)
+      - state.runtime.closure_reserve_hours * 60 * 60 * 1000;
+    assert.equal(new Date(migrationCutoff).toISOString(), '2026-07-25T16:00:00.000Z');
+    assert.equal(assertWithinRuntimeBudget(state, Date.parse('2026-07-25T19:59:59.999Z')), true);
     assert.throws(
-      () => assertWithinRuntimeBudget(state, Date.parse('2026-07-25T14:00:00.000Z')),
+      () => assertWithinRuntimeBudget(state, Date.parse('2026-07-25T20:00:00.000Z')),
       /Contract A remains incomplete/,
     );
     state.contract_a.status = 'closed';
@@ -1100,7 +1123,7 @@ describe('generated summaries', () => {
     const dir = await tmp();
     const paths = new RunPaths('.typo3-update', dir);
     await mkdir(paths.loopsDir, { recursive: true });
-    const state = { loops: { '100': 'superseded', '300': 'open', '500': 'green' } };
+    const state = { loops: { '000': 'green', '100': 'superseded', '300': 'open', '500': 'green' } };
     for (const [name, findings] of [
       ['100-invariance-old', [{ id: 'old', status: 'open' }]],
       ['300-invariance-closure', [{ id: 'current', status: 'open' }]],

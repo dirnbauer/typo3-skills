@@ -69,8 +69,8 @@ evidence**. Never silently retry.
 | Budget breach | an iteration exceeded the change budget |
 | Unclassifiable finding | a finding that fits no class in `30-finding-classification.md` |
 
-The whole run has a non-extendable 14-hour deadline. Reserve its final four hours for loop 300,
-reporting and contingency; at T+10h start no new migration cause. A deadline cannot become green.
+The whole run has a non-extendable 20-hour deadline. Reserve its final four hours for loop 300,
+reporting and contingency; at T+16h start no new migration cause. A deadline cannot become green.
 
 Aborting is a correct outcome. A loop that thrashes for twenty iterations produces less information than one that stops after six and says precisely what it could not resolve.
 
@@ -92,7 +92,7 @@ zero; one changed pixel blocks.
 Before the first exhaustive run, execute a seeded intermediate diagnostic:
 
 ```bash
-t3u selftest-determinism --sample intermediate --visual-workers 3
+t3u selftest-determinism --sample intermediate --visual-workers 12
 ```
 
 It uses the same thresholds over the deterministic intermediate URL slice in the `default` state,
@@ -101,9 +101,9 @@ to catch stabilization defects in minutes instead of discovering them near the e
 full-site run. Once the diagnostic is green, run the exhaustive `--sample all` command once; it
 performs two unchanged passes and requires zero differences.
 
-Intermediate and authoritative captures default to three independent Chromium processes.
+Intermediate and authoritative captures default to twelve independent Chromium processes.
 Contexts inside one shared process are forbidden: renderer-global state can make fractional layout
-allocation depend on concurrent workload. Three workers are permitted **only as a proven
+allocation depend on concurrent workload. Twelve workers are permitted **only as a proven
 property** — the exhaustive double-shoot itself runs at that count and must reach zero, which
 seals the count into the self-test lock, and every authoritative capture and comparison of the
 run must then use exactly that count. The worker count is recorded in capture metadata and the

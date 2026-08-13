@@ -59,6 +59,9 @@
         "manifestHash": { "type": "string", "minLength": 1 },
         "environmentFingerprintHash": { "type": "string", "minLength": 1 },
         "contentFingerprintHash": { "type": "string", "minLength": 1 },
+        "baselineContentFingerprintHash": { "type": ["string", "null"] },
+        "targetContentFingerprintHash": { "type": ["string", "null"] },
+        "contentTransitionHash": { "type": ["string", "null"] },
         "selftestLockHash": { "type": "string", "minLength": 1 }
       }
     },

@@ -71,10 +71,9 @@ Sitemap health is a stage 1 sweep over every per-language sitemap: every entry 2
 ## Accessibility
 
 ```bash
-node scripts/t3u.mjs axe \
-  --manifest .typo3-update/manifests/url-manifest.json \
-  --viewports desktop,tablet,mobile --languages de,en \
-  --report .typo3-update/loops/520-elevation-accessibility-manual-aa/report.axe.json
+node scripts/t3u.mjs axe --run-dir .typo3-update --loop 520 --label before \
+  --sample 12 --viewports desktop,tablet,mobile \
+  --states default,nav-open,consent-modal-open
 ```
 
 Record the axe-core version — rule sets change between releases, and a "new" violation is sometimes a

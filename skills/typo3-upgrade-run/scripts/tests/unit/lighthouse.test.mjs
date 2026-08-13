@@ -76,6 +76,7 @@ describe('lighthouse quality budgets', () => {
       scores: {
         performance: { median: 82 },
         accessibility: { median: 100 },
+        bestPractices: { median: 96 },
         seo: { median: 98 },
       },
       metrics: {
@@ -88,7 +89,8 @@ describe('lighthouse quality budgets', () => {
     }];
     const budget = {
       performance: {
-        lighthouse_performance_mobile: 90,
+        lighthouse_performance_mobile: 95,
+        lighthouse_best_practices: 100,
         lcp_mobile_ms: 2500,
         cls: 0.05,
         tbt_ms: 200,
@@ -101,6 +103,7 @@ describe('lighthouse quality budgets', () => {
     const findings = lighthouseBudgetFindings(results, budget, '500', 'mobile');
     assert.deepEqual(findings.map((finding) => finding.metric), [
       'scores.performance.median',
+      'scores.bestPractices.median',
       'scores.seo.median',
       'metrics.lcp.median',
     ]);

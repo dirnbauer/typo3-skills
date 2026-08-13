@@ -8,6 +8,20 @@ change needs an approval per difference class or it is a `regression`.
 
 Only when the site uses `EXT:solr`.
 
+### Isolation gate before any mutation
+
+A core called `core_de` is not an identity. Before clear, delete, configset replacement, reload or
+full reindex, record the DDEV project, Solr container/service, origin reached **from that project**,
+TYPO3 site/language core name and current document count. List the cores from that origin and
+require the configured core to match exactly. A host port, `localhost`, generic container or
+ambiguous core is exit 5; do not probe by clearing it.
+
+Create and checksum a rollback archive of the exact core/configset, then re-resolve all identity
+fields immediately before the destructive request. A DDEV database snapshot is not a Solr backup.
+Afterwards prove queue errors are zero, expected document classes/counts exist, and a seeded query
+has the expected ordering, empty result and pagination behavior. This gate exists because a local
+run once emptied another project's `core_de` through a generic endpoint.
+
 1. Read the [EXT:solr version matrix](https://docs.typo3.org/p/apache-solr-for-typo3/solr/main/en-us/Appendix/VersionMatrix.html)
    for the row matching TYPO3 14.3.
 2. Update the local DDEV Solr service through the official `ddev/ddev-solr` add-on to that Apache

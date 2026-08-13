@@ -726,7 +726,11 @@ export async function gate({ values, paths, log }) {
     );
   }
   const inputSets = reports.map((report) => JSON.stringify(report.inputs ?? {}));
-  if (new Set(inputSets).size !== 1 || Object.values(reports[0].inputs ?? {}).some((value) => !value)) {
+  const requiredInputKeys = [
+    'manifestHash', 'environmentFingerprintHash', 'contentFingerprintHash', 'selftestLockHash',
+  ];
+  if (new Set(inputSets).size !== 1
+    || requiredInputKeys.some((key) => !reports[0].inputs?.[key])) {
     throw new InvalidRunError('Stage reports do not share one complete set of evidence input hashes.');
   }
 
@@ -777,6 +781,9 @@ export async function countActiveOpenFindings(paths, state) {
   const loopDirs = await safeList(paths.loopsDir, '');
   let total = 0;
   for (const [id, status] of Object.entries(state.loops ?? {})) {
+    // Loop 000 is the machine-managed self-test (`selftest.json` plus lock), not a
+    // scaffolded work-loop directory. Its absence from loops/ is therefore correct.
+    if (id === '000') continue;
     if (['planned', 'superseded', 'aborted'].includes(status)) continue;
     const matches = loopDirs.filter((name) => name.startsWith(`${id}-`));
     if (matches.length !== 1) {

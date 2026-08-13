@@ -19,7 +19,7 @@ import {
   compareHttp, compareDomAction, compareVisual, compareAll,
   selftestDeterminism, sealBaselineAction, verifyBaselineAction, gate,
 } from './lib/actions/compare.mjs';
-import { backendSweep, smoke, lighthouse } from './lib/actions/sweep.mjs';
+import { backendSweep, smoke, lighthouse, axeAudit } from './lib/actions/sweep.mjs';
 import { report } from './lib/actions/report.mjs';
 import {
   approvalRecord,
@@ -52,6 +52,7 @@ const ACTIONS = {
   'backend-sweep': backendSweep,
   smoke,
   lighthouse,
+  axe: axeAudit,
   gate,
   report,
 };

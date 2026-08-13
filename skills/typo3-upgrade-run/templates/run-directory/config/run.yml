@@ -3,9 +3,9 @@
 schema: typo3-upgrade-run/run-config@1
 
 runtime:
-  max_hours: 14
+  max_hours: 20
   closure_reserve_hours: 4
-  # At T+10h stop starting migration iterations and spend the reserve on proof and handover.
+  # At T+16h stop starting migration iterations and spend the reserve on proof and handover.
 
 project:
   name: ""
@@ -75,6 +75,13 @@ capture:
       - consent.fallbackSelectors
       - consent.scrollLockClasses
       - consent.modalTriggerSelectors
+
+interactions:
+  # Sealed inventory-driven sentinel file. Required components: consent, every slider/rotator,
+  # primary navigation, search, forms/newsletters, and project-specific modal/filter/quiz flows.
+  # Each entry names representative URLs, selectors, actions and assertions; do not expand these
+  # states across the complete sitemap.
+  file: "config/interactions.yml"
 
 # Pages that are genuinely non-deterministic and cannot be stabilised.
 # Each entry needs an ADR and is EXCLUDED from the invariance claim, named in the

@@ -9,7 +9,7 @@ Nothing in this skill is "remembered". It is written down, and the gates read wh
 ```
 .typo3-update/
 ├── STATUS.md                       human dashboard, regenerated from state.json
-├── state.json                      the machine state, including the 14h deadline — the ONLY precondition source
+├── state.json                      the machine state, including the 20h deadline — the ONLY precondition source
 ├── journal.jsonl                   append-only: every command, argv, cwd, exit code, duration
 ├── .gitignore                      ignores artifacts and shots; keeps every .md and .json
 ├── config/
@@ -20,6 +20,8 @@ Nothing in this skill is "remembered". It is written down, and the gates read wh
 │   ├── url-manifest.json           seed, all URLs, tiers, clusters, viewports, coverage
 │   ├── environment.json            versions + fonts + GFX config, hashed
 │   ├── content-fingerprint.json    complete ordered row/schema hashes + fileadmin tree hash
+│   ├── content-fingerprint-target.json  post-migration epoch; source remains immutable
+│   ├── content-transition.json     snapshot, successful argv and fixed-point reconciliation
 │   ├── extensions.json             every installed extension + classification + resolution
 │   ├── tooling.json                pinned harness/browser/Lighthouse/axe versions
 │   └── snapshots.json              every ddev snapshot, with its loop and reason

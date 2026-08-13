@@ -14,9 +14,10 @@ to start with and what each will cost, and leaves this phase to the one you choo
 Read-only inspection. Creating `.typo3-update/` from `templates/run-directory/`. Asking questions.
 
 ## Overnight clock
-`t3u init --max-hours 14` starts the non-extendable deadline. Budget 1.5h for intake/baseline,
-2h dependencies, 5h migration, 1.5h affected parity/operations, and protect the final 4h for loop
-300, handover, and contingency. At T+10h start no new migration cause; unresolved work becomes an
+`t3u init --max-hours 20` starts the non-extendable deadline. Budget 1.5h for intake/baseline,
+2h dependencies, up to 11h for migration and affected parity/operations, 1.5h for operational
+checks and buffer, and protect the final 4h for loop 300, handover, and contingency. At T+16h
+start no new migration cause; unresolved work becomes an
 honest blocker, never a shortened proof or a false pass.
 
 ## Steps
@@ -156,6 +157,18 @@ honest blocker, never a shortened proof or a false pass.
    commerce. Record which are present, at what version, and **how much data each holds** — an
    extension with zero records gets removed, not migrated, and that decision belongs here rather
    than mid-run. See `references/feature-upgrades.md`.
+
+   Build `config/interactions.yml` at the same time. Inventory consent, sliders/carousels/rotators,
+   primary navigation, dropdowns/accordions, search, forms/newsletters, modals, filters, quizzes and
+   embeds. Name one or two representative URLs and the before/after journey for every component
+   present. A widget that the settle report later finds but this manifest does not test blocks
+   closure; freezing a carousel is not testing it. Use the matrix in
+   [`recent-run-lessons.md`](../recent-run-lessons.md).
+
+   Before scheduling the exhaustive browser proof, inspect the machine-wide visual lock. Record
+   its live owner and planned release time. If occupied, continue renderer-free discovery,
+   migration, HTTP/DOM capture or comparison; do not start a second exhaustive proof just to spend
+   hours queued behind the first one.
 
 14. **Read the README and write one sentence about what this site actually is.** Whose site,
    for whom, what it is for. It costs a minute, it is the context every later judgement call is
