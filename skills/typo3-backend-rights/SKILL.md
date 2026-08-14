@@ -163,6 +163,8 @@ Resolve identifiers from the runtime `ModuleRegistry`; never write identifiers f
   `web_info_overview`, `web_info_translations`, `recycler`, `media_management`, and `user_setup`.
 - Visual Editor: `web_edit`.
 - Core Form: `web_FormFormbuilder`, `form_manager`, and `form_editor`.
+- Core Redirects: `redirects`. Grant only to named trusted editors; it manages redirects across the
+  entire installation. Do not grant `qrcodes` or `short_urls` unless separately requested.
 - Solr: `searchbackend` and the read-only `searchbackend_info` entry. Keep
   `searchbackend_coreoptimization`, `searchbackend_indexqueue`, and
   `searchbackend_indexadministration` admin-only.
@@ -172,6 +174,10 @@ Resolve identifiers from the runtime `ModuleRegistry`; never write identifiers f
 When `typo3/cms-form` is installed, grant read/write access to `form_definition`; TYPO3 v14.3's
 Form persistence permission checker requires both lists even though its TCA display fields are
 read-only and the Form modules perform the controlled writes.
+
+When `typo3/cms-redirects` is installed, grant the trusted main editor group read/write access to
+`sys_redirect` and its runtime editor-editable exclude fields. Keep read-only and system-managed
+fields excluded. Users inherit this through the main group; never write direct per-user rights.
 
 When Powermail is installed, grant read/write access and every editor-accessible field for
 `tx_powermail_domain_model_form`, `tx_powermail_domain_model_page`, and
@@ -340,17 +346,19 @@ Use a real non-admin session and verify all of these:
    move/copy, and delete behave according to the plan.
 8. If installed, the Visual Editor module opens and every allowed rendered field can be changed
    and saved; page IDs are present in its editing context and multi-site destinations are clear.
-9. Preview, Status, Recycler, Media, and the Admin Panel work; page cache clearing is available,
+9. If installed, Redirects opens for the named trusted non-admin, who can list, create, follow,
+   edit, disable and delete a DDEV-only redirect; cleanup and `redirects:checkintegrity` pass.
+10. Preview, Status, Recycler, Media, and the Admin Panel work; page cache clearing is available,
    while debugging, page deletion, Solr index mutation, and
    publishing controls remain unavailable.
-10. When Workspaces is installed, the main group can enter the intended custom Workspace, edit and
+11. When Workspaces is installed, the main group can enter the intended custom Workspace, edit and
     preview versioned content, and create a 48-hour preview link, but cannot publish. Confirm the
     group is a member rather than an owner and test file replacement with a new unique filename.
-11. TOTP and recovery codes can be configured in User Settings; MFA enforcement matches the
+12. TOTP and recovery codes can be configured in User Settings; MFA enforcement matches the
     separately approved policy.
-12. Login, password reset, MFA, and the logged-in top bar show the customer identity and exact
+13. Login, password reset, MFA, and the logged-in top bar show the customer identity and exact
     application context with accessible contrast.
-13. The separate administrator can still log in.
+14. The separate administrator can still log in.
 
 Re-run the audit with `--group-title` and `--strict`. Report the main and leaf group UIDs, target
 user, remaining administrator, allowed/missing CTypes, exceptions, tables, fields, mounts,

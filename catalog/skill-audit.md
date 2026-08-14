@@ -152,7 +152,7 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source owner: webconsulting
 - Source URL: https://github.com/dirnbauer/typo3-skills
 - Frontmatter name: typo3-backend-rights
-- SKILL.md lines: 374
+- SKILL.md lines: 382
 
 **Pass 1: Structure**
 - No pass 1 issues found.

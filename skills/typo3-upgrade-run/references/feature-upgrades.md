@@ -4,6 +4,46 @@ Phase P10, loops 200–220. Each runs **after** the core upgrade and **before** 
 and each is a declared-change loop: re-shoot the affected sample pages afterwards, and any rendering
 change needs an approval per difference class or it is a `regression`.
 
+## Mandatory Core Redirects baseline
+
+Every whole-site upgrade includes the Core Redirects module. During P05, prove whether
+`typo3/cms-redirects` is present with `ddev composer show typo3/cms-redirects`. If absent, add
+`typo3/cms-redirects:^14.3` to the planned Core Composer transaction. Do not install `^14.0`, run a
+broad unrelated update, or silently change automatic-redirect settings.
+
+After Composer resolves the target, take the operation snapshot required for stateful setup and run:
+
+```bash
+ddev typo3 extension:setup --extension redirects
+ddev typo3 extension:list --all
+ddev typo3 redirects:checkintegrity
+```
+
+Require extension key `redirects`, the `sys_redirect` schema, and zero unresolved integrity errors.
+Resolve backend identifiers from the v14 runtime `ModuleRegistry`; the v14.3 module identifier is
+`redirects`, while `site_redirects` is a compatibility alias and must not be persisted in new group
+configuration.
+
+Use `typo3-backend-rights` to grant the capability through the audited main editor group for the
+named trusted editors, never directly to users:
+
+- add module `redirects`;
+- add `sys_redirect` to both `tables_select` and `tables_modify`;
+- add every runtime editor-editable `sys_redirect` exclude field, but not read-only, passthrough,
+  generated, hit-count or other system-managed fields;
+- preserve existing user memberships unless replacement was explicitly approved;
+- do not add `qrcodes` or `short_urls` unless separately requested.
+
+This permission is installation-wide. TYPO3 explicitly warns that an editor with it can affect all
+redirects, so do not infer that every non-admin group should receive it. If no trusted target group
+or user is named, installation may proceed but Contract A closure is blocked on the permission
+decision rather than granting access broadly.
+
+Verify with a real non-admin session: open **Link Management > Redirects**, list records, create a
+DDEV-only test source path to an accessible local target, request it, edit/disable/delete it, and
+prove cleanup. Then rerun `redirects:checkintegrity` and request a representative sample of existing
+source paths before and after the update. See the official [Redirects 14.3 setup](https://docs.typo3.org/c/typo3/cms-redirects/14.3/en-us/Setup/Index.html).
+
 ## Loop 200 — Solr
 
 Only when the site uses `EXT:solr`.

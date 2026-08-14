@@ -69,6 +69,16 @@ When an identifier really has gone, establish which cause before touching anythi
   `typo3/cms-backend` replaces `typo3/cms-setup` and `typo3/cms-recordlist`, so requiring them
   separately installs nothing and removing them costs nothing.
 
+### Redirects is a required trusted-editor capability
+
+Whole-site upgrade runs install `typo3/cms-redirects:^14.3`. For the named trusted editor group,
+resolve and grant the runtime module identifier `redirects`—not its legacy alias `site_redirects`—
+and include `sys_redirect` in both `tables_select` and `tables_modify`. Grant the runtime-editable
+exclude fields needed for the workflow, while keeping read-only and system-managed fields excluded.
+Apply this through `typo3-backend-rights`; the local `--fix` mode here repairs CTypes only and does
+not authorize a new installation-wide redirect capability. Verify the effective group in a real
+non-admin session by creating, following, changing, disabling and deleting a DDEV-only redirect.
+
 ### 3. Mountpoints pointing at rows that were deleted
 
 `file_mountpoints` must resolve to live `sys_filemounts` rows and `db_mountpoints` to live pages.

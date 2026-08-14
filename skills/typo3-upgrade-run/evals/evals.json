@@ -676,6 +676,22 @@
       "files": []
     },
     {
+      "id": "missing-core-redirects-is-installed-and-permission-tested",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "The TYPO3 v14 target has no Redirects module. Finish the whole-site upgrade and make redirects available to editors.",
+      "expected_output": "Adds typo3/cms-redirects:^14.3 to the planned Core transaction, sets up EXT:redirects from a snapshot, and grants the runtime redirects capability through the audited main group to named trusted editors with non-admin verification.",
+      "assertions": [
+        "Detects the Composer package and requires typo3/cms-redirects:^14.3 when absent",
+        "Takes the operation snapshot before extension:setup --extension redirects",
+        "Resolves module identifier redirects from the v14 runtime and does not persist site_redirects",
+        "Grants sys_redirect in both tables_select and tables_modify through a backend group rather than direct user rights",
+        "Grants only runtime editor-editable exclude fields and keeps read-only/system-managed fields excluded",
+        "Verifies create, follow, edit, disable, delete, cleanup and redirects:checkintegrity as a trusted non-admin"
+      ],
+      "files": []
+    },
+    {
       "id": "explicit-modern-frontend-quality-profile",
       "kind": "behaviour",
       "status": "proposed",

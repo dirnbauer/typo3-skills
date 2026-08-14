@@ -1,6 +1,6 @@
 # P10 — Conditional feature parity (iterations in loop 100)
 
-Track `invariance`. Solr, Visual Editor, CKEditor RTE.
+Track `invariance`. Redirects, Solr, Visual Editor, CKEditor RTE.
 
 Full procedures in `references/feature-upgrades.md`. Run a procedure only when that feature is
 installed and its dependency, code, configuration, schema, or runtime path changed in this upgrade.
@@ -12,6 +12,7 @@ rendering change needs an approval per difference class or it is a `regression`.
 
 | Subject | Run when | Exit |
 |---|---|---|
+| Redirects | package was absent, newly set up, or its module/permissions changed | package and schema active; integrity clean; trusted non-admin can manage and exercise a local redirect |
 | Solr | EXT:solr/server/config/indexing path changed | supported server, reindex and affected search paths verified |
 | Visual Editor | installed and integration code/config changed | inline editing verified, frontend rendering unchanged |
 | CKEditor RTE | preset, package or rendered markup changed | preset loads and affected authoring/rendering behavior is preserved |

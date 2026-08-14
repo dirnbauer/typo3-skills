@@ -15,18 +15,22 @@ P04 green.
    straight to `^14.3`.
 5. Audit every required and dev package against current release metadata and route it through
    `references/extension-strategy.md`.
-6. Migrate extension metadata to `composer.json` per #108345.
-7. If committed credentials are discovered, stop exposing them and record rotation as a security
+6. Require `typo3/cms-redirects:^14.3` in every whole-site target. If it is absent, add it to the
+   planned Core Composer transaction; do not run an unrelated broad update. Package setup and
+   editor permissions follow `references/feature-upgrades.md`.
+7. Migrate extension metadata to `composer.json` per #108345.
+8. If committed credentials are discovered, stop exposing them and record rotation as a security
    follow-up. Do not turn a routine core upgrade into a dotenv architecture migration unless the
    credential issue blocks safe local execution or the user explicitly includes that work.
-8. Keep the project's existing PHPStan and deployment tooling unless compatibility requires a
+9. Keep the project's existing PHPStan and deployment tooling unless compatibility requires a
    change. Upgrading PHPStan or installing `deployer_information` is optional assurance work.
-9. `ddev composer validate --strict`, update with the narrowest justified command, inspect the
+10. `ddev composer validate --strict`, update with the narrowest justified command, inspect the
    lockfile diff.
 
 ## Exit
 `ddev composer why-not typo3/cms-core "^14.3"` names no blocker. `why-not php 8.4` empty, and the 8.5
-attempt recorded with its outcome. Every extension in `manifests/extensions.json` has a resolution.
+attempt recorded with its outcome. Every extension in `manifests/extensions.json` has a resolution;
+`typo3/cms-redirects:^14.3` is present for a whole-site run.
 
 ## Blocking
 Any extension left `unresolved`. A removal without an approval record.

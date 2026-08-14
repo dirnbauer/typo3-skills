@@ -168,6 +168,7 @@ $requiredModules = array_values(array_filter(
         'web_FormFormbuilder',
         'form_manager',
         'form_editor',
+        'redirects',
         'searchbackend',
         'searchbackend_info',
         'workspaces_publish',
@@ -260,6 +261,7 @@ foreach ([
     'tx_news_domain_model_link',
     'tx_news_domain_model_tag',
     'form_definition',
+    'sys_redirect',
     'tx_powermail_domain_model_form',
     'tx_powermail_domain_model_page',
     'tx_powermail_domain_model_field',
@@ -435,6 +437,7 @@ $coreModuleIdentifiers = [
     'recycler',
     'media_management',
     'user_setup',
+    'redirects',
 ];
 $baseModules = array_values(array_intersect($modules, $coreModuleIdentifiers));
 $extensionModules = array_values(array_diff($modules, $baseModules));

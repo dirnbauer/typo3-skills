@@ -77,7 +77,10 @@ ddev mysql -N -e "SELECT COUNT(*) FROM be_users WHERE username='_t3u_upgrade_pro
   force-execute one instance of each. On a fresh clone almost nothing is due, so "run due tasks"
   passes vacuously; tasks whose class came from a removed or renamed extension are unrunnable rows
   that fail silently after deploy — nightly imports, newsletters, cache warmers.
-- Redirects: `EXT:redirects` entries resolve without loops or dead targets — and **request a real
+- Redirects: require `typo3/cms-redirects:^14.3`; when it was absent, set it up from the operation
+  snapshot before testing. Resolve module id `redirects` from the runtime registry and use
+  `typo3-backend-rights` to grant the trusted main editor group `sys_redirect` listing/modify plus
+  runtime-editable exclude fields. Then verify the module as a real non-admin and **request a real
   sample of source paths**, before and after. Redirect sources are by definition not in a sitemap,
   so no other stage in this run ever touches them; that table carries the SEO value of the last
   relaunches, and a changed host match or a slug-wizard regeneration 404s top-traffic legacy URLs

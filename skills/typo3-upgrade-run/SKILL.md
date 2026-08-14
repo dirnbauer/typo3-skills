@@ -319,7 +319,7 @@ Playbooks: `references/phases/p00-…p15-….md`. Load the one for the current p
 
 ## Targets
 
-- `typo3/cms-core: ^14.3` — never `^14.0`; 14.0–14.2 receive no security updates.
+- `typo3/cms-core: ^14.3` — never `^14.0`; whole-site runs also require `typo3/cms-redirects: ^14.3`, installed and permission-tested per `references/feature-upgrades.md`.
 - **PHP 8.4 is the standard target. Try 8.5 first**: run `composer why-not php 8.5`, use it when
   the whole dependency set resolves, and fall back to 8.4 with the blockers recorded. Keep
   `config.platform.php` in step with the container at every rung — a platform pin ahead of the
@@ -445,7 +445,7 @@ lists are clean; deprecation log has no new v14 blocker; Rector/Fractor have no 
 every extension is resolved and every removal approved; no v12/v13 compatibility remains in
 executable code.
 
-**A6 Feature parity** — only installed and upgrade-affected features are checked. Solr, Visual
+**A6 Feature parity** — only installed and upgrade-affected features are checked. Redirects, Solr, Visual
 Editor, RTE, workspaces, forms, search, scheduler and editor permissions are not blanket programmes;
 each is gated when inventory or changed code/configuration gives it a subject.
 

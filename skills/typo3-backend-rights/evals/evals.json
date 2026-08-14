@@ -234,6 +234,20 @@
         "Use DataHandler or the Permissions module for record writes and dry-run the cutover first."
       ],
       "note": "Covers complete multisite ACL propagation and future-page defaults without installation-specific IDs."
+    },
+    {
+      "id": "typo3-backend-rights-behaviour-14",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Core Redirects is installed. Give our trusted editor access to manage redirects without making them an administrator or granting unrelated Link Management tools.",
+      "assertions": [
+        "Resolve runtime module redirects and do not persist the site_redirects alias.",
+        "Grant sys_redirect in both tables_select and tables_modify through the main group.",
+        "Grant runtime editor-editable exclude fields while excluding read-only/system-managed fields.",
+        "Do not grant qrcodes or short_urls unless explicitly requested.",
+        "Verify the redirect lifecycle and integrity command using a real non-admin account."
+      ],
+      "note": "Covers installation-wide Redirects access with least privilege."
     }
   ]
 }

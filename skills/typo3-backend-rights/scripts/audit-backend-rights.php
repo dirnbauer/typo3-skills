@@ -237,6 +237,7 @@ $requiredModules = array_values(array_filter(
         'web_FormFormbuilder',
         'form_manager',
         'form_editor',
+        'redirects',
         'searchbackend',
         'searchbackend_info',
         'workspaces_publish',
@@ -260,6 +261,7 @@ foreach ([
     'tx_news_domain_model_link',
     'tx_news_domain_model_tag',
     'form_definition',
+    'sys_redirect',
     'tx_powermail_domain_model_form',
     'tx_powermail_domain_model_page',
     'tx_powermail_domain_model_field',
@@ -620,7 +622,7 @@ foreach ($groups as $group) {
         $groupFindings[] = finding(
             'error',
             'installed-editor-tables-missing',
-            'Installed content, file, News, Core Form, and Powermail editor tables must be present in both lists.',
+            'Installed content, file, News, Core Form, Redirects, and Powermail editor tables must be present in both lists.',
             array_values(array_unique([...$missingWritableTables, ...$missingSelectableTables]))
         );
     }
