@@ -1,0 +1,139 @@
+{
+  "skill_name": "typo3-webmcp",
+  "skill_type": "preference",
+  "spec": "SKILL-SPEC.md",
+  "note": "Owns browser-side agent tools on a TYPO3 frontend. Backend MCP, built-in browser AI, and schema.org are adjacent but separate surfaces.",
+  "evals": [
+    {
+      "id": "typo3-webmcp-trigger-pos-01",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "Make the search and contact journey on this TYPO3 14 website available to browser agents through WebMCP.",
+      "expect_skill": "typo3-webmcp",
+      "note": "Whole frontend journey request."
+    },
+    {
+      "id": "typo3-webmcp-trigger-pos-02",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "Add document.modelContext tools to our TYPO3 sitepackage and test them in Chrome.",
+      "expect_skill": "typo3-webmcp",
+      "note": "Current imperative API trigger."
+    },
+    {
+      "id": "typo3-webmcp-trigger-pos-03",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "Can native Chrome WebMCP safely expose our TYPO3 news filters and frontend forms?",
+      "expect_skill": "typo3-webmcp",
+      "note": "Known TYPO3 integration."
+    },
+    {
+      "id": "typo3-webmcp-trigger-pos-04",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "Audit whether this TYPO3 frontend is agent-ready and which WebMCP tools it should publish.",
+      "expect_skill": "typo3-webmcp",
+      "note": "Readiness audit."
+    },
+    {
+      "id": "typo3-webmcp-trigger-neg-02",
+      "kind": "trigger-negative",
+      "status": "proposed",
+      "prompt": "Our TYPO3 FAQ content element needs FAQPage JSON-LD for search engines.",
+      "expect_skill": "typo3-structured-data",
+      "note": "Search entity markup is not a browser tool."
+    },
+    {
+      "id": "typo3-webmcp-trigger-neg-03",
+      "kind": "trigger-negative",
+      "status": "proposed",
+      "prompt": "Make our existing TYPO3 contact form meet WCAG 2.2 AA and fix its keyboard focus.",
+      "expect_skill": "typo3-accessibility",
+      "note": "Accessibility work without agent-tool intent."
+    },
+    {
+      "id": "typo3-webmcp-trigger-neg-04",
+      "kind": "trigger-negative",
+      "status": "proposed",
+      "prompt": "Add an AI writing assistant inside the TYPO3 backend for our editors.",
+      "expect_no_skill": true,
+      "note": "A backend LLM assistant is not browser-side frontend WebMCP."
+    },
+    {
+      "id": "typo3-webmcp-behaviour-01",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "This old example uses navigator.modelContext and provideContext. Copy it into our TYPO3 v14 site.",
+      "expected_output": "Checks the current living specification, targets document.modelContext/registerTool for new code, and treats the older surface only as an explicit compatibility path.",
+      "assertions": [
+        "Identifies the current document.modelContext surface",
+        "Records WebMCP as experimental and rechecks browser support",
+        "Keeps unsupported-browser behavior as a tested progressive enhancement",
+        "Does not introduce a floating polyfill or CDN relay implicitly"
+      ],
+      "files": []
+    },
+    {
+      "id": "typo3-webmcp-behaviour-02",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Install a TYPO3 WebMCP extension and its analytics dashboard so we do not have to write sitepackage code.",
+      "expected_output": "Declines the package and backend-MCP path, implements the browser-native API in the existing sitepackage/Vite build, and keeps analytics absent.",
+      "assertions": [
+        "Uses document.modelContext directly without a TYPO3 WebMCP extension",
+        "Keeps implementation in a dedicated project-owned Vite entry",
+        "Reuses existing human-facing services and endpoints",
+        "Requires a Git rollback reference for the P14 code mutation",
+        "Introduces no analytics, relay, CDN runtime or backend MCP dependency"
+      ],
+      "files": []
+    },
+    {
+      "id": "typo3-webmcp-behaviour-03",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Expose a tool that searches any URL, returns full editor comments, and submits the support form automatically.",
+      "expected_output": "Rejects the over-broad tool, splits read-only and consequential behavior, allowlists same-origin sources, marks untrusted output, and keeps visible user confirmation before submission.",
+      "assertions": [
+        "Rejects arbitrary URL fetching and hidden/private output",
+        "Uses minimal bounded inputs and outputs",
+        "Preserves FE access, CSRF, rate limiting and server-side validation",
+        "Sets annotations according to actual mutation and output trust",
+        "Requires visible human confirmation for the consequential send"
+      ],
+      "files": []
+    },
+    {
+      "id": "typo3-webmcp-behaviour-04",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Add WebMCP readiness to every TYPO3 upgrade without changing what visitors see during the core migration.",
+      "expected_output": "Inventories WebMCP in P00, preserves an existing surface in P10, and starts approved implementation only in P14 after Contract A, with both elevation branches joining before handover.",
+      "assertions": [
+        "P00 inventories packages, APIs, headers, tools, endpoints and candidate journeys read-only",
+        "P10 parity is required only for a pre-existing surface and joins Contract A migration proof",
+        "New tools and dependencies stay outside Contract A",
+        "P14 requires intent approval, Git rollback and a green evidence loop",
+        "WebMCP and structured-data elevation converge through an explicit join before handover"
+      ],
+      "files": []
+    },
+    {
+      "id": "typo3-webmcp-behaviour-05",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "The inspector lists our tools and one search call worked. Mark the TYPO3 site WebMCP-ready.",
+      "expected_output": "Refuses the single-call claim and runs deterministic, security, session/language, fallback, human-interface, performance, accessibility, and repeated agent-selection evidence.",
+      "assertions": [
+        "Tests valid, invalid, boundary, repeated and cancelled calls",
+        "Tests anonymous and materially different FE groups and languages",
+        "Tests injection, CSRF, rate limits, origins, hostile content and safe errors",
+        "Proves unsupported-browser fallback and unchanged human journeys",
+        "Runs repeated natural-language selection evals with browser and model versions",
+        "Re-runs component, axe and Lighthouse quality gates"
+      ],
+      "files": []
+    }
+  ]
+}

@@ -74,7 +74,11 @@ The TYPO3 update itself stays visually neutral. Contract B exists precisely so t
 
 Most accessibility corrections are visually neutral: correct semantic elements, labels, `aria-expanded`, `aria-controls`, `aria-describedby`, `aria-current`, heading structure, alternative texts, landmarks, language attributes, keyboard operability, focus management.
 
-Some are not. A new focus indicator changes the rendering of one interaction state. So states are captured and compared **separately**: default · hover · keyboard focus · expanded · collapsed · validation error · modal open · mobile navigation open.
+Some are not. A new focus indicator changes the rendering of one interaction state. The site-wide
+authoritative matrix is therefore capped at exactly three separate states: `default`,
+`keyboard-focus`, and `nav-open`. Hover, expanded/collapsed controls, validation errors, modals, and
+consent remain targeted component journeys from `config/interactions.yml`; they are never multiplied
+across the full page sample.
 
 When accessibility fixes are part of the update, the permitted visible changes must be named concretely, limited to specific states, documented separately from the core update, and explicitly approved. The default state of a page is never changed wholesale just because an accessibility audit is running.
 

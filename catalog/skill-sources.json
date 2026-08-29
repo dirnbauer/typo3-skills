@@ -136,11 +136,11 @@
   {
     "directory": "typo3-backend-rights",
     "skill_name": "typo3-backend-rights",
-    "description": "Build and audit one main non-admin TYPO3 backend editor group composed from four simple leaf groups for Base, Content, Site access, and Extensions. Covers explicit CType/field permissions, multisite page owner/group/everybody ACL defaults, roots, languages, modules, mounts, MFA, Forms/Powermail, conditional Workspaces access, User TSconfig, Visual Editor, Admin Panel, extensible site/extension packs, safe admin conversion, and customer branding for the TYPO3 login/backend with the Application Context. Use when page permissions, record types or fields are missing/read-only, be_groups.explicit_allowdeny is blank, mounts/modules are incomplete, or legacy groups must be consolidated. Always preserve a separate working administrator.",
+    "description": "Build and audit TYPO3 backend editor rights after an explicit choice between one user-facing main group with simple internal leaves or preserving distinct existing roles. Covers CTypes, fields, page ACLs, languages, modules, mounts, MFA, Forms/Powermail, Workspaces, User TSconfig, Visual Editor, Redirects, safe membership cutover, and customer login/backend branding with the Application Context. Use when permissions are missing/read-only, be_groups is incomplete, or legacy roles may be consolidated. Always preserve a separate working administrator.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-backend-rights/SKILL.md",
-    "line_count": 382,
+    "line_count": 437,
     "frontmatter_keys": [
       "name",
       "description"
@@ -489,11 +489,11 @@
   {
     "directory": "typo3-seo",
     "skill_name": "typo3-seo",
-    "description": "Makes TYPO3 pages show up correctly in search engines like Google: XML sitemaps, canonical URLs, hreflang across languages, meta tags, Open Graph, schema.org structured data and robots rules. Use when the wrong pages are indexed or the German and Italian versions get mixed up in the results, when the sitemap is empty or missing pages, when a staging site must be kept out of the index, or when adding social previews and structured data to articles. Search inside the site itself is typo3-solr.",
+    "description": "Makes TYPO3 pages show up correctly in search engines like Google through XML sitemaps, canonical URLs, hreflang across languages, meta tags, Open Graph, social previews, and robots rules. Use when the wrong pages are indexed, language versions get mixed up, the sitemap is empty or missing pages, a staging site must stay out of the index, or social cards are wrong. Page-type schema.org and JSON-LD implementation belongs to typo3-structured-data; on-site search belongs to typo3-solr.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-seo/SKILL.md",
-    "line_count": 312,
+    "line_count": 320,
     "frontmatter_keys": [
       "name",
       "description",
@@ -563,6 +563,24 @@
     "pass_3": []
   },
   {
+    "directory": "typo3-structured-data",
+    "skill_name": "typo3-structured-data",
+    "description": "Audits, preserves, implements, and verifies schema.org structured data and server-rendered JSON-LD in TYPO3 14.3 projects. Use for FAQPage, Article or NewsArticle, LocalBusiness, Organization, Product, Event, JobPosting, Recipe, BreadcrumbList, QAPage, reviews, rich results, brotkrueml/schema, mapping EXT:news detail records to article JSON-LD, or other page-type-to-schema work during a TYPO3 upgrade. Keeps visible content and structured values identical and separates upgrade parity from approved post-upgrade enrichment. Sitemap, canonical, hreflang, and meta-tag work belongs to typo3-seo.",
+    "source_owner": "webconsulting",
+    "source_url": "https://github.com/dirnbauer/typo3-skills",
+    "file_path": "skills/typo3-structured-data/SKILL.md",
+    "line_count": 139,
+    "frontmatter_keys": [
+      "name",
+      "description",
+      "metadata",
+      "license"
+    ],
+    "pass_1": [],
+    "pass_2": [],
+    "pass_3": []
+  },
+  {
     "directory": "typo3-testing",
     "skill_name": "typo3-testing",
     "description": "Use when setting up TYPO3 extension test infrastructure, writing unit/functional/E2E tests, configuring PHPUnit 11/12/13, mutation testing, mocking final classes (v14), CI/CD matrix across TYPO3 12/13/14.3 LTS, dev-dependency consolidation via typo3-ci-workflows meta-package, or debugging CI failures. Also triggers on: testing-framework setup, ensure proper testing, test matrix, integration testing, e2e testing, coverage, test generation.",
@@ -598,16 +616,112 @@
     "pass_3": []
   },
   {
+    "directory": "typo3-upgrade-baseline",
+    "skill_name": "typo3-upgrade-baseline",
+    "description": "Build and seal the deterministic pre-change Baseline A for a whole-site TYPO3 14.3 upgrade graph. Use when preflight passed and source evidence is ready, or when repeated screenshots of an untouched render disagree because of nondeterministic GIF/carousel, lazy media, consent state, sitemap, browser session, font, image, or harness input. Owns URL manifest, fingerprints, component journey inventory, strict-zero self-test, HTTP/DOM/pixel capture, and the immutable seal. Never upgrades code, fixes site regressions, weakens thresholds, or replaces the baseline.",
+    "source_owner": "webconsulting",
+    "source_url": null,
+    "file_path": "skills/typo3-upgrade-baseline/SKILL.md",
+    "line_count": 65,
+    "frontmatter_keys": [
+      "name",
+      "description",
+      "metadata"
+    ],
+    "pass_1": [],
+    "pass_2": [
+      "no explicit source note; current assumption is webconsulting-original"
+    ],
+    "pass_3": []
+  },
+  {
+    "directory": "typo3-upgrade-closure",
+    "skill_name": "typo3-upgrade-closure",
+    "description": "Prove and close Contract A after a whole-site TYPO3 14.3 upgrade. Use when the target is stable for target-content-epoch reconciliation, exhaustive HTTP/DOM comparison, tiered pixel proof, consent/slider/search/form sentinels, backend login/module/write checks, Redirects rights, runtime/Composer/schema checks, Lighthouse/axe evidence, regression classification, idempotence, or deciding whether the final upgrade may close when cookie dialogs/carousels were not operated. Produces the certificate and local handover. Never performs the main migration, rebaselines, accepts unexplained differences, or deploys.",
+    "source_owner": "webconsulting",
+    "source_url": null,
+    "file_path": "skills/typo3-upgrade-closure/SKILL.md",
+    "line_count": 67,
+    "frontmatter_keys": [
+      "name",
+      "description",
+      "metadata"
+    ],
+    "pass_1": [],
+    "pass_2": [
+      "no explicit source note; current assumption is webconsulting-original"
+    ],
+    "pass_3": []
+  },
+  {
+    "directory": "typo3-upgrade-intake",
+    "skill_name": "typo3-upgrade-intake",
+    "description": "Perform the read-only preflight for an orchestrated CMS transition: prove the selected repository, local application runtime, database, fileadmin, site configuration and dated-dataset identity; inspect URL discovery, installed-extension compatibility, credential boundaries, backup readiness, risks and conditional routes. Use before any mutation or when the selected dataset/runtime may be wrong. Produces evidence and routing decisions; never changes the site, resolves Composer constraints, captures Baseline A, or performs migration work.",
+    "source_owner": "webconsulting",
+    "source_url": null,
+    "file_path": "skills/typo3-upgrade-intake/SKILL.md",
+    "line_count": 76,
+    "frontmatter_keys": [
+      "name",
+      "description",
+      "metadata"
+    ],
+    "pass_1": [],
+    "pass_2": [
+      "no explicit source note; current assumption is webconsulting-original"
+    ],
+    "pass_3": []
+  },
+  {
+    "directory": "typo3-upgrade-migration",
+    "skill_name": "typo3-upgrade-migration",
+    "description": "Execute one graph-authorized dependency, code, schema, or data migration node within a whole-site TYPO3 v12/v13 to 14.3 upgrade. Use after Baseline A is sealed for the 13.4 rung, Composer blocker resolution, Rector/Fractor pass, manual API/data migration, stored `list_type` to `CType` ordering, 14.3 rung, schema quarantine, or fixed-point reconciliation. Enforces rollback anchors, snapshots, v14-only constraints, one-cause budgets, and specialist routing. Never owns intake, baseline, final parity, deployment, or an unbounded repeat-until-green cycle.",
+    "source_owner": "webconsulting",
+    "source_url": null,
+    "file_path": "skills/typo3-upgrade-migration/SKILL.md",
+    "line_count": 70,
+    "frontmatter_keys": [
+      "name",
+      "description",
+      "metadata"
+    ],
+    "pass_1": [],
+    "pass_2": [
+      "no explicit source note; current assumption is webconsulting-original"
+    ],
+    "pass_3": []
+  },
+  {
+    "directory": "typo3-upgrade-retrospective",
+    "skill_name": "typo3-upgrade-retrospective",
+    "description": "Audit one or more past or incomplete TYPO3 upgrade runs, project repositories, Codex tasks/threads, and evidence directories to determine what was requested, asked, changed, solved, left open, slow, good, bad, risky, or unverifiable. Use after several projects, when Git claims completion but run status is stale or the update folder is missing, when improving typo3-upgrade-run from real failures, or before claiming an old upgrade complete. Produces a problem\u2192cause\u2192solution\u2192control matrix and proposed skill/eval changes. Read-only by default; never reconstructs a pass from Git history or edits skills unless explicitly requested.",
+    "source_owner": "webconsulting",
+    "source_url": null,
+    "file_path": "skills/typo3-upgrade-retrospective/SKILL.md",
+    "line_count": 78,
+    "frontmatter_keys": [
+      "name",
+      "description",
+      "metadata"
+    ],
+    "pass_1": [],
+    "pass_2": [
+      "no explicit source note; current assumption is webconsulting-original"
+    ],
+    "pass_3": []
+  },
+  {
     "directory": "typo3-upgrade-run",
     "skill_name": "typo3-upgrade-run",
-    "description": "Update or upgrade a whole TYPO3 site or project from v12 or v13 to 14.3 LTS, end to end, in a local DDEV clone, and prove nothing changed for visitors. Use when the user says update TYPO3, upgrade to v14, move to 14.3 LTS, migrate the site, do the whole upgrade, set up visual regression around an upgrade, confirm visitors can see no difference after the update, prove nothing broke, or asks whether a pixel difference after the upgrade is acceptable. Owns the TYPO3 version constraint, the PHP target and the ext_emconf.php policy for the upgrade it runs. Runs bounded parent loops against a baseline frozen before change, with rollback anchors and documented verdicts; database snapshots are taken only before stateful operations. Approved performance, SEO, accessibility and security work is a separate opt-in programme afterwards. Never deploys to staging or live.",
+    "description": "Plan and execute the entire DDEV-based TYPO3 project/site update from 12 or 13 to supported 14.3 LTS and prove nothing broke, with exact visitor-facing visual and behavioral parity. Use for the end-to-end core migration, visual-regression proof that nothing changed after v13/v14 work, resuming or diagnosing the evidence graph, judging whether a few shifted pixels after an upgrade are acceptable, or determining the project PHP target and ext_emconf.php removal policy. Orchestrates preflight, immutable baseline, migration, specialists, closure, and retrospective through outcome edges, resource locks, and bounded retries. Never deploys to staging or live.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-upgrade-run/SKILL.md",
-    "line_count": 500,
+    "line_count": 319,
     "frontmatter_keys": [
       "name",
-      "description"
+      "description",
+      "metadata"
     ],
     "pass_1": [],
     "pass_2": [],
@@ -696,6 +810,24 @@
     "frontmatter_keys": [
       "name",
       "description"
+    ],
+    "pass_1": [],
+    "pass_2": [],
+    "pass_3": []
+  },
+  {
+    "directory": "typo3-webmcp",
+    "skill_name": "typo3-webmcp",
+    "description": "Designs, implements, secures, and verifies browser-side WebMCP tools for TYPO3 14.3 frontends through document.modelContext or declarative form annotations in a project-owned sitepackage. Use when a TYPO3 website should become agent-ready, expose search/navigation/forms as typed browser tools, preserve an existing WebMCP surface during an upgrade, or test tool discovery and invocation in Chrome. Does not implement backend editing over MCP; schema.org JSON-LD belongs to typo3-structured-data.",
+    "source_owner": "webconsulting",
+    "source_url": "https://github.com/dirnbauer/typo3-skills",
+    "file_path": "skills/typo3-webmcp/SKILL.md",
+    "line_count": 158,
+    "frontmatter_keys": [
+      "name",
+      "description",
+      "metadata",
+      "license"
     ],
     "pass_1": [],
     "pass_2": [],

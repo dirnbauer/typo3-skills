@@ -1,0 +1,189 @@
+{
+  "schema_version": 1,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "TYPO3 14.3 Upgrade Run",
+    "subtitle": "A guarded evidence graph from project identity to local handover",
+    "output": "skills/typo3-upgrade-run/assets/typo3-upgrade-run.archify.html",
+    "animation": "none",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "safety-contract",
+        "label": "Safety contract",
+        "focus": ["intake", "baseline_a", "dependency_plan", "contract_a", "handover"],
+        "note": "Identity, backup evidence and immutable baselines gate mutation and final claims."
+      },
+      {
+        "id": "migration-path",
+        "label": "Migration path",
+        "focus": ["dependency_plan", "migration", "contract_a"],
+        "note": "Core, code, schema, data and site specialists converge before proof."
+      },
+      {
+        "id": "proof-and-recovery",
+        "label": "Proof and recovery",
+        "focus": ["contract_a", "recovery", "migration"],
+        "note": "Failure takes a separate cause-specific route with rollback and bounded retries."
+      },
+      {
+        "id": "optional-elevation",
+        "label": "Optional elevation",
+        "focus": ["contract_a", "structured_data", "native_webmcp", "handover"],
+        "note": "Only a proven upgrade may add honest JSON-LD or native browser WebMCP capabilities."
+      }
+    ]
+  },
+  "lanes": [
+    { "id": "upgrade", "label": "Upgrade contract" },
+    { "id": "branches", "label": "Recovery + optional elevation" }
+  ],
+  "phases": [
+    { "id": "discover", "label": "Discover + seal", "fromCol": 0, "toCol": 2, "variant": "security" },
+    { "id": "migrate", "label": "Migrate", "fromCol": 3, "toCol": 3, "variant": "emphasis" },
+    { "id": "prove", "label": "Prove", "fromCol": 4, "toCol": 4, "variant": "security" },
+    { "id": "close", "label": "Close / elevate", "fromCol": 5, "toCol": 5, "variant": "dashed" }
+  ],
+  "groups": [
+    { "id": "preconditions", "label": "No mutation before these gates", "lane": "upgrade", "fromCol": 0, "toCol": 2, "variant": "security" },
+    { "id": "outcome_routes", "label": "Cause route or Contract B", "lane": "branches", "fromCol": 3, "toCol": 5, "variant": "emphasis" }
+  ],
+  "mainPath": ["intake", "baseline_a", "dependency_plan", "migration", "contract_a", "handover"],
+  "nodes": [
+    {
+      "id": "intake",
+      "lane": "upgrade",
+      "col": 0,
+      "type": "security",
+      "label": "Intake",
+      "sublabel": "identity · backup",
+      "tag": "P00"
+    },
+    {
+      "id": "baseline_a",
+      "lane": "upgrade",
+      "col": 1,
+      "type": "database",
+      "label": "Baseline A",
+      "sublabel": "DOM · pixels",
+      "tag": "P02 · sealed",
+      "width": 72
+    },
+    {
+      "id": "dependency_plan",
+      "lane": "upgrade",
+      "col": 2,
+      "type": "backend",
+      "label": "Plan",
+      "sublabel": "order · locks",
+      "tag": "P05 · authorized",
+      "width": 72
+    },
+    {
+      "id": "migration",
+      "lane": "upgrade",
+      "col": 3,
+      "type": "backend",
+      "label": "Migration",
+      "sublabel": "13.4 → 14.3",
+      "tag": "P06–P10",
+      "width": 62
+    },
+    {
+      "id": "contract_a",
+      "lane": "upgrade",
+      "col": 4,
+      "type": "security",
+      "label": "A gate",
+      "sublabel": "LH · axe",
+      "tag": "P11–P13",
+      "width": 62
+    },
+    {
+      "id": "handover",
+      "lane": "upgrade",
+      "col": 5,
+      "type": "security",
+      "label": "Handover",
+      "sublabel": "close or elevate",
+      "tag": "P14–P15"
+    },
+    {
+      "id": "recovery",
+      "lane": "branches",
+      "col": 3,
+      "type": "security",
+      "label": "Recovery",
+      "sublabel": "undo · retry",
+      "tag": "bounded",
+      "width": 62
+    },
+    {
+      "id": "structured_data",
+      "lane": "branches",
+      "col": 4,
+      "type": "database",
+      "label": "JSON-LD",
+      "sublabel": "visible data",
+      "tag": "B → P15",
+      "width": 62
+    },
+    {
+      "id": "native_webmcp",
+      "lane": "branches",
+      "col": 5,
+      "type": "external",
+      "label": "WebMCP",
+      "sublabel": "native Chrome API",
+      "tag": "Contract B → P15"
+    }
+  ],
+  "edges": [
+    { "from": "intake", "to": "baseline_a", "variant": "security" },
+    { "from": "baseline_a", "to": "dependency_plan", "variant": "security", "route": "up-channel", "fromSide": "top", "toSide": "top" },
+    { "from": "dependency_plan", "to": "migration", "variant": "emphasis" },
+    { "from": "migration", "to": "contract_a", "variant": "emphasis", "route": "up-channel", "fromSide": "top", "toSide": "top" },
+    { "from": "contract_a", "to": "handover", "variant": "security" },
+    { "from": "contract_a", "to": "recovery", "label": "failed → owner", "variant": "security", "role": "error", "fromSide": "bottom", "toSide": "top", "via": [[500, 177], [430, 177]] },
+    { "from": "handover", "to": "structured_data", "variant": "dashed", "role": "branch", "fromSide": "left", "toSide": "right", "via": [[555, 119], [555, 243]] },
+    { "from": "handover", "to": "native_webmcp", "variant": "dashed", "role": "branch", "route": "drop", "fromSide": "bottom", "toSide": "top" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Intake decisions",
+      "items": [
+        "Verify repository, TYPO3 core and site identity before mutation",
+        "Require restorable backup evidence and guard destructive operations",
+        "Ask whether one be_user_group is acceptable; install EXT:redirect if absent and grant least-privilege rights"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Migration contract",
+      "items": [
+        "Reach fixed points at TYPO3 13.4 and 14.3",
+        "Converge code, schema, data, Vite, Content Blocks, Solr, redirect and rights",
+        "Serialize Composer, DDEV, browser proof, Solr core and backend-session locks"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Visual + interaction proof",
+      "items": [
+        "Demand strict-zero pixel parity for unchanged reference URLs",
+        "Exercise consent states, sliders, navigation, search and forms",
+        "Run HTTP/DOM, backend rights, Lighthouse and axe from one target epoch"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Contract B boundaries",
+      "items": [
+        "Emit JSON-LD only for visible TYPO3 records and validate it",
+        "Use Chrome's native WebMCP API in project-owned sitepackage/Vite code",
+        "Do not install a TYPO3 MCP extension or use a backend MCP connector"
+      ]
+    }
+  ]
+}

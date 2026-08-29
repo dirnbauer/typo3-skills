@@ -1,6 +1,6 @@
 ---
 name: "typo3-seo"
-description: "Makes TYPO3 pages show up correctly in search engines like Google: XML sitemaps, canonical URLs, hreflang across languages, meta tags, Open Graph, schema.org structured data and robots rules. Use when the wrong pages are indexed or the German and Italian versions get mixed up in the results, when the sitemap is empty or missing pages, when a staging site must be kept out of the index, or when adding social previews and structured data to articles. Search inside the site itself is typo3-solr."
+description: "Makes TYPO3 pages show up correctly in search engines like Google through XML sitemaps, canonical URLs, hreflang across languages, meta tags, Open Graph, social previews, and robots rules. Use when the wrong pages are indexed, language versions get mixed up, the sitemap is empty or missing pages, a staging site must stay out of the index, or social cards are wrong. Page-type schema.org and JSON-LD implementation belongs to typo3-structured-data; on-site search belongs to typo3-solr."
 compatibility: "TYPO3 14.x"
 metadata:
   version: "2.0.0"
@@ -15,6 +15,14 @@ license: "MIT / CC-BY-SA-4.0"
 > All SEO configurations in this skill work on TYPO3 v14.
 
 > **TYPO3 API First:** Always use TYPO3's built-in APIs, core features, and established conventions before creating custom implementations. Do not reinvent what TYPO3 already provides. Always verify that the APIs and methods you use exist and are not deprecated in TYPO3 v14 by checking the official TYPO3 documentation.
+
+## Structured-data boundary
+
+Route page-purpose/entity selection, JSON-LD, rich-result eligibility, `FAQPage`, `Article`,
+`LocalBusiness`, `Product`, `Event`, `JobPosting`, and `brotkrueml/schema` work to
+[`typo3-structured-data`](../typo3-structured-data/SKILL.md). This skill supplies canonical,
+hreflang, sitemap, robots, and metadata inputs that those entities must reference; it does not own
+their entity graph.
 
 ## 1. Core SEO Extension Setup
 

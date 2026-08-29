@@ -1,6 +1,7 @@
 # `state.json` and `journal.jsonl`
 
-`state.json` is the **only** source a loop may read its preconditions from. `journal.jsonl` is the append-only history behind it. Together they are what makes an update run resumable across sessions and auditable afterwards.
+`state.json` is the **only** source a graph node or bounded evidence loop may read its
+preconditions from. `journal.jsonl` is the append-only history behind it.
 
 Schema: `assets/schemas/state.schema.json`.
 
@@ -25,7 +26,9 @@ Each is a memory failure, and none of them is fixed by remembering harder. They 
 {
   "schema": "typo3-upgrade-run/state@1",
   "run_id": "2026-07-25-acme",
-  "runtime": { "started_at": "…", "deadline_at": "…", "max_hours": 20, "closure_reserve_hours": 4 },
+  "runtime": { "started_at": "…", "sealed_at": "…", "size_profile": "large",
+    "size_evidence_ref": "nodes/intake/runtime-size.json", "migration_cutoff_at": "…",
+    "deadline_at": "…", "max_hours": 12, "closure_reserve_hours": 3 },
   "project": { "name": "acme", "trusted_origin": "https://acme.ddev.site", "languages": ["de","en"] },
   "target": { "kind": "project", "typo3_from": "12.4.31", "typo3_to": "14.3",
               "php_from": "8.1", "php_to": "8.4", "php_85_evaluated": true, "php_85_blockers": [] },
@@ -36,7 +39,18 @@ Each is a memory failure, and none of them is fixed by remembering harder. They 
   "contract_b": { "unlocked": false, "unlocked_at": null, "tracks": [] },
   "baselines": { "A-original": { "sealed": true, "sealed_at": "…", "manifest": "sha256:…", "urls": 87 } },
   "selftest": { "status": "green", "at": "…", "lock_hash": "…", "coverage": "all" },
-  "loops": { "000": "green", "100": "green", "300": "open" },
+  "graph": {
+    "schema": "typo3-upgrade-run/graph-state@1",
+    "definition_path": "config/upgrade-graph.yml",
+    "definition_hash": "sha256:…",
+    "status": "active",
+    "nodes": { "visual-proof": { "status": "ready", "attempts": 1,
+      "active_since": null, "completed_at": null, "outcome": null,
+      "evidence": null, "evidence_loop": null, "history": [] } },
+    "edges": { "css-retry": { "traversals": 1, "last_at": "…" } },
+    "locks": {}
+  },
+  "loops": { "000": "green", "301": "open" },
   "approvals": ["APR-001"], "decisions": ["ADR-001"],
   "snapshots": ["pre-update", "loop-300-pre"],
   "open_findings": 4, "blocked": null, "updated_at": "…"
@@ -48,13 +62,19 @@ Each is a memory failure, and none of them is fixed by remembering harder. They 
 | Field | Why it matters |
 |---|---|
 | `project.trusted_origin` | The one origin credentials and navigation may reach. Scheme included and never rewritten — rewriting the scheme is how an `http://` DDEV project silently discovers zero URLs. |
-| `runtime.deadline_at` | Hard overnight ceiling. The last four hours are reserved for closure; passing the deadline cannot produce a green result. |
+| `runtime.size_profile` / `size_evidence_ref` | The sealed small, large, or huge classification and the inspectable nine-metric intake evidence that selected it. |
+| `runtime.migration_cutoff_at` | Stops new P05–P10 causes early enough to preserve 2h, 3h, or 4h for closure. |
+| `runtime.deadline_at` | Hard 8h, 12h, or 14h overnight ceiling. Passing it cannot produce a green Contract A result. |
 | `target.php_to` / `php_85_evaluated` | 8.4 is the standard target. `php_85_evaluated` is `null` until `composer why-not php 8.5` has actually run, so "we could not use 8.5" is never confused with "we never checked". |
 | `contract_a.closed_at` | Gate B1.1 compares this timestamp against every elevation loop's `created_at`. It is the mechanical answer to "did improvement work leak into the migration?" |
 | `contract_b.unlocked` | Set only by the closure certificate. No elevation loop may start while it is false. |
 | `baselines.A-original.sealed` | Until true, no comparison means anything. |
 | `fingerprints.*` | Asserted at step 4 of every loop. A drift is `INVALID`, not `FINDINGS`. |
 | `selftest.lock_hash` | Every `compare-*` command refuses without a valid lock. This is the mechanical form of "only a harness that proves zero against itself may judge an update". |
+| `graph.definition_hash` | Binds this run to one reviewed graph. A changed definition cannot silently change the process mid-run. |
+| `graph.nodes.*` | Persisted node lifecycle, attempt count, evidence, and history. A transcript cannot promote a node. |
+| `graph.edges.*.traversals` | Enforces bounded recovery cycles and reveals repeated failure paths. |
+| `graph.locks` | Prevents concurrent Composer/DDEV/browser/Solr/backend actions from corrupting evidence or state. |
 | `blocked` | Non-null means the run has stopped and is waiting on a person. A run that is blocked and does not say so is the worst state to resume into. |
 
 ## Writing
@@ -75,7 +95,8 @@ One JSON object per line, append-only, never rewritten:
 {"ts":"2026-07-25T11:04:19+02:00","event":"policy-block","loop_id":"300","reason":"cross-origin-redirect","target":"[redacted]"}
 ```
 
-Events: `command` · `finding` · `approval` · `decision` · `transition` · `snapshot` · `policy-block` · `drift` · `abort`.
+Events: `command` · `graph` · `node` · `edge` · `lock` · `finding` · `approval` · `decision` ·
+`transition` · `snapshot` · `policy-block` · `drift` · `abort`.
 
 `policy-block` is deliberately its own event so security refusals are greppable rather than buried inside generic errors. Every command carries the environment fingerprint hash it ran under, so a later reader can tell which results are comparable.
 
@@ -83,12 +104,15 @@ Redaction is applied before writing. Argv is redacted, not omitted — knowing *
 
 ## `STATUS.md`
 
-Regenerated from `state.json` after every loop. Never hand-edited: an edited dashboard stops matching the evidence it summarises, and it is the first thing a person reads.
+Regenerated from `state.json`. `t3u graph-status` is the authoritative graph view. Never hand-edit
+either dashboard.
 
 ## Legal transitions
 
 - `contract_a.phase` only moves forward, one phase at a time.
-- A loop goes `planned → open → green | aborted`. `green → open` is not a transition; a loop that must run again is a **new loop id** with `depends_on` pointing at the old one.
+- A node goes `pending → ready → running → passed | failed | blocked | invalid | skipped`. Only a
+  bounded retry edge may return a terminal node to `ready`, and history is preserved.
+- A loop goes `planned → open → green | aborted`; it is bounded evidence inside one node.
 - `contract_b.unlocked` may only be set by the closure certificate, and only once.
 - A baseline goes `unsealed → sealed`, once. There is no unseal.
 

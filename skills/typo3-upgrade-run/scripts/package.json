@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "private": true,
   "type": "module",
-  "description": "Equality prover and security boundary for TYPO3 v14 update runs: guarded URL discovery, deterministic capture, three-stage comparison, backend sweep, and gated verdicts.",
+  "description": "Evidence-graph orchestrator, equality prover, and security boundary for TYPO3 14.3 update runs.",
   "engines": {
     "node": ">=20.11"
   },

@@ -24,7 +24,9 @@ ${blocked}
 | | |
 |---|---|
 | Run id | \`${s.run_id ?? '—'}\` |
-| Overnight deadline | ${s.runtime?.deadline_at ?? '—'} (max ${s.runtime?.max_hours ?? 20}h; ${s.runtime?.closure_reserve_hours ?? 4}h reserved for closure) |
+| Runtime profile | ${s.runtime?.size_profile ?? 'unclassified'} |
+| Migration cutoff | ${s.runtime?.migration_cutoff_at ?? '—'} |
+| Hard deadline | ${s.runtime?.deadline_at ?? '—'}${s.runtime?.max_hours ? ` (${s.runtime.max_hours}h; ${s.runtime.closure_reserve_hours}h reserved for closure)` : ''} |
 | Target | TYPO3 ${s.target?.typo3_from || '?'} → ${s.target?.typo3_to || '14.3'}, PHP ${s.target?.php_from || '?'} → ${s.target?.php_to || '8.4'} |
 | PHP 8.5 evaluated | ${php85(s)} |
 | Phase | ${s.contract_a?.phase ?? '—'} |

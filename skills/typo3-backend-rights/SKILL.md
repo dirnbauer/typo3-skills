@@ -1,6 +1,6 @@
 ---
 name: typo3-backend-rights
-description: "Build and audit one main non-admin TYPO3 backend editor group composed from four simple leaf groups for Base, Content, Site access, and Extensions. Covers explicit CType/field permissions, multisite page owner/group/everybody ACL defaults, roots, languages, modules, mounts, MFA, Forms/Powermail, conditional Workspaces access, User TSconfig, Visual Editor, Admin Panel, extensible site/extension packs, safe admin conversion, and customer branding for the TYPO3 login/backend with the Application Context. Use when page permissions, record types or fields are missing/read-only, be_groups.explicit_allowdeny is blank, mounts/modules are incomplete, or legacy groups must be consolidated. Always preserve a separate working administrator."
+description: "Build and audit TYPO3 backend editor rights after an explicit choice between one user-facing main group with simple internal leaves or preserving distinct existing roles. Covers CTypes, fields, page ACLs, languages, modules, mounts, MFA, Forms/Powermail, Workspaces, User TSconfig, Visual Editor, Redirects, safe membership cutover, and customer login/backend branding with the Application Context. Use when permissions are missing/read-only, be_groups is incomplete, or legacy roles may be consolidated. Always preserve a separate working administrator."
 ---
 
 # TYPO3 backend rights
@@ -13,11 +13,14 @@ not a copied backend record.
 ## Contract
 
 1. Identify the TYPO3 installation selected by the user before writing. If several projects could
-   be meant, ask which one to use. Apply the approved group, User TSconfig, and user setting to that
-   installation; a permission plan without the requested live/local integration is incomplete.
-2. Create or maintain exactly **one user-facing main editor group** with four required leaf
-   subgroups: **Base**, **Content**, **Site access**, and **Extensions**. Put no permissions directly
-   on the main group; assign users only to it. Keep every leaf's `subgroup` empty.
+   be meant, ask which one to use. Apply the approved group model, User TSconfig, and user settings
+   to that installation; a permission plan without the requested live/local integration is incomplete.
+2. Inventory the current group topology and obtain the explicit group-model decision below before
+   consolidating anything. If approved, create or maintain exactly **one user-facing main editor
+   group** with four required leaf subgroups: **Base**, **Content**, **Site access**, and
+   **Extensions**. If declined, preserve the existing user-facing role separation and audit each
+   intended group independently. Never interpret “one group” as permission to delete group rows or
+   replace user memberships.
 3. Derive rights from installed TCA, existing records, backend modules, configured sites, pages
    marked `is_siteroot`, file mounts, and file storages. Never clone a legacy group without
    auditing every field.
@@ -42,11 +45,12 @@ not a copied backend record.
 10. Allow exactly the installed editor modules defined below, including Forms, Visual Editor, and
     Solr only when present. Allow the MFA providers `totp` and `recovery-codes`.
 11. Verify page ownership and permission bits throughout every mounted site tree; DB mounts alone
-    do not grant access. Resolve one explicit default owner user, make the main editor group the
-    group owner, and apply the complete baseline `31/27/1`: owner user `31`, owner group `27`, and
-    everybody view-only `1`. Apply it to the union of every configured Site tree and every tree
-    marked `is_siteroot`, not only the first homepage. Never switch ownership before at least one
-    enabled non-admin editor has the main group and passes a login test.
+    do not grant access. Resolve one explicit default owner user and the intended page-owner group.
+    In the single-main-group model, use the main group. In the preserved-role model, retain or
+    explicitly select the appropriate existing owner group per Site tree without broadening other
+    roles. Apply the complete baseline `31/27/1`: owner user `31`, owner group `27`, and everybody
+    view-only `1`. Never switch ownership before an enabled non-admin member of that owner group
+    passes a login test.
 12. Preserve a different enabled, login-capable administrator. Never demote the administrator used
     for the current work or the last remaining administrator. Ask whether each target user's
     existing groups should be appended to or replaced; do not infer a bulk membership cutover.
@@ -55,9 +59,39 @@ not a copied backend record.
 14. When `typo3/cms-workspaces` is installed, add the safe basic Workspace setup below. Do not
     write stale Workspace permissions or module identifiers when it is absent.
 
-## Keep the group structure simple
+## Decide the group model first
 
-Use one flat inheritance level:
+Before proposing a topology, inventory active `be_groups`, direct memberships in
+`be_users.usergroup`, inheritance in `be_groups.subgroup`, and material differences in mounts,
+languages, modules, tables, fields, Workspaces, and site scope. Show which groups are duplicates,
+which encode a real authorization boundary, and which enabled users depend on each group.
+
+Then ask exactly this project-level question and record the answer as evidence:
+
+> Can this project live with one user-facing, non-admin editor group for all normal editors? This
+> means one directly assigned main role, with inherited internal Base, Content, Site, and Extensions
+> leaves. It is simpler to maintain, but all included editors share the same authorization boundary.
+
+- Recommend **yes** only when normal editors genuinely have the same site, language, module, table,
+  field, Workspace, and file scope. A yes answer authorizes building the single-main-group topology;
+  it does not authorize deleting legacy groups or changing any user's membership.
+- Recommend **no** when the installation has meaningful role separation, limited-site editors,
+  translators, publishers, form-only users, agency/customer boundaries, or other least-privilege
+  differences. Preserve those roles and repair their rights independently.
+- If the user has not answered, stop before group creation, consolidation, membership replacement,
+  or page-owner changes. Do not turn convenience into implied authorization.
+
+TYPO3 stores all groups—including the internal leaves—in `be_groups`. Direct group assignments are
+stored in `be_users.usergroup`; there is no `be_user_group` table. Therefore “one group” in this
+decision means one user-facing main membership, not literally one database row.
+
+The topology decision and the later per-user cutover are separate approvals. Even after a yes,
+show every target user's current memberships and ask append-versus-replace for that user.
+
+## Approved single-main-group model
+
+Use this model only after the user answered yes to the project-level question above. Use one flat
+inheritance level:
 
 | Group | Owns |
 |---|---|
@@ -74,6 +108,24 @@ limit of four.
 
 Report the selected installation's DDEV/project name, root, TYPO3 version, and affected group/user
 UIDs. Never apply one installation's audited permissions to another installation.
+
+## Preserved-role model
+
+When the answer is no, keep the existing user-facing groups, direct membership intent, and
+meaningful inheritance boundaries. Apply the same least-privilege rules in this skill to every
+intended role, but evaluate CTypes, fields, tables, modules, mounts, languages, Workspaces, file
+operations, page ACLs, and Redirects separately for each group. Do not broaden a narrow group just
+because a broader group already has the capability.
+
+Run the read-only audit once per target title and produce a role matrix showing effective and
+missing permissions. Do not use `apply-backend-rights.php` to pretend it supports a multi-role
+consolidation: that script implements only the approved single-main-group model. Make preserved-role
+changes through reviewed TYPO3/DataHandler operations, retain existing UIDs and inheritance unless
+an exact change is approved, and verify each materially different role with its own non-admin user.
+
+Every later instruction that says “main group” describes the single-main-group mode. In the
+preserved-role mode, apply it only to the selected role when the capability belongs there. Page
+ownership still needs one explicit owner group per Site tree; it is never granted to every role.
 
 ## Separate permission creation from the live cutover
 
@@ -163,7 +215,7 @@ Resolve identifiers from the runtime `ModuleRegistry`; never write identifiers f
   `web_info_overview`, `web_info_translations`, `recycler`, `media_management`, and `user_setup`.
 - Visual Editor: `web_edit`.
 - Core Form: `web_FormFormbuilder`, `form_manager`, and `form_editor`.
-- Core Redirects: `redirects`. Grant only to named trusted editors; it manages redirects across the
+- Core Redirects: `redirects`. Grant only to named trusted editor groups; it manages redirects across the
   entire installation. Do not grant `qrcodes` or `short_urls` unless separately requested.
 - Solr: `searchbackend` and the read-only `searchbackend_info` entry. Keep
   `searchbackend_coreoptimization`, `searchbackend_indexqueue`, and
@@ -175,9 +227,10 @@ When `typo3/cms-form` is installed, grant read/write access to `form_definition`
 Form persistence permission checker requires both lists even though its TCA display fields are
 read-only and the Form modules perform the controlled writes.
 
-When `typo3/cms-redirects` is installed, grant the trusted main editor group read/write access to
-`sys_redirect` and its runtime editor-editable exclude fields. Keep read-only and system-managed
-fields excluded. Users inherit this through the main group; never write direct per-user rights.
+When `typo3/cms-redirects` is installed, grant the intended trusted editor group or groups
+read/write access to `sys_redirect` and its runtime editor-editable exclude fields. Keep read-only
+and system-managed fields excluded. Users inherit this through groups; never write direct per-user
+rights.
 
 When Powermail is installed, grant read/write access and every editor-accessible field for
 `tx_powermail_domain_model_form`, `tx_powermail_domain_model_page`, and
@@ -262,7 +315,8 @@ override TYPO3's danger/success colors, focus indicators, or structural layout.
 
 ## Create the group structure
 
-Create or update the four required leaf groups first, then create or update the main group with
+This section applies only to the approved single-main-group model. Create or update the four
+required leaf groups first, then create or update the main group with
 their UIDs in `subgroup`. Keep the main group's permission fields empty and each leaf's `subgroup`
 empty. Set a descriptive main title such as `Editorial Main` and document:
 
@@ -296,7 +350,8 @@ leaf references and never changes users or deletes old groups.
 
 ## Change user membership safely
 
-Ask the user this explicit question before replacing memberships:
+This is a per-user decision, separate from approval of the project-level group model. Ask the user
+this explicit question before replacing memberships:
 
 > Should `<main group>` be this backend user's only group?
 

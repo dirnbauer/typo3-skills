@@ -1,0 +1,555 @@
+schema: typo3-upgrade-run/graph@1
+id: typo3-14.3-project-upgrade
+
+# The engine may expose ready nodes to parallel agents, but resource locks remain exclusive.
+resources:
+  - browser-proof
+  - composer
+  - ddev-stateful
+  - solr-core
+  - backend-session
+
+start: [intake]
+terminal: [handover, stopped]
+
+nodes:
+  intake:
+    skill: typo3-upgrade-intake
+    phase: P00
+    outcomes: [pass, blocked]
+
+  project-identity:
+    skill: typo3-upgrade-intake
+    phase: P00
+    outcomes: [pass, findings, blocked]
+  dataset-freshness:
+    skill: typo3-upgrade-intake
+    phase: P00
+    resources: [ddev-stateful]
+    outcomes: [pass, findings, blocked]
+  extension-inventory:
+    skill: typo3-upgrade-intake
+    phase: P00
+    outcomes: [pass, blocked]
+  url-discovery:
+    skill: typo3-upgrade-intake
+    phase: P00
+    resources: [browser-proof]
+    outcomes: [pass, findings, blocked]
+  backend-group-model-decision:
+    skill: typo3-backend-rights
+    phase: P00
+    outcomes: [pass, not-applicable, blocked]
+  structured-data-inventory:
+    skill: typo3-structured-data
+    phase: P00
+    resources: [browser-proof]
+    outcomes: [pass, blocked]
+  webmcp-inventory:
+    skill: typo3-webmcp
+    phase: P00
+    resources: [browser-proof]
+    outcomes: [pass, blocked]
+
+  identity-recovery:
+    skill: typo3-upgrade-intake
+    phase: P00
+    outcomes: [pass, blocked]
+  data-recovery:
+    skill: typo3-upgrade-intake
+    phase: P01
+    mutation: stateful
+    resources: [ddev-stateful]
+    outcomes: [pass, blocked]
+  sitemap-recovery:
+    skill: typo3-upgrade-intake
+    phase: P00
+    mutation: code
+    outcomes: [pass, not-applicable, blocked]
+  degraded-discovery:
+    skill: typo3-upgrade-intake
+    phase: P00
+    outcomes: [pass, blocked]
+
+  intake-join:
+    phase: P01
+    requires: [project-identity, dataset-freshness, extension-inventory, url-discovery, backend-group-model-decision, structured-data-inventory, webmcp-inventory]
+    outcomes: [pass, blocked]
+
+  deterministic-baseline:
+    skill: typo3-upgrade-baseline
+    phase: P02
+    resources: [browser-proof]
+    evidence_loop: required
+    outcomes: [pass, invalid, harness-error, blocked]
+  determinism-recovery:
+    skill: typo3-upgrade-baseline
+    phase: P02
+    mutation: code
+    resources: [browser-proof]
+    outcomes: [pass, blocked]
+  harness-recovery:
+    skill: typo3-upgrade-baseline
+    phase: P02
+    mutation: code
+    resources: [browser-proof]
+    outcomes: [pass, blocked]
+
+  dependency-plan:
+    skill: typo3-upgrade-migration
+    phase: P05
+    resources: [composer]
+    outcomes: [pass, findings, blocked]
+  dependency-resolution:
+    skill: typo3-upgrade-migration
+    phase: P05
+    mutation: code
+    resources: [composer]
+    outcomes: [pass, blocked]
+  rung-13:
+    skill: typo3-upgrade-migration
+    phase: P06
+    mutation: stateful
+    resources: [composer, ddev-stateful]
+    evidence_loop: required
+    outcomes: [pass, findings, blocked]
+  mechanical-migration:
+    skill: typo3-upgrade-migration
+    phase: P07
+    mutation: code
+    resources: [composer]
+    evidence_loop: required
+    outcomes: [pass, findings, blocked]
+  manual-migration:
+    skill: typo3-upgrade-migration
+    phase: P08
+    mutation: stateful
+    resources: [ddev-stateful]
+    evidence_loop: required
+    outcomes: [pass, findings, blocked]
+  rung-14:
+    skill: typo3-upgrade-migration
+    phase: P09
+    mutation: stateful
+    resources: [composer, ddev-stateful]
+    evidence_loop: required
+    outcomes: [pass, findings, blocked]
+  rung13-recovery:
+    skill: typo3-upgrade-migration
+    phase: P06
+    outcomes: [pass, blocked]
+  mechanical-recovery:
+    skill: typo3-upgrade-migration
+    phase: P07
+    outcomes: [pass, blocked]
+  manual-recovery:
+    skill: typo3-upgrade-migration
+    phase: P08
+    outcomes: [pass, blocked]
+  rung14-recovery:
+    skill: typo3-upgrade-migration
+    phase: P09
+    outcomes: [pass, blocked]
+
+  content-blocks:
+    skill: typo3-content-blocks
+    phase: P08
+    mutation: stateful
+    resources: [ddev-stateful]
+    outcomes: [pass, not-applicable, blocked]
+  vite-assets:
+    skill: typo3-vite
+    phase: P10
+    mutation: code
+    outcomes: [pass, not-applicable, blocked]
+  solr-search:
+    skill: typo3-solr
+    phase: P10
+    mutation: stateful
+    resources: [ddev-stateful, solr-core]
+    outcomes: [pass, not-applicable, blocked]
+  structured-data-parity:
+    skill: typo3-structured-data
+    phase: P10
+    mutation: code
+    resources: [browser-proof]
+    requires: [structured-data-inventory, rung-14]
+    outcomes: [pass, findings, not-applicable, blocked]
+  structured-data-recovery:
+    skill: typo3-structured-data
+    phase: P10
+    mutation: code
+    resources: [browser-proof]
+    outcomes: [pass, blocked]
+  webmcp-parity:
+    skill: typo3-webmcp
+    phase: P10
+    mutation: code
+    resources: [browser-proof]
+    requires: [webmcp-inventory, rung-14]
+    outcomes: [pass, findings, not-applicable, blocked]
+  webmcp-recovery:
+    skill: typo3-webmcp
+    phase: P10
+    mutation: code
+    resources: [browser-proof]
+    outcomes: [pass, blocked]
+  redirects-rights-single-group:
+    skill: typo3-backend-rights
+    phase: P10
+    mutation: stateful
+    resources: [ddev-stateful, backend-session]
+    approval: required
+    requires: [rung-14]
+    outcomes: [pass, blocked]
+  redirects-rights-preserved-groups:
+    skill: typo3-backend-rights
+    phase: P10
+    mutation: stateful
+    resources: [ddev-stateful, backend-session]
+    requires: [rung-14]
+    outcomes: [pass, blocked]
+  redirects-rights-merge:
+    phase: P10
+    outcomes: [pass, blocked]
+  rte-visual-editor:
+    skill: typo3-visual-editor
+    phase: P10
+    mutation: stateful
+    resources: [ddev-stateful, backend-session]
+    outcomes: [pass, not-applicable, blocked]
+
+  migration-join:
+    phase: P10
+    requires: [content-blocks, vite-assets, solr-search, structured-data-parity, webmcp-parity, redirects-rights-merge, rte-visual-editor]
+    outcomes: [pass, blocked]
+  target-content-epoch:
+    skill: typo3-upgrade-closure
+    phase: P10
+    mutation: stateful
+    resources: [ddev-stateful]
+    outcomes: [pass, invalid, blocked]
+  content-ledger-recovery:
+    skill: typo3-upgrade-closure
+    phase: P10
+    outcomes: [pass, blocked]
+
+  http-dom-proof:
+    skill: typo3-upgrade-closure
+    phase: P11
+    resources: [browser-proof]
+    evidence_loop: required
+    outcomes: [pass, findings, invalid, harness-error, blocked]
+  visual-proof:
+    skill: typo3-upgrade-closure
+    phase: P11
+    resources: [browser-proof]
+    evidence_loop: required
+    outcomes: [pass, findings, invalid, harness-error, blocked]
+  component-sentinels:
+    skill: typo3-upgrade-closure
+    phase: P11
+    resources: [browser-proof]
+    outcomes: [pass, findings, invalid, blocked]
+  backend-operations:
+    skill: typo3-upgrade-closure
+    phase: P12
+    resources: [backend-session]
+    outcomes: [pass, findings, invalid, blocked]
+  lighthouse-axe:
+    skill: typo3-upgrade-closure
+    phase: P12
+    resources: [browser-proof]
+    outcomes: [pass, findings, invalid, harness-error, blocked]
+
+  markup-recovery:
+    skill: typo3-upgrade-closure
+    phase: P11
+    mutation: code
+    outcomes: [http, visual, blocked]
+  visual-classify:
+    skill: typo3-upgrade-closure
+    phase: P11
+    outcomes: [css, assets, markup, content, session, harness, blocked]
+  css-recovery:
+    skill: typo3-vite
+    phase: P11
+    mutation: code
+    outcomes: [pass, blocked]
+  asset-recovery:
+    skill: typo3-vite
+    phase: P11
+    mutation: code
+    outcomes: [pass, blocked]
+  content-recovery:
+    skill: typo3-upgrade-migration
+    phase: P11
+    mutation: stateful
+    resources: [ddev-stateful]
+    outcomes: [pass, blocked]
+  session-recovery:
+    skill: typo3-upgrade-baseline
+    phase: P11
+    mutation: code
+    resources: [browser-proof]
+    outcomes: [pass, blocked]
+  interaction-recovery:
+    skill: typo3-upgrade-closure
+    phase: P11
+    mutation: code
+    outcomes: [pass, blocked]
+  backend-recovery:
+    skill: typo3-backend-rights
+    phase: P12
+    mutation: stateful
+    resources: [ddev-stateful, backend-session]
+    outcomes: [pass, blocked]
+  quality-recovery:
+    skill: typo3-upgrade-closure
+    phase: P12
+    mutation: code
+    outcomes: [pass, blocked]
+  closure-harness-recovery:
+    skill: typo3-upgrade-closure
+    phase: P11
+    mutation: code
+    resources: [browser-proof]
+    outcomes: [http, visual, component, backend, quality, contract, blocked]
+  closure-reconcile:
+    skill: typo3-upgrade-closure
+    phase: P13
+    outcomes: [pass, blocked]
+
+  closure-join:
+    skill: typo3-upgrade-closure
+    phase: P13
+    requires: [http-dom-proof, visual-proof, component-sentinels, backend-operations, lighthouse-axe]
+    outcomes: [pass, blocked]
+  contract-a-gate:
+    skill: typo3-upgrade-closure
+    phase: P13
+    evidence_loop: required
+    outcomes: [pass, findings, invalid, blocked]
+  structured-data-enrichment:
+    skill: typo3-structured-data
+    phase: P14
+    mutation: stateful
+    resources: [composer, ddev-stateful, browser-proof]
+    approval: required
+    evidence_loop: required
+    requires: [contract-a-gate]
+    outcomes: [pass, findings, not-applicable, blocked]
+  structured-data-enrichment-recovery:
+    skill: typo3-structured-data
+    phase: P14
+    mutation: stateful
+    resources: [composer, ddev-stateful, browser-proof]
+    approval: required
+    outcomes: [pass, blocked]
+  webmcp-readiness:
+    skill: typo3-webmcp
+    phase: P14
+    mutation: code
+    resources: [browser-proof]
+    approval: required
+    evidence_loop: required
+    requires: [contract-a-gate]
+    outcomes: [pass, findings, not-applicable, blocked]
+  webmcp-readiness-recovery:
+    skill: typo3-webmcp
+    phase: P14
+    mutation: code
+    resources: [browser-proof]
+    approval: required
+    outcomes: [pass, blocked]
+  elevation-join:
+    skill: typo3-upgrade-closure
+    phase: P14
+    requires: [structured-data-enrichment, webmcp-readiness]
+    outcomes: [pass, blocked]
+  handover:
+    skill: typo3-upgrade-closure
+    phase: P15
+    outcomes: [pass]
+  stopped:
+    phase: P15
+    outcomes: [blocked]
+
+edges:
+  - { id: intake-pass, from: intake, outcome: pass, to: [project-identity, dataset-freshness, extension-inventory, url-discovery, backend-group-model-decision, structured-data-inventory, webmcp-inventory] }
+  - { id: intake-blocked, from: intake, outcome: blocked, to: stopped }
+  - { id: identity-pass, from: project-identity, outcome: pass, to: intake-join }
+  - { id: identity-findings, from: project-identity, outcome: findings, to: identity-recovery }
+  - { id: identity-blocked, from: project-identity, outcome: blocked, to: stopped }
+  - { id: identity-retry, from: identity-recovery, outcome: pass, to: project-identity, retry: true, max_traversals: 2 }
+  - { id: identity-recovery-blocked, from: identity-recovery, outcome: blocked, to: stopped }
+  - { id: dataset-pass, from: dataset-freshness, outcome: pass, to: intake-join }
+  - { id: dataset-findings, from: dataset-freshness, outcome: findings, to: data-recovery }
+  - { id: dataset-blocked, from: dataset-freshness, outcome: blocked, to: stopped }
+  - { id: data-retry, from: data-recovery, outcome: pass, to: dataset-freshness, retry: true, max_traversals: 2 }
+  - { id: data-recovery-blocked, from: data-recovery, outcome: blocked, to: stopped }
+  - { id: inventory-pass, from: extension-inventory, outcome: pass, to: intake-join }
+  - { id: inventory-blocked, from: extension-inventory, outcome: blocked, to: stopped }
+  - { id: discovery-pass, from: url-discovery, outcome: pass, to: intake-join }
+  - { id: discovery-findings, from: url-discovery, outcome: findings, to: sitemap-recovery }
+  - { id: discovery-blocked, from: url-discovery, outcome: blocked, to: stopped }
+  - { id: group-model-single, from: backend-group-model-decision, outcome: pass, to: redirects-rights-single-group }
+  - { id: group-model-preserve, from: backend-group-model-decision, outcome: not-applicable, to: redirects-rights-preserved-groups }
+  - { id: group-model-blocked, from: backend-group-model-decision, outcome: blocked, to: stopped }
+  - { id: structured-inventory-pass, from: structured-data-inventory, outcome: pass, to: intake-join }
+  - { id: structured-inventory-blocked, from: structured-data-inventory, outcome: blocked, to: stopped }
+  - { id: webmcp-inventory-pass, from: webmcp-inventory, outcome: pass, to: intake-join }
+  - { id: webmcp-inventory-blocked, from: webmcp-inventory, outcome: blocked, to: stopped }
+  - { id: sitemap-fixed, from: sitemap-recovery, outcome: pass, to: url-discovery, retry: true, max_traversals: 2 }
+  - { id: sitemap-degraded, from: sitemap-recovery, outcome: not-applicable, to: degraded-discovery }
+  - { id: sitemap-blocked, from: sitemap-recovery, outcome: blocked, to: stopped }
+  - { id: degraded-pass, from: degraded-discovery, outcome: pass, to: url-discovery, retry: true, max_traversals: 1 }
+  - { id: degraded-blocked, from: degraded-discovery, outcome: blocked, to: stopped }
+  - { id: intake-joined, from: intake-join, outcome: pass, to: deterministic-baseline }
+  - { id: intake-join-blocked, from: intake-join, outcome: blocked, to: stopped }
+  - { id: baseline-pass, from: deterministic-baseline, outcome: pass, to: dependency-plan }
+  - { id: baseline-invalid, from: deterministic-baseline, outcome: invalid, to: determinism-recovery }
+  - { id: baseline-harness, from: deterministic-baseline, outcome: harness-error, to: harness-recovery }
+  - { id: baseline-blocked, from: deterministic-baseline, outcome: blocked, to: stopped }
+  - { id: determinism-retry, from: determinism-recovery, outcome: pass, to: deterministic-baseline, retry: true, max_traversals: 2 }
+  - { id: determinism-blocked, from: determinism-recovery, outcome: blocked, to: stopped }
+  - { id: harness-retry, from: harness-recovery, outcome: pass, to: deterministic-baseline, retry: true, max_traversals: 2 }
+  - { id: harness-blocked, from: harness-recovery, outcome: blocked, to: stopped }
+  - { id: dependencies-pass, from: dependency-plan, outcome: pass, to: rung-13 }
+  - { id: dependencies-findings, from: dependency-plan, outcome: findings, to: dependency-resolution }
+  - { id: dependencies-blocked, from: dependency-plan, outcome: blocked, to: stopped }
+  - { id: dependency-retry, from: dependency-resolution, outcome: pass, to: dependency-plan, retry: true, max_traversals: 2 }
+  - { id: dependency-resolution-blocked, from: dependency-resolution, outcome: blocked, to: stopped }
+  - { id: rung13-pass, from: rung-13, outcome: pass, to: mechanical-migration }
+  - { id: rung13-findings, from: rung-13, outcome: findings, to: rung13-recovery }
+  - { id: rung13-blocked, from: rung-13, outcome: blocked, to: stopped }
+  - { id: mechanical-pass, from: mechanical-migration, outcome: pass, to: manual-migration }
+  - { id: mechanical-findings, from: mechanical-migration, outcome: findings, to: mechanical-recovery }
+  - { id: mechanical-blocked, from: mechanical-migration, outcome: blocked, to: stopped }
+  - { id: manual-pass, from: manual-migration, outcome: pass, to: rung-14 }
+  - { id: manual-findings, from: manual-migration, outcome: findings, to: manual-recovery }
+  - { id: manual-blocked, from: manual-migration, outcome: blocked, to: stopped }
+  - { id: rung14-pass, from: rung-14, outcome: pass, to: [content-blocks, vite-assets, solr-search, structured-data-parity, webmcp-parity, rte-visual-editor] }
+  - { id: rung14-findings, from: rung-14, outcome: findings, to: rung14-recovery }
+  - { id: rung14-blocked, from: rung-14, outcome: blocked, to: stopped }
+  - { id: rung13-retry, from: rung13-recovery, outcome: pass, to: rung-13, retry: true, max_traversals: 2 }
+  - { id: rung13-recovery-blocked, from: rung13-recovery, outcome: blocked, to: stopped }
+  - { id: mechanical-retry, from: mechanical-recovery, outcome: pass, to: mechanical-migration, retry: true, max_traversals: 2 }
+  - { id: mechanical-recovery-blocked, from: mechanical-recovery, outcome: blocked, to: stopped }
+  - { id: manual-retry, from: manual-recovery, outcome: pass, to: manual-migration, retry: true, max_traversals: 2 }
+  - { id: manual-recovery-blocked, from: manual-recovery, outcome: blocked, to: stopped }
+  - { id: rung14-retry, from: rung14-recovery, outcome: pass, to: rung-14, retry: true, max_traversals: 2 }
+  - { id: rung14-recovery-blocked, from: rung14-recovery, outcome: blocked, to: stopped }
+  - { id: cb-pass, from: content-blocks, outcome: pass, to: migration-join }
+  - { id: cb-na, from: content-blocks, outcome: not-applicable, to: migration-join }
+  - { id: cb-blocked, from: content-blocks, outcome: blocked, to: stopped }
+  - { id: vite-pass, from: vite-assets, outcome: pass, to: migration-join }
+  - { id: vite-na, from: vite-assets, outcome: not-applicable, to: migration-join }
+  - { id: vite-blocked, from: vite-assets, outcome: blocked, to: stopped }
+  - { id: solr-pass, from: solr-search, outcome: pass, to: migration-join }
+  - { id: solr-na, from: solr-search, outcome: not-applicable, to: migration-join }
+  - { id: solr-blocked, from: solr-search, outcome: blocked, to: stopped }
+  - { id: structured-parity-pass, from: structured-data-parity, outcome: pass, to: migration-join }
+  - { id: structured-parity-findings, from: structured-data-parity, outcome: findings, to: structured-data-recovery }
+  - { id: structured-parity-na, from: structured-data-parity, outcome: not-applicable, to: migration-join }
+  - { id: structured-parity-blocked, from: structured-data-parity, outcome: blocked, to: stopped }
+  - { id: structured-parity-retry, from: structured-data-recovery, outcome: pass, to: structured-data-parity, retry: true, max_traversals: 2 }
+  - { id: structured-recovery-blocked, from: structured-data-recovery, outcome: blocked, to: stopped }
+  - { id: webmcp-parity-pass, from: webmcp-parity, outcome: pass, to: migration-join }
+  - { id: webmcp-parity-findings, from: webmcp-parity, outcome: findings, to: webmcp-recovery }
+  - { id: webmcp-parity-na, from: webmcp-parity, outcome: not-applicable, to: migration-join }
+  - { id: webmcp-parity-blocked, from: webmcp-parity, outcome: blocked, to: stopped }
+  - { id: webmcp-parity-retry, from: webmcp-recovery, outcome: pass, to: webmcp-parity, retry: true, max_traversals: 2 }
+  - { id: webmcp-recovery-blocked, from: webmcp-recovery, outcome: blocked, to: stopped }
+  - { id: rights-single-pass, from: redirects-rights-single-group, outcome: pass, to: redirects-rights-merge }
+  - { id: rights-single-blocked, from: redirects-rights-single-group, outcome: blocked, to: stopped }
+  - { id: rights-preserved-pass, from: redirects-rights-preserved-groups, outcome: pass, to: redirects-rights-merge }
+  - { id: rights-preserved-blocked, from: redirects-rights-preserved-groups, outcome: blocked, to: stopped }
+  - { id: rights-merged, from: redirects-rights-merge, outcome: pass, to: migration-join }
+  - { id: rights-merge-blocked, from: redirects-rights-merge, outcome: blocked, to: stopped }
+  - { id: rte-pass, from: rte-visual-editor, outcome: pass, to: migration-join }
+  - { id: rte-na, from: rte-visual-editor, outcome: not-applicable, to: migration-join }
+  - { id: rte-blocked, from: rte-visual-editor, outcome: blocked, to: stopped }
+  - { id: migration-joined, from: migration-join, outcome: pass, to: target-content-epoch }
+  - { id: migration-join-blocked, from: migration-join, outcome: blocked, to: stopped }
+  - { id: epoch-pass, from: target-content-epoch, outcome: pass, to: [http-dom-proof, visual-proof, component-sentinels, backend-operations, lighthouse-axe] }
+  - { id: epoch-invalid, from: target-content-epoch, outcome: invalid, to: content-ledger-recovery }
+  - { id: epoch-blocked, from: target-content-epoch, outcome: blocked, to: stopped }
+  - { id: ledger-retry, from: content-ledger-recovery, outcome: pass, to: target-content-epoch, retry: true, max_traversals: 1 }
+  - { id: ledger-blocked, from: content-ledger-recovery, outcome: blocked, to: stopped }
+  - { id: http-pass, from: http-dom-proof, outcome: pass, to: closure-join }
+  - { id: http-findings, from: http-dom-proof, outcome: findings, to: markup-recovery }
+  - { id: http-invalid, from: http-dom-proof, outcome: invalid, to: closure-harness-recovery }
+  - { id: http-harness, from: http-dom-proof, outcome: harness-error, to: closure-harness-recovery }
+  - { id: http-blocked, from: http-dom-proof, outcome: blocked, to: stopped }
+  - { id: markup-http-retry, from: markup-recovery, outcome: http, to: http-dom-proof, retry: true, max_traversals: 2 }
+  - { id: markup-visual-retry, from: markup-recovery, outcome: visual, to: visual-proof, retry: true, max_traversals: 2 }
+  - { id: markup-blocked, from: markup-recovery, outcome: blocked, to: stopped }
+  - { id: visual-pass, from: visual-proof, outcome: pass, to: closure-join }
+  - { id: visual-findings, from: visual-proof, outcome: findings, to: visual-classify }
+  - { id: visual-invalid, from: visual-proof, outcome: invalid, to: closure-harness-recovery }
+  - { id: visual-harness, from: visual-proof, outcome: harness-error, to: closure-harness-recovery }
+  - { id: visual-blocked, from: visual-proof, outcome: blocked, to: stopped }
+  - { id: visual-css, from: visual-classify, outcome: css, to: css-recovery }
+  - { id: visual-assets, from: visual-classify, outcome: assets, to: asset-recovery }
+  - { id: visual-markup, from: visual-classify, outcome: markup, to: markup-recovery }
+  - { id: visual-content, from: visual-classify, outcome: content, to: content-recovery }
+  - { id: visual-session, from: visual-classify, outcome: session, to: session-recovery }
+  - { id: visual-harness-route, from: visual-classify, outcome: harness, to: harness-recovery }
+  - { id: visual-classify-blocked, from: visual-classify, outcome: blocked, to: stopped }
+  - { id: css-retry, from: css-recovery, outcome: pass, to: visual-proof, retry: true, max_traversals: 2 }
+  - { id: css-blocked, from: css-recovery, outcome: blocked, to: stopped }
+  - { id: asset-retry, from: asset-recovery, outcome: pass, to: visual-proof, retry: true, max_traversals: 2 }
+  - { id: asset-blocked, from: asset-recovery, outcome: blocked, to: stopped }
+  - { id: content-retry, from: content-recovery, outcome: pass, to: visual-proof, retry: true, max_traversals: 2 }
+  - { id: content-blocked, from: content-recovery, outcome: blocked, to: stopped }
+  - { id: session-retry, from: session-recovery, outcome: pass, to: visual-proof, retry: true, max_traversals: 2 }
+  - { id: session-blocked, from: session-recovery, outcome: blocked, to: stopped }
+  - { id: component-pass, from: component-sentinels, outcome: pass, to: closure-join }
+  - { id: component-findings, from: component-sentinels, outcome: findings, to: interaction-recovery }
+  - { id: component-invalid, from: component-sentinels, outcome: invalid, to: closure-harness-recovery }
+  - { id: component-blocked, from: component-sentinels, outcome: blocked, to: stopped }
+  - { id: interaction-retry, from: interaction-recovery, outcome: pass, to: component-sentinels, retry: true, max_traversals: 2 }
+  - { id: interaction-blocked, from: interaction-recovery, outcome: blocked, to: stopped }
+  - { id: backend-pass, from: backend-operations, outcome: pass, to: closure-join }
+  - { id: backend-findings, from: backend-operations, outcome: findings, to: backend-recovery }
+  - { id: backend-invalid, from: backend-operations, outcome: invalid, to: closure-harness-recovery }
+  - { id: backend-blocked, from: backend-operations, outcome: blocked, to: stopped }
+  - { id: backend-retry, from: backend-recovery, outcome: pass, to: backend-operations, retry: true, max_traversals: 2 }
+  - { id: backend-recovery-blocked, from: backend-recovery, outcome: blocked, to: stopped }
+  - { id: quality-pass, from: lighthouse-axe, outcome: pass, to: closure-join }
+  - { id: quality-findings, from: lighthouse-axe, outcome: findings, to: quality-recovery }
+  - { id: quality-invalid, from: lighthouse-axe, outcome: invalid, to: closure-harness-recovery }
+  - { id: quality-harness, from: lighthouse-axe, outcome: harness-error, to: closure-harness-recovery }
+  - { id: quality-blocked, from: lighthouse-axe, outcome: blocked, to: stopped }
+  - { id: quality-retry, from: quality-recovery, outcome: pass, to: lighthouse-axe, retry: true, max_traversals: 2 }
+  - { id: quality-recovery-blocked, from: quality-recovery, outcome: blocked, to: stopped }
+  - { id: closure-harness-http, from: closure-harness-recovery, outcome: http, to: http-dom-proof, retry: true, max_traversals: 2 }
+  - { id: closure-harness-visual, from: closure-harness-recovery, outcome: visual, to: visual-proof, retry: true, max_traversals: 2 }
+  - { id: closure-harness-component, from: closure-harness-recovery, outcome: component, to: component-sentinels, retry: true, max_traversals: 2 }
+  - { id: closure-harness-backend, from: closure-harness-recovery, outcome: backend, to: backend-operations, retry: true, max_traversals: 2 }
+  - { id: closure-harness-quality, from: closure-harness-recovery, outcome: quality, to: lighthouse-axe, retry: true, max_traversals: 2 }
+  - { id: closure-harness-contract, from: closure-harness-recovery, outcome: contract, to: contract-a-gate, retry: true, max_traversals: 2 }
+  - { id: closure-harness-blocked, from: closure-harness-recovery, outcome: blocked, to: stopped }
+  - { id: closure-joined, from: closure-join, outcome: pass, to: contract-a-gate }
+  - { id: closure-join-blocked, from: closure-join, outcome: blocked, to: stopped }
+  - { id: contract-pass, from: contract-a-gate, outcome: pass, to: [structured-data-enrichment, webmcp-readiness] }
+  - { id: contract-findings, from: contract-a-gate, outcome: findings, to: closure-reconcile }
+  - { id: contract-invalid, from: contract-a-gate, outcome: invalid, to: closure-harness-recovery }
+  - { id: contract-blocked, from: contract-a-gate, outcome: blocked, to: stopped }
+  - { id: contract-reconcile-retry, from: closure-reconcile, outcome: pass, to: contract-a-gate, retry: true, max_traversals: 2 }
+  - { id: contract-reconcile-blocked, from: closure-reconcile, outcome: blocked, to: stopped }
+  - { id: structured-enrichment-pass, from: structured-data-enrichment, outcome: pass, to: elevation-join }
+  - { id: structured-enrichment-findings, from: structured-data-enrichment, outcome: findings, to: structured-data-enrichment-recovery }
+  - { id: structured-enrichment-na, from: structured-data-enrichment, outcome: not-applicable, to: elevation-join }
+  - { id: structured-enrichment-blocked, from: structured-data-enrichment, outcome: blocked, to: stopped }
+  - { id: structured-enrichment-retry, from: structured-data-enrichment-recovery, outcome: pass, to: structured-data-enrichment, retry: true, max_traversals: 2 }
+  - { id: structured-enrichment-recovery-blocked, from: structured-data-enrichment-recovery, outcome: blocked, to: stopped }
+  - { id: webmcp-readiness-pass, from: webmcp-readiness, outcome: pass, to: elevation-join }
+  - { id: webmcp-readiness-findings, from: webmcp-readiness, outcome: findings, to: webmcp-readiness-recovery }
+  - { id: webmcp-readiness-na, from: webmcp-readiness, outcome: not-applicable, to: elevation-join }
+  - { id: webmcp-readiness-blocked, from: webmcp-readiness, outcome: blocked, to: stopped }
+  - { id: webmcp-readiness-retry, from: webmcp-readiness-recovery, outcome: pass, to: webmcp-readiness, retry: true, max_traversals: 2 }
+  - { id: webmcp-readiness-recovery-blocked, from: webmcp-readiness-recovery, outcome: blocked, to: stopped }
+  - { id: elevation-joined, from: elevation-join, outcome: pass, to: handover }
+  - { id: elevation-join-blocked, from: elevation-join, outcome: blocked, to: stopped }

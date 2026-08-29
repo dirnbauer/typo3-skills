@@ -17,14 +17,7 @@ Continues `typo3-seo` from [full guide](full-guide.md).
 
 ### Schema Extension
 
-```bash
-ddev composer require brotkrueml/schema
-ddev typo3 extension:setup -e schema
-```
-
-Pick a `brotkrueml/schema` version that explicitly supports your TYPO3 core release.
-
-Features:
-- Type-safe schema.org implementation
-- WebPage, Organization, Article types
-- Event and Product schemas
+Use [`typo3-structured-data`](../../typo3-structured-data/SKILL.md) to inventory existing producers,
+resolve a current `brotkrueml/schema` version against the locked Core, perform guarded installation,
+select entity types, and verify rendered JSON-LD. Do not copy an extension-setup command from an
+older Core version without checking the installed CLI and package documentation.

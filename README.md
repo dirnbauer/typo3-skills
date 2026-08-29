@@ -2,7 +2,7 @@
 
 **Agent Skills for TYPO3 v14 development, upgrades and operations.**
 
-45 skills, plus an always-on rules layer, for AI coding agents working on TYPO3 projects — Claude
+52 skills, plus an always-on rules layer, for AI coding agents working on TYPO3 projects — Claude
 Code, Cursor, Codex, Gemini CLI, Windsurf, and anything else that reads `SKILL.md` files.
 
 This is the active repository for TYPO3 skills. It began as a focused extraction from
@@ -28,8 +28,8 @@ The installer writes to every client path it detects: `.claude/skills/`, `.curso
 
 ### The upgrade orchestrator
 
-**`typo3-upgrade-run`** is the centre of the collection: a v12/v13 → 14.3 LTS update run inside a
-local DDEV clone, under two sequential contracts.
+**`typo3-upgrade-run`** is the centre of the collection: a v12/v13 → 14.3 LTS evidence graph inside
+a local DDEV clone, under two sequential contracts.
 
 - **Invariance** — the migration must be *provably invisible* to visitors. Zero unexplained
   differences against a baseline frozen before any change, proven at three levels: HTTP metadata,
@@ -37,9 +37,12 @@ local DDEV clone, under two sequential contracts.
 - **Elevation** — performance, SEO, accessibility and security work, each separately approved and
   separately baselined, starting only after invariance closes.
 
-Every step runs as one loop protocol with preconditions, a snapshot rollback anchor, bounded
-iterations, classified findings, and abort conditions that escalate instead of thrashing. Each loop
-documents itself in its own numbered directory.
+The parent controller is a sealed directed graph: results activate cause-specific recovery paths,
+independent nodes can run in parallel, resource locks protect Composer/DDEV/browser/Solr/backend
+state, and the only cycles are explicitly bounded retries. Five leaf skills keep work small:
+`typo3-upgrade-intake`, `typo3-upgrade-baseline`, `typo3-upgrade-migration`,
+`typo3-upgrade-closure`, and `typo3-upgrade-retrospective`. Bounded loop directories remain as node
+evidence and backwards-compatible history.
 
 ### TYPO3 development
 
@@ -55,7 +58,8 @@ documents itself in its own numbered directory.
 
 ### Operations
 
-`typo3-ddev` · `typo3-scheduler-jobs` · `typo3-solr` · `typo3-seo` · `typo3-security` · `security-audit` ·
+`typo3-ddev` · `typo3-scheduler-jobs` · `typo3-solr` · `typo3-seo` · `typo3-structured-data` · `typo3-webmcp` ·
+`typo3-security` · `security-audit` ·
 `enterprise-readiness` · `typo3-accessibility` · `typo3-wcag22-aa-agentic` · `typo3-docs` ·
 `typo3-core-contributions` · `typo3-vite`
 
@@ -121,7 +125,7 @@ A rule answers *is this change allowed?*. A skill answers *how do I build this?*
 
 ## Vendored skills
 
-14 of the 45 are not authored by webconsulting and are vendored **byte-identical** so they stay
+14 of the 52 are not authored by webconsulting and are vendored **byte-identical** so they stay
 re-syncable and their attribution stays intact. Improvements live in separate
 `references/webconsulting-additions.md` overlays that never silently override upstream behaviour.
 
@@ -144,13 +148,11 @@ off.** Coverage is reported as reviewed-versus-total so the number cannot flatte
 Thresholds are ratchets set at measured values, so a regression fails the build rather than
 drifting quietly. CI runs the same script.
 
-Current: **all 26 owned skills ship an eval suite — 250 cases**, three vendored skills carry
-inherited suites, and the remaining vendored skills are exempt: the runner and the collision
-analyser skip them, so a suite added there would be a file no tool reads. 49 cases are
-human-reviewed, 136 are written and awaiting a signature, and 65 predate the status field. Reviewed
-and proposed cases both pass at **100%** under the offline grader; no scaffolded cases remain. A
-case counts as evidence only once a human signs it off (S5), so the reviewed number is the one that
-matters.
+Current: **all 38 owned skills ship an eval suite — 346 cases**; 14 vendored skills are exempt.
+52 cases across four skills are human-reviewed, 281 are proposed and awaiting a signature, and 13
+predate the status field. Reviewed and proposed cases both pass at **100%** under the offline grader;
+no scaffolded cases remain. A case counts as evidence only once a human signs it off (S5), so the
+reviewed number is the one that matters.
 
 ## Contributing
 
@@ -186,6 +188,11 @@ the upstream state recorded in [VENDORED.md](VENDORED.md).
 | `typo3-testing` | Use when setting up TYPO3 extension test infrastructure, writing unit/functional/E2E tests, con… | Netresearch |
 | `typo3-vite` | Use when configuring Vite 7 for TYPO3 v13/v14 LTS projects, setting up SCSS architecture with B… | Netresearch |
 | `architecture-decision-records` | Creates and reviews architecture decision records (ADRs), decision logs, and supersession histo… | webconsulting |
+| `typo3-upgrade-intake` | Read-only identity, dataset, URL, extension, credential and backup preflight for an upgrade graph | webconsulting |
+| `typo3-upgrade-baseline` | Builds deterministic source evidence and seals immutable Baseline A before migration | webconsulting |
+| `typo3-upgrade-migration` | Executes one authorized dependency, code, schema or data migration graph node | webconsulting |
+| `typo3-upgrade-closure` | Proves source-to-target parity, backend/runtime/rights/quality gates and local closure | webconsulting |
+| `typo3-upgrade-retrospective` | Converts past run/task evidence into problem, cause, solution and process controls | webconsulting |
 | `typo3-upgrade-run` | Update a TYPO3 v12 or v13 site to TYPO3 14.3 LTS inside a local DDEV project under two contract… | webconsulting |
 | `typo3-accessibility` | Audits and implements TYPO3 accessibility patterns for WCAG 2.2 AA, including Fluid templates, … | webconsulting |
 | `typo3-batch` | Plans and executes batch TYPO3 migrations and large-scale refactors across hooks, PSR-14 events… | webconsulting |
@@ -200,7 +207,8 @@ the upstream state recorded in [VENDORED.md](VENDORED.md).
 | `typo3-records-list-types` | Configures TYPO3 v14 Records module list types and custom backend views, including grid, compac… | webconsulting |
 | `typo3-rector` | Applies TYPO3 Rector upgrade patterns for PHP migrations toward TYPO3 v14, including Rector con… | webconsulting |
 | `typo3-security` | Hardens TYPO3 v14 installations and extensions with secure configuration, trusted hosts, file p… | webconsulting |
-| `typo3-seo` | Configures TYPO3 SEO for EXT:seo, metadata, hreflang, XML sitemaps, robots.txt, canonical URLs,… | webconsulting |
+| `typo3-seo` | Handles TYPO3 sitemaps, canonical URLs, hreflang, metadata, social previews and robots rules… | webconsulting |
+| `typo3-structured-data` | Audits, preserves, implements and verifies schema.org structured data and server-rendered JSON-LD… | webconsulting |
 | `typo3-shadcn-content-elements` | Produces, audits, and overhauls TYPO3 Content Blocks content elements styled with shadcn/ui pre… | webconsulting |
 | `typo3-solr` | Configures and debugs Apache Solr search for TYPO3, including EXT:solr, configsets, indexing qu… | webconsulting |
 | `typo3-translations` | Guides TYPO3 13/14 localization with locallang.xlf, labels.xlf, XLIFF 1.2 and 2.0, ICU MessageF… | webconsulting |

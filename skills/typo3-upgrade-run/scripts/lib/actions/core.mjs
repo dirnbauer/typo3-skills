@@ -12,9 +12,12 @@ import { emptyState, StateStore } from '../run/state.mjs';
 import { UrlGuard, assertPlausibleBaseUrl } from '../net/url-guard.mjs';
 import { collectEnvironment, compareEnvironment } from '../fingerprint/environment.mjs';
 import { collectContent, compareContent } from '../fingerprint/content.mjs';
-import { intOpt, listOpt } from '../cli/args.mjs';
+import { listOpt } from '../cli/args.mjs';
 import { renderStatus } from '../run/status.mjs';
 import { sha256 } from '../run/paths.mjs';
+import {
+  classifySiteSize, runtimeWindow, sizingEvidenceIssues,
+} from '../run/runtime.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const TEMPLATES = path.resolve(HERE, '../../../templates/run-directory');
@@ -24,11 +27,25 @@ export async function init({ values, paths, log, journal }) {
   const baseUrl = values['base-url'];
   if (!baseUrl) throw new HarnessError('--base-url is required for init');
 
-  const exists = await new StateStore(paths).exists();
+  const existingStore = new StateStore(paths);
+  const exists = await existingStore.exists();
   if (exists && !values.force) {
     throw new PreconditionError(
       `A run already exists at ${paths.root}. Use --force to reinitialise (this does not delete baselines).`,
     );
+  }
+  if (exists && values.force) {
+    const previous = await existingStore.read();
+    const carriesEvidence = previous.graph
+      || Object.values(previous.baselines ?? {}).some((baseline) => baseline.sealed)
+      || Object.keys(previous.loops ?? {}).length > 0
+      || (previous.snapshots ?? []).length > 0;
+    if (carriesEvidence) {
+      throw new PreconditionError(
+        'Refusing --force because this run contains sealed graph/baseline/loop/snapshot evidence. '
+        + 'Choose a new --run-dir; graph history is not destructive scratch state.',
+      );
+    }
   }
 
   // The base URL is operator input and becomes the allowlist, so it must be checked on its
@@ -41,11 +58,12 @@ export async function init({ values, paths, log, journal }) {
   const runId = `${new Date().toISOString().slice(0, 10)}-${slug(projectName)}`;
 
   for (const dir of [paths.root, paths.configDir, paths.manifestsDir, paths.baselineDir,
-                     paths.loopsDir, paths.approvalsDir, paths.decisionsDir, paths.reportDir]) {
+                     paths.loopsDir, paths.nodesDir, paths.approvalsDir, paths.decisionsDir, paths.reportDir]) {
     await mkdir(dir, { recursive: true });
   }
 
   await copyTemplate('config/run.yml', paths.runConfig);
+  await copyTemplate('config/upgrade-graph.yml', paths.graphDefinition);
   await copyTemplate('config/thresholds.yml', paths.thresholds);
   await copyTemplate('config/interactions.yml', path.join(paths.configDir, 'interactions.yml'));
   await copyTemplate(
@@ -54,11 +72,7 @@ export async function init({ values, paths, log, journal }) {
   );
   await copyTemplate('gitignore', path.join(paths.root, '.gitignore'));
 
-  const maxHours = intOpt(values, 'max-hours', 20);
-  if (maxHours < 1 || maxHours > 20) {
-    throw new PreconditionError('--max-hours must be between 1 and 20; the extended overnight ceiling is not extendable.');
-  }
-  const state = emptyState({ runId, now: new Date().toISOString(), maxHours });
+  const state = emptyState({ runId, now: new Date().toISOString() });
   state.project = {
     name: projectName,
     trusted_origin: url.origin,
@@ -69,10 +83,67 @@ export async function init({ values, paths, log, journal }) {
   await new StateStore(paths).write(state);
   await journal.append('transition', { from: null, to: 'P00', note: 'run initialised' });
 
-  log.success(`Initialised ${paths.root} (run ${runId}, origin ${url.origin}, deadline ${state.runtime.deadline_at})`);
-  log.info('Next: t3u env-fingerprint --write-baseline, then t3u selftest-determinism');
+  log.success(`Initialised ${paths.root} (run ${runId}, origin ${url.origin}; runtime unclassified)`);
+  log.info('Next: graph-init, complete the read-only P00 branches, write runtime-size.json, runtime-seal, then close intake-join.');
 
   return { exitCode: EXIT.PASS, verdict: 'pass', runId, trustedOrigin: url.origin, message: `run ${runId} initialised` };
+}
+
+export async function runtimeSeal({ values, paths, log, journal }) {
+  const evidenceArg = values.evidence;
+  if (!evidenceArg) throw new PreconditionError('--evidence is required for runtime-seal.');
+  const evidencePath = path.resolve(process.cwd(), evidenceArg);
+  if (!evidencePath.startsWith(`${paths.root}${path.sep}`)) {
+    throw new PreconditionError('Runtime sizing evidence must live inside the run directory.');
+  }
+
+  let evidence;
+  try { evidence = JSON.parse(await readFile(evidencePath, 'utf8')); }
+  catch (error) { throw new PreconditionError(`Cannot read runtime sizing evidence: ${error.message}`); }
+  const issues = sizingEvidenceIssues(evidence);
+  if (issues.length) {
+    throw new PreconditionError(`Runtime sizing evidence is incomplete:\n  - ${issues.join('\n  - ')}`);
+  }
+
+  const store = new StateStore(paths);
+  const state = await store.read();
+  if (state.runtime?.sealed_at || state.runtime?.deadline_at) {
+    throw new PreconditionError('The runtime profile is already sealed and cannot be changed or extended.');
+  }
+  const sizeProfile = classifySiteSize(evidence.metrics);
+  const window = runtimeWindow(state.runtime.started_at, sizeProfile);
+  const relativeEvidence = path.relative(paths.root, evidencePath);
+  await store.update((next) => {
+    next.runtime = {
+      ...next.runtime,
+      sealed_at: new Date().toISOString(),
+      size_profile: window.sizeProfile,
+      size_evidence_ref: relativeEvidence,
+      migration_cutoff_at: window.migrationCutoffAt,
+      deadline_at: window.deadlineAt,
+      max_hours: window.maxHours,
+      closure_reserve_hours: window.closureReserveHours,
+    };
+  });
+  await journal.append('note', {
+    note: 'runtime profile sealed',
+    size_profile: sizeProfile,
+    evidence_ref: relativeEvidence,
+    migration_cutoff_at: window.migrationCutoffAt,
+    deadline_at: window.deadlineAt,
+  });
+  log.success(
+    `Runtime ${sizeProfile}: ${window.maxHours}h hard deadline, `
+    + `${window.closureReserveHours}h closure reserve, migration cutoff ${window.migrationCutoffAt}.`,
+  );
+  return {
+    exitCode: EXIT.PASS,
+    verdict: 'pass',
+    sizeProfile,
+    evidence: relativeEvidence,
+    ...window,
+    message: `${sizeProfile} runtime profile sealed`,
+  };
 }
 
 export async function doctor({ values, paths, log }) {

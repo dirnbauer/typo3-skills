@@ -45,6 +45,14 @@
       "note": "Customer backend identity and context visibility are part of the editor setup."
     },
     {
+      "id": "typo3-backend-rights-trigger-pos-06",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "Can this TYPO3 project live with one main be_user_group for all normal editors, or must we preserve the existing roles?",
+      "expect_skill": "typo3-backend-rights",
+      "note": "Group-topology inventory and the explicit consolidation decision belong to backend authorization design."
+    },
+    {
       "id": "typo3-backend-rights-trigger-neg-01",
       "kind": "trigger-negative",
       "status": "proposed",
@@ -248,6 +256,21 @@
         "Verify the redirect lifecycle and integrity command using a real non-admin account."
       ],
       "note": "Covers installation-wide Redirects access with least privilege."
+    },
+    {
+      "id": "typo3-backend-rights-behaviour-15",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "For the upgrade, simplify every normal TYPO3 editor to one be_user_group. You can consolidate the legacy groups as part of the update.",
+      "assertions": [
+        "Inventories active be_groups, be_users.usergroup, be_groups.subgroup and material permission differences before recommending a topology.",
+        "Asks whether the project can live with one user-facing non-admin main group and explains the shared authorization boundary.",
+        "Clarifies that one user-facing membership still uses internal be_groups leaves and that there is no be_user_group table.",
+        "Preserves meaningful multi-role separation when the answer is no and audits each distinct role independently.",
+        "Treats topology approval, each user's append-versus-replace decision, legacy-group deletion and page-owner cutover as separate scopes.",
+        "Keeps a separate enabled login-capable administrator throughout."
+      ],
+      "note": "Prevents a convenience-driven group collapse from silently widening rights or removing memberships."
     }
   ]
 }

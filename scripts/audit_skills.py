@@ -445,6 +445,8 @@ SOURCE_MAP: dict[str, dict[str, str | None]] = {
     "typo3-rector": {"owner": "webconsulting", "url": None},
     "typo3-security": {"owner": "webconsulting", "url": None},
     "typo3-seo": {"owner": "webconsulting", "url": None},
+    "typo3-structured-data": {"owner": "webconsulting", "url": None},
+    "typo3-webmcp": {"owner": "webconsulting", "url": None},
     "typo3-simplify": {
         "owner": "Anthropic",
         "url": "https://github.com/anthropics/claude-plugins-official/tree/main/plugins/code-simplifier",

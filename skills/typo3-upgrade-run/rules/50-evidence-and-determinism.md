@@ -61,9 +61,10 @@ Before every capture, identically before and after:
 - Init script: **seed `Math.random` per capture** — this is what actually makes randomised carousels, shuffled teasers and generated element ids deterministic, and it is the single highest-leverage stabilisation. Pin `Date.now()` and `new Date()` to a fixed epoch plus a monotonic counter; a hard freeze divides by zero in real code. Patch `requestAnimationFrame` so pending frames can be cancelled before the shot.
 - CSS: `animation: none`, `transition: none`, `caret-color: transparent`, `scroll-behavior: auto`, `scrollbar-gutter: stable`.
 - Then: `document.fonts.ready` plus an explicit load of each declared face; pause and rewind every `<video>`; force lazy-load completion by stepped scroll to the bottom, wait until every `img[loading=lazy]` reports `complete`, scroll back to 0; seed the consent state from the sealed stabilization adapter as cookies or localStorage — **never by clicking the banner**, which is timing-dependent; warm image processing before the first capture.
-- Consent captures include the accepted default state and, when trigger selectors are configured,
-  `consent-modal-open`. Fallback overlay selectors and scroll-lock classes are configuration, never
-  project-specific selectors hard-coded in the harness.
+- Ordinary captures seed accepted consent. When trigger selectors are configured, a focused consent
+  sentinel journey captures the fresh banner and settings modal; `consent-modal-open` is not added
+  to the site-wide three-state matrix. Fallback overlay selectors and scroll-lock classes are
+  configuration, never project-specific selectors hard-coded in the harness.
 - Do **not** use `networkidle`. Use `domcontentloaded` plus fonts plus an in-flight-request quiet-period detector fed by the route handler, with a hard cap.
 
 ## 50.5 Third-party requests are blocked by default

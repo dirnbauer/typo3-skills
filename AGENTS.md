@@ -2,7 +2,7 @@
 
 Single source of truth for this collection: what each skill is for, when it triggers, and how they compose.
 
-**45 skills** · TYPO3 **14.3 LTS** target · PHP **8.4** standard (8.5 where it resolves)
+**52 skills** · TYPO3 **14.3 LTS** target · PHP **8.4** standard (8.5 where it resolves)
 
 ## Using a skill
 
@@ -23,7 +23,12 @@ Combine skills rather than merging them. `typo3-rector` + `typo3-testing` is the
 
 | Skill | Owner | What it does |
 |---|---|---|
-| `typo3-upgrade-run` | webconsulting | Update a TYPO3 v12 or v13 site to TYPO3 14.3 LTS inside a local DDEV project under two contracts. Invariance: the migration must be provably invisible… |
+| `typo3-upgrade-run` | webconsulting | Orchestrates a whole-project 12/13 → 14.3 run as a sealed evidence graph with contracts, outcome routes, locks and bounded retries |
+| `typo3-upgrade-intake` | webconsulting | Read-only project/data/site/extension/security preflight and graph tailoring before mutation |
+| `typo3-upgrade-baseline` | webconsulting | Deterministic pre-change URL, HTTP, DOM, pixel and component-journey evidence; seals immutable Baseline A |
+| `typo3-upgrade-migration` | webconsulting | Executes one authorized dependency/code/schema/data migration node with rollback and fixed-point proof |
+| `typo3-upgrade-closure` | webconsulting | Proves final parity, interactions, backend/rights/runtime/quality gates and emits the local closure certificate |
+| `typo3-upgrade-retrospective` | webconsulting | Audits past repositories, run artifacts and tasks into problem/cause/fix/control improvements |
 | `typo3-extension-upgrade` | **Netresearch** (vendored) | Use when upgrading TYPO3 extensions to newer LTS versions (v11->v12, v12->v13, v13->v14 - v14.3 LTS is the current target), running Extension Scanner,… |
 | `typo3-rector` | webconsulting | Applies TYPO3 Rector upgrade patterns for PHP migrations toward TYPO3 v14, including Rector configuration, dry runs, rule sets, ViewFactory, Extbase r… |
 | `typo3-fractor` | webconsulting | Automates non-PHP TYPO3 upgrade migrations with Fractor for FlexForms, TypoScript, Fluid, YAML, XLIFF translation files, Htaccess, and composer.json c… |
@@ -65,7 +70,9 @@ Combine skills rather than merging them. `typo3-rector` + `typo3-testing` is the
 | `typo3-vite` | **Netresearch** (vendored) | Use when configuring Vite 7 for TYPO3 v13/v14 LTS projects, setting up SCSS architecture with Bootstrap 5.3 theming, creating entrypoints per content … |
 | `typo3-scheduler-jobs` | webconsulting | Audits, plans, configures, groups, and verifies TYPO3 14.3 Scheduler tasks for a specific installation, including safe Core, extension, and Solr jobs… |
 | `typo3-solr` | webconsulting | Configures and debugs Apache Solr search for TYPO3, including EXT:solr, configsets, indexing queues, Tika/file indexing, facets, suggest, routing, PSR… |
-| `typo3-seo` | webconsulting | Configures TYPO3 SEO for EXT:seo, metadata, hreflang, XML sitemaps, robots.txt, canonical URLs, structured data, Core Web Vitals, SEO extensions, and … |
+| `typo3-seo` | webconsulting | Makes TYPO3 pages discoverable through sitemaps, canonical URLs, hreflang, metadata, social previews and robots rules; routes page-type JSON-LD elsewhere |
+| `typo3-structured-data` | webconsulting | Audits, preserves, implements and verifies schema.org/JSON-LD mappings from visible TYPO3 records, including FAQ, news, organizations, products and events |
+| `typo3-webmcp` | webconsulting | Exposes secure, task-specific TYPO3 frontend journeys through Chrome's native WebMCP API in project-owned sitepackage/Vite code |
 | `typo3-security` | webconsulting | Hardens TYPO3 v14 installations and extensions with secure configuration, trusted hosts, file permissions, Install Tool protection, backend user secur… |
 | `security-audit` | **Netresearch** (vendored) | Use when conducting security assessments \u2014 OWASP Top 10 / API / LLM, CWE Top 25, CVSS scoring \u2014 auditing PHP/TYPO3, APIs, frontend, Terrafor… |
 | `typo3-accessibility` | webconsulting | Audits and implements TYPO3 accessibility patterns for WCAG 2.2 AA, including Fluid templates, PHP helpers, JavaScript widgets, forms, focus states, A… |
@@ -86,12 +93,12 @@ Combine skills rather than merging them. `typo3-rector` + `typo3-testing` is the
 
 | Profile | Load | For |
 |---|---|---|
-| **Update run** | `typo3-upgrade-run`, `typo3-ddev`, `typo3-vite`, `typo3-wcag22-aa-agentic`, `typo3-solr`, `typo3-visual-editor`, `typo3-security`, `webconsulting-branding` | A complete v12/v13 → 14.3 update on a local DDEV clone |
+| **Update run** | `typo3-upgrade-run`, the ready `typo3-upgrade-{intake,baseline,migration,closure}` leaf, plus applicable `typo3-ddev`, `typo3-vite`, `typo3-solr`, `typo3-visual-editor`, `typo3-backend-rights`, `typo3-structured-data`, `typo3-webmcp`, `typo3-security` | A complete v12/v13 → 14.3 evidence graph on a local DDEV clone |
 | **Extension development** | `typo3-v14-reference`, `typo3-content-blocks`, `typo3-datahandler`, `typo3-translations`, `typo3-testing` | Building v14 extensions |
 | **Migration** | `typo3-rector`, `typo3-fractor`, `typo3-extension-upgrade`, `php-modernization`, `typo3-batch` | Moving code forward |
 | **Quality gate** | `typo3-conformance`, `typo3-simplify`, `typo3-testing`, `security-audit`, `enterprise-readiness` | Pre-release review |
 | **Release** | `typo3-initial-release`, `typo3-docs`, `typo3-testing` | Publishing to TER/Packagist |
-| **Operations** | `typo3-ddev`, `typo3-scheduler-jobs`, `typo3-solr`, `typo3-seo`, `typo3-security` | Running and hardening a site |
+| **Operations** | `typo3-ddev`, `typo3-scheduler-jobs`, `typo3-solr`, `typo3-seo`, `typo3-structured-data`, `typo3-webmcp`, `typo3-security` | Running, exposing and hardening a site correctly |
 
 ## The rules layer
 
@@ -117,8 +124,8 @@ and keeps `SKILL.md` under 500 lines with detail in `references/`.
 ```
 
 A generated eval is a **draft**, a hand-written one **proposed**, and only a **reviewed** case
-signed by a person counts as coverage. Current: 26/26 owned skills have suites, 4/26
-human-reviewed, the other 22 awaiting signature. No scaffolded cases remain.
+signed by a person counts as coverage. Current: 38/38 owned skills have suites, 4/38 have
+human-reviewed coverage, and 35 suites include proposed cases awaiting signature.
 
 ## Conventions
 

@@ -3,9 +3,12 @@
 schema: typo3-upgrade-run/run-config@1
 
 runtime:
-  max_hours: 20
-  closure_reserve_hours: 4
-  # At T+16h stop starting migration iterations and spend the reserve on proof and handover.
+  size_evidence: "nodes/intake/runtime-size.json"
+  # t3u runtime-seal selects this mechanically; callers do not choose or extend it.
+  profiles:
+    small: { max_hours: 8,  migration_cutoff_hours: 6,  closure_reserve_hours: 2 }
+    large: { max_hours: 12, migration_cutoff_hours: 9,  closure_reserve_hours: 3 }
+    huge:  { max_hours: 14, migration_cutoff_hours: 10, closure_reserve_hours: 4 }
 
 project:
   name: ""

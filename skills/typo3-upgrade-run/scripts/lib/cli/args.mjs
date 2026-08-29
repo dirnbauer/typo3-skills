@@ -14,6 +14,7 @@ import { HarnessError } from './exit-codes.mjs';
 export const GLOBAL_OPTIONS = {
   'run-dir': { type: 'string', default: '.typo3-update', help: 'Run directory (must be inside the project)' },
   loop: { type: 'string', help: 'Loop directory name, e.g. 300-invariance-closure' },
+  node: { type: 'string', help: 'Upgrade graph node id' },
   config: { type: 'string', help: 'Run configuration file' },
   'env-file': { type: 'string', help: 'Explicit secret file. No .env is ever loaded implicitly.' },
   'allow-origin': { type: 'string', multiple: true, help: 'Additional allowed origin (repeatable)' },
@@ -29,13 +30,27 @@ export const COMMANDS = {
   init: { summary: 'Create the run directory and initial state', options: {
     'base-url': { type: 'string' }, 'project-name': { type: 'string' },
     'ddev-project': { type: 'string' },
-    languages: { type: 'string' }, 'max-hours': { type: 'string', default: '20' },
-    force: { type: 'boolean', default: false },
+    languages: { type: 'string' }, force: { type: 'boolean', default: false },
+  }},
+  'runtime-seal': { summary: 'Classify small/large/huge from intake evidence and seal hard timings', options: {
+    evidence: { type: 'string' },
   }},
   doctor: { summary: 'Check the environment can run the harness', options: {
     'base-url': { type: 'string' }, 'ddev-project': { type: 'string' },
   }},
   status: { summary: 'Print the run dashboard', options: {} },
+  'graph-init': { summary: 'Seal and initialise the upgrade state graph', options: {
+    definition: { type: 'string' },
+  }},
+  'graph-status': { summary: 'Print graph nodes, locks, and terminal state', options: {} },
+  'graph-next': { summary: 'List ready nodes and safe parallel sets', options: {} },
+  'graph-validate': { summary: 'Validate graph definition, state, locks, and retry bounds', options: {} },
+  'node-open': { summary: 'Acquire resources and open one ready graph node', options: {
+    snapshot: { type: 'string' }, 'rollback-ref': { type: 'string' }, approval: { type: 'string' },
+  }},
+  'node-close': { summary: 'Close a node with evidence and activate outcome routes', options: {
+    outcome: { type: 'string' }, evidence: { type: 'string' }, 'evidence-loop': { type: 'string' },
+  }},
   'validate-run': { summary: 'Validate state, loop documents, and evidence references', options: {} },
   'loop-start': { summary: 'Scaffold a planned loop from the protocol templates', options: {
     id: { type: 'string' }, track: { type: 'string' }, slug: { type: 'string' },
@@ -192,7 +207,7 @@ export function helpText(command) {
     .filter(([k]) => k !== 'help')
     .map(([k, v]) => `  ${k.padEnd(22)} ${v.summary}`);
   return [
-    't3u — TYPO3 update equality prover',
+    't3u — TYPO3 update evidence graph and equality prover',
     '',
     'Usage: t3u <command> [options]',
     '',

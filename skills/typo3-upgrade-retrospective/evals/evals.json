@@ -1,0 +1,56 @@
+{
+  "skill_name": "typo3-upgrade-retrospective",
+  "skill_type": "preference",
+  "evals": [
+    {
+      "id": "retro-pos-fleet",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "expect_skill": "typo3-upgrade-retrospective",
+      "prompt": "Review our last six TYPO3 upgrade tasks: what users requested, what the agents asked, what took too long, and which failures belong in the process."
+    },
+    {
+      "id": "retro-pos-stale",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "expect_skill": "typo3-upgrade-retrospective",
+      "prompt": "Git says the v14 branch is done, but the run status is old and another project has no update folder. Tell me what is actually proven."
+    },
+    {
+      "id": "retro-neg-fix",
+      "kind": "trigger-negative",
+      "status": "proposed",
+      "expect_skill": "typo3-upgrade-migration",
+      "prompt": "Baseline is sealed; implement the next manual TYPO3 API migration node."
+    },
+    {
+      "id": "retro-neg-code-review",
+      "kind": "trigger-negative",
+      "status": "proposed",
+      "expect_skill": "typo3-simplify",
+      "prompt": "Simplify this TYPO3 extension for clarity and maintainability without changing its behavior."
+    },
+    {
+      "id": "retro-behaviour-missing-evidence",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "The commit message says 'upgrade complete' and composer.lock contains TYPO3 14. There are no capture reports, so infer that visual parity passed.",
+      "assertions": [
+        "Separates core-version implementation evidence from invariance proof",
+        "Labels missing capture/run artifacts as an evidence gap",
+        "Recommends closure execution instead of reconstructing a green verdict"
+      ]
+    },
+    {
+      "id": "retro-behaviour-duration",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Estimate precise upgrade hours for every project even though only a few task runtimes and capture counts are available.",
+      "assertions": [
+        "Does not invent wall-clock totals",
+        "Reports exact observed runtimes separately from qualitative cost drivers",
+        "Names the telemetry limitation in the final matrix"
+      ]
+    }
+  ]
+}

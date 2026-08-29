@@ -1,5 +1,6 @@
 /**
- * state.json — the ONLY source a loop may read its preconditions from.
+ * state.json — the ONLY source a graph node or bounded evidence loop may read its
+ * preconditions from.
  *
  * Written atomically (tmp + rename) because a half-written state file is worse than none:
  * it still looks authoritative.
@@ -17,19 +18,19 @@ export const STATE_SCHEMA = 'typo3-upgrade-run/state@1';
 
 export const LOOP_VERDICTS = Object.freeze(['planned', 'open', 'green', 'aborted', 'superseded', 'invalid']);
 
-export function emptyState({ runId, now, maxHours = 20 }) {
-  const started = Date.parse(now);
-  const deadlineAt = Number.isFinite(started)
-    ? new Date(started + maxHours * 60 * 60 * 1000).toISOString()
-    : now;
+export function emptyState({ runId, now }) {
   return {
     schema: STATE_SCHEMA,
     run_id: runId,
     runtime: {
       started_at: now,
-      deadline_at: deadlineAt,
-      max_hours: maxHours,
-      closure_reserve_hours: 4,
+      sealed_at: null,
+      size_profile: null,
+      size_evidence_ref: null,
+      migration_cutoff_at: null,
+      deadline_at: null,
+      max_hours: null,
+      closure_reserve_hours: null,
     },
     project: { name: '', trusted_origin: '', ddev_project: '', languages: [], run_dir: '.typo3-update' },
     target: {
@@ -45,6 +46,7 @@ export function emptyState({ runId, now, maxHours = 20 }) {
     },
     selftest: { status: 'never-run', at: null, lock_hash: null, coverage: null, quarantined_captures: [] },
     manifest: { path: 'manifests/url-manifest.json', hash: null, seed: '' },
+    graph: null,
     loops: {},
     gates: {},
     approvals: [],
@@ -79,6 +81,46 @@ export class StateStore {
       }
       throw err;
     }
+    return this.#parse(raw);
+  }
+
+  /** Atomic: write a temp file, then rename over the target under a lock. */
+  async write(state) {
+    await mkdir(path.dirname(this.paths.statePath), { recursive: true });
+    const lock = await this.#acquireLock();
+    try {
+      await this.#writeUnlocked(state);
+    } finally {
+      await lock();
+    }
+    return state;
+  }
+
+  async update(mutator) {
+    return this.transaction(mutator);
+  }
+
+  /** Read-modify-write while holding one lock, so parallel graph nodes cannot lose updates. */
+  async transaction(mutator) {
+    await mkdir(path.dirname(this.paths.statePath), { recursive: true });
+    const lock = await this.#acquireLock();
+    try {
+      let raw;
+      try { raw = await readFile(this.paths.statePath, 'utf8'); }
+      catch (err) {
+        if (err.code === 'ENOENT') throw new PreconditionError(`No state file at ${this.paths.statePath}. Run "t3u init" first.`);
+        throw err;
+      }
+      const state = this.#parse(raw);
+      const next = (await mutator(state)) ?? state;
+      await this.#writeUnlocked(next);
+      return next;
+    } finally {
+      await lock();
+    }
+  }
+
+  #parse(raw) {
     let state;
     try { state = JSON.parse(raw); }
     catch (err) { throw new InvalidRunError(`state.json is not valid JSON: ${err.message}`); }
@@ -92,29 +134,15 @@ export class StateStore {
     return state;
   }
 
-  /** Atomic: write a temp file, then rename over the target under a lock. */
-  async write(state) {
+  async #writeUnlocked(state) {
     state.updated_at = this.now();
     const errors = stateSchemaErrors(state);
     if (errors.length) {
       throw new InvalidRunError(`state schema validation failed:\n  - ${errors.join('\n  - ')}`, { errors });
     }
-    await mkdir(path.dirname(this.paths.statePath), { recursive: true });
-    const lock = await this.#acquireLock();
-    try {
-      const tmp = `${this.paths.statePath}.tmp`;
-      await writeFile(tmp, `${JSON.stringify(state, null, 2)}\n`, 'utf8');
-      await rename(tmp, this.paths.statePath);
-    } finally {
-      await lock();
-    }
-    return state;
-  }
-
-  async update(mutator) {
-    const state = await this.read();
-    const next = (await mutator(state)) ?? state;
-    return this.write(next);
+    const tmp = `${this.paths.statePath}.tmp`;
+    await writeFile(tmp, `${JSON.stringify(state, null, 2)}\n`, 'utf8');
+    await rename(tmp, this.paths.statePath);
   }
 
   async #acquireLock() {

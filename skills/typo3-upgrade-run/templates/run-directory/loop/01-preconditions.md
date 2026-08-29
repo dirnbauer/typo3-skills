@@ -46,7 +46,7 @@ Standard checks for a Contract A loop:
 | PRE-05 | `content_fingerprint == manifests.content.sealed` |
 | PRE-06 | `rollback_ref != null`; `snapshot != null` before stateful work |
 | PRE-07 | every loop in `depends_on` is `green` |
-| PRE-08 | loop 100: `now < deadline_at - closure_reserve`; loop 300: `now < deadline_at` |
+| PRE-08 | P05–P10: `now < state.runtime.migration_cutoff_at`; P11–P13: `now < state.runtime.deadline_at` |
 
 Contract B loops add:
 

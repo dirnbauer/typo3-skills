@@ -18,6 +18,7 @@ import { StateStore, assertLoopTransition } from '../run/state.mjs';
 import { assertLiveInputs, readEvidenceContext } from '../run/evidence.mjs';
 import { loopDocSchemaErrors } from '../run/schema.mjs';
 import { validateReport } from '../report/write.mjs';
+import { graphValidate } from './graph.mjs';
 
 const exec = promisify(execFile);
 const TEMPLATE_DIR = path.resolve(
@@ -245,6 +246,7 @@ export async function validateRun({ paths, log }) {
     try { await readEvidenceContext(paths); } catch (error) { issues.push(error.message); }
   }
   if (issues.length) throw new PreconditionError(`Run validation failed:\n  - ${issues.join('\n  - ')}`);
+  if (state.graph) await graphValidate({ paths, log });
   log.success('Run directory, state schema, loop documents, and evidence references are valid.');
   return { exitCode: EXIT.PASS, verdict: 'pass', loops: Object.keys(state.loops).length, message: 'run valid' };
 }

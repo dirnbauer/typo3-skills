@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * t3u — TYPO3 update equality prover.
+ * t3u — TYPO3 update evidence-graph orchestrator and equality prover.
  *
  * One entrypoint, subcommands, and exactly one place that decides the exit code
  * (lib/cli/command.mjs). That structure is the fix for the v1 defect where three actions
@@ -12,7 +12,7 @@
 import { parse, helpText } from './lib/cli/args.mjs';
 import { runCommand } from './lib/cli/command.mjs';
 import { EXIT } from './lib/cli/exit-codes.mjs';
-import { init, doctor, status, envFingerprint, contentFingerprint } from './lib/actions/core.mjs';
+import { init, runtimeSeal, doctor, status, envFingerprint, contentFingerprint } from './lib/actions/core.mjs';
 import { discoverUrls } from './lib/actions/discover.mjs';
 import { capture } from './lib/actions/capture.mjs';
 import {
@@ -28,11 +28,21 @@ import {
   snapshotCreate,
   validateRun,
 } from './lib/actions/lifecycle.mjs';
+import {
+  graphInit, graphNext, graphStatus, graphValidate, nodeClose, nodeOpen,
+} from './lib/actions/graph.mjs';
 
 const ACTIONS = {
   init,
+  'runtime-seal': runtimeSeal,
   doctor,
   status,
+  'graph-init': graphInit,
+  'graph-status': graphStatus,
+  'graph-next': graphNext,
+  'graph-validate': graphValidate,
+  'node-open': nodeOpen,
+  'node-close': nodeClose,
   'validate-run': validateRun,
   'loop-start': loopStart,
   'loop-open': loopOpen,

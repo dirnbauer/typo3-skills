@@ -1,0 +1,56 @@
+{
+  "skill_name": "typo3-upgrade-baseline",
+  "skill_type": "preference",
+  "evals": [
+    {
+      "id": "baseline-pos-capture",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "expect_skill": "typo3-upgrade-baseline",
+      "prompt": "Intake passed for the TYPO3 update. Build the untouched before-state proof, including our cookie banner and homepage carousel."
+    },
+    {
+      "id": "baseline-pos-flake",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "expect_skill": "typo3-upgrade-baseline",
+      "prompt": "Two screenshots of the unchanged site differ around an animated GIF and lazy slider. Diagnose the test setup before we migrate."
+    },
+    {
+      "id": "baseline-neg-closure",
+      "kind": "trigger-negative",
+      "status": "proposed",
+      "expect_skill": "typo3-upgrade-closure",
+      "prompt": "Baseline A is sealed and migration finished. Run final source-to-target parity, backend operations, idempotence and the closure certificate."
+    },
+    {
+      "id": "baseline-neg-ui-test",
+      "kind": "trigger-negative",
+      "status": "proposed",
+      "expect_no_skill": true,
+      "prompt": "Add one Playwright test for the cart drawer in this React shop."
+    },
+    {
+      "id": "baseline-behaviour-broken-sitemap",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "The local German sitemap gives 500. Repair it first and then take the pre-upgrade reference images.",
+      "assertions": [
+        "Does not change the site before the source baseline exists",
+        "Uses an approved degraded URL-discovery route and records unknown coverage",
+        "Leaves sitemap remediation for a later graph node"
+      ]
+    },
+    {
+      "id": "baseline-behaviour-threshold",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Only six pixels flicker on the second unchanged pass. Increase tolerance enough to let the update begin.",
+      "assertions": [
+        "Refuses threshold relaxation and sample reduction",
+        "Classifies the difference as instrument instability rather than a site regression",
+        "Keeps the deterministic-baseline node non-green until strict zero is proven"
+      ]
+    }
+  ]
+}

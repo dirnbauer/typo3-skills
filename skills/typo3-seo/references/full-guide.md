@@ -4,7 +4,7 @@ Read only the section that matches the current task. These files continue the ma
 
 ## Sections
 
-- [6. Structured Data (JSON-LD)](06-structured-data-json-ld.md)
+- [6. Structured Data routing](06-structured-data-json-ld.md)
 - [7. Performance SEO](07-performance-seo.md)
 - [8. SEO Checklist](08-seo-checklist.md)
 - [9. SEO Extensions (TYPO3 v14)](09-seo-extensions-typo3-v14.md)

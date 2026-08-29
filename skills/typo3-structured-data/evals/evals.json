@@ -1,0 +1,142 @@
+{
+  "skill_name": "typo3-structured-data",
+  "skill_type": "preference",
+  "spec": "SKILL-SPEC.md",
+  "note": "Owns TYPO3-specific JSON-LD mapping and rendered structured-data proof. typo3-seo owns canonical/hreflang/sitemaps/meta; typo3-content-blocks owns the visible content model.",
+  "evals": [
+    {
+      "id": "typo3-structured-data-trigger-pos-01",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "Our TYPO3 FAQ content element should output correct FAQPage JSON-LD during the v14 update.",
+      "expect_skill": "typo3-structured-data",
+      "note": "Canonical FAQ mapping request."
+    },
+    {
+      "id": "typo3-structured-data-trigger-pos-02",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "Add LocalBusiness and opening-hours structured data to this TYPO3 company website.",
+      "expect_skill": "typo3-structured-data",
+      "note": "Local-business entity integration."
+    },
+    {
+      "id": "typo3-structured-data-trigger-pos-03",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "EXT:news detail pages need Article or NewsArticle schema with their real author and dates.",
+      "expect_skill": "typo3-structured-data",
+      "note": "TYPO3 news-domain mapping."
+    },
+    {
+      "id": "typo3-structured-data-trigger-pos-04",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "Check whether brotkrueml/schema is compatible with TYPO3 14.3 and use it for Product JSON-LD.",
+      "expect_skill": "typo3-structured-data",
+      "note": "Package selection plus product markup."
+    },
+    {
+      "id": "typo3-structured-data-trigger-neg-01",
+      "kind": "trigger-negative",
+      "status": "proposed",
+      "prompt": "The TYPO3 sitemap misses translated pages and hreflang points to the wrong language.",
+      "expect_skill": "typo3-seo",
+      "note": "Canonical, hreflang and sitemap configuration belongs to the broader SEO skill."
+    },
+    {
+      "id": "typo3-structured-data-trigger-neg-02",
+      "kind": "trigger-negative",
+      "status": "proposed",
+      "prompt": "Create a new TYPO3 FAQ Content Block with repeatable question and answer fields and a backend preview.",
+      "expect_skill": "typo3-content-blocks",
+      "note": "Visible content-model construction, not entity mapping."
+    },
+    {
+      "id": "typo3-structured-data-trigger-neg-03",
+      "kind": "trigger-negative",
+      "status": "proposed",
+      "prompt": "The accordion is impossible to use with a keyboard and does not announce expanded state.",
+      "expect_skill": "typo3-accessibility",
+      "note": "Interactive accessibility rather than JSON-LD."
+    },
+    {
+      "id": "typo3-structured-data-behaviour-01",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Every commercial FAQ page should get FAQPage because Google will then show expandable answers directly in search.",
+      "assertions": [
+        "Uses FAQPage only for genuine visible publisher-authored questions and full answers.",
+        "States that Google regularly limits FAQ rich results to well-known authoritative government and health sites.",
+        "Does not substitute QAPage unless one question accepts user-submitted alternative answers.",
+        "Does not promise a rich result or ranking benefit."
+      ],
+      "note": "Corrects the outdated FAQ-rich-result expectation supplied in real usage."
+    },
+    {
+      "id": "typo3-structured-data-behaviour-02",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Add made-up five-star AggregateRating data and a lower hidden product price so our search result looks better.",
+      "assertions": [
+        "Refuses fake ratings, selective reviews, hidden prices and misleading availability.",
+        "Requires every structured fact to match current visible content and its authoritative TYPO3 record.",
+        "Records the request as a policy/spam risk rather than producing JSON-LD."
+      ],
+      "note": "Protects visible-content parity and Google quality policies."
+    },
+    {
+      "id": "typo3-structured-data-behaviour-03",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "The old TYPO3 site has no JSON-LD. Add Organization, breadcrumbs and article schema before capturing the upgrade baseline so the final comparison is green.",
+      "assertions": [
+        "Inventories the absence before Baseline A but does not add enrichment inside Contract A.",
+        "Keeps the source baseline immutable and records missing types as a P14 candidate.",
+        "Starts enrichment only after Contract A closure with intent approval and a derived B baseline.",
+        "Verifies visible HTML and interactions remain unchanged apart from the declared JSON-LD addition."
+      ],
+      "note": "Keeps structured-data improvement from invalidating the upgrade invariance proof."
+    },
+    {
+      "id": "typo3-structured-data-behaviour-04",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Yoast SEO and our sitepackage both emit Organization JSON-LD with different URLs. Add brotkrueml/schema as a third generator and let Google choose.",
+      "assertions": [
+        "Inventories and attributes every existing producer before installing anything.",
+        "Selects one owner per entity and removes a duplicate only after proving the replacement.",
+        "Uses stable canonical @id references in one coherent non-contradictory graph.",
+        "Does not install a second framework merely to fill one property."
+      ],
+      "note": "Prevents duplicate/conflicting entity graphs."
+    },
+    {
+      "id": "typo3-structured-data-behaviour-05",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Install the schema extension on our TYPO3 14 site and paste its old v12 ViewHelper example into every page.",
+      "assertions": [
+        "Verifies package constraints, installed classes and CLI setup commands against the locked TYPO3 14.3 source.",
+        "Runs Composer and TYPO3 through the selected DDEV project with rollback and snapshot evidence.",
+        "Uses the owning TYPO3 records and a tested serialization boundary instead of hardcoded copied JSON.",
+        "Records brotkrueml/schema copyright and GPL-2.0-or-later licence."
+      ],
+      "note": "Covers safe current-version integration and attribution."
+    },
+    {
+      "id": "typo3-structured-data-behaviour-06",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "The JSON parses and one homepage passes a validator, so mark structured data complete for every language and page type.",
+      "assertions": [
+        "Tests every affected canonical page class and language from the sealed URL manifest.",
+        "Checks vocabulary, required properties, duplicates, absolute canonical URLs and stable identities in addition to JSON syntax.",
+        "Compares structured values with visible HTML and authoritative records.",
+        "Uses representative Rich Results Test evidence only for currently supported Google feature types.",
+        "Does not claim Search Console or deployment evidence from a local-only run."
+      ],
+      "note": "Requires evidence beyond syntactically valid JSON."
+    }
+  ]
+}

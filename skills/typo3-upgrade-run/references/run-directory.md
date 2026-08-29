@@ -9,11 +9,12 @@ Nothing in this skill is "remembered". It is written down, and the gates read wh
 ```
 .typo3-update/
 ├── STATUS.md                       human dashboard, regenerated from state.json
-├── state.json                      the machine state, including the 20h deadline — the ONLY precondition source
-├── journal.jsonl                   append-only: every command, argv, cwd, exit code, duration
+├── state.json                      graph + evidence state and sealed 8h/12h/14h deadline — the ONLY precondition source
+├── journal.jsonl                   append-only: commands, nodes, edges, locks, verdicts
 ├── .gitignore                      ignores artifacts and shots; keeps every .md and .json
 ├── config/
 │   ├── run.yml                     domain, languages, golden paths, budgets, contract-B opt-ins
+│   ├── upgrade-graph.yml           sealed nodes, outcome edges, resources, retry bounds
 │   ├── sample.txt                  S_A — the frozen URL sample; never edited after sealing
 │   └── thresholds.yml              visual thresholds, loop budgets, contract-B targets
 ├── manifests/
@@ -46,6 +47,9 @@ Nothing in this skill is "remembered". It is written down, and the gates read wh
 │       ├── 06-exit.md
 │       ├── report.json             schema-validated machine mirror
 │       └── artifacts/              shots, diffs, JSON reports, logs
+├── nodes/
+│   └── <node-id>/
+│       └── result.json             last outcome; full attempt history remains in state/journal
 ├── approvals/
 │   ├── APPROVALS.md                index
 │   └── APR-nnn-<slug>.md           one record per approval
@@ -58,11 +62,21 @@ Nothing in this skill is "remembered". It is written down, and the gates read wh
     └── handover-deployment.md
 ```
 
-## One directory per scaffolded work loop, seven documents per directory
+## Graph nodes and bounded evidence loops
 
-Every scaffolded work-loop directory contains the same seven documents. Default Contract A creates
-them only for loops 100 and 300. Machine-managed determinism 000 and Baseline A sealing use their
-own schema-validated reports, locks and manifests and do not duplicate those seven documents.
+The graph is the parent controller. `t3u graph-init` hashes `config/upgrade-graph.yml` and creates
+`state.json.graph.nodes`, `.edges`, and `.locks`. `t3u node-open` acquires declared resources;
+`t3u node-close` writes `nodes/<node-id>/result.json`, appends journal events, and activates only
+the edges matching its observed outcome.
+
+The `nodes/` result is a convenient last-result view, not the full history. Attempt history and
+edge traversal counts live in `state.json`; the append-only `journal.jsonl` is the audit trail.
+
+A scaffolded loop is optional bounded evidence within one proof/migration node. It still contains
+seven fixed documents so old runs and existing report tooling remain readable.
+
+Every scaffolded evidence-loop directory contains the same seven documents. Machine-managed
+determinism 000 and Baseline A sealing use their own schema-validated reports, locks and manifests.
 
 | File | Holds | Written at protocol step | Mutability |
 |---|---|---|---|
@@ -113,14 +127,15 @@ The schema enforces two rules mechanically rather than by convention: a Contract
 
 ## Naming
 
-`loops/<NNN>-<track>-<slug>/` — zero-padded id, track, kebab-case slug. The id sorts chronologically and the band says what kind of loop it is:
+`loops/<NNN>-<track>-<slug>/` — zero-padded compatibility id, track, kebab-case slug. The owning
+graph node belongs in the charter and evidence. The bands remain:
 
 | Band | Purpose |
 |---|---|
 | `000–009` | harness (determinism self-test, baseline sealing) |
 | `010–099` | reserved; blocker remediation normally stays in loop 100 |
-| `100–199` | parent migration loop (default: 100) |
-| `200–299` | reserved; conditional feature parity normally stays in loop 100 |
+| `100–199` | bounded migration-node evidence |
+| `200–299` | conditional feature-node evidence |
 | `300–399` | closure |
 | `500–899` | elevation (Contract B) |
 | `900–999` | legacy reporting ids; current reporting has no fix loop |
@@ -137,6 +152,7 @@ Whether the run directory is committed at all is the user's call — ask once, a
 
 ## Resuming
 
-A new session resumes by reading `state.json`, then `STATUS.md` for orientation, then the `06-exit.md` of the last loop with `verdict: green` and the `00-charter.md` of the first one that is not.
+A new session resumes by reading `state.json`, validating the graph hash/locks, and running
+`t3u graph-next`. Then read evidence only for ready/running nodes and the last relevant bounded loop.
 
 It must not resume by reading the conversation. A transcript records what was intended; `state.json` records what actually happened, and only the second one is safe to act on.

@@ -24,9 +24,9 @@
       "id": "typo3-seo-trigger-pos-03",
       "kind": "trigger-positive",
       "status": "proposed",
-      "prompt": "Add Open Graph tags and structured data to the article pages.",
+      "prompt": "Add Open Graph and Twitter Card tags to the article pages so shared links have correct previews.",
       "expect_skill": "typo3-seo",
-      "note": "Metadata and schema.org."
+      "note": "Social metadata and previews."
     },
     {
       "id": "typo3-seo-trigger-pos-04",
@@ -51,6 +51,14 @@
       "prompt": "Draft the accessibility statement for the EAA deadline.",
       "expect_skill": "typo3-wcag22-aa-agentic",
       "note": "A different compliance regime."
+    },
+    {
+      "id": "typo3-seo-trigger-neg-03",
+      "kind": "trigger-negative",
+      "status": "proposed",
+      "prompt": "Map TYPO3 FAQ, news and product records to one validated schema.org JSON-LD graph.",
+      "expect_skill": "typo3-structured-data",
+      "note": "Entity mapping and JSON-LD now have a dedicated TYPO3 skill."
     }
   ]
 }

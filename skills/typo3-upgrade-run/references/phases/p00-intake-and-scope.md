@@ -14,11 +14,13 @@ to start with and what each will cost, and leaves this phase to the one you choo
 Read-only inspection. Creating `.typo3-update/` from `templates/run-directory/`. Asking questions.
 
 ## Overnight clock
-`t3u init --max-hours 20` starts the non-extendable deadline. Budget 1.5h for intake/baseline,
-2h dependencies, up to 11h for migration and affected parity/operations, 1.5h for operational
-checks and buffer, and protect the final 4h for loop 300, handover, and contingency. At T+16h
-start no new migration cause; unresolved work becomes an
-honest blocker, never a shortened proof or a false pass.
+`t3u init` starts the clock without guessing the site size. During the read-only P00 branches,
+record all nine dimensions in [`../runtime-sizing.md`](../runtime-sizing.md), write
+`nodes/intake/runtime-size.json`, and seal it with `t3u runtime-seal --evidence …` before P02.
+The harness selects small 8h/T+6h, large 12h/T+9h, or huge 14h/T+10h and protects the remaining
+2h, 3h, or 4h for closure. No arbitrary duration or requested profile is accepted. At the sealed
+migration cutoff start no new P05–P10 cause; unresolved work becomes an honest blocker, never a
+shortened proof or a false pass.
 
 ## Steps
 0. **Read [`references/fleet-profile.md`](../fleet-profile.md) and work down it.** These projects

@@ -60,7 +60,7 @@ it is `harness-noise`, and the noise is fixed before closure.
 | Iterations | | |
 | No-progress streak | | 2 |
 | Time (min) | | |
-| Whole run (h) | | 14, including 4h closure reserve |
+| Whole run (h) | | `state.runtime.max_hours`, including `state.runtime.closure_reserve_hours` |
 
 ## Verdict
 

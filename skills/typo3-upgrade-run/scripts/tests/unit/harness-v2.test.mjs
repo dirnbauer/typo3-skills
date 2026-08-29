@@ -27,6 +27,15 @@ import { countActiveOpenFindings } from '../../lib/actions/compare.mjs';
 import { captureStates, discoverFromPages, parsePageTreeRows } from '../../lib/actions/discover.mjs';
 import { parse } from '../../lib/cli/args.mjs';
 import { assertWithinRuntimeBudget } from '../../lib/cli/command.mjs';
+import { runtimeSeal } from '../../lib/actions/core.mjs';
+import {
+  RUNTIME_PROFILES,
+  RUNTIME_SIZE_SCHEMA,
+  assertPhaseRuntime,
+  classifySiteSize,
+  runtimeProfileIssues,
+  runtimeWindow,
+} from '../../lib/run/runtime.mjs';
 import {
   captureAll,
   selectCaptures,
@@ -742,27 +751,85 @@ describe('overnight comparison command', () => {
     assert.match(combined, /await gate\(ctx\)/);
   });
 
-  test('defaults to a T+16h migration cutoff and blocks false-green work after twenty hours', () => {
-    const parsed = parse(['init', '--base-url', 'https://acme.ddev.site']);
-    assert.equal(parsed.values['max-hours'], '20');
-
-    const state = emptyState({
-      runId: '2026-07-25-acme',
-      now: '2026-07-25T00:00:00.000Z',
+  test('derives hard timings from small, large, and huge profiles', () => {
+    assert.deepEqual(RUNTIME_PROFILES, {
+      small: { maxHours: 8, closureReserveHours: 2 },
+      large: { maxHours: 12, closureReserveHours: 3 },
+      huge: { maxHours: 14, closureReserveHours: 4 },
     });
-    assert.equal(state.runtime.max_hours, 20);
-    assert.equal(state.runtime.closure_reserve_hours, 4);
-    assert.equal(state.runtime.deadline_at, '2026-07-25T20:00:00.000Z');
-    const migrationCutoff = Date.parse(state.runtime.deadline_at)
-      - state.runtime.closure_reserve_hours * 60 * 60 * 1000;
-    assert.equal(new Date(migrationCutoff).toISOString(), '2026-07-25T16:00:00.000Z');
-    assert.equal(assertWithinRuntimeBudget(state, Date.parse('2026-07-25T19:59:59.999Z')), true);
+    assert.equal(Math.max(...Object.values(RUNTIME_PROFILES).map((profile) => profile.maxHours)), 14);
+    assert.deepEqual(runtimeWindow('2026-07-25T00:00:00.000Z', 'small'), {
+      sizeProfile: 'small', maxHours: 8, closureReserveHours: 2,
+      migrationCutoffAt: '2026-07-25T06:00:00.000Z', deadlineAt: '2026-07-25T08:00:00.000Z',
+    });
+    assert.equal(runtimeWindow('2026-07-25T00:00:00.000Z', 'large').migrationCutoffAt, '2026-07-25T09:00:00.000Z');
+    assert.equal(runtimeWindow('2026-07-25T00:00:00.000Z', 'huge').migrationCutoffAt, '2026-07-25T10:00:00.000Z');
+  });
+
+  test('classifies by every intake dimension instead of routes alone', () => {
+    const small = {
+      public_routes: 200, content_records: 9_000, fileadmin_files: 20_000,
+      sites: 1, languages: 2, active_non_core_extensions: 10, local_packages: 2,
+      stateful_migrations: 1, compatibility_blockers: 0,
+    };
+    assert.equal(classifySiteSize(small), 'small');
+    assert.equal(classifySiteSize({ ...small, public_routes: 1_900 }), 'large');
+    assert.equal(classifySiteSize({ ...small, public_routes: 100, compatibility_blockers: 3 }), 'huge');
+  });
+
+  test('seals evidence once and enforces migration cutoff separately from closure', async () => {
+    const root = await tmp();
+    const paths = new RunPaths('.typo3-update', root);
+    await mkdir(path.join(paths.nodesDir, 'intake'), { recursive: true });
+    const state = emptyState({ runId: '2026-07-25-acme', now: '2026-07-25T00:00:00.000Z' });
+    state.project.trusted_origin = 'https://acme.ddev.site';
+    await new StateStore(paths).write(state);
+    const metrics = {
+      public_routes: 1_900, content_records: 58_000, fileadmin_files: 80_000,
+      sites: 2, languages: 3, active_non_core_extensions: 24, local_packages: 5,
+      stateful_migrations: 2, compatibility_blockers: 1,
+    };
+    const evidencePath = path.join(paths.nodesDir, 'intake', 'runtime-size.json');
+    await writeFile(evidencePath, JSON.stringify({
+      schema: RUNTIME_SIZE_SCHEMA,
+      metrics,
+      sources: Object.fromEntries(Object.keys(metrics).map((key) => [key, `nodes/intake/${key}.txt`])),
+    }));
+    const quiet = { success() {} };
+    const journal = { async append() {} };
+    const sealed = await runtimeSeal({
+      values: { evidence: evidencePath }, paths, log: quiet, journal,
+    });
+    assert.equal(sealed.sizeProfile, 'large');
+    const stored = await new StateStore(paths).read();
+    assert.equal(stored.runtime.max_hours, 12);
+    assert.equal(stored.runtime.migration_cutoff_at, '2026-07-25T09:00:00.000Z');
+    assert.deepEqual(runtimeProfileIssues(stored.runtime), []);
     assert.throws(
-      () => assertWithinRuntimeBudget(state, Date.parse('2026-07-25T20:00:00.000Z')),
+      () => assertPhaseRuntime(stored.runtime, 'P08', Date.parse('2026-07-25T09:00:00.000Z')),
+      /Start no new P05-P10 cause/,
+    );
+    assert.equal(assertPhaseRuntime(stored.runtime, 'P11', Date.parse('2026-07-25T09:00:00.000Z')), true);
+    assert.equal(assertWithinRuntimeBudget(stored, Date.parse('2026-07-25T11:59:59.999Z')), true);
+    assert.throws(
+      () => assertWithinRuntimeBudget(stored, Date.parse('2026-07-25T12:00:00.000Z')),
       /Contract A remains incomplete/,
     );
-    state.contract_a.status = 'closed';
-    assert.equal(assertWithinRuntimeBudget(state, Date.parse('2026-07-26T00:00:00.000Z')), true);
+    await assert.rejects(
+      runtimeSeal({ values: { evidence: evidencePath }, paths, log: quiet, journal }),
+      /already sealed/,
+    );
+  });
+
+  test('removes arbitrary max-hours overrides and requires sealing before P02', () => {
+    assert.throws(
+      () => parse(['init', '--base-url', 'https://acme.ddev.site', '--max-hours', '31']),
+      /Unknown option/,
+    );
+    assert.equal(parse(['runtime-seal', '--evidence', 'runtime-size.json']).command, 'runtime-seal');
+    const state = emptyState({ runId: '2026-07-25-acme', now: '2026-07-25T00:00:00.000Z' });
+    assert.throws(() => assertPhaseRuntime(state.runtime, 'P02'), /Runtime sizing is not sealed/);
+    assert.equal(assertPhaseRuntime(state.runtime, 'P00'), true);
   });
 });
 

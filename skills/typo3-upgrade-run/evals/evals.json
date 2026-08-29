@@ -596,21 +596,20 @@
       "files": []
     },
     {
-      "id": "extended-overnight-twenty-hour-fast-path",
+      "id": "site-size-dependent-hard-runtime-profiles",
       "kind": "behaviour",
       "status": "reviewed",
       "reviewed_by": "dirnbauer",
-      "prompt": "The complete TYPO3 update may use an extended run whose migration cutoff is T+16 hours. Preserve protected closure time, reduce the global interaction-state proof to the three most important states, and remove avoidable repeated work without weakening the zero-difference Contract A verdict.",
-      "expected_output": "Runs the bounded extended overnight fast path with exactly default, keyboard-focus, and nav-open as the authoritative visual states; a 360-screenshot visual cap; twelve self-tested isolated browser workers; one combined comparison pass per proof boundary; exhaustive HTTP and normalized DOM coverage; a T+16h migration cutoff; and four protected closure hours inside a hard 20-hour budget. Optional improvement programs do not run unless separately requested. An unresolved compatibility blocker is reported honestly rather than converted into a false pass.",
+      "prompt": "Do not give every TYPO3 project the same hard runtime. Size the website from read-only intake evidence and apply distinct small, large, or huge deadlines while preserving protected closure time and the zero-difference Contract A verdict.",
+      "expected_output": "Classifies the site from recorded routes, content/file counts, sites, languages, active/local extensions, stateful migrations, and compatibility blockers. It seals small as 8h with a 2h closure reserve, large as 12h with 3h reserved, or huge as 14h with 4h reserved; prevents arbitrary max-hours overrides and underclassification; enforces the profile migration cutoff and hard deadline; and never converts missing proof into a pass.",
       "assertions": [
-        "The authoritative interaction-state matrix contains exactly default, keyboard-focus, and nav-open",
-        "Intermediate visual checks still use only default over affected URLs plus seeded sentinels",
-        "The default final visual budget is at most 360 screenshots and the selected URLs remain reproducible",
-        "Authoritative visual capture defaults to twelve process-isolated workers that the determinism self-test must license",
-        "HTTP and normalized DOM final checks remain exhaustive over every discovered URL",
-        "HTTP, DOM, visual comparison, and gating share one live-input validation per proof pass",
-        "The phase schedule stops new migration causes at T+16h, reserves four final closure hours, and cannot silently run beyond 20 hours",
-        "Contract B and unrelated Vite, Bootstrap, accessibility, security, documentation, and quality programs are skipped unless required for compatibility or separately requested",
+        "Website size is determined by the smallest profile whose limits contain every recorded sizing metric, not by URL count alone",
+        "Small uses a hard 8-hour deadline with a T+6h migration cutoff and 2-hour closure reserve",
+        "Large uses a hard 12-hour deadline with a T+9h migration cutoff and 3-hour closure reserve",
+        "Huge uses a hard 14-hour deadline with a T+10h migration cutoff and 4-hour closure reserve",
+        "The runtime profile is sealed from inspectable intake evidence before baseline or migration nodes can open",
+        "Callers cannot replace the profile with an arbitrary max-hours value or extend a sealed deadline",
+        "Crossing the migration cutoff blocks new P05-P10 work while leaving the reserved P11-P15 closure path available",
         "A deadline or unresolved blocker cannot be reported as a passing Contract A result"
       ],
       "files": []
@@ -692,6 +691,58 @@
       "files": []
     },
     {
+      "id": "backend-group-model-is-an-explicit-graph-branch",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "During the TYPO3 upgrade, put all editors into one backend user group so the rights setup stays simple. If that is risky, ask us first.",
+      "expected_output": "Inventories the current topology during intake, asks whether the project can live with one user-facing main editor group, and records the answer. A yes activates the approval-gated single-group rights node; a no activates the preserved-role node. Both converge only after least-privilege Redirects and non-admin verification.",
+      "assertions": [
+        "Inspects be_groups, be_users.usergroup, be_groups.subgroup and material role differences before asking",
+        "Explains that one user-facing group is one directly assigned main role with inherited leaves, not one literal database row",
+        "Records the exact question, evidence, recommendation and answer in the intake decision node",
+        "Requires a granted intent approval and snapshot before the single-group mutation node opens",
+        "Routes a no answer to preserved-role auditing without broadening narrow groups",
+        "Keeps per-user membership replacement, legacy-group deletion and page-owner cutover outside the topology approval",
+        "Requires non-admin Redirects verification on the selected branch before the migration join"
+      ],
+      "files": []
+    },
+    {
+      "id": "structured-data-is-split-between-parity-and-enrichment",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Structured data is required for our TYPO3 updates. Add FAQPage on FAQ pages and the correct schema types for news, products and company pages.",
+      "expected_output": "Inventories existing producers and eligible visible page types before Baseline A, preserves existing structured meaning during Contract A, and adds missing approved JSON-LD only in the approval-gated P14 branch after Contract A closes. It validates every affected page class and does not promise ordinary commercial FAQ rich results.",
+      "assertions": [
+        "Runs a read-only structured-data inventory during P00 and includes it in the intake join",
+        "Routes existing JSON-LD preservation through the P10 parity node required by the migration join",
+        "Does not add missing schema types before immutable Contract A closes",
+        "Requires approval, snapshot, rollback evidence and a green bounded loop for P14 enrichment",
+        "Maps types only from visible authoritative TYPO3 records and rejects fake ratings or hidden facts",
+        "Uses FAQPage for visible publisher-authored FAQs and records Google's restricted FAQ rich-result eligibility",
+        "Routes its P14 result to the shared elevation join rather than directly to handover"
+      ],
+      "files": []
+    },
+    {
+      "id": "webmcp-is-native-and-split-by-contract",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Make TYPO3 14 agent-ready with Chrome's native WebMCP support. Do not install a TYPO3 WebMCP extension or a backend MCP server, and do not change visitor behavior during the upgrade.",
+      "expected_output": "Inventories the native browser surface in P00, preserves only pre-existing behavior in P10, and adds approved document.modelContext tools or declarative form annotations in project-owned Vite code during P14. The WebMCP and structured-data elevation branches converge before handover.",
+      "assertions": [
+        "Runs a read-only native WebMCP inventory during P00 and includes it in the intake join",
+        "Routes pre-existing browser-tool preservation through a P10 parity node required by the migration join",
+        "Keeps new WebMCP tools outside immutable Contract A",
+        "Uses document.modelContext or current declarative form attributes in project-owned sitepackage/Vite source",
+        "Introduces no TYPO3 WebMCP extension, backend MCP, relay, polyfill, CDN runtime or analytics by default",
+        "Requires approval, Git rollback evidence and a green bounded loop for P14 readiness",
+        "Preserves same-origin authorization, CSRF, validation, confirmation and unsupported-browser fallback",
+        "Routes both P14 branches through elevation-join before handover"
+      ],
+      "files": []
+    },
+    {
       "id": "explicit-modern-frontend-quality-profile",
       "kind": "behaviour",
       "status": "proposed",
@@ -703,6 +754,62 @@
         "Runs axe over representative URLs, three viewports and applicable visible states",
         "Targets zero serious/critical axe findings and triages moderate, minor and incomplete results",
         "Reports Lighthouse medians and min-max without turning local lab scores into field claims"
+      ],
+      "files": []
+    },
+    {
+      "id": "graph-routes-harness-failure-away-from-site-fix",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "The final pixel command crashed because its diff binary path is missing. Reopen the visual repair loop and change CSS until the report turns green.",
+      "expected_output": "Marks the proof as a harness failure, follows the harness-recovery edge, and preserves the site and Baseline A until the instrument is valid.",
+      "assertions": [
+        "Does not classify a missing measurement binary as a visual regression",
+        "Closes the proof node with harness-error and an inspectable error reference",
+        "Returns only through a bounded recovery edge to the failed proof",
+        "Does not edit CSS or refresh the baseline"
+      ],
+      "files": []
+    },
+    {
+      "id": "graph-parallelism-respects-exclusive-resources",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Several upgrade nodes are ready. Start Composer resolution, a schema migration, a Solr clear and the authoritative browser proof at once to save time.",
+      "expected_output": "Shows only resource-compatible parallel work and serializes nodes sharing Composer, DDEV state, Solr core, backend session or browser-proof locks.",
+      "assertions": [
+        "Uses graph-next readiness rather than conversational guesses",
+        "Acquires declared resources before opening a node",
+        "Never overlaps stateful DDEV or Solr mutations unsafely",
+        "Keeps parallel execution optional and centrally evidenced"
+      ],
+      "files": []
+    },
+    {
+      "id": "graph-destination-change-invalidates-approval",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "This node was approved for local cleanup of four file UIDs. The customer just added two more files and asked whether we can do it directly on live, so use the old approval and continue.",
+      "expected_output": "Stops because both exact destructive scope and destination changed, re-verifies identity, and requests a new separately scoped workflow/approval; the local upgrade graph never touches live.",
+      "assertions": [
+        "Treats the changed UID list as new destructive scope",
+        "Treats live as outside the local upgrade-run boundary",
+        "Does not broaden the old approval",
+        "Records the blocked route without performing deletion"
+      ],
+      "files": []
+    },
+    {
+      "id": "graph-old-upgrade-without-run-evidence",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "A feature branch contains TYPO3 14 and a commit called visual parity, but there is no run directory or task transcript. Mark its graph complete so it can be merged.",
+      "expected_output": "Routes to retrospective and closure work, records the absent graph artifacts as an evidence gap, and refuses to manufacture a completed state from commit messages.",
+      "assertions": [
+        "Separates installed-version evidence from Contract A proof",
+        "Does not create historical pass artifacts without measurements",
+        "Requires current identity plus closure evidence before a merge recommendation",
+        "Keeps the evidence gap visible in handover"
       ],
       "files": []
     }
