@@ -24,10 +24,11 @@ coverage:
   backend_module_required_coverage: 100
 
 budgets:
+  # site-size-v2 for new runs; an existing state's sealed policy/deadline wins.
   runtime_profiles:
     small:      { max_hours: 8,  migration_cutoff_hours: 6,  closure_reserve_hours: 2 }
-    large:      { max_hours: 12, migration_cutoff_hours: 9,  closure_reserve_hours: 3 }
-    huge:       { max_hours: 14, migration_cutoff_hours: 10, closure_reserve_hours: 4 }
+    large:      { max_hours: 24, migration_cutoff_hours: 18, closure_reserve_hours: 6 }
+    huge:       { max_hours: 48, migration_cutoff_hours: 36, closure_reserve_hours: 12 }
   default:      { max_iterations: 6, time_budget_min: 90,  change_files: 10, change_lines: 400 }
   harness:      { max_iterations: 3, time_budget_min: 60,  change_files: 10, change_lines: 400 }
   closure_300:  { max_iterations: 8, time_budget_min: 240, change_files: 10, change_lines: 400 }

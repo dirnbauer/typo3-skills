@@ -20,14 +20,15 @@
       "properties": {
         "started_at": { "type": "string", "format": "date-time" },
         "sealed_at": { "type": ["string", "null"], "format": "date-time" },
+        "budget_policy": { "enum": ["site-size-v2", "overnight-v1", null] },
         "size_profile": { "enum": ["small", "large", "huge", null] },
         "size_evidence_ref": { "type": ["string", "null"] },
         "forecast_ref": { "type": "string" },
         "forecast_hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
         "migration_cutoff_at": { "type": ["string", "null"], "format": "date-time" },
         "deadline_at": { "type": ["string", "null"], "format": "date-time" },
-        "max_hours": { "type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 14 },
-        "closure_reserve_hours": { "type": ["number", "null"], "minimum": 2, "maximum": 4 }
+        "max_hours": { "type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 48 },
+        "closure_reserve_hours": { "type": ["number", "null"], "minimum": 2, "maximum": 12 }
       }
     },
     "project": {

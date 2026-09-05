@@ -227,9 +227,10 @@ rung. Resolve known decisions before going unattended. A non-fitting job needs p
 split out before admission; changing the site-size label cannot make the work faster.
 
 Read [`references/runtime-sizing.md`](references/runtime-sizing.md). Intake seals the smallest
-evidence-fitting profile: small is 8h with a T+6h migration cutoff, large is 12h/T+9h, and huge
-is 14h/T+10h. Their protected closure reserves are 2h, 3h, and 4h. Missing proof at the applicable
-deadline is incomplete, never green; a sealed profile cannot be overridden or extended.
+evidence-fitting profile: small is 8h with a T+6h migration cutoff, large is 24h/T+18h, and huge
+is 48h/T+36h. Protected closure reserves are 2h, 6h, and 12h. These are elapsed-time caps, not
+target durations or extra retries. Missing proof is incomplete, never green. New seals record
+`site-size-v2`; legacy seals retain their original deadlines. Resumption cannot extend either.
 
 Approval to try a visible/destructive change and acceptance of its observed result are separate.
 Record the exact question, scope, answer, evidence, and granted state. A user may approve a dataset,

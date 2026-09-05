@@ -1,4 +1,4 @@
 interface:
   display_name: "TYPO3 14 Update"
-  short_description: "Prove-invisible v12/v13 to 14.3 update in local DDEV, then optional elevation"
-  default_prompt: "Use $typo3-upgrade-run to update this TYPO3 v12/v13 project to 14.3 LTS inside local DDEV. First collect read-only runtime sizing evidence and seal the smallest fitting overnight profile: small 8h with 2h closure reserve, large 12h with 3h, or huge 14h with 4h. Seal Baseline A and prove determinism before mutation. Routed skills do one bounded pass and return findings. During iterations check affected pages plus seeded sentinels in default state; use exactly default, keyboard-focus, and nav-open at proof boundaries. Respect the profile migration cutoff, snapshot before stateful operations, close Contract A at zero unexplained differences, run Contract B only if separately requested, and never deploy."
+  short_description: "Evidence-led TYPO3 14.3 upgrades in local DDEV"
+  default_prompt: "Use $typo3-upgrade-run to update this TYPO3 v12/v13 project to 14.3 LTS in local DDEV, seal the evidence-derived small/large/huge 8/24/48-hour budget, and prove current closure with at most three global states."

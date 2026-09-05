@@ -101,7 +101,9 @@ remain sufficient; Playwright is the one new owned specialist for reusable brows
   non-progress stops. Revisited recovery nodes become runnable; historical traversals alone do not
   restart completed work.
 - Measured plans include required final reruns, three-run Lighthouse, serialized shared resources
-  and uncertainty. Small/large/huge windows remain 8/12/14 hours, with 2/3/4 hours reserved for closure.
+  and uncertainty. This audit originally used 8/12/14-hour windows with 2/3/4-hour closure reserves.
+  New runs now use [versioned 8/24/48-hour budgets](../skills/typo3-upgrade-run/references/runtime-sizing.md);
+  existing sealed runs keep their original deadlines.
   Finished migration does not pay that reserve twice on resumption.
 - Affected routes and a reproducible sample for intermediate checks; final declared coverage with
   at most default, keyboard-focus and nav-open globally. Other interactions are targeted journeys.

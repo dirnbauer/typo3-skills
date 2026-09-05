@@ -57,7 +57,7 @@ One job: prove exactly what will be upgraded and define the graph before mutatio
 12. Resolve known approvals before unattended execution. Forecast work from measured capture/test
     throughput as well as site size. Read `../typo3-upgrade-run/references/overnight-controller.md`,
     write the selected-route runtime plan and run `t3u graph-forecast` before the baseline. A missing
-    or non-fitting estimate blocks admission. The 14h ceiling is not a completion guarantee.
+    or non-fitting estimate blocks admission. The size-dependent 8/24/48h caps are not completion guarantees.
 
 ## Routes
 

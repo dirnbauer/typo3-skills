@@ -34,6 +34,14 @@ test('the same workload can fit a huge profile but not a small profile', () => {
     f.plan.nodes.b.minutes = 200; f.plan.nodes.c.minutes = 200;
     assert.equal(forecast(f).feasible, profile !== 'small'); }
 });
+test('measured multi-day work fits only a sufficiently large profile, never more than two days', () => {
+  for (const profile of ['small', 'large', 'huge']) {
+    const f = fixture(profile); f.plan.nodes.b.minutes = 900; f.plan.nodes.c.minutes = 900;
+    assert.equal(forecast(f).feasible, profile === 'huge');
+  }
+  const f = fixture('huge'); f.plan.nodes.b.minutes = 1500; f.plan.nodes.c.minutes = 1500;
+  assert.equal(forecast(f).feasible, false);
+});
 test('missing pilot estimates, unapproved workers and shortened final proof fail admission', () => {
   for (const mutate of [f => delete f.plan.nodes.b, f => f.plan.final_passes = 1,
     f => f.plan.lighthouse_runs_per_url = 1, f => f.plan.parallel_approval = 'unknown',

@@ -3,11 +3,22 @@
 import { PreconditionError } from '../cli/exit-codes.mjs';
 
 export const RUNTIME_SIZE_SCHEMA = 'typo3-upgrade-run/runtime-size@1';
+export const RUNTIME_BUDGET_POLICY = 'site-size-v2';
 
 export const RUNTIME_PROFILES = Object.freeze({
   small: Object.freeze({ maxHours: 8, closureReserveHours: 2 }),
-  large: Object.freeze({ maxHours: 12, closureReserveHours: 3 }),
-  huge: Object.freeze({ maxHours: 14, closureReserveHours: 4 }),
+  large: Object.freeze({ maxHours: 24, closureReserveHours: 6 }),
+  huge: Object.freeze({ maxHours: 48, closureReserveHours: 12 }),
+});
+
+// An absent policy marker belongs to the original seal, never to today's defaults.
+const RUNTIME_POLICIES = Object.freeze({
+  [RUNTIME_BUDGET_POLICY]: RUNTIME_PROFILES,
+  'overnight-v1': Object.freeze({
+    small: Object.freeze({ maxHours: 8, closureReserveHours: 2 }),
+    large: Object.freeze({ maxHours: 12, closureReserveHours: 3 }),
+    huge: Object.freeze({ maxHours: 14, closureReserveHours: 4 }),
+  }),
 });
 
 export const SIZE_METRICS = Object.freeze([
@@ -74,8 +85,10 @@ export function classifySiteSize(metrics) {
   return 'huge';
 }
 
-export function runtimeWindow(startedAt, size) {
-  const profile = RUNTIME_PROFILES[size];
+export function runtimeWindow(startedAt, size, budgetPolicy = RUNTIME_BUDGET_POLICY) {
+  const profiles = RUNTIME_POLICIES[budgetPolicy];
+  if (!profiles) throw new TypeError(`Unknown runtime budget policy: ${budgetPolicy}`);
+  const profile = profiles[size];
   if (!profile) throw new TypeError(`Unknown runtime size profile: ${size}`);
   const startedMs = Date.parse(startedAt);
   if (!Number.isFinite(startedMs)) throw new TypeError(`Invalid runtime start timestamp: ${startedAt}`);
@@ -125,7 +138,9 @@ export function assertPhaseRuntime(runtime, phase, timestamp = Date.now(), { con
 export function runtimeProfileIssues(runtime) {
   if (!runtime?.size_profile) return [];
   let expected;
-  try { expected = runtimeWindow(runtime.started_at, runtime.size_profile); }
+  try {
+    expected = runtimeWindow(runtime.started_at, runtime.size_profile, runtime.budget_policy ?? 'overnight-v1');
+  }
   catch (error) { return [error.message]; }
   const checks = [
     ['max_hours', expected.maxHours],

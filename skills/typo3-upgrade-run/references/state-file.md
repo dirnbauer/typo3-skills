@@ -26,9 +26,9 @@ Each is a memory failure, and none of them is fixed by remembering harder. They 
 {
   "schema": "typo3-upgrade-run/state@1",
   "run_id": "2026-07-25-acme",
-  "runtime": { "started_at": "…", "sealed_at": "…", "size_profile": "large",
+  "runtime": { "started_at": "…", "sealed_at": "…", "budget_policy": "site-size-v2", "size_profile": "large",
     "size_evidence_ref": "nodes/intake/runtime-size.json", "migration_cutoff_at": "…",
-    "deadline_at": "…", "max_hours": 12, "closure_reserve_hours": 3 },
+    "deadline_at": "…", "max_hours": 24, "closure_reserve_hours": 6 },
   "project": { "name": "acme", "trusted_origin": "https://acme.ddev.site", "languages": ["de","en"] },
   "target": { "kind": "project", "typo3_from": "12.4.31", "typo3_to": "14.3",
               "php_from": "8.1", "php_to": "8.4", "php_85_evaluated": true, "php_85_blockers": [] },
@@ -63,8 +63,9 @@ Each is a memory failure, and none of them is fixed by remembering harder. They 
 |---|---|
 | `project.trusted_origin` | The one origin credentials and navigation may reach. Scheme included and never rewritten — rewriting the scheme is how an `http://` DDEV project silently discovers zero URLs. |
 | `runtime.size_profile` / `size_evidence_ref` | The sealed small, large, or huge classification and the inspectable nine-metric intake evidence that selected it. |
-| `runtime.migration_cutoff_at` | Stops new P05–P10 causes early enough to preserve 2h, 3h, or 4h for closure. |
-| `runtime.deadline_at` | Hard 8h, 12h, or 14h overnight ceiling. Passing it cannot produce a green Contract A result. |
+| `runtime.budget_policy` | New seals use `site-size-v2`; an absent marker or `overnight-v1` preserves legacy 8/12/14h budgets. Never rewrite an existing seal. |
+| `runtime.migration_cutoff_at` | Stops new P05–P10 causes early enough to preserve 2h, 6h, or 12h for closure in new runs. |
+| `runtime.deadline_at` | New runs have an 8h, 24h, or 48h elapsed-time ceiling. Resumption does not reset it. Passing it cannot produce a green Contract A result. |
 | `target.php_to` / `php_85_evaluated` | 8.4 is the standard target. `php_85_evaluated` is `null` until `composer why-not php 8.5` has actually run, so "we could not use 8.5" is never confused with "we never checked". |
 | `contract_a.closed_at` | Gate B1.1 compares this timestamp against every elevation loop's `created_at`. It is the mechanical answer to "did improvement work leak into the migration?" |
 | `contract_b.unlocked` | Set only by the closure certificate. No elevation loop may start while it is false. |

@@ -103,9 +103,10 @@ Stop and route to `stopped` when any of these cannot be resolved safely:
 | retry bound or sealed size-profile deadline exhausted | incomplete, never green |
 | graph definition/hash/state/lock inconsistency | graph invalid; repair harness/state |
 
-The intake evidence seals one non-extendable overnight profile: small 8h with migration cutoff T+6h,
-large 12h/T+9h, or huge 14h/T+10h. The remaining 2h, 3h, or 4h are reserved for closure and
-handover; after the applicable cutoff no new P05–P10 cause starts. See
+The intake evidence seals one non-extendable profile: small 8h with migration cutoff T+6h,
+large 24h/T+18h, or huge 48h/T+36h. The remaining 2h, 6h, or 12h are reserved for closure and
+handover; after the applicable cutoff no new P05–P10 cause starts. These are elapsed-time caps;
+resumption never resets them. Legacy seals retain their original budgets. See
 [`references/runtime-sizing.md`](../references/runtime-sizing.md).
 
 ## 10.7 Completion

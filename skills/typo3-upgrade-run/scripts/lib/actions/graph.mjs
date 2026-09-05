@@ -65,6 +65,7 @@ export async function graphNext({ paths, log }) {
   const { state, definition } = await graphContext(paths);
   const stateRevision = stateHash(state);
   refreshReady(state.graph, definition);
+  state.graph.status = deriveGraphStatus(state.graph, definition);
   state.graph.updated_at = new Date().toISOString();
   await writeGraphState(store, state, stateRevision);
   const candidates = Object.entries(state.graph.nodes)
@@ -76,7 +77,11 @@ export async function graphNext({ paths, log }) {
     if (held.length) waiting.push({ ...node, reason: held.map(r => `${r} held by ${state.graph.locks[r]}`).join(', ') });
     else if (state.graph.nodes[node.id].attempts >= (definition.policy?.max_node_attempts ?? Infinity)) {
       waiting.push({ ...node, reason: 'Shared node attempt budget exhausted; re-plan or stop.' });
-    } else ready.push(node);
+    } else {
+      const exhausted = recoveryBudgetBlock(state.graph, definition, node.id);
+      if (exhausted) waiting.push({ ...node, reason: exhausted });
+      else ready.push(node);
+    }
   }
   const parallelSets = compatibleSets(ready);
   for (const node of ready) log.info(`${node.id}${node.skill ? ` -> ${node.skill}` : ''} [${node.resources.join(', ') || 'no exclusive resource'}]`);
@@ -96,6 +101,8 @@ export async function nodeOpen({ values, paths, log, journal }) {
   if (nodeState.attempts >= (definition.policy?.max_node_attempts ?? Infinity)) {
     throw new PreconditionError(`Node ${id} exhausted its shared attempt budget. Changing recovery cause does not reset it.`);
   }
+  const exhausted = recoveryBudgetBlock(state.graph, definition, id);
+  if (exhausted) throw new PreconditionError(exhausted);
   const phaseNumber = Number(node.phase?.slice(1));
   if (definition.policy?.require_forecast && phaseNumber >= 2 && phaseNumber <= 10) {
     if (!state.runtime.forecast_ref || !state.runtime.forecast_hash) {
@@ -245,18 +252,7 @@ export async function nodeClose({ values, paths, log, journal }) {
     edgeEvents.push({ edge_id: edge.id, from: id, to: asArray(edge.to), outcome, traversal: edgeState.traversals });
   }
   refreshReady(state.graph, definition, { traversed: matching });
-  const terminalStates = asArray(definition.terminal).map((terminal) => state.graph.nodes[terminal]?.status);
-  if (terminalStates.some((status) => ['passed', 'skipped'].includes(status))) {
-    state.graph.status = 'complete';
-  } else if (terminalStates.some((status) => status === 'blocked')) {
-    state.graph.status = 'blocked';
-  } else if (outcome === 'blocked') {
-    state.graph.status = 'blocked';
-  } else if (outcome === 'invalid' && !matching.length) {
-    state.graph.status = 'invalid';
-  } else {
-    state.graph.status = 'active';
-  }
+  state.graph.status = deriveGraphStatus(state.graph, definition);
   state.graph.updated_at = now;
   await mkdir(paths.node(id), { recursive: true });
   await writeGraphState(store, state, stateRevision);
@@ -280,8 +276,8 @@ export async function graphValidate({ paths, log }) {
       }
     }
   }
-  log.success('Graph definition, state, retry bounds, locks, and node references are valid.');
-  return { exitCode: EXIT.PASS, verdict: 'pass', nodes: Object.keys(definition.nodes).length, message: 'graph valid' };
+  log.success('Graph integrity is valid; this is not a completion or Contract A verdict.');
+  return { exitCode: EXIT.PASS, verdict: 'pass', nodes: Object.keys(definition.nodes).length, message: 'graph integrity valid; closure is a separate gate' };
 }
 
 export async function graphForecast({ values, paths, log, journal }) {
@@ -308,7 +304,7 @@ export async function graphForecast({ values, paths, log, journal }) {
   log.info(`${forecast.profile}: estimated ${forecast.estimated_minutes}m, reserved ${forecast.reserved_minutes}m; ${forecast.feasible ? 'fits' : 'does not fit'} the sealed window.`);
   return { exitCode: forecast.feasible ? EXIT.PASS : EXIT.PRECONDITION,
     verdict: forecast.feasible ? 'pass' : 'incomplete', evidence: ref, ...forecast,
-    message: forecast.feasible ? 'forecast admitted; estimates are not guarantees' : 'split prerequisite work before starting the overnight migration' };
+    message: forecast.feasible ? 'forecast admitted; estimates are not guarantees' : 'split prerequisite work before starting the admitted migration' };
 }
 
 export function validateGraphDefinition(definition) {
@@ -365,6 +361,9 @@ export function validateGraphState(graph, definition, hash, runState = null) {
   const issues = validateGraphDefinition(definition);
   if (graph.definition_hash !== hash) issues.push('definition hash drifted after graph-init');
   if (runState) issues.push(...runtimeProfileIssues(runState.runtime));
+  if (graph.status === 'complete' && deriveGraphStatus(graph, definition) !== 'complete') {
+    issues.push('graph is labelled complete with blocked or unfinished activated work; reconcile derived status with graph-next');
+  }
   for (const id of Object.keys(definition.nodes)) if (!graph.nodes[id]) issues.push(`state misses node ${id}`);
   for (const id of Object.keys(graph.nodes)) if (!definition.nodes[id]) issues.push(`state contains unknown node ${id}`);
   for (const [id, node] of Object.entries(definition.nodes)) {
@@ -451,11 +450,49 @@ function refreshReady(graph, definition, { traversed = [] } = {}) {
   }
 }
 
+function recoveryBudgetBlock(graph, definition, id) {
+  // Admit no expensive repair whose every successful continuation is already exhausted.
+  // Keep node-close's checks too: another worker may spend shared retries after node-open.
+  const outgoing = definition.edges.filter(e => e.from === id);
+  const outcomes = [...new Set(definition.nodes[id]?.outcomes ?? outgoing.map(e => e.outcome))]
+    .filter(o => !['blocked', 'invalid', 'findings', 'harness-error'].includes(o));
+  if (!outcomes.length) return null;
+  const used = definition.edges.filter(e => e.retry)
+    .reduce((sum, e) => sum + (graph.edges[e.id]?.traversals ?? 0), 0);
+  const exhausted = outcomes.every(outcome => {
+    const retries = outgoing.filter(e => e.outcome === outcome && e.retry);
+    return used + retries.length > (definition.policy?.max_total_retries ?? Infinity)
+      || retries.some(e => (graph.edges[e.id]?.traversals ?? 0) >= e.max_traversals);
+  });
+  return exhausted ? `Node ${id} cannot finish a successful route within the remaining recovery budget; stop before starting another repair.` : null;
+}
+
+function deriveGraphStatus(graph, definition) {
+  const entries = Object.entries(graph.nodes);
+  const terminals = asArray(definition.terminal);
+  if (entries.some(([, n]) => n.status === 'blocked')
+    || terminals.some(id => graph.nodes[id]?.status === 'failed')) return 'blocked';
+  if (entries.some(([id, n]) => n.status === 'invalid'
+    && !definition.edges.some(e => e.from === id && e.outcome === n.outcome))) return 'invalid';
+  const start = new Set(asArray(definition.start));
+  const unfinished = entries.some(([id, n]) => {
+    const activated = start.has(id) || n.attempts > 0
+      || definition.edges.some(e => asArray(e.to).includes(id) && graph.edges[e.id]?.traversals > 0);
+    return activated && ['pending', 'ready', 'running'].includes(n.status);
+  });
+  if (!unfinished && terminals.some(id => ['passed', 'skipped'].includes(graph.nodes[id]?.status))) return 'complete';
+  const ready = entries.filter(([, n]) => n.status === 'ready');
+  if (!entries.some(([, n]) => n.status === 'running') && ready.length
+    && ready.every(([id, n]) => n.attempts >= (definition.policy?.max_node_attempts ?? Infinity)
+      || recoveryBudgetBlock(graph, definition, id))) return 'blocked';
+  return 'active';
+}
+
 function summarize(graph, definition) {
   const counts = {};
   for (const node of Object.values(graph.nodes)) counts[node.status] = (counts[node.status] ?? 0) + 1;
   return {
-    status: graph.status,
+    status: deriveGraphStatus(graph, definition),
     definitionHash: graph.definition_hash,
     counts,
     ready: Object.entries(graph.nodes).filter(([, node]) => node.status === 'ready').map(([id]) => id),

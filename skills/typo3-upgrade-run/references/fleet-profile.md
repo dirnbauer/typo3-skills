@@ -43,7 +43,7 @@ inventories.
 | Check | Why |
 |---|---|
 | **No build pipeline at all** | Assets are commonly hand-written CSS and JS included through `page.includeCSS` / `includeJSFooter`, with `vite` in `package.json` but no config and no scripts. Loop 020 then has no subject — record that with evidence rather than introducing a build nothing needs. |
-| **jQuery 1.5.1 and `cufon.js`** | 2011-era libraries still shipped to visitors, with published vulnerabilities. Not an invariance item: replacing them changes what visitors receive, so it is Contract B with its own approval — but it must reach the report, not be silently tolerated. |
+| **Legacy jQuery and `cufon.js`** | Inventory actual shipped versions and callers. Follow the authorized Bootstrap/native-JS modernization node before final proof; do not automatically defer this user-required work to Contract B. Preserve behavior, obtain acceptance for visible differences, and record any unavoidable jQuery dependency as a blocker/explicit exception. Installing v14 alone does not prove removal. |
 | **A custom jQuery header rotator** | Fading headers driven by `setInterval` with no library class names, so carousel pinning does not match them. If the self-test shows differences confined to one image box, this is the first thing to look at. |
 | **`config.doctype = xhtml_trans`** | Defeats `html-has-lang` site-wide and is itself a P08 migration item. |
 | **Sitepackage CSS written against `.form-group` / `div.input`** | v14's Bootstrap-5 EXT:form templates drop both, so form styling dies silently — inputs collapse to browser-default width on the contact and registration pages. Grep the CSS at P00; see `known-problems.md`. |

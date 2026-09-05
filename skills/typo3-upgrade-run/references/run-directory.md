@@ -9,7 +9,7 @@ Nothing in this skill is "remembered". It is written down, and the gates read wh
 ```
 .typo3-update/
 ├── STATUS.md                       human dashboard, regenerated from state.json
-├── state.json                      graph + evidence state and sealed 8h/12h/14h deadline — the ONLY precondition source
+├── state.json                      graph + evidence state and sealed size-dependent deadline — the ONLY precondition source
 ├── journal.jsonl                   append-only: commands, nodes, edges, locks, verdicts
 ├── .gitignore                      ignores artifacts and shots; keeps every .md and .json
 ├── config/

@@ -4,11 +4,12 @@ schema: typo3-upgrade-run/run-config@1
 
 runtime:
   size_evidence: "nodes/intake/runtime-size.json"
+  budget_policy: site-size-v2
   # t3u runtime-seal selects this mechanically; callers do not choose or extend it.
   profiles:
     small: { max_hours: 8,  migration_cutoff_hours: 6,  closure_reserve_hours: 2 }
-    large: { max_hours: 12, migration_cutoff_hours: 9,  closure_reserve_hours: 3 }
-    huge:  { max_hours: 14, migration_cutoff_hours: 10, closure_reserve_hours: 4 }
+    large: { max_hours: 24, migration_cutoff_hours: 18, closure_reserve_hours: 6 }
+    huge:  { max_hours: 48, migration_cutoff_hours: 36, closure_reserve_hours: 12 }
 
 project:
   name: ""

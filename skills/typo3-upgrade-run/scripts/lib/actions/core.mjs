@@ -16,7 +16,7 @@ import { listOpt } from '../cli/args.mjs';
 import { renderStatus } from '../run/status.mjs';
 import { sha256 } from '../run/paths.mjs';
 import {
-  classifySiteSize, runtimeWindow, sizingEvidenceIssues,
+  classifySiteSize, runtimeWindow, sizingEvidenceIssues, RUNTIME_BUDGET_POLICY,
 } from '../run/runtime.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -114,9 +114,13 @@ export async function runtimeSeal({ values, paths, log, journal }) {
   const window = runtimeWindow(state.runtime.started_at, sizeProfile);
   const relativeEvidence = path.relative(paths.root, evidencePath);
   await store.update((next) => {
+    if (next.runtime?.sealed_at || next.runtime?.deadline_at) {
+      throw new PreconditionError('The runtime profile is already sealed and cannot be changed or extended.');
+    }
     next.runtime = {
       ...next.runtime,
       sealed_at: new Date().toISOString(),
+      budget_policy: RUNTIME_BUDGET_POLICY,
       size_profile: window.sizeProfile,
       size_evidence_ref: relativeEvidence,
       migration_cutoff_at: window.migrationCutoffAt,
@@ -127,6 +131,7 @@ export async function runtimeSeal({ values, paths, log, journal }) {
   });
   await journal.append('note', {
     note: 'runtime profile sealed',
+    budget_policy: RUNTIME_BUDGET_POLICY,
     size_profile: sizeProfile,
     evidence_ref: relativeEvidence,
     migration_cutoff_at: window.migrationCutoffAt,

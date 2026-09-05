@@ -12,28 +12,36 @@ t3u runtime-seal --evidence .typo3-update/nodes/intake/runtime-size.json
 | Profile | Hard deadline | Migration cutoff | Closure reserve |
 |---|---:|---:|---:|
 | small | T+8h | T+6h | 2h |
-| large | T+12h | T+9h | 3h |
-| huge | T+14h | T+10h | 4h |
+| large | T+24h | T+18h | 6h |
+| huge | T+48h | T+36h | 12h |
 
 The migration cutoff blocks starting a new P05–P10 cause. P11–P13 proof, repair, certificate and
 handover may use the reserve. The hard deadline cannot produce a green Contract A result when proof
-is missing. Every profile fits one overnight window; site size changes the admitted work and sample,
-not the 14-hour ceiling. Optional Contract B work is not automatically part of the overnight job;
-schedule it only with separate authority and a stated budget. Never silently extend the current
-overnight job because A closed early.
+is missing. These are maximum elapsed wall-clock windows from initialization, not target durations
+or new retry allowances. Small sites should fit overnight; larger sites may need one or two days.
+Stop as soon as verified or blocked. Waiting, interruption, a new session and resumption do not
+pause or reset the clock. No profile exceeds 48 hours. Optional Contract B work is not automatically
+part of this job; schedule it only with separate authority and a stated budget. Never silently
+extend the current job because A closed early.
+
+New seals record `runtime.budget_policy: site-size-v2`. Previously sealed runs without a policy
+marker (or with `overnight-v1`) retain their original 8/12/14-hour deadlines and 2/3/4-hour reserves.
+Updating the skill does not reclassify, rewrite or extend them. If the old window cannot fit,
+preserve its incomplete record and obtain authority for a separately scoped run; a fresh run is
+not permission to repeat an unreconciled stateful action or manufacture a pre-upgrade baseline.
 
 ## Feasibility before mutation
 
-The table is a hard stop policy, not a claim that every huge site can finish in fourteen hours.
+The table is a hard stop policy, not a claim that every huge site can finish in two days.
 During intake, write `nodes/intake/runtime-forecast.json` from a small representative pilot:
 effective backup/import throughput, HTTP/DOM URLs per minute, captures per minute, installed
 browser-start cost, expected migration units, editor journeys and three-run Lighthouse duration.
 Reuse the pilot as evidence; do not run a second benchmark programme.
 
 Forecast the critical path with the graph's capacity-one locks. Include both final passes and
-the 2/3/4-hour closure reserve; tests sharing a browser or database cannot be counted as parallel.
+the 2/6/12-hour closure reserve; tests sharing a browser or database cannot be counted as parallel.
 Start only if required work fits with a buffer. If it does not fit, name the specific blocker
-before mutation and split separately authorized prerequisite work from the overnight migration.
+before mutation and split separately authorized prerequisite work from the admitted migration.
 Do not lower proof thresholds, silently drop required coverage or promise an unmeasured 10× speedup.
 Intermediate checks use affected routes plus a stable random sample; repeated full-site sweeps
 and sibling-owned retry loops are forbidden. Final proof retains its declared coverage and ≤3

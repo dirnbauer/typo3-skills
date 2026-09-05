@@ -2,12 +2,12 @@
   "schema": 1,
   "tool": "skill-doctor@0.1.0",
   "integrity": "sha512-80daQIGVLbKxjlGBc9ZBQXaKgz54vYayT1UsFV43j65ResKSjzLrNcY63r+1HhSBms4SeuXlDKAsSRlL8cvnRg==",
-  "checkedAt": "2026-09-05T13:23:35.273Z",
+  "checkedAt": "2026-09-05T21:16:38.210Z",
   "skills": 59,
-  "diagnostics": 714,
+  "diagnostics": 720,
   "byRule": {
-    "evals.invalid-schema": 379,
-    "evals.missing-expected-output": 313,
+    "evals.invalid-schema": 382,
+    "evals.missing-expected-output": 316,
     "skill.invalid-frontmatter-description": 2,
     "skill.large-inline-skill": 1,
     "skill.missing-mentioned-resource": 8,
@@ -15,7 +15,7 @@
     "skill.reference-outside-root": 9
   },
   "byDisposition": {
-    "native-schema-check-required": 689,
+    "native-schema-check-required": 695,
     "upstream-advisory": 13,
     "verified-command-with-arguments": 3,
     "verified-sibling-reference": 9

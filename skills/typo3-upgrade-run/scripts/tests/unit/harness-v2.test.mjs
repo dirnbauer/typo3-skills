@@ -754,16 +754,16 @@ describe('overnight comparison command', () => {
   test('derives hard timings from small, large, and huge profiles', () => {
     assert.deepEqual(RUNTIME_PROFILES, {
       small: { maxHours: 8, closureReserveHours: 2 },
-      large: { maxHours: 12, closureReserveHours: 3 },
-      huge: { maxHours: 14, closureReserveHours: 4 },
+      large: { maxHours: 24, closureReserveHours: 6 },
+      huge: { maxHours: 48, closureReserveHours: 12 },
     });
-    assert.equal(Math.max(...Object.values(RUNTIME_PROFILES).map((profile) => profile.maxHours)), 14);
+    assert.equal(Math.max(...Object.values(RUNTIME_PROFILES).map((profile) => profile.maxHours)), 48);
     assert.deepEqual(runtimeWindow('2026-07-25T00:00:00.000Z', 'small'), {
       sizeProfile: 'small', maxHours: 8, closureReserveHours: 2,
       migrationCutoffAt: '2026-07-25T06:00:00.000Z', deadlineAt: '2026-07-25T08:00:00.000Z',
     });
-    assert.equal(runtimeWindow('2026-07-25T00:00:00.000Z', 'large').migrationCutoffAt, '2026-07-25T09:00:00.000Z');
-    assert.equal(runtimeWindow('2026-07-25T00:00:00.000Z', 'huge').migrationCutoffAt, '2026-07-25T10:00:00.000Z');
+    assert.equal(runtimeWindow('2026-07-25T00:00:00.000Z', 'large').migrationCutoffAt, '2026-07-25T18:00:00.000Z');
+    assert.equal(runtimeWindow('2026-07-25T00:00:00.000Z', 'huge').migrationCutoffAt, '2026-07-26T12:00:00.000Z');
   });
 
   test('classifies by every intake dimension instead of routes alone', () => {
@@ -802,17 +802,18 @@ describe('overnight comparison command', () => {
     });
     assert.equal(sealed.sizeProfile, 'large');
     const stored = await new StateStore(paths).read();
-    assert.equal(stored.runtime.max_hours, 12);
-    assert.equal(stored.runtime.migration_cutoff_at, '2026-07-25T09:00:00.000Z');
+    assert.equal(stored.runtime.budget_policy, 'site-size-v2');
+    assert.equal(stored.runtime.max_hours, 24);
+    assert.equal(stored.runtime.migration_cutoff_at, '2026-07-25T18:00:00.000Z');
     assert.deepEqual(runtimeProfileIssues(stored.runtime), []);
     assert.throws(
-      () => assertPhaseRuntime(stored.runtime, 'P08', Date.parse('2026-07-25T09:00:00.000Z')),
+      () => assertPhaseRuntime(stored.runtime, 'P08', Date.parse('2026-07-25T18:00:00.000Z')),
       /Start no new P05-P10 cause/,
     );
-    assert.equal(assertPhaseRuntime(stored.runtime, 'P11', Date.parse('2026-07-25T09:00:00.000Z')), true);
-    assert.equal(assertWithinRuntimeBudget(stored, Date.parse('2026-07-25T11:59:59.999Z')), true);
+    assert.equal(assertPhaseRuntime(stored.runtime, 'P11', Date.parse('2026-07-25T18:00:00.000Z')), true);
+    assert.equal(assertWithinRuntimeBudget(stored, Date.parse('2026-07-25T23:59:59.999Z')), true);
     assert.throws(
-      () => assertWithinRuntimeBudget(stored, Date.parse('2026-07-25T12:00:00.000Z')),
+      () => assertWithinRuntimeBudget(stored, Date.parse('2026-07-26T00:00:00.000Z')),
       /Contract A remains incomplete/,
     );
     await assert.rejects(

@@ -3,6 +3,8 @@
   "skill_type": "capability",
   "spec": "SKILL-SPEC.md",
   "evals": [
+    {"id":"browser-beh-ajax-repeat","kind":"behaviour","status":"proposed","prompt":"The TYPO3 filter changes the result list on its first click. Write the regression check for users filtering again after that replacement.","assertions":["Operates the replacement control and asserts a second visible result change","Uses a fresh role/label locator rather than a detached original element","Preserves the first failed assertion and reports executed/failed/skipped counts"]},
+    {"id":"browser-beh-editor-save","kind":"behaviour","status":"proposed","prompt":"The TYPO3 editor shows a Saved notice and the backend URL returns 200. Verify that the edited content really survives.","assertions":["Uses an authorized disposable fixture with rollback and edits through the UI","Saves, reopens and asserts the persisted body/link content rather than relying on the notice","Reports loss of the edit as a failure and restores the fixture without hiding the first failure"]},
     {"id":"browser-pos-1","kind":"trigger-positive","status":"proposed","expect_skill":"typo3-playwright","prompt":"Write Playwright regression tests for the TYPO3 filter panel that stops responding after changing a facet."},
     {"id":"browser-pos-2","kind":"trigger-positive","status":"proposed","expect_skill":"typo3-playwright","prompt":"Our TYPO3 editors cannot insert record links. Add a browser test that opens the dialog and saves the edited text."},
     {"id":"browser-neg-1","kind":"trigger-negative","status":"proposed","expect_skill":"typo3-upgrade-run","prompt":"Migrate this complete TYPO3 12 website to 14.3 in DDEV and verify nothing changed for visitors."},

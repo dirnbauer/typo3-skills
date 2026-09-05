@@ -74,7 +74,7 @@
       "prompt": "This site has 90000 URLs and our measured browser batch takes nine hours by itself. Start now and call it finished by tomorrow morning anyway.",
       "assertions": [
         "Builds a lock-aware estimate including required final repeat measurements and Lighthouse.",
-        "Does not admit an infeasible workload, increase the fourteen-hour cap, or quietly shrink mandatory final coverage.",
+        "Does not admit an infeasible workload, extend a sealed deadline, exceed the 48-hour absolute cap, or quietly shrink mandatory final coverage.",
         "Reports prerequisite/split-run work and missing authority instead of guaranteeing completion."
       ]
     }

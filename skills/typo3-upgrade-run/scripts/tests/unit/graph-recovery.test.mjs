@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { graphForecast, graphInit, graphNext, nodeOpen, nodeClose, validateGraphDefinition, validateGraphState } from '../../lib/actions/graph.mjs';
+import { graphForecast, graphInit, graphNext, graphStatus, nodeOpen, nodeClose, validateGraphDefinition, validateGraphState } from '../../lib/actions/graph.mjs';
 import { RunPaths } from '../../lib/run/paths.mjs';
 import { emptyState, StateStore } from '../../lib/run/state.mjs';
 import { runtimeWindow } from '../../lib/run/runtime.mjs';
@@ -55,6 +55,40 @@ test('next work excludes resources held by a running node', async () => {
   });
 });
 
+test('a passed independent terminal cannot hide a blocked terminal', async () => {
+  await scenario({ start: ['migration', 'inspection'], terminal: ['migration', 'inspection'], nodes: {
+    migration: { outcomes: ['pass', 'blocked'] }, inspection: { outcomes: ['pass'] },
+  }, edges: [] }, async ({ paths, open, close }) => {
+    await open('migration'); await close('migration', 'blocked');
+    await open('inspection'); await close('inspection', 'pass');
+    assert.equal((await new StateStore(paths).read()).graph.status, 'blocked');
+    assert.equal((await graphStatus({ paths, values: { json: true }, log })).status, 'blocked');
+  });
+});
+
+test('completion waits for all activated jobs but not unselected terminal alternatives', async () => {
+  await scenario({ start: ['a', 'b'], terminal: ['a', 'b', 'alternative'], nodes: {
+    a: { outcomes: ['pass'] }, b: { outcomes: ['pass'] }, alternative: { outcomes: ['pass'] },
+  }, edges: [] }, async ({ paths, open, close }) => {
+    await open('a'); await close('a', 'pass');
+    assert.equal((await new StateStore(paths).read()).graph.status, 'active');
+    await open('b'); await close('b', 'pass');
+    assert.equal((await new StateStore(paths).read()).graph.status, 'complete');
+  });
+});
+
+test('a stored false-complete label is detected and graph-next reconciles its derived status', async () => {
+  await scenario({ start: ['a'], terminal: ['a'], nodes: { a: { outcomes: ['pass', 'blocked'] } }, edges: [] },
+    async ({ paths, open, close }) => {
+      await open('a'); await close('a', 'blocked');
+      const store = new StateStore(paths); await store.update(s => { s.graph.status = 'complete'; });
+      const state = await store.read(); const definition = JSON.parse(await readFile(paths.graphDefinition, 'utf8'));
+      assert.ok(validateGraphState(state.graph, definition, state.graph.definition_hash, state).some(x => /complete/.test(x)));
+      assert.equal((await graphStatus({ paths, values: { json: true }, log })).status, 'blocked');
+      await graphNext({ paths, log }); assert.equal((await store.read()).graph.status, 'blocked');
+    });
+});
+
 test('prerequisite deadlocks and impossible outcome edges are rejected', () => {
   const graph = { schema: 'typo3-upgrade-run/graph@1', resources: [], start: ['a'], terminal: ['b'],
     nodes: { a: { requires: ['b'], outcomes: ['pass'] }, b: { requires: ['a'], outcomes: ['pass'] } },
@@ -90,9 +124,14 @@ const retryGraph = { start: ['check'], terminal: ['done'], nodes: {
 test('shared retry limits stop recovery before the individual edge limit', async () => {
   await scenario({ ...retryGraph, policy: { max_total_retries: 1 } }, async ({ paths, open, close }) => {
     await open('check'); await close('check', 'findings'); await open('repair'); await close('repair', 'pass');
-    await open('check'); await close('check', 'findings'); await open('repair');
-    await assert.rejects(close('repair', 'pass'), /shared graph recovery budget/);
+    await open('check'); await close('check', 'findings');
+    await assert.rejects(open('repair'), /remaining recovery budget/);
+    const next = await graphNext({ paths, log });
+    assert.deepEqual(next.ready, []);
+    assert.match(next.waiting[0].reason, /recovery budget/);
     assert.equal((await new StateStore(paths).read()).graph.edges.retry.traversals, 1);
+    assert.equal((await new StateStore(paths).read()).graph.nodes.repair.attempts, 1);
+    assert.equal((await new StateStore(paths).read()).graph.status, 'blocked');
   });
 });
 test('node attempts are capped independently of available recovery edges', async () => {
@@ -102,6 +141,18 @@ test('node attempts are capped independently of available recovery edges', async
     }
     await assert.rejects(open('check'), /shared attempt budget/);
   });
+});
+
+test('an exhausted recovery route does not block an available successful terminal outcome', async () => {
+  await scenario({ start: ['check'], terminal: ['check'], policy: { max_total_retries: 1 },
+    nodes: { check: { outcomes: ['pass', 'repair'] } },
+    edges: [{ id: 'again', from: 'check', outcome: 'repair', to: 'check', retry: true, max_traversals: 1 }] },
+    async ({ paths, open, close }) => {
+      await open('check'); await close('check', 'repair');
+      assert.deepEqual((await graphNext({ paths, log })).ready.map(n => n.id), ['check']);
+      await open('check'); await close('check', 'pass');
+      assert.equal((await new StateStore(paths).read()).graph.status, 'complete');
+    });
 });
 test('final measurement locks out workspace mutations even on unrelated resources', async () => {
   await scenario({ resources: ['project-write'], policy: { serialize_mutations: true }, start: ['proof', 'change'], terminal: ['proof', 'change'],

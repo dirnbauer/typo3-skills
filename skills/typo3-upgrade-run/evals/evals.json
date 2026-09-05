@@ -598,18 +598,18 @@
     {
       "id": "site-size-dependent-hard-runtime-profiles",
       "kind": "behaviour",
-      "status": "reviewed",
-      "reviewed_by": "dirnbauer",
+      "status": "proposed",
       "prompt": "Do not give every TYPO3 project the same hard runtime. Size the website from read-only intake evidence and apply distinct small, large, or huge deadlines while preserving protected closure time and the zero-difference Contract A verdict.",
-      "expected_output": "Classifies the site from recorded routes, content/file counts, sites, languages, active/local extensions, stateful migrations, and compatibility blockers. It seals small as 8h with a 2h closure reserve, large as 12h with 3h reserved, or huge as 14h with 4h reserved; prevents arbitrary max-hours overrides and underclassification; enforces the profile migration cutoff and hard deadline; and never converts missing proof into a pass.",
+      "expected_output": "Classifies from all nine recorded metrics. New site-size-v2 seals use small 8h with 2h reserved, large 24h with 6h reserved, or huge 48h with 12h reserved. These are elapsed-time caps, not completion promises or increased retry budgets. Existing unmarked/overnight-v1 seals retain their original budgets. Refuses arbitrary overrides, underclassification, clock resets and false passes. The changed timing policy requires fresh human review.",
       "assertions": [
         "Website size is determined by the smallest profile whose limits contain every recorded sizing metric, not by URL count alone",
         "Small uses a hard 8-hour deadline with a T+6h migration cutoff and 2-hour closure reserve",
-        "Large uses a hard 12-hour deadline with a T+9h migration cutoff and 3-hour closure reserve",
-        "Huge uses a hard 14-hour deadline with a T+10h migration cutoff and 4-hour closure reserve",
+        "New large runs use a hard 24-hour deadline with a T+18h migration cutoff and 6-hour closure reserve",
+        "New huge runs use a hard 48-hour deadline with a T+36h migration cutoff and 12-hour closure reserve",
+        "A resumed legacy seal keeps its original deadline and reserves; no session or pause resets elapsed time",
         "The runtime profile is sealed from inspectable intake evidence before baseline or migration nodes can open",
         "Callers cannot replace the profile with an arbitrary max-hours value or extend a sealed deadline",
-        "Crossing the migration cutoff blocks new P05-P10 work while leaving the reserved P11-P15 closure path available",
+        "Crossing the migration cutoff blocks new P05-P10 work while leaving the reserved P11-P13 proof path available",
         "A deadline or unresolved blocker cannot be reported as a passing Contract A result"
       ],
       "files": []
@@ -814,13 +814,26 @@
       "files": []
     },
     {
+      "id": "passed-terminal-does-not-hide-blocked-branch",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "The inspection branch passed and graph-status says complete, but the interrupted migration branch is blocked. graph-validate exits zero. Can we hand over this TYPO3 update as finished?",
+      "assertions": [
+        "Inspects node outcomes and treats graph integrity separately from Contract A completion",
+        "Does not report complete while an activated required job is blocked or unfinished",
+        "Preserves the interrupted operation, reconciles its real effects before replay and retains rollback evidence",
+        "Uses graph-next to reconcile a stale derived status rather than rewriting the graph definition or fabricating closure"
+      ],
+      "files": []
+    },
+    {
       "id": "overnight-forecast-not-guarantee",
       "kind": "behaviour",
       "status": "proposed",
       "prompt": "This project has 60,000 public routes, several custom forks and a 900 GB media archive. Guarantee the entire job will be green by tomorrow morning.",
       "assertions": [
         "Measures size and effective throughput before admitting mutation",
-        "Keeps the maximum overnight window at fourteen hours",
+        "Keeps the absolute cap at 48 elapsed hours, preserves existing sealed deadlines and refuses to guarantee tomorrow-morning completion without measured feasibility",
         "Explains any infeasible required work and requests separately scoped prerequisites instead of reducing mandatory proof"
       ]
     },

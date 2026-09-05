@@ -64,7 +64,7 @@ Admin Panel access, individual editor choices, no globally forced visibility.
 | Installed Core/CLI hid runtime faults | Verify web PHP and backend deep routes; clean build and warm-cache asset requests | Runtime/backend/assets checks |
 | Deployment metadata absent; private proof shipped in archives | Require compatible `spooner/deployer-information`; inspect toolbar; exclude run data/traces/env | P05/P12/environment + deployment handover |
 | Mandatory Lighthouse was gated behind closure | Separate A verification from B optimization; repeated budgeted runs, raw reports and versions | Lighthouse/axe `--mode verify` |
-| Expensive work repeated in nested skill loops | One parent DAG; disjoint bounded specialists; affected/seeded intermediate checks; one final proof epoch and unchanged rerun | Main graph; ≤3 global states; 8/12/14h profiles |
+| Expensive work repeated in nested skill loops | One parent DAG; disjoint bounded specialists; affected/seeded intermediate checks; one final proof epoch and unchanged rerun | Main graph; ≤3 global states; original 8/12/14h policy, now [8/24/48h for new seals](runtime-sizing.md) |
 
 ## What else belongs where
 

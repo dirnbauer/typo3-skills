@@ -44,13 +44,32 @@ state, and the only cycles are explicitly bounded retries. Five leaf skills keep
 `typo3-upgrade-closure`, and `typo3-upgrade-retrospective`. Bounded loop directories remain as node
 evidence and backwards-compatible history.
 
-Overnight admission uses measured per-node estimates and resource locks, with **8/12/14-hour**
+Unattended admission uses measured per-node estimates and resource locks, with **8/24/48-hour**
 small/large/huge windows and protected closure time. Intermediate checks target affected pages plus
 a reproducible sample; final checks use at most **three global states** and include Lighthouse.
-Hashed, current proof can wait for morning human acceptance without repeating unchanged tests.
+Hashed, current proof can wait for later human acceptance without repeating unchanged tests.
 See the [graph design and source review](skills/typo3-upgrade-run/references/graph-architecture.md)
 and [September collection review](references/skills-review-2026-09.md). These are execution budgets,
-not a promise that any arbitrary site can be completely upgraded overnight.
+not completion promises: small sites target overnight work; bigger sites may take up to two days.
+See the [installation and actual behavior validation](references/validation-2026-09-05.md) for
+executed checks, remaining real-site benchmarks and the human review queue.
+
+### Choose a client
+
+`./install.sh --user-only --client gemini` installs only Gemini skills; `--client codex` or
+`--client cursor` selects those clients instead. Omit `--client` for the existing all-client behavior.
+`--project-only` uses the selected project's discovery directory. Matching symlinks and identical
+copied bundles are retained; conflicting directories and project instructions are never erased.
+Resolve any reported conflict explicitly before retrying. Generate without installing with
+`./install.sh --generate-only`.
+
+Gemini is supported through native `skills/*/SKILL.md` discovery and a generated
+`gemini-extension.json`. For extension distribution, run `gemini extensions link /path/to/typo3-skills`
+or install the repository through Gemini; do not copy its extension manifest into a customer project.
+Verify with `gemini skills list` or `/skills reload` in the client. See the official
+[Gemini skill discovery](https://geminicli.com/docs/cli/using-agent-skills/) and
+[extension reference](https://geminicli.com/docs/extensions/reference/).
+The installer does not authenticate Gemini or publish a ChatGPT plugin.
 
 ### TYPO3 development
 

@@ -50,7 +50,7 @@ t3u graph-forecast --evidence nodes/intake/runtime-plan.json --json
 ```
 
 The command follows chosen outcome edges and prerequisites, schedules resource-compatible jobs,
-serializes writes/frozen proof, and protects the profile's migration cutoff and 2/3/4-hour closure
+serializes writes/frozen proof, and protects the profile's migration cutoff and 2/6/12-hour closure
 reserve. It includes at least 30 minutes of uncertainty/rollback buffer. The immutable output names
 its input/source hashes, schedule, serial cost, estimated finish and reserved finish. A non-fitting
 plan exits 4 and cannot admit baseline/migration nodes. A missing pilot/route is not a zero-cost job.
@@ -58,6 +58,9 @@ plan exits 4 and cannot admit baseline/migration nodes. A missing pilot/route is
 The list scheduler is conservative, not an optimal-scheduling solver. It gives an admission estimate,
 not a guarantee. Reforecast remaining work at a safe checkpoint after slow migration, a repair or a
 changed estimate. Keep the original deadline and append a new forecast; never replace old evidence.
+New runs are capped at 8/24/48 elapsed hours for small/large/huge sites. A multi-day run needs durable
+checkpoints before interruption, not an always-running shell. Resumption counts elapsed downtime;
+legacy seals retain their original deadlines. The longer window does not enlarge attempt budgets.
 
 ## Work, recovery and safe resumption
 
@@ -80,6 +83,9 @@ edge's smaller limit. Local tool iterations spend the same job budget: a leaf do
 repair pass and returns; it cannot launch its own outer retry programme. Two no-progress attempts
 or oscillation stop earlier. Existing `loop-start` scaffolding is generated once, not seven reports
 rewritten by the agent at every step.
+Before advertising or opening a repair, the engine checks whether a successful continuation can
+still traverse its recovery edges. Exhausted routes wait/stop before spending another repair pass;
+closure checks repeat this guard in case another worker spent the shared budget meanwhile.
 
 Final proof consumes one frozen epoch after the last change. HTTP/DOM and pixel readers can reuse
 the same capture artifacts. Additional widget actions stay in targeted journeys; global states
@@ -87,14 +93,18 @@ remain at most default, keyboard-focus and nav-open. Code changes invalidate fin
 diagnose with scoped checks, then issue one new final epoch. Never redo successful data migrations
 merely to refresh documentation.
 
-## Overnight terminal states
+## Unattended terminal states
+
+Graph integrity validation is not a completion verdict. An independent passed terminal cannot
+hide blocked or unfinished activated work. `graph-status` derives the summary from node evidence;
+`graph-next` can reconcile a stale derived label without altering graph definitions or proof.
 
 - **Verified awaiting acceptance:** complete checks, `graph-validate`, and `closure-verify` passed
   before the deadline. End execution and show the manifest/hash and next human decision.
 - **Blocked/incomplete:** preserve the checkpoint, failed command/exit, exact cause, rollback status,
   coverage gap and smallest required decision. Do not spend the reserve on new migration scope.
 - **Closed locally:** a human accepted the observed manifest and the guarded Contract A gate passed.
-  Human acceptance may arrive in the morning; currentness checks still apply to the timely receipt.
+  Human acceptance may arrive later; currentness checks still apply to the timely receipt.
 
 No status authorizes deployment. Commit and push are distinct, explicitly authorized final actions.
 Proof/report-only commits preserve source identity; implementation changes require current proof.
