@@ -1,6 +1,6 @@
 # TYPO3 v14 Removals & Deprecations — Conformance Reference
 
-**Canonical owner:** this file is the canonical v13/v14 breaking-change fact catalog. Other skills (`typo3-extension-upgrade`, `typo3-upgrade-effort-model`, etc.) cross-link here instead of restating the fact lists — see the fact-ownership rule in `skill-repo-skill` `skills/skill-repo/references/skill-quality.md` ("Fact and trigger ownership"). When a new TYPO3 release changes these facts, edit only this file.
+**Canonical owner:** This file is the canonical v13/v14 breaking-change fact catalog. Other skills (`typo3-extension-upgrade`, `typo3-upgrade-effort-model`, etc.) cross-link here instead of restating the fact lists — see the fact-ownership rule in `skill-repo-skill` `skills/skill-repo/references/skill-quality.md` ("Fact and trigger ownership"). When a new TYPO3 release changes these facts, edit only this file.
 
 **Sources:** TYPO3 Core Changelog [14.0](https://docs.typo3.org/c/typo3/cms-core/main/en-us/Changelog/14.0/Index.html) · [14.1](https://docs.typo3.org/c/typo3/cms-core/main/en-us/Changelog/14.1/Index.html) · [14.2](https://docs.typo3.org/c/typo3/cms-core/main/en-us/Changelog/14.2/Index.html) · [14.3](https://docs.typo3.org/c/typo3/cms-core/main/en-us/Changelog/14.3/Index.html)
 **Purpose:** Score extensions against v14 removals (must fix now) and v14 deprecations (must fix before v15).
@@ -301,6 +301,10 @@ No removals; all removed in v15.0.
 **Direction of travel:** v15 drives out superglobals and static state in favor of injected PSR-7 request + stateless services.
 
 ---
+
+### Frontend CSP is opt-in, not default-on (verified against v14 core source)
+
+Frontend Content-Security-Policy is gated by the feature flag `security.frontend.enforceContentSecurityPolicy` (cms-core `CspConfigurationFactory`); only **backend** CSP is default-on in v14. "v14 frontend CSP strict by default" overstates it — any claim that something "fights the default frontend CSP" is conditional on the flag being enabled (recommended for NR projects, but a deliberate choice). Unrelated but adjacent: prefer server-side rendering for Mermaid/syntax highlighting regardless of CSP, since v14.0 removed core asset concat/compression (#108055) and client JS needs an external build tool.
 
 ## Part 3 — New v14 capabilities to recommend (excellence bonus)
 

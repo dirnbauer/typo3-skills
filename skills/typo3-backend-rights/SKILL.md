@@ -1,5 +1,7 @@
 ---
 name: typo3-backend-rights
+metadata:
+  skill_type: preference
 description: "Build and audit TYPO3 backend editor rights after an explicit choice between one user-facing main group with simple internal leaves or preserving distinct existing roles. Covers CTypes, fields, page ACLs, languages, modules, mounts, MFA, Forms/Powermail, Workspaces, User TSconfig, Visual Editor, Redirects, safe membership cutover, and customer login/backend branding with the Application Context. Use when permissions are missing/read-only, be_groups is incomplete, or legacy roles may be consolidated. Always preserve a separate working administrator."
 ---
 

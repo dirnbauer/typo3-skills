@@ -1,8 +1,9 @@
 ---
 name: "typo3-batch"
-description: "Roll out the same change across many TYPO3 extensions at once: plans and executes batch migrations and large-scale refactors over every extension in a monorepo or packages/ directory. Covers hooks to PSR-14 events, TCA, dependency injection, Fluid, namespaces, ext_localconf, Content Blocks, localization and PHP upgrades. Use when the user says roll out a change to every extension, inventory which extensions still use a removed API such as HashService and fix them together, apply the same fix across the monorepo, mass or codemod-style refactor, or sequence a large refactor so it stays reviewable. Requires a TYPO3 codebase and more than one extension; a single extension is typo3-rector."
+description: "Roll out one repeated change over multiple TYPO3 extensions in a monorepo or packages/ directory. Use when inventorying which packages still call a removed API such as HashService and fixing them together, applying a shared codemod, or splitting a mass refactor into reviewable batches. Owns cross-package inventory, ordering and per-batch verification, not explaining individual Core APIs. Requires more than one extension; a single-package mechanical PHP rewrite belongs to typo3-rector."
 compatibility: "TYPO3 14.x"
 metadata:
+  skill_type: preference
   version: "1.0.0"
   origin: "webconsulting"
 license: "MIT / CC-BY-SA-4.0"
@@ -14,8 +15,9 @@ license: "MIT / CC-BY-SA-4.0"
 > Adapted from Boris Cherny's (Anthropic) Claude Code `/batch` skill for TYPO3 contexts.
 > **Target:** TYPO3 v14.x only.
 
-Orchestrate large-scale, parallelizable changes across a TYPO3 codebase. Decompose work
-into 5–30 independent units, present a plan, then execute each unit with verification.
+Orchestrate cross-package changes in reviewable, independently testable units. Split by root cause
+and write ownership, not a fixed unit count. Inside an upgrade graph, execute only the assigned
+batch and return its evidence; the parent owns retries, snapshots, deadline and final proof.
 
 ## Process
 
@@ -29,9 +31,9 @@ into 5–30 independent units, present a plan, then execute each unit with verif
 
 - Each unit must be independently verifiable
 - Never modify the same file in two different units
-- Run `composer normalize` / `php -l` / PHPStan after PHP changes
-- Run tests if available (`vendor/bin/phpunit`)
-- Commit each unit separately with descriptive message
+- Lint changed PHP and run the relevant tests per unit; run full PHPStan/tests after the batch.
+- Normalize Composer metadata when it changed, not after every unrelated PHP edit.
+- Commit reviewable batches only with user authority; pushing is a separate action.
 - Stop and report if a unit breaks tests
 
 ## Common TYPO3 Batch Operations

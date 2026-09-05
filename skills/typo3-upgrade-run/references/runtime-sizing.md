@@ -18,7 +18,32 @@ t3u runtime-seal --evidence .typo3-update/nodes/intake/runtime-size.json
 The migration cutoff blocks starting a new P05–P10 cause. P11–P13 proof, repair, certificate and
 handover may use the reserve. The hard deadline cannot produce a green Contract A result when proof
 is missing. Every profile fits one overnight window; site size changes the admitted work and sample,
-not the 14-hour ceiling. Contract B remains outside the Contract A clock after A has closed.
+not the 14-hour ceiling. Optional Contract B work is not automatically part of the overnight job;
+schedule it only with separate authority and a stated budget. Never silently extend the current
+overnight job because A closed early.
+
+## Feasibility before mutation
+
+The table is a hard stop policy, not a claim that every huge site can finish in fourteen hours.
+During intake, write `nodes/intake/runtime-forecast.json` from a small representative pilot:
+effective backup/import throughput, HTTP/DOM URLs per minute, captures per minute, installed
+browser-start cost, expected migration units, editor journeys and three-run Lighthouse duration.
+Reuse the pilot as evidence; do not run a second benchmark programme.
+
+Forecast the critical path with the graph's capacity-one locks. Include both final passes and
+the 2/3/4-hour closure reserve; tests sharing a browser or database cannot be counted as parallel.
+Start only if required work fits with a buffer. If it does not fit, name the specific blocker
+before mutation and split separately authorized prerequisite work from the overnight migration.
+Do not lower proof thresholds, silently drop required coverage or promise an unmeasured 10× speedup.
+Intermediate checks use affected routes plus a stable random sample; repeated full-site sweeps
+and sibling-owned retry loops are forbidden. Final proof retains its declared coverage and ≤3
+global interaction states, with extra widget actions inside targeted journeys rather than a
+page × viewport × widget-state Cartesian product.
+
+Enforce admission using `t3u graph-forecast --evidence nodes/intake/runtime-plan.json`.
+The plan shape and checkpoint procedure are in [the unattended controller](overnight-controller.md).
+Verification must finish within the window; a hash-bound `closure-verify` receipt separates this
+work from later human acceptance without allowing late initial proof or silent scope expansion.
 
 ## Classification
 

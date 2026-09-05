@@ -10,8 +10,7 @@
 #
 # A check that does not run cannot fail.
 #
-# Thresholds below are RATCHETS set at measured values, not aspirations. A third colliding
-# pair or a reviewed trigger case that stops passing is a build failure, not a slow slide.
+# Thresholds are ratchets: any unrecorded overlap or regressed reviewed trigger fails.
 #
 # Usage:
 #   ./scripts/check.sh            everything
@@ -75,21 +74,16 @@ run "eval structure and coverage (S4, S5)" \
 run "trigger evals actually pass (S2, S4)" \
     python3 scripts/run_evals.py --grader lexical --fail-under 1.0 --fail-under-proposed 1.0
 
-# Budget 3, and every pair is between vendored skills whose descriptions we cannot edit:
-#   0.296  web-design-guidelines <-> web-platform-design   (Vercel / ehmo)
-#   0.170  typo3-conformance <-> typo3-extension-upgrade   (both Netresearch)
-#   0.133  postgres-best-practices <-> web-design-guidelines (Supabase / Vercel)
-# Raised from 1 to 3 when the general-web skills were brought back from the archived
-# repository. This is a deliberate, recorded loosening, not drift: the first pair are
-# genuinely adjacent skills — one is web design and accessibility guidance, the other
-# platform and WCAG patterns — and vendoring means the only honest fixes are to drop one
-# skill or to edit upstream text, neither of which we will do silently. If a *webconsulting*
-# skill ever appears in this list, that one is ours and must be reworded rather than
-# absorbed by the budget. Leaving slack in a ratchet is how a budget quietly becomes a target.
-run "trigger collisions within budget (S3)" \
-    python3 scripts/trigger_collisions.py --threshold 0.13 --fail-over 3
+# The scoped collection includes real adjacent domains. Preserve useful wording
+# and immutable upstream text; record exact boundaries, never a larger fungible count.
+run "no unrecorded trigger overlaps (S3)" \
+    python3 scripts/trigger_collisions.py --threshold 0.13 \
+        --allowlist catalog/trigger-collision-allowlist.json --fail-over 0
 
-run "vendored skills unmodified" \
+run "collection tooling regression tests" \
+    python3 -m unittest discover -s scripts/tests -q
+
+run "pinned upstream bytes and attribution" \
     python3 scripts/check_attribution_guardrails.py
 
 # --- the harness -----------------------------------------------------------------------
@@ -98,7 +92,7 @@ if [ "$FAST" -eq 1 ]; then
 else
     HARNESS="skills/typo3-upgrade-run/scripts"
     if [ ! -d "$HARNESS/node_modules" ]; then
-        say "  · harness suite skipped (no node_modules — run: cd $HARNESS && npm ci)"
+        bad "harness suite unavailable (run: cd $HARNESS && npm ci); use --fast only for an explicit partial check"
     else
         run "harness unit and e2e suite" \
             bash -c "cd '$HARNESS' && npm test --silent"

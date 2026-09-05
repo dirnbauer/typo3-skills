@@ -1,5 +1,7 @@
 ---
 name: typo3-design-system-page
+metadata:
+  skill_type: preference
 description: "Build and maintain an accessible design-system overview inside a chosen TYPO3 installation: audit the rendered site and brand assets, document message, conditional contrast evidence, semantic colors and ramps, typography, foundations, components, imagery, and facts, then generate design.md, tokens.json, and a downloadable one-page PDF with a text-free AI visual. Use for living style guides, brand portals, design token documentation, corporate design pages, or design-system downloads. Insert content only after the user creates the target TYPO3 page and supplies its UID. Content Block schemas belong to typo3-content-blocks; product help centers belong to webconsulting-create-documentation."
 ---
 
@@ -104,7 +106,7 @@ keyboard-operable document tabs. Never encode a token or status by color alone.
    link on the TYPO3 page.
 
 Use the prompt constraints in [artifact-contract.md](references/artifact-contract.md). In clients
-that cannot access bundled assets/scripts, recreate the same outputs in the selected sitepackage
+that cannot access bundled assets or scripts, recreate the same outputs in the selected sitepackage
 and disclose the lower automation level.
 
 ## Integrate in TYPO3

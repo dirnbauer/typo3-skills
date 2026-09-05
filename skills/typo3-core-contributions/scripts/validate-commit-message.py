@@ -4,14 +4,32 @@ TYPO3 Commit Message Validator
 Validates commit messages against TYPO3 contribution standards
 """
 
-import sys
-import re
-import argparse
-from typing import List, Tuple
+from __future__ import annotations
 
+import argparse
+import re
+import sys
+from pathlib import Path
 
 VALID_TYPES = ["BUGFIX", "FEATURE", "TASK", "DOCS", "SECURITY"]
 BREAKING_PREFIX = "[!!!]"
+
+
+def resolve_input_file(raw: str) -> Path | None:
+    """Resolve a user-supplied path and confirm it is a readable regular file.
+
+    Returns None (after printing the reason) when the argument does not name an
+    existing regular file, so a mistyped or hostile --file cannot reach the
+    filesystem unchecked.
+    """
+    path = Path(raw).expanduser().resolve()
+    if not path.exists():
+        print(f"Error: File not found: {raw}")
+        return None
+    if not path.is_file():
+        print(f"Error: Not a regular file: {raw}")
+        return None
+    return path
 
 
 class CommitMessageValidator:
@@ -21,7 +39,7 @@ class CommitMessageValidator:
         self.errors = []
         self.warnings = []
 
-    def validate(self) -> Tuple[bool, List[str], List[str]]:
+    def validate(self) -> tuple[bool, list[str], list[str]]:
         """Run all validation checks"""
         self.check_subject_line()
         self.check_blank_line()
@@ -51,11 +69,10 @@ class CommitMessageValidator:
         commit_type = match.group(1)
 
         # Check for breaking change prefix
-        if subject.startswith("[!!!]"):
-            if commit_type == "BUGFIX":
-                self.warnings.append(
-                    "Breaking changes are unusual for BUGFIX. Consider using FEATURE or TASK"
-                )
+        if subject.startswith("[!!!]") and commit_type == "BUGFIX":
+            self.warnings.append(
+                "Breaking changes are unusual for BUGFIX. Consider using FEATURE or TASK"
+            )
 
         # Extract subject without type prefix
         subject_without_type = re.sub(type_pattern, "", subject).strip()
@@ -78,10 +95,23 @@ class CommitMessageValidator:
         if subject.endswith("."):
             self.errors.append("Subject line should not end with a period")
 
+        # The reference's checklist says "No extension names (EXT:) in subject".
+        # Measured over the 500 most recently merged core changes, 11 do carry
+        # one - uncommon but accepted, so this is a warning, not an error. The
+        # changed paths usually say which extension it is, and the subject
+        # budget is 52 characters.
+        if "EXT:" in subject:
+            self.warnings.append(
+                "Subject names an extension with 'EXT:'. The changed paths usually "
+                "say which extension it is - consider spending those characters on "
+                "what the change does (11 of the 500 most recently merged core "
+                "changes keep it, so this is a preference, not a rule)"
+            )
+
         # Check for imperative mood (heuristic)
         if subject_without_type:
             first_word = subject_without_type.split()[0].lower()
-            if first_word.endswith("ed") or first_word.endswith("ing"):
+            if first_word.endswith(("ed", "ing")):
                 self.warnings.append(
                     f"Use imperative mood: '{first_word}' may not be imperative. "
                     "Use 'Fix' not 'Fixed' or 'Fixing'"
@@ -137,15 +167,21 @@ class CommitMessageValidator:
                                 "Use 'main' or version like '13.4'"
                             )
 
-        # Warnings for missing tags
+        # Both tags are mandatory, so both are errors rather than warnings.
+        # Resolves: the core commit-msg hook refuses the commit without it.
+        # Releases: the hook accepts a message without it, but the change cannot
+        # be merged - on change 92020 a reviewer had to add the line by hand
+        # before voting, because it decides which branches the fix reaches.
         if not has_resolves:
-            self.warnings.append(
-                "No 'Resolves: #<issue>' tag found. Required for features and tasks."
+            self.errors.append(
+                "No 'Resolves: #<issue>' tag found. Required for every commit, "
+                "regardless of type - the commit-msg hook rejects the commit without it"
             )
 
         if not has_releases:
-            self.warnings.append(
-                "No 'Releases:' tag found. Required to specify target versions."
+            self.errors.append(
+                "No 'Releases:' tag found. Required for every commit - it names the "
+                "branches the change targets, e.g. 'Releases: main, 14.3'"
             )
 
     def check_change_id(self):
@@ -175,12 +211,11 @@ class CommitMessageValidator:
             ):
                 continue  # Skip footer
 
-            if len(line) > 72:
-                # Allow URLs to be longer
-                if not re.search(r"https?://", line):
-                    self.warnings.append(
-                        f"Line {i}: Length {len(line)} exceeds 72 characters"
-                    )
+            # Lines carrying a URL are allowed to exceed the limit.
+            if len(line) > 72 and not re.search(r"https?://", line):
+                self.warnings.append(
+                    f"Line {i}: Length {len(line)} exceeds 72 characters"
+                )
 
 
 def main():
@@ -199,12 +234,10 @@ def main():
 
     # Get message
     if args.file:
-        try:
-            with open(args.file, "r") as f:
-                message = f.read()
-        except FileNotFoundError:
-            print(f"Error: File not found: {args.file}")
+        path = resolve_input_file(args.file)
+        if path is None:
             return 1
+        message = path.read_text(encoding="utf-8")
     elif args.message:
         message = args.message
     else:
@@ -226,7 +259,7 @@ def main():
 
     # Validate
     validator = CommitMessageValidator(message)
-    is_valid, errors, warnings = validator.validate()
+    _is_valid, errors, warnings = validator.validate()
 
     # Print results
     print("=" * 60)

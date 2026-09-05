@@ -57,7 +57,9 @@ Use `assets/Build/Scripts/runTests.sh` as starting point. Customize:
 |--------|-------------|--------|
 | `-s` | Test suite | `unit`, `functional`, `functionalParallel`, `e2e`, `lint`, `phpstan`, `cgl`, `rector`, `fuzz`, `mutation`, `composer` (runs a composer command, e.g. `-s composer dump-autoload`) |
 | `-d` | Database | `sqlite` (default), `mariadb`, `mysql`, `postgres` |
-| `-i` | DB version | mariadb: 10.11, mysql: 8.0, postgres: 16 |
+| `-i` | DB version | mariadb: 11.8 (accepted: 10.11, 11.4, 11.8, 12.3), mysql: 8.0, postgres: 16 |
+
+A MariaDB version that has left support is mapped onto the LTS of its own series and the substitution is printed — `-i 10.5` runs 10.11, `-i 12.2` runs 12.3 — so an old call in a Makefile keeps working instead of failing. `DBMS_VERSION_EXACT=1` runs the requested version verbatim, for reproducing a bug on the engine a customer actually operates.
 | `-p` | PHP version | `8.2`, `8.3`, `8.4`, `8.5` |
 | `-x` | Enable Xdebug | |
 | `-n` | Dry-run | For cgl, rector |
@@ -151,7 +153,7 @@ Reserve plain `phpunit --filter=SomeClass` for a single class. (This is the conc
 - Mark incompatible tests with `#[Group('not-sqlite')]`
 
 ```bash
-./Build/Scripts/runTests.sh -s functional -d mariadb -i 10.11
+./Build/Scripts/runTests.sh -s functional -d mariadb -i 11.8
 ./Build/Scripts/runTests.sh -s functional -d mysql -i 8.0
 ```
 
@@ -250,6 +252,8 @@ PHP_OPCACHE_OPTS="-d opcache.enable_cli=1 -d opcache.jit=1255 -d opcache.jit_buf
 ```
 
 **Note**: Disable JIT for coverage (`-d opcache.jit=off`) as it's incompatible with Xdebug.
+
+**Functional suites: run WITHOUT JIT.** Core-testing container PHP builds (seen on 8.3 and 8.5 images) with `opcache.jit=1255` can segfault **silently** during functional bootstrap — exit 139, no PHP error, dies between PHPUnit's "Configuration:" line and the first test, triggered by the *shape* of perfectly valid source (a plain property+getter on an Extbase entity flipped it). Functional suites are IO-bound, JIT gains nothing: use a separate `PHP_FUNCTIONAL_OPTS="-d opcache.enable_cli=1"` (no JIT) for functional/functionalParallel and keep JIT for phpstan/cgl/unit. Diagnosis pattern: fast probe via `runTests.sh -s functional -- --filter OneTestClass`, stash-bisect per candidate file, cross-check with `-d opcache.jit=off`.
 
 ## Permission Handling
 
@@ -385,6 +389,34 @@ Verify the constructor at the **resolved** version, not the library's `main`, an
 run the static analyzer **after** the tests are written (test files are analyzed
 too). CI remains authoritative — treat the rsynced `.Build` as a local fast path,
 not a substitute for the CI matrix.
+
+### A `.Build` also pins a PHP version, which can make one suite unrunnable
+
+Compatibility is not only about library versions. `composer install` writes
+`.Build/vendor/composer/platform_check.php` from the PHP it resolved under, and
+that file **fatals** rather than warns when the runtime is older:
+
+```
+Fatal error: Uncaught RuntimeException: Composer detected issues in your platform:
+Your Composer dependencies require a PHP version ">= 8.4.1". You are running 8.2.30.
+```
+
+That matters for any suite whose gate pins a *lower* PHP than the one the
+`.Build` was resolved under. The usual case is Rector: its PHPUnit rule set
+activates from the phpunit version composer installed, so the gate is pinned low
+in CI (`rector-php-version: '8.2'`) — and in a worktree whose `.Build` came from
+a PHP 8.4 resolve, `runTests.sh -s rector -n -p 8.2` cannot start at all. The
+suite is not failing; it never ran.
+
+Recognise it by the message: a `platform_check.php` fatal is an environment
+mismatch, never a code finding. Then pick one:
+
+- keep a second `.Build` resolved at the pinned version for that one gate, or
+- accept CI as the only place that gate runs — and **say so** when reporting
+  which gates were run locally, rather than listing it as green.
+
+Silently skipping it is the failure mode: the gate is then first evaluated in
+CI, on a pushed branch, which costs a round-trip per finding.
 
 ## Troubleshooting
 

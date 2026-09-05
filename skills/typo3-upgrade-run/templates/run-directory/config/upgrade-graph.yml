@@ -1,8 +1,15 @@
 schema: typo3-upgrade-run/graph@1
 id: typo3-14.3-project-upgrade
+policy:
+  require_artifacts: true
+  require_forecast: true
+  serialize_mutations: true
+  max_node_attempts: 3
+  max_total_retries: 12
 
 # The engine may expose ready nodes to parallel agents, but resource locks remain exclusive.
 resources:
+  - project-write
   - browser-proof
   - composer
   - ddev-stateful
@@ -58,13 +65,13 @@ nodes:
   data-recovery:
     skill: typo3-upgrade-intake
     phase: P01
-    mutation: stateful
+    # Request/verify an authorized local dataset; live sync remains a separate task.
     resources: [ddev-stateful]
     outcomes: [pass, blocked]
   sitemap-recovery:
     skill: typo3-upgrade-intake
     phase: P00
-    mutation: code
+    # Inspect fallback discovery only. Site repairs wait until Baseline A exists.
     outcomes: [pass, not-applicable, blocked]
   degraded-discovery:
     skill: typo3-upgrade-intake
@@ -213,7 +220,8 @@ nodes:
     phase: P10
     outcomes: [pass, blocked]
   rte-visual-editor:
-    skill: typo3-visual-editor
+    # CKEditor is the default RTE owner; delegate inline editing only when installed.
+    skill: typo3-ckeditor5
     phase: P10
     mutation: stateful
     resources: [ddev-stateful, backend-session]
@@ -225,38 +233,42 @@ nodes:
     outcomes: [pass, blocked]
   target-content-epoch:
     skill: typo3-upgrade-closure
-    phase: P10
-    mutation: stateful
+    phase: P11
     resources: [ddev-stateful]
     outcomes: [pass, invalid, blocked]
   content-ledger-recovery:
     skill: typo3-upgrade-closure
-    phase: P10
+    phase: P11
     outcomes: [pass, blocked]
 
   http-dom-proof:
+    freeze: true
     skill: typo3-upgrade-closure
     phase: P11
     resources: [browser-proof]
     evidence_loop: required
     outcomes: [pass, findings, invalid, harness-error, blocked]
   visual-proof:
+    freeze: true
     skill: typo3-upgrade-closure
     phase: P11
     resources: [browser-proof]
     evidence_loop: required
     outcomes: [pass, findings, invalid, harness-error, blocked]
   component-sentinels:
-    skill: typo3-upgrade-closure
+    freeze: true
+    skill: typo3-playwright
     phase: P11
     resources: [browser-proof]
     outcomes: [pass, findings, invalid, blocked]
   backend-operations:
+    freeze: true
     skill: typo3-upgrade-closure
     phase: P12
     resources: [backend-session]
     outcomes: [pass, findings, invalid, blocked]
   lighthouse-axe:
+    freeze: true
     skill: typo3-upgrade-closure
     phase: P12
     resources: [browser-proof]
@@ -314,11 +326,11 @@ nodes:
     phase: P11
     mutation: code
     resources: [browser-proof]
-    outcomes: [http, visual, component, backend, quality, contract, blocked]
+    outcomes: [http, visual, component, backend, quality, contract, reproof, blocked]
   closure-reconcile:
     skill: typo3-upgrade-closure
     phase: P13
-    outcomes: [pass, blocked]
+    outcomes: [pass, reproof, blocked]
 
   closure-join:
     skill: typo3-upgrade-closure
@@ -495,7 +507,7 @@ edges:
   - { id: visual-markup, from: visual-classify, outcome: markup, to: markup-recovery }
   - { id: visual-content, from: visual-classify, outcome: content, to: content-recovery }
   - { id: visual-session, from: visual-classify, outcome: session, to: session-recovery }
-  - { id: visual-harness-route, from: visual-classify, outcome: harness, to: harness-recovery }
+  - { id: visual-harness-route, from: visual-classify, outcome: harness, to: closure-harness-recovery }
   - { id: visual-classify-blocked, from: visual-classify, outcome: blocked, to: stopped }
   - { id: css-retry, from: css-recovery, outcome: pass, to: visual-proof, retry: true, max_traversals: 2 }
   - { id: css-blocked, from: css-recovery, outcome: blocked, to: stopped }
@@ -530,6 +542,7 @@ edges:
   - { id: closure-harness-backend, from: closure-harness-recovery, outcome: backend, to: backend-operations, retry: true, max_traversals: 2 }
   - { id: closure-harness-quality, from: closure-harness-recovery, outcome: quality, to: lighthouse-axe, retry: true, max_traversals: 2 }
   - { id: closure-harness-contract, from: closure-harness-recovery, outcome: contract, to: contract-a-gate, retry: true, max_traversals: 2 }
+  - { id: closure-harness-reproof, from: closure-harness-recovery, outcome: reproof, to: target-content-epoch, retry: true, max_traversals: 2 }
   - { id: closure-harness-blocked, from: closure-harness-recovery, outcome: blocked, to: stopped }
   - { id: closure-joined, from: closure-join, outcome: pass, to: contract-a-gate }
   - { id: closure-join-blocked, from: closure-join, outcome: blocked, to: stopped }
@@ -538,6 +551,7 @@ edges:
   - { id: contract-invalid, from: contract-a-gate, outcome: invalid, to: closure-harness-recovery }
   - { id: contract-blocked, from: contract-a-gate, outcome: blocked, to: stopped }
   - { id: contract-reconcile-retry, from: closure-reconcile, outcome: pass, to: contract-a-gate, retry: true, max_traversals: 2 }
+  - { id: contract-reconcile-reproof, from: closure-reconcile, outcome: reproof, to: target-content-epoch, retry: true, max_traversals: 2 }
   - { id: contract-reconcile-blocked, from: closure-reconcile, outcome: blocked, to: stopped }
   - { id: structured-enrichment-pass, from: structured-data-enrichment, outcome: pass, to: elevation-join }
   - { id: structured-enrichment-findings, from: structured-data-enrichment, outcome: findings, to: structured-data-enrichment-recovery }

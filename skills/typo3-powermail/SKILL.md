@@ -2,6 +2,7 @@
 name: "typo3-powermail"
 description: "Builds and debugs Powermail 13+ contact and enquiry forms in TYPO3: form setup and validation, conditional fields that appear only when another answer has a particular value, finishers that pass a submission on to another system, spam protection, and email templates and delivery. Use when a confirmation or notification mail never arrives, when part of a form must show or hide depending on an earlier answer, when adding a custom finisher or validator, when spam still gets through, or when working with powermail_cond, ViewHelpers, TypoScript, PSR-14 events or tx_powermail data."
 metadata:
+  skill_type: preference
   origin: "webconsulting"
 license: "MIT / CC-BY-SA-4.0"
 ---

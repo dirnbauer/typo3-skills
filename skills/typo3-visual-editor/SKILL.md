@@ -2,6 +2,7 @@
 name: "typo3-visual-editor"
 description: "Lets TYPO3 editors click into a page and type directly on the frontend instead of opening backend forms, using FriendsOfTYPO3 Visual Editor. Use when installing, configuring, removing or migrating a sitepackage for inline frontend editing, when opening part of a template for in-place editing, when migrating colPos to PAGEVIEW content areas, or when working with f:render.text, f:render.contentArea, f:mark.contentArea, record transformation or template readiness in TYPO3 13/14."
 metadata:
+  skill_type: preference
   origin: "webconsulting"
 license: "MIT / CC-BY-SA-4.0"
 ---

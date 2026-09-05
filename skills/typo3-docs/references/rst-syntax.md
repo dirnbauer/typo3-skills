@@ -13,37 +13,19 @@ for permalink anchors and intersphinx `:ref:` targets.
 
 ## Headings
 
-```rst
-===========================
-Page title in sentence case
-===========================
-
-Section heading
-===============
-
-Subsection heading
-------------------
-```
-
-| Level | Character | Usage |
-|-------|-----------|-------|
-| 1 (Title) | `=` above and below | Page title only |
-| 2 | `=` below | Major sections |
-| 3 | `-` below | Subsections |
-| 4 | `~` below | Sub-subsections |
-| 5 | `"` below | Paragraphs |
-| 6 | `'` below | Deep nesting |
-| 7+ | `^`, `#` | Rarely used |
-
-Underline-length and sentence-case rules are in
+Hierarchy (`=` over+under for the title, then `= - ~ " '` underlines),
+sentence case and underline length:
+[Headlines and sections](https://docs.typo3.org/m/typo3/docs-how-to-document/main/en-us/Reference/ReStructuredText/Menus/HeadlinesAndSection.html)
+and the [CGL](https://docs.typo3.org/m/typo3/docs-how-to-document/main/en-us/Reference/CodingGuidelines/Index.html)
+`[upstream]`. Local deltas: underline-length notes in
 [`coding-guidelines.md`](coding-guidelines.md#heading-hierarchy); permalink
-anchor requirements are in
-[`typo3-directives.md`](typo3-directives.md#permalink-anchors-labels).
+anchors in [`typo3-directives.md`](typo3-directives.md#permalink-anchors-labels).
 
 ## Lists
 
-RST bullet/numbered/definition list syntax is standard Sphinx. TYPO3 house
-style adds one rule:
+RST bullet/numbered/definition list syntax is standard Sphinx
+([Bullet lists](https://docs.typo3.org/m/typo3/docs-how-to-document/main/en-us/Reference/ReStructuredText/Lists/BulletLists.html)).
+One added rule — `[NR policy]`, not stated on any upstream list/CGL page:
 
 **Punctuation Rules:**
 - **End with periods**: All list items should end with a period (`.`)
@@ -51,7 +33,7 @@ style adds one rule:
 - ❌ Wrong: `1. Retrieve project metadata to get available languages`
 - Exception: Single-word or very short items may omit periods for readability
 
-## README.md and Documentation/ Synchronization
+## README.md and Documentation/ Synchronization `[NR policy]`
 
 Keep README.md and Documentation/ in sync to avoid contradictions.
 
@@ -84,19 +66,36 @@ Patterns of errors found during TYPO3 v13 extension documentation reviews. Check
 
 ### Version Directive Accuracy
 
-`versionadded` and `versionchanged` directives must reference actually released versions, not planned or future versions:
+**Documenting the version you are currently building is correct** — write the
+directive with the feature, so the documentation is ready when the release
+lands. Stated by a docs-team maintainer while rejecting the opposite claim
+([HowToDocument#544](https://github.com/TYPO3-Documentation/TYPO3CMS-Guide-HowToDocument/pull/544)):
+TYPO3 15.0 is documented with `versionadded:: 15.0` while 15.0 is being built.
+The [Versions page](https://docs.typo3.org/permalink/h2document:versions)
+documents the directives themselves and does not address the timing either way.
 
 ```rst
-.. Good -- references a released version
-.. versionadded:: 3.0.0
-   Added support for TYPO3 v13.
-
-.. Bad -- references a version that does not exist yet
-.. versionadded:: 3.2.0
-   Will add multi-site support.
+.. Correct -- the release this feature is going into
+.. versionadded:: 1.3.0
+   Added multi-site support.
 ```
 
-**Validation:** Cross-check every version number in directives against git tags (`git tag --list`) and `ext_emconf.php`.
+The residual risk is only the *number*: the next release may turn out to be
+`2.0.0` rather than `1.3.0`, and then the directive names a version that never
+shipped. That happens rarely, it is detectable afterwards, and a stale number
+is tolerable — so it is not worth withholding the directive until release day.
+
+**Deliberately not enforced.** A check for this was written and then removed:
+distinguishing a skipped number from a pending one needs the full tag history,
+and three ordinary situations look identical to a skipped number — a shallow
+clone or a `--no-tags` CI checkout (the release is invisible, not missing), a
+two-component number like `13.4` against a `13.4.0` tag, and a patch release
+prepared on a maintenance line while a higher major already exists. Each of
+those produced a warning against correct documentation, which is the harm the
+old prohibition caused in the first place. For a defect this rare and this
+cheap to live with, a gate that cries wolf is worse than no gate.
+
+If a number does turn out wrong, correct it in the same commit that notices.
 
 ### ChangeLog Completeness
 
@@ -127,15 +126,21 @@ Documentation for unreleased versions (e.g., 3.1.0, 3.2.0, 4.0.0 planned feature
    subject to change. They are not available in the current version.
 ```
 
-- Never use `versionadded` or `versionchanged` for unreleased versions
+This is about features nobody has built yet — not about the version number of a
+feature that exists. A `versionadded` for the release you are building is
+correct; see *Version Directive Accuracy* above.
 
 ### Unresolved TODO Directives
 
-`.. todo::` directives should not appear in published documentation. Before release:
+`[regression]` The renderer **silently drops** `.. todo::` content — readers
+never see it, so a forgotten todo is invisible rather than embarrassing, and
+nothing relies on it rendering (verified by live render; documented upstream
+via TYPO3CMS-Guide-HowToDocument PR #542). Before release:
 
 - Search for all TODOs: `grep -rn '.. todo::' Documentation/`
-- Either resolve each TODO with actual content, or remove it
-- If a TODO must remain (rare), move it to a comment so it does not render
+- Either resolve each TODO with actual content, or delete it
+- For author-only notes use a plain `..` comment — never rely on todo as a
+  visible marker
 
 ### TypoScript Documentation Accuracy
 
@@ -177,3 +182,14 @@ Screenshot sections must contain actual images or be clearly marked:
 - **Sphinx RST Guide:** https://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html
 - **Docutils RST:** https://docutils.sourceforge.io/rst.html
 - **TYPO3 Documentation Guide:** https://docs.typo3.org/m/typo3/docs-how-to-document/main/en-us/
+
+## Interlinks: inventories are auto-provided; prefer `:ref:` over raw permalink URLs
+
+`[upstream]` for the auto-provided inventories:
+[Interlink inventories](https://docs.typo3.org/permalink/t3renderguides:interlink-inventories)
+("It is not necessary anymore to list each of the standard inventories in
+the guides.xml"). The permalink smoke test below is `[regression]`.
+
+- `guides.xml` only declares the repo's own `interlink-shortcode` — the standard inventories (`t3coreapi`, `t3viewhelper`, `t3tca`, …) are injected by the docs theme at build time, so `:ref:`t3viewhelper:…`` works without declaring them.
+- Converting a raw `` `Title <https://docs.typo3.org/permalink/short:anchor>`_ `` link to `` :ref:`Title <short:anchor>` `` is safe AND build-validated (a typo fails the render); raw permalink URLs bypass build validation but can be smoke-tested (`curl -sL -o /dev/null -w "%{http_code}" https://docs.typo3.org/permalink/<short>:<anchor>` — real ones 200-redirect, bogus 404).
+- **Title over/underline mismatch is NOT a render blocker** in the TYPO3 toolchain (phpdoc/guides is lenient where strict docutils errors; verified — a 39/33 mismatch rendered fine even under `--fail-on-log`). Fix it as a correctness/portability issue, don't call it a blocker without rendering.

@@ -3,6 +3,7 @@ name: "typo3-shadcn-content-elements"
 description: "Produces, audits, and overhauls TYPO3 Content Blocks content elements styled with shadcn/ui presets, semantic tokens, Fluid atoms, backend previews, icons, and seed data. Use when the user asks to create, restyle, review, seed, iconize, or preview TYPO3 Content Blocks with shadcn/ui, Tailwind v4 tokens, no-hardcoded-style rules, or local registry presets."
 compatibility: "TYPO3 14.x"
 metadata:
+  skill_type: capability
   version: "1.7.0"
   origin: "webconsulting"
 license: "MIT / CC-BY-SA-4.0"
@@ -147,7 +148,7 @@ When creating or overhauling Desiderio shadcn/ui content elements, respect these
 5. **Audit each content element against its contract.**
    - Read `references/content-element-contract.md`.
    - For every element, compare `config.yaml`, `templates/frontend.fluid.html`, `language/labels.xlf`,
-     `assets/icon.svg`, CSS/JS assets, backend preview, and seed coverage.
+     the element's `<block>/assets/icon.svg`, CSS/JS assets, backend preview, and seed coverage.
    - Treat `config.yaml:title` as an editor-facing product name. Prefer names like `Text & Media`, `Image Call
      to Action`, and `Logo Cloud Hero` over raw slugs such as `textmedia`, `CTA With Image`, or `Hero Logo
      Cloud`.
@@ -165,7 +166,7 @@ When creating or overhauling Desiderio shadcn/ui content elements, respect these
    - Prefer removing unsupported style fields over inventing bespoke visual variants. If a style option cannot
      be expressed by the shared shadcn atoms/molecules or existing shadcn class contracts, remove the field
      from `config.yaml`, frontend templates, backend previews, and fixtures.
-   - If a repo-level test requires every content element to keep `assets/frontend.css`, use an
+   - If a repo-level test requires every content element to keep `<block>/assets/frontend.css`, use an
      empty/comment-only marker file when the shared component layer handles all styling. Do not re-add
      `f:asset.css` includes or style rules merely to satisfy the file-presence contract.
    - Use nested `Collection` fields for second-level repeatables when the installed Content Blocks version
@@ -197,7 +198,7 @@ When creating or overhauling Desiderio shadcn/ui content elements, respect these
 
 7. **Create or refresh icons.**
    - Read `references/icon-pattern.md`.
-   - Each element gets a semantic `assets/icon.svg`.
+   - Each element gets a semantic `<block>/assets/icon.svg` in the project, not in this skill.
    - Use TYPO3-style 16x16 SVGs: transparent background, root color `var(--icon-color-primary,currentColor)`,
      `currentColor` primary paint, `var(--icon-color-accent,currentColor)` accent, readable in light and dark.
    - For large catalogs, actively prevent look-alike icons: audit normalized SVG bodies with titles removed,
@@ -241,9 +242,10 @@ When creating or overhauling Desiderio shadcn/ui content elements, respect these
      should be confined to the shadcn theme token file and generated Tailwind output.
    - Scan templates for inline scripts when shared JavaScript was introduced: `rg -n "<script>|JSON\\.parse"
      ContentBlocks/ContentElements/*/templates/frontend.fluid.html`.
-   - For a user-requested full pass, run the complete content-element audit loop repeatedly over all elements,
-     not just changed files. Ten iterations are acceptable when the user explicitly asks to loop 10 times;
-     report the stable summary and the element count.
+   - For a full audit, inventory all elements once, repair root-cause batches with affected-element checks,
+     then run one complete final verification. Use extra full passes only when the user explicitly requests
+     their count/scope; stop on non-progress and report why. Inside an upgrade graph, return one bounded
+     job to the parent instead of starting another audit loop. Report coverage and the element count.
    - For large overhauls, commit by layer: preset/theme, primitives, generated previews, icons, per-element fixes, seed data.
    - Browser-check frontend pages and TYPO3 backend layout module previews.
 

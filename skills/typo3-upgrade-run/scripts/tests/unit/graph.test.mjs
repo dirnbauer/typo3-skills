@@ -7,20 +7,55 @@ import { parse as parseYaml } from 'yaml';
 import { fileURLToPath } from 'node:url';
 import {
   graphInit, graphNext, nodeClose, nodeOpen, validateGraphDefinition, validateGraphState,
+  validClosureAcceptance,
 } from '../../lib/actions/graph.mjs';
 import { RunPaths } from '../../lib/run/paths.mjs';
 import { emptyState, StateStore } from '../../lib/run/state.mjs';
+import { forecastGraph } from '../../lib/run/forecast.mjs';
+import { runtimeWindow } from '../../lib/run/runtime.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_GRAPH = path.resolve(HERE, '../../../templates/run-directory/config/upgrade-graph.yml');
 const quietLog = { success() {}, info() {}, debug() {} };
 const quietJournal = { async append() {} };
 
+test('closure acceptance belongs to the exact observed result and follows its measurement', () => {
+  const expected = { runId: 'run', approvalId: 'APR-399', evidence: 'report.json', manifestHash: 'sha256:abc', proofCompletedAt: 1000 };
+  const record = { id: 'APR-399', stage: 'acceptance', granted_by: 'user', run_id: 'run',
+    evidence_ref: 'report.json#sha256:abc', granted_at: new Date(1500).toISOString() };
+  assert.equal(validClosureAcceptance(record, expected, 2000), true);
+  for (const patch of [{ stage: 'intent' }, { granted_by: 'assistant' }, { run_id: 'other' },
+    { evidence_ref: 'report.json#sha256:old' }, { granted_at: new Date(500).toISOString() },
+    { granted_at: new Date(3000).toISOString() }]) {
+    assert.equal(validClosureAcceptance({ ...record, ...patch }, expected, 2000), false);
+  }
+});
+
 test('the shipped upgrade graph has only bounded cycles and valid routes', async () => {
   const definition = parseYaml(await readFile(DEFAULT_GRAPH, 'utf8'));
   assert.deepEqual(validateGraphDefinition(definition), []);
   assert.ok(Object.keys(definition.nodes).length >= 40);
   assert.ok(definition.edges.some((edge) => edge.retry === true));
+});
+
+test('both optional-branch extremes of the shipped graph reach forecastable final proof', async () => {
+  const definition = parseYaml(await readFile(DEFAULT_GRAPH, 'utf8'));
+  const now = Date.now(), window = runtimeWindow(new Date(now).toISOString(), 'huge');
+  const state = { run_id: 'synthetic-routing-only', approvals: [], runtime: {
+    deadline_at: window.deadlineAt, migration_cutoff_at: window.migrationCutoffAt,
+    closure_reserve_hours: window.closureReserveHours }, graph: { definition_hash: 'fixture',
+    nodes: Object.fromEntries(Object.keys(definition.nodes).map(id => [id, { status: 'pending' }])) } };
+  for (const mode of ['pass', 'not-applicable']) {
+    const plan = { schema: 'typo3-upgrade-run/runtime-plan@1', run_id: state.run_id,
+      graph_hash: 'fixture', max_workers: 1, final_passes: 2, lighthouse_runs_per_url: 3, buffer_minutes: 30,
+      nodes: Object.fromEntries(Object.entries(definition.nodes).map(([id, n]) => [id, {
+        minutes: 1, source: 'synthetic-not-a-performance-benchmark', outcome: n.outcomes?.includes(mode) ? mode : 'pass',
+      }])) };
+    const result = forecastGraph(definition, state, plan, now);
+    assert.ok(result.schedule.some(n => n.id === 'closure-join'));
+    assert.ok(result.schedule.some(n => n.id === 'lighthouse-axe'));
+    assert.ok(!result.schedule.some(n => n.id === 'contract-a-gate'));
+  }
 });
 
 test('backend group topology is decided at intake and selects one guarded rights branch', async () => {
@@ -134,6 +169,7 @@ test('graph lifecycle activates parallel intake nodes and records evidence', asy
 
     await graphInit({ values: {}, paths, log: quietLog, journal: quietJournal });
     await nodeOpen({ values: { node: 'intake' }, paths, log: quietLog, journal: quietJournal });
+    await writeFile(path.join(paths.node('intake'), 'check.md'), 'Checked project identity, exit=0\n');
     await nodeClose({ values: { node: 'intake', outcome: 'pass', evidence: 'nodes/intake/check.md' }, paths, log: quietLog, journal: quietJournal });
     const next = await graphNext({ paths, log: quietLog });
 
@@ -171,4 +207,41 @@ test('graph-state validation catches orphaned resource locks', async () => {
     locks: { composer: 'intake' },
   };
   assert.match(validateGraphState(graph, definition, graph.definition_hash).join('\n'), /non-running node/);
+});
+
+test('optional applicability checks neither demand mutation approval nor permit a pass', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 't3u-applicability-'));
+  try {
+    const paths = new RunPaths('.typo3-update', root);
+    await mkdir(paths.configDir, { recursive: true });
+    const definition = { schema: 'typo3-upgrade-run/graph@1', resources: [], start: ['optional'], terminal: ['optional'],
+      nodes: { optional: { phase: 'P00', mutation: 'stateful', approval: 'required', outcomes: ['pass', 'not-applicable', 'blocked'] } }, edges: [] };
+    await writeFile(paths.graphDefinition, JSON.stringify(definition));
+    await new StateStore(paths).write(emptyState({ runId: '2026-09-05-test', now: new Date().toISOString() }));
+    await graphInit({ values: {}, paths, log: quietLog });
+    await assert.rejects(nodeOpen({ values: { node: 'optional' }, paths, log: quietLog }), /snapshot/);
+    await nodeOpen({ values: { node: 'optional', 'applicability-only': true }, paths, log: quietLog });
+    await assert.rejects(nodeClose({ values: { node: 'optional', outcome: 'pass', evidence: 'reason.md' }, paths, log: quietLog }), /read-only applicability/);
+    await nodeClose({ values: { node: 'optional', outcome: 'not-applicable', evidence: 'reason.md' }, paths, log: quietLog });
+    const state = await new StateStore(paths).read();
+    assert.equal(state.graph.nodes.optional.status, 'skipped');
+    assert.equal(state.graph.nodes.optional.history[0].applicability_only, true);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test('a green label cannot close Contract A with missing evidence', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 't3u-missing-closure-'));
+  try {
+    const paths = new RunPaths('.typo3-update', root);
+    await mkdir(paths.configDir, { recursive: true });
+    await writeFile(paths.graphDefinition, JSON.stringify({ schema: 'typo3-upgrade-run/graph@1', resources: [], start: ['contract-a-gate'], terminal: ['contract-a-gate'],
+      nodes: { 'contract-a-gate': { phase: 'P00', outcomes: ['pass', 'blocked'] } }, edges: [] }));
+    await new StateStore(paths).write(emptyState({ runId: '2026-09-05-test', now: new Date().toISOString() }));
+    await graphInit({ values: {}, paths, log: quietLog });
+    await nodeOpen({ values: { node: 'contract-a-gate' }, paths, log: quietLog });
+    await assert.rejects(nodeClose({ values: { node: 'contract-a-gate', outcome: 'pass', evidence: 'missing.json' }, paths, log: quietLog }), /Missing/);
+    const state = await new StateStore(paths).read();
+    assert.equal(state.contract_a.status, 'open');
+    assert.equal(state.contract_b.unlocked, false);
+  } finally { await rm(root, { recursive: true, force: true }); }
 });

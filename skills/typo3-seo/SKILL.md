@@ -3,6 +3,7 @@ name: "typo3-seo"
 description: "Makes TYPO3 pages show up correctly in search engines like Google through XML sitemaps, canonical URLs, hreflang across languages, meta tags, Open Graph, social previews, and robots rules. Use when the wrong pages are indexed, language versions get mixed up, the sitemap is empty or missing pages, a staging site must stay out of the index, or social cards are wrong. Page-type schema.org and JSON-LD implementation belongs to typo3-structured-data; on-site search belongs to typo3-solr."
 compatibility: "TYPO3 14.x"
 metadata:
+  skill_type: preference
   version: "2.0.0"
   origin: "webconsulting"
 license: "MIT / CC-BY-SA-4.0"

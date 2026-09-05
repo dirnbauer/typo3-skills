@@ -73,7 +73,6 @@ The Baseline badge shows the achieved OSPS security level (1, 2, or 3). Both bad
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/ID/badge)](https://www.bestpractices.dev/projects/ID)
 [![OpenSSF Baseline](https://www.bestpractices.dev/projects/ID/baseline)](https://www.bestpractices.dev/projects/ID)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/ORG/REPO/badge)](https://securityscorecards.dev/viewer/?uri=github.com/ORG/REPO)
-[![Go Report Card](https://goreportcard.com/badge/github.com/ORG/REPO)](https://goreportcard.com/report/github.com/ORG/REPO)
 [![License](https://img.shields.io/github/license/ORG/REPO)](LICENSE)
 
 Project description here...
@@ -88,7 +87,6 @@ Project description here...
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/ORG/REPO/badge)](https://securityscorecards.dev/viewer/?uri=github.com/ORG/REPO)
 [![Security Audit](https://img.shields.io/badge/security-audited-green)](SECURITY.md)
 [![codecov](https://codecov.io/gh/ORG/REPO/branch/main/graph/badge.svg)](https://codecov.io/gh/ORG/REPO)
-[![Go Report Card](https://goreportcard.com/badge/github.com/ORG/REPO)](https://goreportcard.com/report/github.com/ORG/REPO)
 [![CI](https://github.com/ORG/REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/ORG/REPO/actions/workflows/ci.yml)
 [![License](https://img.shields.io/github/license/ORG/REPO)](LICENSE)
 ```

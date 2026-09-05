@@ -31,3 +31,12 @@ silence a standalone analyser; configure that analyser's loader context instead.
 When `typo3-upgrade-run` is active, its local-package removal policy takes precedence. Record any
 publishable/Classic exception explicitly and pass its package directory to the audit's
 `--publishable` allow-list.
+
+## Credits & Attribution
+
+This skill is based on the excellent work by **Netresearch DTT GmbH**.
+Original repository: https://github.com/netresearch/typo3-conformance-skill
+
+Special thanks to Netresearch for publishing and maintaining these skills.
+Copyright (c) Netresearch DTT GmbH; original licence files are preserved.
+Adapted by webconsulting.at for this skill collection through this overlay only; the upstream skill is unmodified.

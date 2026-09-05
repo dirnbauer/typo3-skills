@@ -75,6 +75,17 @@
       "expect_no_skill": true,
       "prompt": "Bulk rename 300 image files on my desktop.",
       "note": "Bulk operation, but nothing to do with TYPO3."
+    },
+    {
+      "id": "verify-once-per-root-cause-batch",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "The identical listener change affects 36 extensions. The last run executed full PHPStan and all tests after editing every single file and took hours.",
+      "assertions": [
+        "Groups work by root cause/ownership and uses changed-unit checks while editing.",
+        "Runs full required checks at the completed batch boundary, preserving actual evidence.",
+        "Does not invent commit or push authority from a refactoring request."
+      ]
     }
   ]
 }

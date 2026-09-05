@@ -1,5 +1,8 @@
 # Documentation Coverage Analysis
 
+`[skill-procedure]` — this skill's own feature-based coverage model and
+scoring (`[heuristic]`/`[NR policy]` where labelled); not a TYPO3 standard.
+
 ## Purpose
 
 Provide context-aware documentation coverage assessment based on actual extension features rather than static file count thresholds.
@@ -58,9 +61,9 @@ Evaluate documentation quality beyond mere existence:
 - ✅ Modern tooling (guides.xml, card-grid navigation)
 - ✅ Proper cross-references and interlinking
 - ✅ Screenshots or visual aids where appropriate
-- ✅ No page exceeds 250 lines (split into focused sub-pages)
-- ✅ No `mailto:` links in guides.xml or documentation
-- ❌ Pages over 250 lines indicate poor information architecture
+- ✅ Pages stay near the ~250-line heuristic (split into focused sub-pages) `[heuristic]`
+- ✅ No `mailto:` links in guides.xml or documentation `[NR policy]`
+- ❌ Pages far over ~250 lines usually indicate poor information architecture `[heuristic]`
 - ❌ Email addresses in public documentation are a privacy/spam risk
 
 ### Step 4: Context-Aware Scoring
@@ -140,13 +143,13 @@ Quality Indicators:
   ✅ TYPO3 directives (confval)
   ✅ Card-grid navigation
   ✅ Code examples
-  ✅ No page exceeds 250 lines
+  ✅ Pages stay near the ~250-line heuristic
   ⚠️ Screenshots mentioned but not included
 
 Quality Score: 5/6 = 83%
 ```
 
-**Page length penalty:** Any RST page exceeding 250 lines MUST reduce the quality score. Pages over 250 lines indicate poor information architecture and MUST be split before the documentation can score GOOD or above.
+**Page length penalty `[heuristic]`:** RST pages exceeding ~250 lines reduce the quality score in this skill's own scoring model (a Netresearch heuristic — no upstream limit exists). Split oversized pages before the documentation can score GOOD or above.
 
 ### 5. Determine Final Rating
 
@@ -200,112 +203,11 @@ Rating: EXCELLENT for scope
 - No API reference
 - Outdated patterns
 
-## Recommendations for TYPO3 Conformance Skill
+## Scoring in other skills
 
-### Update Scoring Logic
-
-Replace static thresholds with feature-based analysis:
-
-```python
-def calculate_documentation_score(extension):
-    """
-    Calculate documentation excellence score based on feature coverage.
-
-    Returns: 0-4 points
-    """
-    # Determine extension scope
-    class_count = count_php_classes(extension)
-    scope = classify_scope(class_count)  # small/medium/large
-
-    # Calculate feature coverage
-    user_coverage = calculate_user_feature_coverage(extension)
-    dev_coverage = calculate_developer_feature_coverage(extension)
-
-    # Assess quality
-    quality_score = assess_documentation_quality(extension)
-
-    # Score based on scope
-    if scope == "small":
-        if user_coverage >= 0.90 and quality_score >= 0.80:
-            return 3  # EXCELLENT
-        elif user_coverage >= 0.75:
-            return 2  # GOOD
-        elif user_coverage >= 0.60:
-            return 1  # ADEQUATE
-        else:
-            return 0  # INSUFFICIENT
-
-    elif scope == "medium":
-        if user_coverage >= 0.90 and dev_coverage >= 0.80:
-            return 4  # OUTSTANDING
-        elif user_coverage >= 0.90 and dev_coverage >= 0.40:
-            return 3  # EXCELLENT
-        elif user_coverage >= 0.80:
-            return 2  # GOOD
-        else:
-            return 1 if user_coverage >= 0.60 else 0
-
-    else:  # large
-        total_coverage = (user_coverage + dev_coverage) / 2
-        if total_coverage >= 0.90:
-            return 4  # OUTSTANDING
-        elif total_coverage >= 0.75:
-            return 3  # EXCELLENT
-        elif total_coverage >= 0.60:
-            return 2  # GOOD
-        else:
-            return 1 if total_coverage >= 0.40 else 0
-```
-
-### Provide Clear Feedback
-
-Documentation assessment should include:
-1. Feature coverage breakdown (user vs. developer)
-2. Quality assessment (directives, examples, tooling)
-3. Scope-appropriate recommendations
-4. Specific missing documentation items
-
-### Example Output
-
-```
-## Documentation Excellence Assessment
-
-**Extension Scope:** Small/Focused (30 classes)
-
-**User Feature Coverage:** 6/6 (100%) ✅
-  ✓ Installation & Setup
-  ✓ Configuration (3 strategies)
-  ✓ Backend Module
-  ✓ Performance Guide
-  ✓ Architecture
-  ✓ Phases Roadmap
-
-**Developer Feature Coverage:** 0/5 (0%) ⚠️
-  ❌ CLI Commands API reference (2 commands)
-  ❌ Scheduler Tasks reference (1 task)
-  ❌ Reports reference (1 report)
-  ❌ EventListener docs
-  ❌ PHP API method-level docs
-
-**Quality Assessment:** 4/5 (80%) ✅
-  ✅ Modern tooling (guides.xml, card-grid)
-  ✅ TYPO3 directives (confval throughout)
-  ✅ Code examples extensive
-  ✅ Cross-references proper
-  ⚠️ Screenshots mentioned but not included
-
-**Score:** 3/4 points (EXCELLENT for extension scope)
-
-**Recommendation:**
-Your user documentation is COMPREHENSIVE (100% coverage). Developer API
-documentation is optional for this extension's scope. Consider adding
-API reference if you expect other developers to extend your extension.
-
-**Impact of Adding Developer Docs:**
-- Current: 22 RST files (100% user coverage, 0% developer)
-- With API reference: ~30 RST files (100% user + 100% developer)
-- Score change: 3/4 → 4/4 (OUTSTANDING)
-```
+The feature-based scoring proposal for the typo3-conformance skill moved to
+an issue in that repo (it addresses that skill's logic, not this one) — see
+[typo3-conformance-skill#102](https://github.com/netresearch/typo3-conformance-skill/issues/102).
 
 ## Summary
 
@@ -315,8 +217,8 @@ API reference if you expect other developers to extend your extension.
 3. Scope-appropriate expectations
 4. User-facing docs prioritized over developer API docs
 5. Context-aware scoring avoids penalizing focused extensions
-6. No RST page may exceed 250 lines — pages MUST be split into sub-pages
-7. No email addresses in public documentation — use GitHub URLs
+6. Pages should stay near the ~250-line heuristic — split oversized pages `[heuristic]`
+7. No email addresses in public documentation — use GitHub URLs `[NR policy]`
 
 **Benefits:**
 - Accurate assessment of documentation completeness

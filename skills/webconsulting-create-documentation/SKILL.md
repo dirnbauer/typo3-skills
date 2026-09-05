@@ -2,6 +2,7 @@
 name: "webconsulting-create-documentation"
 description: "Creates product documentation systems with help pages, AI-generated screenshots, Remotion product tours, GSAP animation, narration scripts, TTS, background music, README visuals, and deployment steps. Use when the user asks for product docs, help pages, documentation videos, narrated tours, screenshots, README media, Remotion docs workflows, or webconsulting-style documentation assets."
 metadata:
+  skill_type: preference
   origin: "webconsulting"
 license: "MIT / CC-BY-SA-4.0"
 ---
@@ -50,7 +51,9 @@ Also add to `.env.example` (commented out) for team documentation:
 
 **Voice selection**: The default voice is "Daniel" (`onwK4e9ZLuTAKqWW03F9`) — British, calm.
 Browse [elevenlabs.io/voice-library](https://elevenlabs.io/voice-library) and update
-the `VOICE_ID` in `scripts/generate-narration.ts` if a better match is found.
+the voice setting in the project-owned narration script if a better match is found. That script
+is a generated project output, not a bundled skill resource; use the implementation guidance in
+[Phase 5: TTS audio generation](references/phase-5-tts-audio-generation.md).
 
 **Free tier limits**: ~10,000 characters/month. The full narration script is ~600 characters,
 so you can regenerate ~16 times per month on the free tier.

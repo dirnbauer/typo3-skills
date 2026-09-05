@@ -1,12 +1,21 @@
 # Screenshots Reference
 
-Complete reference for creating and inserting screenshots in TYPO3 documentation.
+Creating and inserting screenshots in TYPO3 documentation. Canonical source:
+[Guidelines for images](https://docs.typo3.org/permalink/h2document:guidelines-for-images)
+`[upstream]` — on conflict the live manual wins.
 
-Based on: https://docs.typo3.org/m/typo3/docs-how-to-document/main/en-us/Advanced/GuidelinesForImages.html
+**Read the canonical page for the rules themselves**: when a screenshot is
+necessary, the accepted formats, the 1400 × 1050 target, the ≥1440 capture
+viewport, and the backend `iframe`/`fullPage` behaviour are all stated there.
+The last two arrived upstream on 2026-08-15 and were `[regression]` knowledge
+here until then. What this file keeps is what upstream does not give you: which
+subjects are worth a screenshot at all, the executable recipe, the NR
+deviations, and the tell that says you got it wrong.
 
 ## When to Add Screenshots
 
-**Before adding a screenshot, consider if one is necessary.** Each screenshot requires ongoing maintenance when the UI changes.
+Upstream states the necessity rule; the two lists below are this skill's
+judgement about which subjects earn one.
 
 ### Screenshots ARE Appropriate For
 
@@ -26,45 +35,29 @@ Based on: https://docs.typo3.org/m/typo3/docs-how-to-document/main/en-us/Advance
 
 ## Image Requirements
 
-### Format
+Formats and dimensions are `[upstream]` — PNG or AVIF for bitmaps, SVG for
+vector graphics, 1400 × 1050 for a full page. Only the deviation is ours:
 
-| Type | Format |
-|------|--------|
-| Screenshots | **PNG** (required) |
-| Diagrams | SVG preferred, PNG acceptable |
-| Photos | PNG or JPG |
+| Deviation | Rule |
+|---|---|
+| Screenshot format | PNG **preferred** for consistency across NR extensions; AVIF is allowed upstream and stays allowed here `[NR policy]` (soft) |
 
-### Dimensions
-
-| Screenshot Type | Dimensions |
-|-----------------|------------|
-| Full-page screenshots | 1400 x 1050 pixels |
-| Cropped screenshots | As small as practical while showing context |
-
-**Best Practice:** Crop to show only relevant portions rather than entire pages.
+Crop to the relevant portion rather than shipping a whole page — as small as
+practical while the surrounding context is still recognisable.
 
 ### Capture Viewport
 
-Resize the browser to **at least 1440 x 1050** before capturing backend
-screenshots. Narrow viewports (≈780px) collapse the TYPO3 module menu, truncate
-table columns, and cut off modal backgrounds — the result reads as "missing
-context" and gets rejected in review.
+The rules are `[upstream]`; this is how to execute them.
 
 ```js
 // Playwright (the Playwright MCP exposes this as browser_resize, same dimensions)
 await page.setViewportSize({ width: 1440, height: 1050 });
 ```
 
-Capture at the wider viewport, then crop the width down to the 1400px target —
-the 40px of slack is why the floor is 1440, not 1400. Don't shrink the window to crop.
+Don't shrink the window to crop — crop the captured file.
 
-**Backend module content lives inside an `iframe` — `fullPage` won't capture it.**
-The TYPO3 backend renders each module in an iframe that scrolls internally, so a
-`fullPage: true` screenshot captures only the outer document (≈ the viewport
-height) and clips the module's lower content — trace output, a completed form,
-the answer panel. To capture a tall module view (e.g. a config form *and* its
-result) in one shot, make the **viewport itself tall** and take a normal
-(non-fullPage) screenshot:
+For a tall module view (a config form *and* its result in one shot), raise the
+viewport height rather than reaching for `fullPage`:
 
 ```js
 // Capture config + output together: tall viewport, NOT fullPage.
@@ -72,201 +65,44 @@ await page.setViewportSize({ width: 1440, height: 1750 });
 await page.screenshot({ path: 'Documentation/Images/Usage/ModuleRun.png' }); // no fullPage
 ```
 
-Verify the result height afterwards — a 1440×900 file when you expected a long
-page means `fullPage` silently caught only the outer frame.
+**The tell:** measure the result afterwards. A file exactly as tall as the
+viewport you set — 1050 px from the first recipe, where the second was meant to
+give you 1750 — means the capture stopped at the outer frame and the module's
+lower content is missing. Upstream states the behaviour; the height check is
+what tells you it happened to *this* screenshot, and it is the reason the
+mistake was ever noticed.
 
-### File Location
+### File Location `[NR policy]`
 
-Store images in the `Documentation/Images/` directory, organized by section:
+Store images under `Documentation/Images/`, organized by section
+(`Images/Configuration/…`, `Images/Usage/…`, CamelCase filenames). Note:
+upstream examples use `/_Images/`; both work — this skill deliberately picks
+`Documentation/Images/` for consistency across NR extensions (checkpoint
+TD-12).
 
-```
-Documentation/
-├── Images/
-│   ├── Configuration/
-│   │   ├── ExtensionSettings.png
-│   │   └── SiteConfiguration.png
-│   ├── Usage/
-│   │   └── BackendModule.png
-│   └── Developer/
-│       └── TcaForm.png
-```
+## TYPO3 Backend Setup and Screenshot Container
 
-## TYPO3 Backend Setup
+Backend settings (light mode, modern look, default installation on a
+Composer-based latest LTS or dev-main, `j.doe` user) and the
+`linawolf/typo3-screenshots` container incl. extension installation and
+reset:
+[Guidelines for images](https://docs.typo3.org/m/typo3/docs-how-to-document/main/en-us/Advanced/GuidelinesForImages.html)
+and
+[Screenshot container](https://docs.typo3.org/m/typo3/docs-how-to-document/main/en-us/Reference/ScreenshotContainer/Index.html)
+`[upstream]`.
 
-Before taking screenshots, configure the TYPO3 backend:
+## RST Image Directives, CSS Classes, Zoom
 
-### Required Settings
-
-1. **Light mode** - Use light theme, not dark mode
-2. **Modern look** - Use modern backend styling (default in TYPO3 12+)
-3. **Default installation** - No third-party extensions unless demonstrating them
-4. **Standard username** - Use `j.doe` for consistency across documentation
-5. **Clean state** - Fresh installation or reset environment
-
-### Docker Container for Screenshots
-
-Use the official TYPO3 documentation screenshot container:
-
-```bash
-# Start container
-docker run -d --name typo3-screenshots -p 8080:80 linawolf/typo3-screenshots
-
-# Wait for setup to complete
-docker logs -f typo3-screenshots
-
-# Access TYPO3 backend
-# Navigate to http://localhost:8080/typo3
-```
-
-**Reset for clean screenshots:**
-```bash
-docker stop typo3-screenshots
-docker rm typo3-screenshots
-docker run -d --name typo3-screenshots -p 8080:80 linawolf/typo3-screenshots
-```
-
-The container resets on every run, ensuring consistent environments.
-
-### Installing Extensions in Container
-
-```bash
-# Access container shell
-docker exec -it typo3-screenshots bash
-
-# Install extension
-composer require vendor/extension-name
-./vendor/bin/typo3 extension:setup
-
-# Exit container
-exit
-```
-
-**Note:** Extensions are lost on container restart. Build a custom image for permanent additions.
-
-## RST Image Directives
-
-### Basic Image
-
-```rst
-.. image:: /Images/Configuration/ExtensionSettings.png
-   :alt: Extension configuration screen showing API settings
-```
-
-### Figure with Caption
-
-```rst
-.. figure:: /Images/Configuration/ExtensionSettings.png
-   :alt: Extension configuration screen showing API settings
-
-   Configure the extension in Admin Tools > Settings > Extension Configuration
-```
-
-### Image Options
-
-```rst
-.. figure:: /Images/Usage/BackendModule.png
-   :alt: Backend module showing secret list
-   :width: 600px
-   :class: with-shadow
-
-   The Vault backend module displays all accessible secrets
-```
-
-| Option | Purpose | Example |
-|--------|---------|---------|
-| `:alt:` | **Required** - Accessibility text | `:alt: Backend module screenshot` |
-| `:width:` | Control display width | `:width: 600px` |
-| `:class:` | Apply CSS classes | `:class: with-shadow` |
-| `:target:` | Link to full-size image | `:target: _blank` |
-
-### Available CSS Classes
-
-| Class | Effect |
-|-------|--------|
-| `with-shadow` | Adds drop shadow around image |
-| `with-border` | Adds border around image |
-| `float-left` | Float image left with text wrap |
-| `float-right` | Float image right with text wrap |
-
-## Image Zoom and Lightbox (render-guides 0.36.0+)
-
-The TYPO3 documentation theme provides built-in zoom and lightbox capabilities. Use the `:zoom:` option on figure and image directives.
-
-### Zoom Modes
-
-| Mode | Description | Use Case |
-|------|-------------|----------|
-| `lightbox` | Opens image in full-screen overlay with dark backdrop. Close with Escape or click outside. | **Default for most images** |
-| `gallery` | Gallery viewer with mouse wheel zoom and navigation between grouped images | Step-by-step tutorials, related screenshots |
-| `inline` | Scroll wheel zoom directly on image, drag-to-pan when zoomed | Technical diagrams needing frequent inspection |
-| `lens` | Magnifier lens follows cursor, showing zoomed view in adjacent panel | Detailed UI elements |
-
-### Zoom Examples
-
-**Lightbox (recommended default):**
-
-```rst
-.. figure:: /Images/Configuration/ExtensionSettings.png
-   :alt: Extension configuration screen
-   :zoom: lightbox
-   :class: with-border with-shadow
-
-   Configure the extension in Admin Tools > Settings
-```
-
-**Gallery with grouping:**
-
-```rst
-.. figure:: /Images/Tutorial/Step1.png
-   :alt: Step 1 - Open the module
-   :zoom: gallery
-   :gallery: installation-steps
-
-   Step 1: Navigate to Admin Tools
-
-.. figure:: /Images/Tutorial/Step2.png
-   :alt: Step 2 - Configure settings
-   :zoom: gallery
-   :gallery: installation-steps
-
-   Step 2: Configure the extension
-```
-
-**Inline zoom for diagrams:**
-
-```rst
-.. figure:: /Images/Developer/ArchitectureDiagram.png
-   :alt: Extension architecture showing data flow
-   :zoom: inline
-   :class: with-border
-
-   Architecture overview - scroll to zoom, drag to pan
-```
-
-**Lens mode for detail inspection:**
-
-```rst
-.. figure:: /Images/Usage/DetailedForm.png
-   :alt: TCA form with many fields
-   :zoom: lens
-   :zoom-factor: 3
-
-   Hover over form fields to magnify
-```
-
-### Additional Zoom Options
-
-| Option | Purpose | Default |
-|--------|---------|---------|
-| `:zoom-indicator:` | Show/hide zoom icon | `true` |
-| `:zoom-factor:` | Magnification strength for lens mode | `2` |
-
-### Accessibility
-
-All zoom modes:
-- Support keyboard navigation
-- Maintain proper ARIA attributes for screen readers
-- Respect `prefers-reduced-motion` media query
+`image`/`figure` syntax (`:alt:` required; `:width:`, `:scale:`, `:class:`,
+`:align:`, `:target:`), the theme CSS classes (`with-shadow`, `with-border`,
+`float-left`, `float-right`) and the four zoom modes (`lightbox`, `gallery`,
+`inline`, `lens` with `:gallery:`, `:zoom-indicator:`, `:zoom-factor:`,
+render-guides 0.36.0+, keyboard/ARIA/reduced-motion support):
+[Images](https://docs.typo3.org/m/typo3/docs-how-to-document/main/en-us/Reference/ReStructuredText/Graphics/Images.html)
+and
+[Image zoom](https://docs.typo3.org/m/typo3/docs-how-to-document/main/en-us/Reference/ReStructuredText/Graphics/ImageZoom.html)
+`[upstream]`. House default (`[NR policy]`): `:zoom: lightbox` +
+`:class: with-border with-shadow` on screenshots.
 
 ## Annotations
 
@@ -279,11 +115,14 @@ Use sufficient contrast to ensure annotations are visible:
 - For readers with color vision differences
 - Against varying background colors in the screenshot
 
-### Recommended Annotation Colors
+### Recommended Annotation Colors `[NR policy]`
+
+House palette — not a TYPO3 convention (the manual prescribes no annotation
+colors; `#FF8700` is the TYPO3 brand orange used by choice):
 
 | Element | Color | Hex |
 |---------|-------|-----|
-| Highlight boxes | TYPO3 Orange | `#FF8700` |
+| Highlight boxes | TYPO3 brand orange | `#FF8700` |
 | Arrows/lines | Dark gray | `#333333` |
 | Numbers/labels | White on dark background | `#FFFFFF` on `#333333` |
 
@@ -335,7 +174,7 @@ When writing documentation, suggest screenshots for:
 
 ## Pre-Commit Checklist for Screenshots
 
-1. ✅ **Format**: PNG for all screenshots
+1. ✅ **Format**: PNG (or AVIF) for all screenshots
 2. ✅ **Dimensions**: 1400x1050 or appropriately cropped
 3. ✅ **Backend setup**: Light mode, modern look, j.doe user
 4. ✅ **Alt text**: Descriptive alt text provided
@@ -344,7 +183,98 @@ When writing documentation, suggest screenshots for:
 7. ✅ **Annotations**: Sufficient contrast for accessibility
 8. ✅ **Necessity**: Screenshot genuinely adds value vs. text description
 
+## Diagrams: commit SVG, not PNG
+
+A screenshot records a UI you do not control. A **diagram** is authored, and the
+tradeoffs are the opposite ones.
+
+Commit diagrams as SVG:
+
+- It is text, so a reviewer sees the change in the diff instead of a binary
+  blob swap. A wrong label is caught in review rather than shipped.
+- It scales, and the same file serves every viewport.
+- No build step and no generator dependency for the SVG itself. Two distinct
+  PlantUML facts, do not conflate them: a `.. code-block:: plantuml` is not a
+  diagram — there is no `plantuml` *highlighter*, and every render emits
+  `Language "plantuml" is not available to highlight code`. The `.. uml::`
+  *directive* however IS officially rendered (PlantUML is integrated into the
+  toolchain — see
+  [Diagrams](https://docs.typo3.org/m/typo3/docs-how-to-document/main/en-us/Reference/ReStructuredText/Graphics/Diagrams.html)).
+  Hand-authored SVG remains preferable where reviewable diffs matter.
+
+```rst
+..  figure:: /Images/diagram-streaming-flow.svg
+    :alt: Streaming: the prompt is screened, the budget is checked, and each
+        chunk passes a redaction window before the Generator yields it.
+    :class: with-border
+
+    Request path down the left, chunk path back up the right.
+```
+
+`render-guides` copies referenced images to `Images/` in the output tree, not to
+`_images/` — check there when verifying that a figure resolved:
+
+```bash
+docker run --rm --user $(id -u):$(id -g) -v "$(pwd)":/project -w /project \
+  ghcr.io/typo3-documentation/render-guides:latest --config=Documentation --no-progress
+find Documentation-GENERATED-temp -name 'diagram-*.svg'
+grep -oh 'diagram-[a-z-]*\.svg' Documentation-GENERATED-temp/**/*.html | sort -u
+```
+
+Two things worth doing while authoring:
+
+- **Put an `aria-label` on the `<svg>` as well as the `:alt:` on the figure.**
+  The `:alt:` serves the RST; the `aria-label` travels with the file if it is
+  ever embedded elsewhere.
+- **Trace the diagram against the code before drawing it.** A diagram is a claim
+  about how the system works, and it ages exactly like a hand-maintained count.
+  Drawing a CI pipeline from the workflow file rather than from memory is what
+  surfaces that a required check never runs; drawing a streaming path from the
+  service rather than from the feature description is what surfaces the
+  redaction window nobody had documented.
+
+**Open the render and read it — "the file exists" is not verification.** Three
+defects in one set of eight diagrams were invisible in the source and in a file
+listing, and each was found by looking at the output: an arrow leaving the wrong
+box (a *skipped* task cannot *fail*), a heading centred vertically straight
+through three hand-placed lines, and an arrow whose colour had no `<marker>`
+defined — that one renders headless in a browser and crashes cairosvg, so a
+browser check alone would have passed it.
+
+**Measure text against its shape rather than eyeballing it.** Overflow is the
+failure that survives review, because a diagram with one word poking out of a box
+still looks like a diagram. In a browser, compare each `<text>` element's
+`getBBox()` against the rect that should contain it:
+
+```javascript
+for (const t of svg.querySelectorAll('text')) {
+  const b = t.getBBox();              // compare against the enclosing <rect>
+  if (b.x + b.width > box.x + box.width) console.log('overflow:', t.textContent);
+}
+```
+
+**And when that check reports nothing, make it fail once before believing it.**
+Feed it a deliberately overlong string and watch it flag that. A detector that
+finds nothing because it is broken is indistinguishable from a clean result — the
+same reason a `grep` returning `0` is first a suspect query, not a finding.
+
+**If the SVGs are generated, prove the committed file is what the generator
+emits.** Re-run it over a clean checkout and require `git status --porcelain` to
+be empty. Otherwise the script has quietly stopped being the source and the next
+person edits the one that is not read.
+
+Keep light-on-dark legibility in mind: a page is rendered in both themes, and an
+`<img>` does not inherit `currentColor`. A neutral card with explicit fills
+reads acceptably on both; a diagram drawn in pure black on transparent does not.
+
 ## References
 
 - **Guidelines for Images:** https://docs.typo3.org/m/typo3/docs-how-to-document/main/en-us/Advanced/GuidelinesForImages.html
 - **Screenshot Container:** https://docs.typo3.org/m/typo3/docs-how-to-document/main/en-us/Reference/ScreenshotContainer/Index.html
+
+## Theme-change screenshots (render-guides): file:// is unstyled, control the comparison
+
+- The rendered output links `theme.css` with `crossorigin="anonymous"` — Chrome **blocks the stylesheet under `file://`** (CORS), so a `file://` screenshot is completely unstyled. Serve the output over HTTP (`python3 -m http.server`) and shoot `http://localhost:…`.
+- For a true before/after on CSS-only changes, reuse the SAME output HTML and swap in the old stylesheet (`git show origin/main:…/theme.css`) — the HTML doesn't change. Neutralize sticky/fixed nav before element shots (`position: static`).
+- The theme CSS is a **committed build artifact** (`npx grunt sass` → `resources/public/css/theme.css`) — rebuild it in the same commit as the SCSS change; local sass matches CI, keep the diff surgical (`git diff --stat`).
+- Computed-style dumps flap on two non-differences: custom-property **enumeration order** (compare property→value dicts, never serialized strings) and load-timing noise (rerun the SAME variant twice; a property that flaps there is noise). Trust controlled pixel comparison — 12/12 pairs were 0-pixel identical while string dumps "differed".

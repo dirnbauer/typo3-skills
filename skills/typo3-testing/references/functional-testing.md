@@ -859,7 +859,7 @@ The functional test framework provides a database and DI container but does **NO
 ### Setting `$GLOBALS['TYPO3_REQUEST']`
 
 **Caution:** Setting `$GLOBALS['TYPO3_REQUEST']` in `setUp()` affects ALL tests in the class and can cause unexpected side effects:
-- v14 requires `applicationType` attribute (use `ApplicationType::FRONTEND`)
+- The request needs an `applicationType` attribute, and its value is the **int bitmask** `SystemEnvironmentBuilder::REQUESTTYPE_FE` (or `_BE`) — **not** the `ApplicationType` enum case. `ApplicationType::fromRequest()` guards with `is_int($type)`, so passing `ApplicationType::FRONTEND` throws `RuntimeException` 1606222812, *No valid attribute "applicationType" found in request object*. Verified identical on 12.4, 13.4, 14.3 and main.
 - Existing tests may break because TYPO3 enables additional processing paths when the global is present
 - **Best practice:** Set the global only in specific test methods that need it, with `try/finally` cleanup:
 
@@ -867,7 +867,7 @@ The functional test framework provides a database and DI container but does **NO
 public function testThatNeedsRequest(): void
 {
     $GLOBALS['TYPO3_REQUEST'] = $this->request
-        ->withAttribute('applicationType', ApplicationType::FRONTEND);
+        ->withAttribute('applicationType', SystemEnvironmentBuilder::REQUESTTYPE_FE);
 
     try {
         // test code
@@ -952,6 +952,13 @@ protected function setUp(): void
 
 ## ViewHelper E2E Tests with StandaloneView
 
+> **v13 only.** `typo3/sysext/fluid/Classes/View/StandaloneView.php` is present on
+> branch `13.4` and **gone on `14.3` and `main`**. A test written this way compiles
+> out of the matrix the moment v14 is added. `ViewFactoryInterface` and
+> `ViewFactoryData` (`typo3/sysext/core/Classes/View/`) exist on 13.4, 14.3 and
+> main, so a test that resolves the view through the factory runs on the whole
+> matrix — prefer it for anything new.
+
 Test Fluid ViewHelpers end-to-end by rendering templates through `StandaloneView`. This verifies the full rendering pipeline including namespace registration, argument handling, and output:
 
 ```php
@@ -1004,3 +1011,11 @@ final class MyViewHelperTest extends FunctionalTestCase
 - [TYPO3 Functional Testing Documentation](https://docs.typo3.org/m/typo3/reference-coreapi/main/en-us/Testing/FunctionalTests.html)
 - [Testing Framework](https://github.com/typo3/testing-framework)
 - [CSV Fixture Format](https://docs.typo3.org/m/typo3/reference-coreapi/main/en-us/Testing/FunctionalTests.html#importing-data)
+
+## `FunctionalTestCase::get()` resolves PRIVATE services — don't make services public for tests
+
+The testing-framework's `private_container` fixture extension registers every private service and private alias into a public locator (`typo3.testing-framework.private-container`); `get()` falls back to it. So `$this->get(SomeConcrete::class)` works with `public: false` — never add `public: true` in `Services.yaml` just for a functional/E2E test. Genuine `public: true` reasons: a documented downstream consumer resolved by class name, or resolution outside DI via `GeneralUtility::makeInstance()` (TCA itemsProcFunc, DataHandler hooks). Verified at scale: 45→27 public services in one extension with zero test changes, all green — refuting the common "repositories must be public for `get()`" claim.
+
+## Coverage of mock-exercised classes: measure per test file, not combined
+
+A combined PHPUnit run can report 0% / heavily under-counted coverage for classes exercised through partial mocks (`createPartialMock`, `onlyMethods()`) — a cross-file attribution artifact, not missing coverage. Before any test-architecture decision based on a 0%, measure the file in isolation (`php -d xdebug.mode=coverage … --coverage-clover /tmp/cov.xml tests/…/OneTest.php`) and read that clover. One measured case: combined run 0/12 and 0/9, isolated runs 11/12 and 8/9.

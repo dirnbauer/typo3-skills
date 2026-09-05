@@ -1,5 +1,7 @@
 ---
 name: architecture-decision-records
+metadata:
+  skill_type: preference
 description: "Writes and maintains architecture decision records (ADRs) and decision logs: what was decided, why, which alternatives were considered and rejected, and what would make the team revisit it later. Use when the same argument keeps coming back every few months and nobody remembers the rationale, when you need to document a choice between two technologies together with its trade-offs, when a decision has been superseded and the old entry must stay intact rather than be deleted, or when an existing decision log needs auditing, standardizing or validating against a template. Markdown or reStructuredText."
 ---
 

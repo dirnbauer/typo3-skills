@@ -87,7 +87,9 @@ def vendored_skills() -> set[str]:
     if not VENDORED.is_file():
         return set()
     text = VENDORED.read_text(encoding="utf-8")
-    return set(re.findall(r"^\|\s*`([a-z0-9-]+)`\s*\|", text, re.M))
+    locked = ROOT / "vendor-lock.json"
+    names = {s["name"] for s in json.loads(locked.read_text())["skills"]} if locked.exists() else set()
+    return names | set(re.findall(r"^\|\s*`([a-z0-9-]+)`\s*\|", text, re.M))
 
 
 def load_suite(path: Path) -> tuple[dict | None, list[str]]:
@@ -111,6 +113,11 @@ def validate_suite(name: str, suite: dict, min_cases: int, skill_md: str = "") -
     st = suite.get("skill_type")
     if st not in SKILL_TYPES:
         errors.append(f"skill_type must be one of {sorted(SKILL_TYPES)}, got {st!r}")
+    if skill_md:
+        from audit_skills import parse_frontmatter, split_frontmatter
+        metadata = parse_frontmatter(split_frontmatter(skill_md)[0]).get('metadata', {})
+        if not isinstance(metadata, dict) or metadata.get('skill_type') != st:
+            errors.append('SKILL.md metadata.skill_type must declare the same lifecycle as its eval suite')
 
     cases = suite.get("evals")
     if not isinstance(cases, list) or not cases:
@@ -120,10 +127,10 @@ def validate_suite(name: str, suite: dict, min_cases: int, skill_md: str = "") -
 
     seen_ids = set()
     for i, c in enumerate(cases):
-        where = c.get("id") or f"evals[{i}]"
         if not isinstance(c, dict):
-            errors.append(f"{where}: not an object")
+            errors.append(f"evals[{i}]: not an object")
             continue
+        where = c.get("id") or f"evals[{i}]"
         if not c.get("id"):
             errors.append(f"evals[{i}]: missing id")
         elif c["id"] in seen_ids:

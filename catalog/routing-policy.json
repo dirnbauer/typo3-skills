@@ -1,0 +1,8 @@
+{
+  "schema": 1,
+  "description": "On-demand companions remain available by explicit name or via their canonical owner. This applies to runtime routing and both eval graders, not just lexical scores.",
+  "companions": {
+    "typo3-project-upgrade": {"owner": "typo3-upgrade-run", "reason": "One whole-site graph and one deadline; never start a second upgrade orchestrator."},
+    "typo3-a11y": {"owner": "typo3-accessibility", "reason": "Use upstream patterns as a bounded reference through the local remediation owner; full scans route to typo3-wcag22-aa-agentic."}
+  }
+}

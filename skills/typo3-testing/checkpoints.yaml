@@ -24,19 +24,22 @@ mechanical:
   # === PHPUNIT CONFIGURATION ===
   # TYPO3 testing-framework convention: Build/UnitTests.xml + Build/FunctionalTests.xml
   # netresearch/typo3-ci-workflows also accepts: Build/phpunit.xml + Build/phpunit.functional.xml
+  # Extensions that keep every PHPUnit config in one subdirectory use
+  # Build/phpunit/UnitTests.xml + Build/phpunit/FunctionalTests.xml.
+  # All three layouts are valid; TT-01/02/04/05/06 accept each of them.
   # When TT-00 passes, either naming convention is valid.
 
   - id: TT-01
     type: file_exists
-    target: "{Build/UnitTests.xml,Build/phpunit.xml}"
+    target: "{Build/UnitTests.xml,Build/phpunit.xml,Build/phpunit/UnitTests.xml}"
     severity: error
-    desc: "PHPUnit unit test config must exist (Build/UnitTests.xml or Build/phpunit.xml)"
+    desc: "PHPUnit unit test config must exist (Build/UnitTests.xml, Build/phpunit.xml or Build/phpunit/UnitTests.xml)"
 
   - id: TT-02
     type: file_exists
-    target: Build/FunctionalTests.xml
+    target: "{Build/FunctionalTests.xml,Build/phpunit.functional.xml,Build/phpunit/FunctionalTests.xml}"
     severity: error
-    desc: "PHPUnit functional test config must exist (Build/FunctionalTests.xml or Build/phpunit.functional.xml)"
+    desc: "PHPUnit functional test config must exist (Build/FunctionalTests.xml, Build/phpunit.functional.xml or Build/phpunit/FunctionalTests.xml)"
 
   - id: TT-03
     type: file_not_exists
@@ -46,14 +49,14 @@ mechanical:
 
   - id: TT-04
     type: regex
-    target: "{Build/UnitTests.xml,Build/phpunit.xml}"
+    target: "{Build/UnitTests.xml,Build/phpunit.xml,Build/phpunit/UnitTests.xml}"
     pattern: '<testsuite.*name="unit"'
     severity: error
     desc: "PHPUnit config must define unit test suite"
 
   - id: TT-05
     type: regex
-    target: Build/FunctionalTests.xml
+    target: "{Build/FunctionalTests.xml,Build/phpunit.functional.xml,Build/phpunit/FunctionalTests.xml}"
     pattern: '<testsuite.*name="functional"'
     severity: error
     desc: "PHPUnit config must define functional test suite"
@@ -61,7 +64,7 @@ mechanical:
   # === PHPUNIT DEPRECATED ATTRIBUTES ===
   - id: TT-06
     type: regex_not
-    target: "{Build/FunctionalTests.xml,Build/phpunit.xml,Build/UnitTests.xml,Build/phpunit.functional.xml}"
+    target: "{Build/FunctionalTests.xml,Build/phpunit.xml,Build/UnitTests.xml,Build/phpunit.functional.xml,Build/phpunit/UnitTests.xml,Build/phpunit/FunctionalTests.xml}"
     pattern: 'displayDetailsOnIncompleteTests|displayDetailsOnSkippedTests'
     severity: warning
     desc: "PHPUnit configs must not use displayDetailsOnIncompleteTests or displayDetailsOnSkippedTests (removed in PHPUnit 12)"
@@ -162,10 +165,41 @@ mechanical:
     severity: warning
     desc: "CI should run PHPStan analysis (directly or via reusable workflow)"
 
+  # Was a single-line `command:` chaining four alternatives with `||`, which the
+  # runner rejects outright (command-chaining metacharacter), so it never ran and
+  # reported a failure on every project. It also relied on an `expected:` field the
+  # runner does not parse — the verdict has to be the exit status. Both are fixed
+  # here by moving the logic into a screened script body.
+  #
+  # The level is read with `grep -oE` plus a bash suffix strip, not `grep -oP
+  # …\K`: where PCRE is missing (BSD grep), the PCRE spelling captured nothing
+  # from every candidate file and the loop then reported "no PHPStan
+  # configuration declaring a level" — a false failure against a conformant
+  # project on every such machine.
+  #
+  # Every candidate configuration is inspected before the verdict. A project
+  # with Build/phpstan.neon at level 9 and phpstan.neon at level 10 satisfies
+  # the rule; exiting at the first file below 10 reported it as non-conformant.
   - id: TT-35
-    type: command
-    command: "grep -oP 'level:\\s*\\K[0-9]+|level:\\s*\\Kmax' Build/phpstan.neon 2>/dev/null || grep -oP 'level:\\s*\\K[0-9]+|level:\\s*\\Kmax' Build/phpstan/phpstan.neon 2>/dev/null || grep -oP 'level:\\s*\\K[0-9]+|level:\\s*\\Kmax' phpstan.neon 2>/dev/null || echo 0"
-    expected: "^(10|max)$"
+    type: script
+    command: |
+      bad=""
+      for f in Build/phpstan.neon Build/phpstan/phpstan.neon phpstan.neon phpstan.neon.dist; do
+        [ -f "$f" ] || continue
+        lvl=$(grep -m1 -oE 'level:[[:space:]]*([0-9]+|max)' "$f" 2>/dev/null)
+        lvl="${lvl##*[[:space:]:]}"
+        [ -z "$lvl" ] && continue
+        if [ "$lvl" = "max" ] || [ "$lvl" = "10" ]; then
+          exit 0
+        fi
+        bad="$bad $f=$lvl"
+      done
+      if [ -n "$bad" ]; then
+        echo "FAIL: no PHPStan configuration declares level 10 or max; found:$bad"
+        exit 1
+      fi
+      echo "FAIL: no PHPStan configuration declaring a level was found"
+      exit 1
     severity: warning
     desc: "PHPStan must use level 10 (max) — this is the strict check for projects using typo3-ci-workflows"
 
@@ -231,12 +265,25 @@ mechanical:
     severity: error
     desc: "Build/Scripts/runTests.sh must be executable"
 
+  # Two valid entry-point layouts, and this check accepts both:
+  #   1. composer scripts call Build/Scripts/runTests.sh directly;
+  #   2. the Netresearch convention — composer scripts (ci:test:php:unit,
+  #      ci:test:php:functional, ...) ARE the entry point, and runTests.sh is
+  #      reserved for Docker-based multi-version runs.
+  # Requiring shape 1 alone reported an error-free repo as non-conformant.
+  # A composer.json with neither shape still fails: it defines no test entry
+  # point at all.
+  #
+  # Read structurally out of `.scripts`, not as a regex over the whole file:
+  # `scripts-descriptions` is a real composer field and NR extensions document
+  # exactly these script names in it, so the text match passed a composer.json
+  # whose `scripts` object defines no test entry point.
   - id: TT-55
-    type: regex
+    type: json_path
     target: composer.json
-    pattern: 'Build/Scripts/runTests\.sh'
+    pattern: '(.scripts // {}) | (has("ci:test:php:unit") or has("ci:test:php:functional") or (tostring | contains("Build/Scripts/runTests.sh")))'
     severity: warning
-    desc: "Composer scripts should invoke Build/Scripts/runTests.sh directly"
+    desc: "composer.json should define a test entry point — either a script invoking Build/Scripts/runTests.sh, or ci:test:php:unit / ci:test:php:functional scripts"
 
   - id: TT-56
     type: regex
@@ -253,12 +300,36 @@ mechanical:
     severity: warning
     desc: "runTests.sh should use Docker containers (TYPO3 core-testing images) for consistent test environments"
 
+  # Fires only on the real bug: a make RECIPE that invokes runTests.sh without
+  # -s. It no longer demands that the Makefile drive runTests.sh at all, which
+  # reported an error against every repo where the Makefile is a thin wrapper
+  # over composer scripts (ci:test:php:unit, ...) and runTests.sh is reserved
+  # for Docker-based multi-version runs.
+  #
+  # Anchored on a literal TAB: make recipes must be tab-indented, assignments
+  # never are, so `RUNTESTS := Build/Scripts/runTests.sh` — with or without the
+  # leading spaces it gets inside an ifeq block — is not mistaken for a call.
+  # The runner must also be the recipe's COMMAND WORD, after make's optional
+  # `@`/`-`/`+` prefixes: a `help:` target whose `@echo` merely names
+  # runTests.sh is a mention, not a call, and matching it anywhere on the line
+  # reported an error against a correct Makefile. `[)}]` accepts both
+  # $(RUNTESTS) and ${RUNTESTS}; `\S*runTests\.sh` accepts the direct path.
+  # The lookahead keeps this a single grep: a `grep … | grep -q …` pipeline
+  # reports the opposite verdict under `set -o pipefail`, because grep -q
+  # closes the pipe early and the SIGPIPE on the left-hand grep becomes the
+  # pipeline's status.
+  # Known limitations: a call split across a backslash line-continuation (also
+  # true of the regex this replaced), and a call that is not in command
+  # position (`cd Build && $(RUNTESTS) unit`), are not seen. Needs grep -P:
+  # where PCRE is missing, `grep -qP` exits 2, the leading `!` inverts that and
+  # the check passes — it fails open instead of reporting every Makefile as
+  # broken. TT-35 and TT-105 do not rely on that; they were switched to a
+  # PCRE-free extraction, because their PCRE spelling failed CLOSED.
   - id: TT-58
-    type: regex
-    target: Makefile
-    pattern: '\$\(RUNTESTS\)\s+-s\s+'
+    type: command
+    pattern: "! grep -qP '^\\t[@+-]*([$][({]RUNTESTS[)}]|\\S*runTests\\.sh)(?!.* -s[ =])' Makefile 2>/dev/null"
     severity: error
-    desc: "Makefile targets must pass -s flag to runTests.sh (e.g., $(RUNTESTS) -s unit, not $(RUNTESTS) unit)"
+    desc: "Makefile recipes that invoke runTests.sh must pass the -s flag (e.g. $(RUNTESTS) -s unit, not $(RUNTESTS) unit). A Makefile that wraps composer scripts instead, or no Makefile at all, satisfies this check."
 
   - id: TT-59
     type: regex
@@ -272,9 +343,24 @@ mechanical:
   # Requiring it directly breaks the PHP-8.2 matrix cell because phpunit 12.5.8+
   # requires PHP ≥ 8.3. Do NOT add a direct phpunit/phpunit require-dev entry.
 
+  # `||`-chained on one line, so the runner rejected it unread and it failed on
+  # every project, including ones that do have PHPStan.
+  #
+  # The composer.json branch reads declared dependency KEYS. `grep -q phpstan
+  # composer.json` also passed on a `description` or `scripts-descriptions`
+  # entry that merely names PHPStan, so the warning was suppressed for projects
+  # that never install it. netresearch/typo3-ci-workflows counts as a key,
+  # because it is the shared CI package this check means by "transitively".
   - id: TT-61
-    type: command
-    command: "test -f .Build/bin/phpstan || grep -q phpstan composer.json || grep -rq phpstan .Build/vendor/composer/installed.json 2>/dev/null"
+    type: script
+    command: |
+      [ -f .Build/bin/phpstan ] && exit 0
+      [ -f vendor/bin/phpstan ] && exit 0
+      jq -e '((.require // {}) + (."require-dev" // {})) | keys | any(test("phpstan") or . == "netresearch/typo3-ci-workflows")' composer.json >/dev/null 2>&1 && exit 0
+      grep -rq phpstan .Build/vendor/composer/installed.json 2>/dev/null && exit 0
+      grep -rq phpstan vendor/composer/installed.json 2>/dev/null && exit 0
+      echo "FAIL: PHPStan is not available directly or transitively"
+      exit 1
     severity: warning
     desc: "PHPStan should be available (directly or transitively via a shared CI package)"
 
@@ -458,10 +544,27 @@ mechanical:
     desc: "composer.json should define ci:test:php:mutation script for running mutation tests via composer"
 
   # === MUTATION TESTING QUALITY ===
+  # `||`-chained and relying on an `expected:` field the runner never reads, so it
+  # was rejected unread and failed even where infection.json5 sets a high minMsi.
+  # Not applicable when the project does not do mutation testing at all — TT-104
+  # already reports the missing configuration.
+  #
+  # PCRE-free extraction for the same reason as TT-35: with `grep -oP …\K` on a
+  # grep without PCRE the capture is empty and the check reported "declares no
+  # minMsi" against a config that declares one.
   - id: TT-105
-    type: command
-    command: "grep -oP '\"minMsi\":\\s*\\K[0-9]+' infection.json5 2>/dev/null || echo 0"
-    expected: "^(9[0-9]|100)$"
+    type: script
+    command: |
+      [ -f infection.json5 ] || exit 0
+      msi=$(grep -m1 -oE '"minMsi":[[:space:]]*[0-9]+' infection.json5 2>/dev/null)
+      msi="${msi##*[[:space:]:]}"
+      if [ -z "$msi" ]; then
+        echo "FAIL: infection.json5 declares no minMsi"
+        exit 1
+      fi
+      [ "$msi" -ge 90 ] && exit 0
+      echo "FAIL: infection minMsi is $msi; expected >= 90"
+      exit 1
     severity: warning
     desc: "Infection minMsi should be >= 90% for mature test suites"
 
@@ -505,34 +608,48 @@ mechanical:
     desc: "Do not mock final classes (e.g., Intervention ImageManager) — use real instances or interface mocks"
 
   # === TEST COVERAGE COMPLETENESS ===
+  # `-not -path` excludes a dependency tree vendored underneath the search
+  # root. The exclusions are spelled `*/vendor/*` rather than `./vendor/*`:
+  # find starts at Classes/Service, so it emits paths beginning `Classes/`,
+  # and a `./`-anchored pattern could never match one.
+  #
+  # The counter used to be incremented inside `find … | while …`, which bash
+  # runs in a subshell: `missing` came back 0 no matter how many classes were
+  # reported, so the check printed its findings and still exited 0 — it could
+  # not fail. Process substitution keeps the loop in the current shell.
+  #
+  # Spelled `type: script` + `command: |` — the only multi-line shape both the
+  # runner and validate-checkpoints.sh accept (see TD-05 in typo3-docs).
   - id: TT-120
-    type: command
+    type: script
     command: |
       missing=0
-      find Classes/Service -name '*.php' -print0 2>/dev/null | while IFS= read -r -d '' f; do
+      while IFS= read -r -d '' f; do
         base=$(basename "$f" .php)
         rel=${f#Classes/}
         dir=$(dirname "$rel")
         if [ ! -f "Tests/Unit/${dir}/${base}Test.php" ] && [ ! -f "Tests/Functional/${dir}/${base}Test.php" ]; then
-          echo "Missing test for $f"; missing=$((missing+1))
+          echo "Missing test for $f"
+          missing=$((missing+1))
         fi
-      done
+      done < <(find Classes/Service -name '*.php' -not -path '*/.Build/*' -not -path '*/vendor/*' -not -path '*/node_modules/*' -print0 2>/dev/null)
       [ "$missing" -eq 0 ]
     severity: warning
     desc: "Every class in Classes/Service/ (including subdirectories) should have a corresponding test"
 
   - id: TT-121
-    type: command
+    type: script
     command: |
       missing=0
-      find Classes/ViewHelpers -name '*ViewHelper.php' -print0 2>/dev/null | while IFS= read -r -d '' f; do
+      while IFS= read -r -d '' f; do
         base=$(basename "$f" .php)
         rel=${f#Classes/}
         dir=$(dirname "$rel")
         if [ ! -f "Tests/Unit/${dir}/${base}Test.php" ] && [ ! -f "Tests/Functional/${dir}/${base}Test.php" ]; then
-          echo "Missing test for $f"; missing=$((missing+1))
+          echo "Missing test for $f"
+          missing=$((missing+1))
         fi
-      done
+      done < <(find Classes/ViewHelpers -name '*ViewHelper.php' -not -path '*/.Build/*' -not -path '*/vendor/*' -not -path '*/node_modules/*' -print0 2>/dev/null)
       [ "$missing" -eq 0 ]
     severity: warning
     desc: "Every ViewHelper in Classes/ViewHelpers/ (including subdirectories) should have a corresponding test"
@@ -547,18 +664,6 @@ mechanical:
     desc: "E2E specs must not contain hardcoded absolute local paths (/home/username/..., /Users/username/..., C:\\...) — breaks CI and every other developer's machine. Use process.cwd() or paths relative to the test file instead."
     note: "Real bug caught in t3x-nr-vault review: hardcoded /home/cybot/projects/.../main in an execFileSync cwd."
 
-  - id: TT-133
-    type: llm_review
-    target: "Tests/Unit/**/*Test.php"
-    severity: warning
-    desc: "#[CoversClass] target must not appear in phpunit.xml <source><exclude>. PHPUnit 12 emits 'not a valid target for code coverage' when a class is both covered and excluded; failOnWarning=true promotes this to a failure. Use #[CoversNothing] for tests of excluded classes, or remove the class from the exclude list."
-
-  - id: TT-134
-    type: llm_review
-    target: "Tests/**/*.php"
-    severity: error
-    desc: "Tests that call vfsStream::url() must call vfsStream::setup() for the same root in setUp(). On a fresh CI run the virtual-filesystem root does not exist; file_put_contents('vfs://keys/...') fails with 'No such file or directory'. Works locally only when a previous test in the same process already registered the root."
-
   - id: TT-135
     type: regex_not
     target: Tests/Functional/**/*Test.php
@@ -571,13 +676,31 @@ mechanical:
       tearDown() then crashes with "accessed before initialization".
       Correct order: parent::setUp() first, then check the skip condition.
 
+llm_reviews:
+  # === MOVED FROM mechanical: — type llm_review is not a mechanical type,
+  # so the runner skipped these three as 'Unknown checkpoint type' and they
+  # never ran anywhere. ===
+  - id: TT-133
+    type: llm_review
+    domain: test-quality
+    target: "Tests/Unit/**/*Test.php"
+    severity: warning
+    desc: "#[CoversClass] target must not appear in phpunit.xml <source><exclude>. PHPUnit 12 emits 'not a valid target for code coverage' when a class is both covered and excluded; failOnWarning=true promotes this to a failure. Use #[CoversNothing] for tests of excluded classes, or remove the class from the exclude list."
+  - id: TT-134
+    type: llm_review
+    domain: test-quality
+    target: "Tests/**/*.php"
+    severity: error
+    desc: "Tests that call vfsStream::url() must call vfsStream::setup() for the same root in setUp(). On a fresh CI run the virtual-filesystem root does not exist; file_put_contents('vfs://keys/...') fails with 'No such file or directory'. Works locally only when a previous test in the same process already registered the root."
+  # Same candidate paths as TT-30/TT-32/TT-35: a project whose PHPStan config
+  # lives in Build/ was skipped by this review entirely.
   - id: TT-136
     type: llm_review
-    target: "phpstan.neon"
+    domain: static-analysis
+    target: "{phpstan.neon,Build/phpstan.neon,Build/phpstan/phpstan.neon}"
     severity: error
     desc: "phpstan.neon must not combine phpstan/extension-installer auto-registration with explicit includes: of the same extension .neon files. When extension-installer is active (via netresearch/typo3-ci-workflows), phpstan-phpunit, phpstan-strict-rules, phpstan-deprecation-rules, phpat, and saschaegerer/phpstan-typo3 are already registered — adding explicit includes: causes 'These files are included multiple times' and PHPStan exits 1. Remove duplicate includes or use Build/phpstan.no-plugins.neon for local runs without extension-installer."
 
-llm_reviews:
   # === DEPENDENCY FRESHNESS ===
   - id: TT-19
     type: llm_review
@@ -628,7 +751,8 @@ llm_reviews:
       - Code coverage filter should exclude Tests/ and vendor/
       - Fail on warnings/risky should be enabled
 
-      Examine phpunit.xml, Build/UnitTests.xml, or Build/phpunit.xml and report findings.
+      Examine phpunit.xml, Build/UnitTests.xml, Build/phpunit.xml or
+      Build/phpunit/UnitTests.xml and report findings.
     severity: info
     desc: "Verify PHPUnit configuration follows best practices"
 

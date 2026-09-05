@@ -377,12 +377,25 @@ SonarCloud imports PHPStan issues and displays them alongside its own analysis.
   re-check it after a dedup sweep and recover by adding unit tests for methods previously
   only *functionally* covered (e.g. thin repository wrappers) — don't lower the gate.
 - **Locate the duplicated blocks instead of guessing.** The gate reports a percentage, not
-  a location. Ask the API which line ranges are duplicated, then dedupe exactly those:
+  a location. Ask the API which *files* carry the new duplicated lines, then which line
+  ranges inside them, and dedupe exactly those:
 
   ```bash
-  curl -s "https://sonarcloud.io/api/duplications/show?key=ORG_PROJECT%3Apath/to/File.php&pullRequest=PR" \
+  # 1. which files — `duplications/show` needs a file key you do not have yet
+  curl -s -H "Authorization: Bearer $SONAR_TOKEN" \
+    "https://sonarcloud.io/api/measures/component_tree?component=ORG_PROJECT&pullRequest=PR&metricKeys=new_duplicated_lines&ps=200" \
+    | jq -r '.components[] | (.measures[0] | (.value // .periods[0].value // "0")) as $v
+             | select($v != "0") | select(.qualifier=="FIL") | "\($v)\t\(.path)"'
+
+  # 2. which line ranges inside one of them, paired with their twin
+  curl -s -H "Authorization: Bearer $SONAR_TOKEN" \
+    "https://sonarcloud.io/api/duplications/show?key=ORG_PROJECT%3Apath/to/File.php&pullRequest=PR" \
     | jq '.duplications[].blocks | map("\(.from)-\(.from + .size - 1)")'
   ```
+
+  Two shapes in step 1 or it prints nothing: a `new_*` metric carries its value under
+  `periods[0].value`, **not** `.value`, and the response lists directories alongside files,
+  so filter `qualifier=="FIL"` to get paths step 2 accepts.
 
   Blocks repeated 6–10× across a test family are common; the few lines you added inside one
   of them are what the gate attributes to your PR.

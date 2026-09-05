@@ -47,13 +47,13 @@ mechanical:
   #     version: "10.11"
   - id: DD-06
     type: command
-    pattern: "grep -A2 '^database:' .ddev/config.yaml 2>/dev/null | grep -E 'type:\\s*(mariadb|mysql)' || echo 'NOT_FOUND'"
+    pattern: "grep -A2 '^database:' .ddev/config.yaml 2>/dev/null | grep -qE 'type:[[:space:]]*(mariadb|mysql)'"
     severity: warning
     desc: "Database type should be explicitly set (mariadb or mysql)"
 
   - id: DD-07
     type: command
-    pattern: "grep -A3 '^database:' .ddev/config.yaml 2>/dev/null | grep -E 'version:\\s*' || echo 'NOT_FOUND'"
+    pattern: "grep -A3 '^database:' .ddev/config.yaml 2>/dev/null | grep -qE 'version:'"
     severity: info
     desc: "Database version should be explicitly configured (MariaDB 10.4+ or MySQL 8.0+)"
 
@@ -190,9 +190,13 @@ mechanical:
     desc: "DDEV nodejs_version may be configured for frontend build tools"
 
   # === MULTI-VERSION TESTING SETUP ===
+  # The exit status must come from the match itself. The previous shape
+  # (`ls … | head -1 || echo 'NOT_FOUND'`) was refused by the runner allowlist
+  # for the `||`, and would have reported success unconditionally had it run:
+  # `head` exits 0 on empty input and `echo` always succeeds.
   - id: DD-29
     type: command
-    pattern: "ls .ddev/commands/web/install-* 2>/dev/null | head -1 || echo 'NOT_FOUND'"
+    pattern: "find .ddev/commands/web -maxdepth 1 -type f -name 'install-*' 2>/dev/null | grep -q ."
     severity: info
     desc: "DDEV install commands should exist for multi-version TYPO3 testing"
 

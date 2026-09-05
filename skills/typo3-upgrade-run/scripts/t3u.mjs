@@ -21,6 +21,7 @@ import {
 } from './lib/actions/compare.mjs';
 import { backendSweep, smoke, lighthouse, axeAudit } from './lib/actions/sweep.mjs';
 import { report } from './lib/actions/report.mjs';
+import { closureStart, closureCheck, closureVerify } from './lib/actions/closure.mjs';
 import {
   approvalRecord,
   loopOpen,
@@ -29,7 +30,7 @@ import {
   validateRun,
 } from './lib/actions/lifecycle.mjs';
 import {
-  graphInit, graphNext, graphStatus, graphValidate, nodeClose, nodeOpen,
+  graphInit, graphNext, graphStatus, graphValidate, graphForecast, nodeClose, nodeOpen,
 } from './lib/actions/graph.mjs';
 
 const ACTIONS = {
@@ -41,9 +42,13 @@ const ACTIONS = {
   'graph-status': graphStatus,
   'graph-next': graphNext,
   'graph-validate': graphValidate,
+  'graph-forecast': graphForecast,
   'node-open': nodeOpen,
   'node-close': nodeClose,
   'validate-run': validateRun,
+  'closure-start': closureStart,
+  'closure-check': closureCheck,
+  'closure-verify': closureVerify,
   'loop-start': loopStart,
   'loop-open': loopOpen,
   'snapshot-create': snapshotCreate,

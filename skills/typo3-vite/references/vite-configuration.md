@@ -295,6 +295,38 @@ keep `package.json` and `vite.config.js` at the Composer project root (not
 inside an extension): `node_modules` then never sits inside a copied path, and
 only the built `_assets/vite/` output ships.
 
+### Flush the page cache after every build
+
+Each `vite build` mints new content hashes and removes the previous files. The
+rendered markup, though, sits in TYPO3's page cache carrying the *old* names, so
+the browser requests `main.entry-<oldhash>.js` and receives a 404. Neither
+JavaScript nor CSS loads while the page itself still renders — which is what
+makes this expensive to diagnose: it presents as a broken feature, not a broken
+asset reference.
+
+Treat the flush as part of the build, not as an afterthought:
+
+```bash
+vendor/bin/typo3 cache:flush
+```
+
+Then verify what is actually served instead of trusting the build timestamp —
+compare the referenced names against what exists on disk:
+
+```bash
+curl -sk https://<host>/ | grep -oE '_assets/vite/(js|css)/[^"]+' | sort -u
+ls public/_assets/vite/js public/_assets/vite/css
+```
+
+Note that hashes only change for entrypoints whose *output* changed: editing a
+SCSS comment leaves the CSS hash untouched while a TypeScript comment does change
+the JS hash, so a partial mismatch is normal and still breaks the page.
+
+This matters most when a measurement is meant to prove that something does **not**
+happen. A bundle that never loaded and a bundle whose code correctly stayed idle
+produce identical observations, so any such check needs positive proof that the
+code ran — the HTTP status of the entrypoint, a log marker, an instrumented flag.
+
 ## CSP Compliance
 
 The `vite-asset-collector` supports nonce-based asset inclusion for Content Security Policy:

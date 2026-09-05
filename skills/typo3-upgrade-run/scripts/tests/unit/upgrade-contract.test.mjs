@@ -518,6 +518,8 @@ describe('state, loop paths, and approval choreography', () => {
         /approval_ref: "APR-500"/,
       );
     }
-    assert.equal((await validateRun({ paths, log })).verdict, 'pass');
+    // Scaffolding still works, but a manually set legacy "closed" label is no
+    // longer sufficient for whole-run validation without actual closure evidence.
+    await assert.rejects(validateRun({ paths, log }), /Missing or escaping closure artifact/);
   });
 });

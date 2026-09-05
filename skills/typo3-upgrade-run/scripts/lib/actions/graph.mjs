@@ -6,13 +6,16 @@
  * and bounded, so the system cannot silently turn back into "repeat until green".
  */
 
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parse as parseYaml } from 'yaml';
 import { EXIT, HarnessError, InvalidRunError, PreconditionError } from '../cli/exit-codes.mjs';
 import { StateStore } from '../run/state.mjs';
 import { sha256 } from '../run/paths.mjs';
 import { assertPhaseRuntime, runtimeProfileIssues } from '../run/runtime.mjs';
+import { forecastGraph } from '../run/forecast.mjs';
+import { closureCheck, readClosureArtifact, validClosureAcceptance, verifyRecordedClosureAcceptance } from './closure.mjs';
+export { validClosureAcceptance } from './closure.mjs';
 
 const GRAPH_SCHEMA = 'typo3-upgrade-run/graph@1';
 const GRAPH_STATE_SCHEMA = 'typo3-upgrade-run/graph-state@1';
@@ -64,12 +67,20 @@ export async function graphNext({ paths, log }) {
   refreshReady(state.graph, definition);
   state.graph.updated_at = new Date().toISOString();
   await writeGraphState(store, state, stateRevision);
-  const ready = Object.entries(state.graph.nodes)
+  const candidates = Object.entries(state.graph.nodes)
     .filter(([, node]) => node.status === 'ready')
-    .map(([id]) => ({ id, skill: definition.nodes[id].skill ?? null, resources: definition.nodes[id].resources ?? [] }));
+    .map(([id]) => ({ id, skill: definition.nodes[id].skill ?? null, resources: nodeResources(definition.nodes[id], definition) }));
+  const ready = [], waiting = [];
+  for (const node of candidates) {
+    const held = node.resources.filter(resource => state.graph.locks[resource]);
+    if (held.length) waiting.push({ ...node, reason: held.map(r => `${r} held by ${state.graph.locks[r]}`).join(', ') });
+    else if (state.graph.nodes[node.id].attempts >= (definition.policy?.max_node_attempts ?? Infinity)) {
+      waiting.push({ ...node, reason: 'Shared node attempt budget exhausted; re-plan or stop.' });
+    } else ready.push(node);
+  }
   const parallelSets = compatibleSets(ready);
   for (const node of ready) log.info(`${node.id}${node.skill ? ` -> ${node.skill}` : ''} [${node.resources.join(', ') || 'no exclusive resource'}]`);
-  return { exitCode: EXIT.PASS, verdict: 'pass', ready, parallelSets, message: ready.length ? `${ready.length} node(s) ready` : 'no node ready' };
+  return { exitCode: EXIT.PASS, verdict: 'pass', ready, waiting, parallelSets, message: ready.length ? `${ready.length} node(s) ready` : 'no node ready' };
 }
 
 export async function nodeOpen({ values, paths, log, journal }) {
@@ -82,35 +93,65 @@ export async function nodeOpen({ values, paths, log, journal }) {
   const nodeState = state.graph.nodes[id];
   if (!node || !nodeState) throw new PreconditionError(`Unknown graph node: ${id}`);
   if (nodeState.status !== 'ready') throw new PreconditionError(`Node ${id} is ${nodeState.status}, not ready.`);
+  if (nodeState.attempts >= (definition.policy?.max_node_attempts ?? Infinity)) {
+    throw new PreconditionError(`Node ${id} exhausted its shared attempt budget. Changing recovery cause does not reset it.`);
+  }
+  const phaseNumber = Number(node.phase?.slice(1));
+  if (definition.policy?.require_forecast && phaseNumber >= 2 && phaseNumber <= 10) {
+    if (!state.runtime.forecast_ref || !state.runtime.forecast_hash) {
+      throw new PreconditionError('Run graph-forecast with measured pilot estimates before baseline/migration work.');
+    }
+    const bytes = await readClosureArtifact(paths.root, state.runtime.forecast_ref);
+    const forecast = JSON.parse(bytes);
+    if (`sha256:${sha256(bytes)}` !== state.runtime.forecast_hash || !forecast.feasible
+      || forecast.graph_hash !== state.graph.definition_hash || forecast.run_id !== state.run_id) {
+      throw new PreconditionError('A current feasible graph-forecast is required before baseline/migration work.');
+    }
+    for (const [ref, hash] of [[forecast.plan_ref, forecast.plan_hash], ...Object.entries(forecast.source_hashes ?? {})]) {
+      if (`sha256:${sha256(await readClosureArtifact(paths.root, ref))}` !== hash) {
+        throw new PreconditionError('Runtime forecast plan/source changed. Reforecast against the remaining sealed window.');
+      }
+    }
+  }
+  const applicabilityOnly = values['applicability-only'] === true;
+  if (applicabilityOnly && !(node.outcomes ?? []).includes('not-applicable')) {
+    throw new PreconditionError(`Node ${id} has no not-applicable outcome; its checks cannot be skipped.`);
+  }
+  const acceptingRecordedProof = id === 'contract-a-gate' && Boolean(state.contract_a?.verification);
+  if (acceptingRecordedProof) {
+    await closureCheck({ values: { evidence: state.contract_a.verification.evidence_ref }, paths, log });
+  }
   assertPhaseRuntime(state.runtime, node.phase, Date.now(), {
-    contractAClosed: state.contract_a?.status === 'closed',
+    contractAClosed: state.contract_a?.status === 'closed' || acceptingRecordedProof,
   });
-  if (node.mutation === 'stateful') {
+  if (!applicabilityOnly && node.mutation === 'stateful') {
     if (!values.snapshot || !state.snapshots.includes(values.snapshot)) {
       throw new PreconditionError(`Stateful node ${id} requires --snapshot naming a recorded DDEV snapshot.`);
     }
   }
-  if (node.mutation === 'code' && !values['rollback-ref']) {
+  if (!applicabilityOnly && node.mutation === 'code' && !values['rollback-ref']) {
     throw new PreconditionError(`Code-changing node ${id} requires --rollback-ref.`);
   }
-  if (node.approval === 'required' && (!values.approval || !state.approvals.includes(values.approval))) {
+  if (!applicabilityOnly && node.approval === 'required' && (!values.approval || !state.approvals.includes(values.approval))) {
     throw new PreconditionError(`Node ${id} requires --approval naming a granted approval.`);
   }
-  for (const resource of node.resources ?? []) {
+  const resources = nodeResources(node, definition);
+  for (const resource of resources) {
     const owner = state.graph.locks[resource];
     if (owner && owner !== id) throw new PreconditionError(`Resource ${resource} is locked by ${owner}.`);
   }
   const now = new Date().toISOString();
-  for (const resource of node.resources ?? []) state.graph.locks[resource] = id;
+  for (const resource of resources) state.graph.locks[resource] = id;
   nodeState.status = 'running';
+  nodeState.applicability_only = applicabilityOnly;
   nodeState.attempts += 1;
   nodeState.active_since = now;
   nodeState.completed_at = null;
   state.graph.updated_at = now;
   await mkdir(paths.node(id), { recursive: true });
   await writeGraphState(store, state, stateRevision);
-  await journal?.append('node', { action: 'open', node_id: id, attempt: nodeState.attempts, resources: node.resources ?? [] });
-  for (const resource of node.resources ?? []) await journal?.append('lock', { action: 'acquire', resource, node_id: id });
+  await journal?.append('node', { action: 'open', node_id: id, attempt: nodeState.attempts, resources, applicability_only: applicabilityOnly });
+  for (const resource of resources) await journal?.append('lock', { action: 'acquire', resource, node_id: id });
   log.success(`Node ${id} opened (attempt ${nodeState.attempts}).`);
   return { exitCode: EXIT.PASS, verdict: 'pass', node: id, attempt: nodeState.attempts, skill: node.skill ?? null, message: `${id} running` };
 }
@@ -129,14 +170,41 @@ export async function nodeClose({ values, paths, log, journal }) {
   if (nodeState.status !== 'running') throw new PreconditionError(`Node ${id} is ${nodeState.status}, not running.`);
   const allowed = node.outcomes ?? NODE_OUTCOMES;
   if (!allowed.includes(outcome)) throw new PreconditionError(`Outcome ${outcome} is not allowed for ${id}: ${allowed.join(', ')}.`);
+  if (nodeState.applicability_only && !['not-applicable', 'blocked'].includes(outcome)) {
+    throw new PreconditionError('A read-only applicability check may only close not-applicable or blocked; it cannot authorize implementation or pass a proof node.');
+  }
+  const evidenceHash = definition.policy?.require_artifacts
+    ? `sha256:${sha256(await readClosureArtifact(paths.root, evidence))}` : null;
   if (outcome === 'pass' && node.evidence_loop === 'required') {
     const loopId = String(values['evidence-loop'] ?? '').slice(0, 3);
     if (!/^\d{3}$/.test(loopId) || state.loops[loopId] !== 'green') {
       throw new PreconditionError(`Node ${id} may pass only with --evidence-loop naming a green bounded loop.`);
     }
   }
+  if (outcome === 'pass' && ['contract-a-gate', 'handover'].includes(id)) {
+    const checkedClosure = await closureCheck({ values, paths, log });
+    if (id === 'handover') await verifyRecordedClosureAcceptance(paths, state);
+    if (id === 'contract-a-gate') {
+      const approvalId = values.approval;
+      const files = await readdir(paths.approvalsDir).catch(() => []);
+      const candidates = files.filter(f => approvalId && f.startsWith(`${approvalId}-acceptance-`));
+      if (!state.approvals.includes(approvalId) || candidates.length !== 1) {
+        throw new PreconditionError('Contract A requires --approval naming one recorded human acceptance of this closure evidence.');
+      }
+      const approvalBody = await readFile(path.join(paths.approvalsDir, candidates[0]), 'utf8');
+      const acceptance = parseYaml(approvalBody.match(/^---\r?\n([\s\S]*?)\r?\n---/)?.[1] ?? '');
+      if (!validClosureAcceptance(acceptance, { ...checkedClosure, runId: state.run_id, approvalId, evidence })) {
+        throw new PreconditionError('Acceptance must belong to this run and reference the closure path#sha256:hash.');
+      }
+    }
+  }
 
   const matching = definition.edges.filter((edge) => edge.from === id && edge.outcome === outcome);
+  const retriesUsed = definition.edges.filter(e => e.retry === true)
+    .reduce((n, e) => n + state.graph.edges[e.id].traversals, 0);
+  if (retriesUsed + matching.filter(e => e.retry === true).length > (definition.policy?.max_total_retries ?? Infinity)) {
+    throw new PreconditionError('The shared graph recovery budget is exhausted. Stop rather than nesting another retry loop.');
+  }
   if (!matching.length && !asArray(definition.terminal).includes(id)) {
     throw new InvalidRunError(`Graph has no ${outcome} route from non-terminal node ${id}.`);
   }
@@ -147,12 +215,18 @@ export async function nodeClose({ values, paths, log, journal }) {
     }
   }
   const now = new Date().toISOString();
+  if (id === 'contract-a-gate' && outcome === 'pass') {
+    state.contract_a = { ...state.contract_a, phase: 'P13', status: 'closed', closed_at: now, closure_ref: evidence };
+    state.contract_b.unlocked = true;
+    state.contract_b.unlocked_at = now;
+  }
   const evidenceLoop = values['evidence-loop'] ? String(values['evidence-loop']).slice(0, 3) : null;
-  const previous = { status: nodeState.status, attempt: nodeState.attempts, outcome, evidence, evidence_loop: evidenceLoop, completed_at: now };
+  const previous = { status: nodeState.status, attempt: nodeState.attempts, outcome, evidence, evidence_sha256: evidenceHash, evidence_loop: evidenceLoop, completed_at: now, applicability_only: nodeState.applicability_only ?? false };
   nodeState.history.push(previous);
   nodeState.status = statusForOutcome(outcome);
   nodeState.outcome = outcome;
   nodeState.evidence = evidence;
+  nodeState.evidence_sha256 = evidenceHash;
   nodeState.evidence_loop = evidenceLoop;
   nodeState.completed_at = now;
   nodeState.active_since = null;
@@ -198,8 +272,43 @@ export async function graphValidate({ paths, log }) {
   const { state, definition, hash } = await graphContext(paths);
   const issues = validateGraphState(state.graph, definition, hash, state);
   if (issues.length) throw new InvalidRunError(`Graph validation failed:\n  - ${issues.join('\n  - ')}`);
+  if (definition.policy?.require_artifacts) {
+    for (const [id, node] of Object.entries(state.graph.nodes)) {
+      if (!['passed', 'skipped'].includes(node.status)) continue;
+      if (`sha256:${sha256(await readClosureArtifact(paths.root, node.evidence))}` !== node.evidence_sha256) {
+        throw new InvalidRunError(`Node ${id} evidence changed after its result was recorded.`);
+      }
+    }
+  }
   log.success('Graph definition, state, retry bounds, locks, and node references are valid.');
   return { exitCode: EXIT.PASS, verdict: 'pass', nodes: Object.keys(definition.nodes).length, message: 'graph valid' };
+}
+
+export async function graphForecast({ values, paths, log, journal }) {
+  const { state, definition } = await graphContext(paths);
+  const revision = stateHash(state);
+  const planBytes = await readClosureArtifact(paths.root, values.evidence);
+  const plan = JSON.parse(planBytes);
+  const forecast = forecastGraph(definition, state, plan);
+  forecast.plan_ref = values.evidence;
+  forecast.plan_hash = `sha256:${sha256(planBytes)}`;
+  forecast.source_hashes = {};
+  for (const source of forecast.sources) {
+    forecast.source_hashes[source] = `sha256:${sha256(await readClosureArtifact(paths.root, source))}`;
+  }
+  const bytes = JSON.stringify(forecast, null, 2) + '\n';
+  const hash = `sha256:${sha256(bytes)}`;
+  const ref = `report/runtime-forecast-${hash.slice(7, 23)}.json`;
+  await mkdir(paths.reportDir, { recursive: true });
+  await writeFile(path.join(paths.root, ref), bytes, { flag: 'wx' });
+  state.runtime.forecast_ref = ref;
+  state.runtime.forecast_hash = hash;
+  await writeGraphState(new StateStore(paths), state, revision);
+  await journal?.append('graph', { action: 'forecast', evidence: ref, hash, feasible: forecast.feasible });
+  log.info(`${forecast.profile}: estimated ${forecast.estimated_minutes}m, reserved ${forecast.reserved_minutes}m; ${forecast.feasible ? 'fits' : 'does not fit'} the sealed window.`);
+  return { exitCode: forecast.feasible ? EXIT.PASS : EXIT.PRECONDITION,
+    verdict: forecast.feasible ? 'pass' : 'incomplete', evidence: ref, ...forecast,
+    message: forecast.feasible ? 'forecast admitted; estimates are not guarantees' : 'split prerequisite work before starting the overnight migration' };
 }
 
 export function validateGraphDefinition(definition) {
@@ -210,6 +319,11 @@ export function validateGraphDefinition(definition) {
   if (issues.length) return issues;
   const nodeIds = new Set(Object.keys(definition.nodes));
   const resources = new Set(asArray(definition.resources));
+  if (definition.policy?.serialize_mutations && !resources.has('project-write')) issues.push('serialized mutations require the project-write resource');
+  for (const key of ['max_node_attempts', 'max_total_retries']) {
+    const value = definition.policy?.[key];
+    if (value !== undefined && (!Number.isInteger(value) || value < 1 || value > 100)) issues.push(`policy.${key} must be an integer between 1 and 100`);
+  }
   for (const id of [...asArray(definition.start), ...asArray(definition.terminal)]) if (!nodeIds.has(id)) issues.push(`unknown start/terminal node ${id}`);
   const edgeIds = new Set();
   for (const edge of definition.edges) {
@@ -218,13 +332,18 @@ export function validateGraphDefinition(definition) {
     if (!nodeIds.has(edge.from)) issues.push(`edge ${edge.id} has unknown from node ${edge.from}`);
     for (const to of asArray(edge.to)) if (!nodeIds.has(to)) issues.push(`edge ${edge.id} has unknown to node ${to}`);
     if (!String(edge.outcome ?? '')) issues.push(`edge ${edge.id} has no outcome`);
+    if (definition.nodes[edge.from]?.outcomes && !definition.nodes[edge.from].outcomes.includes(edge.outcome)) {
+      issues.push(`edge ${edge.id} uses undeclared outcome ${edge.outcome}`);
+    }
     if (edge.retry === true && (!Number.isInteger(edge.max_traversals) || edge.max_traversals < 1 || edge.max_traversals > 5)) {
       issues.push(`retry edge ${edge.id} needs max_traversals between 1 and 5`);
     }
   }
   for (const [id, node] of Object.entries(definition.nodes)) {
+    if (!/^[a-z0-9][a-z0-9-]*$/.test(id)) issues.push(`unsafe node id ${id}`);
+    if (!node || typeof node !== 'object' || Array.isArray(node)) { issues.push(`node ${id} must be an object`); continue; }
     for (const required of node.requires ?? []) if (!nodeIds.has(required)) issues.push(`node ${id} requires unknown node ${required}`);
-    for (const resource of node.resources ?? []) if (!resources.has(resource)) issues.push(`node ${id} uses undeclared resource ${resource}`);
+    for (const resource of nodeResources(node, definition)) if (!resources.has(resource)) issues.push(`node ${id} uses undeclared resource ${resource}`);
     const outgoing = definition.edges.filter((edge) => edge.from === id);
     for (const outcome of node.outcomes ?? []) {
       if (!outgoing.some((edge) => edge.outcome === outcome) && !asArray(definition.terminal).includes(id)) {
@@ -237,6 +356,8 @@ export function validateGraphDefinition(definition) {
     for (const to of asArray(edge.to)) nonRetryAdj[edge.from]?.push(to);
   }
   if (hasCycle(nonRetryAdj)) issues.push('graph contains an unbounded cycle; every cycle must cross a bounded retry edge');
+  const requiredAdj = Object.fromEntries([...nodeIds].map(id => [id, definition.nodes[id]?.requires ?? []]));
+  if (hasCycle(requiredAdj)) issues.push('graph contains a prerequisite cycle and cannot become ready');
   return issues;
 }
 
@@ -248,6 +369,14 @@ export function validateGraphState(graph, definition, hash, runState = null) {
   for (const id of Object.keys(graph.nodes)) if (!definition.nodes[id]) issues.push(`state contains unknown node ${id}`);
   for (const [id, node] of Object.entries(definition.nodes)) {
     const nodeState = graph.nodes[id];
+    if (nodeState?.attempts > (definition.policy?.max_node_attempts ?? Infinity)) issues.push(`node ${id} exceeded its shared attempt budget`);
+    if (nodeState?.status === 'running') {
+      for (const resource of nodeResources(node, definition)) {
+        if (graph.locks[resource] !== id) issues.push(`running node ${id} does not own lock ${resource}`);
+      }
+    }
+    if (definition.policy?.require_artifacts && ['passed', 'skipped'].includes(nodeState?.status)
+      && !/^sha256:[a-f0-9]{64}$/.test(nodeState.evidence_sha256 ?? '')) issues.push(`node ${id} has no evidence hash`);
     if (node.evidence_loop === 'required' && nodeState?.status === 'passed') {
       if (!/^\d{3}$/.test(nodeState.evidence_loop ?? '')) issues.push(`passed proof node ${id} has no evidence loop`);
       else if (runState && runState.loops?.[nodeState.evidence_loop] !== 'green') {
@@ -257,13 +386,15 @@ export function validateGraphState(graph, definition, hash, runState = null) {
   }
   for (const [resource, owner] of Object.entries(graph.locks)) {
     if (graph.nodes[owner]?.status !== 'running') issues.push(`lock ${resource} belongs to non-running node ${owner}`);
-    if (!(definition.nodes[owner]?.resources ?? []).includes(resource)) issues.push(`lock ${resource} is not declared by ${owner}`);
+    if (!nodeResources(definition.nodes[owner] ?? {}, definition).includes(resource)) issues.push(`lock ${resource} is not declared by ${owner}`);
   }
   for (const edge of definition.edges) {
     const traversals = graph.edges[edge.id]?.traversals;
     if (!Number.isInteger(traversals)) issues.push(`state misses edge ${edge.id}`);
     if (edge.retry === true && traversals > edge.max_traversals) issues.push(`retry edge ${edge.id} exceeded its bound`);
   }
+  if (definition.edges.filter(e => e.retry).reduce((n, e) => n + (graph.edges[e.id]?.traversals ?? 0), 0)
+    > (definition.policy?.max_total_retries ?? Infinity)) issues.push('graph exceeded its shared recovery budget');
   return issues;
 }
 
@@ -305,13 +436,16 @@ function refreshReady(graph, definition, { traversed = [] } = {}) {
     const activated = start.has(id) || traversedTargets.has(id) || incoming.some((edge) => (graph.edges[edge.id]?.traversals ?? 0) > 0);
     const required = definition.nodes[id].requires ?? [];
     const requirementsMet = required.every((requiredId) => ['passed', 'skipped'].includes(graph.nodes[requiredId]?.status));
-    const wasRetryTarget = traversed.some((edge) => edge.retry === true && asArray(edge.to).includes(id));
-    if (activated && requirementsMet && (nodeState.status === 'pending' || (wasRetryTarget && ['failed', 'blocked', 'invalid', 'passed', 'skipped'].includes(nodeState.status)))) {
+    // An explicit arrival is a new work item, including a second visit to a repair
+    // node. Historical edge counts alone must never reactivate completed work.
+    if (nodeState.status === 'ready' && !requirementsMet) nodeState.status = 'pending';
+    if (activated && requirementsMet && (nodeState.status === 'pending' || (traversedTargets.has(id) && ['failed', 'blocked', 'invalid', 'passed', 'skipped'].includes(nodeState.status)))) {
       nodeState.status = 'ready';
       nodeState.active_since = null;
       nodeState.completed_at = null;
       nodeState.outcome = null;
       nodeState.evidence = null;
+      nodeState.evidence_sha256 = null;
       nodeState.evidence_loop = null;
     }
   }
@@ -355,6 +489,11 @@ function compatibleSets(nodes) {
     if (!placed) sets.push([node]);
   }
   return sets;
+}
+
+function nodeResources(node, definition) {
+  return [...new Set([...(node.resources ?? []),
+    ...(definition.policy?.serialize_mutations && (['code', 'stateful'].includes(node.mutation) || node.freeze) ? ['project-write'] : [])])];
 }
 
 function hasCycle(adjacency) {

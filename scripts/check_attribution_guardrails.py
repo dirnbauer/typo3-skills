@@ -10,6 +10,8 @@ to other upstream-derived skills in the repository.
 from __future__ import annotations
 
 import re
+import json
+import hashlib
 
 from audit_skills import ROOT, SKILLS_DIR, discover_source_info
 
@@ -60,24 +62,38 @@ def check_skill_file(skill_name: str, owner: str, source_url: str) -> list[str]:
     text = skill_file.read_text()
     issues: list[str] = []
 
+    lock_path = ROOT / "vendor-lock.json"
+    locked = next((s for s in json.loads(lock_path.read_text())["skills"] if s["name"] == skill_name), None) if lock_path.exists() else None
+    if locked:
+        overlay = skill_file.parent / "references/webconsulting-additions.md"
+        text = overlay.read_text() if overlay.exists() else ""
+        for relative, expected in locked["files"].items():
+            file = skill_file.parent / relative
+            if not file.is_file() or hashlib.sha256(file.read_bytes()).hexdigest() != expected:
+                issues.append(f"{skill_name}/{relative}: missing or modified pinned upstream file")
+        if not re.fullmatch(r"[a-f0-9]{40}", locked["commit"]):
+            issues.append(f"{skill_name}: unpinned upstream revision")
+        if not locked.get("licenses"):
+            issues.append(f"{skill_name}: upstream licences missing")
+
     if owner == "webconsulting":
         return issues
 
     for snippet in COMMON_REQUIRED_SKILL_SNIPPETS:
         if snippet not in text:
             issues.append(
-                f"{skill_name}/SKILL.md is missing required attribution text: {snippet}"
+                f"{skill_name} attribution is missing required text: {snippet}"
             )
     for snippet in REQUIRED_SKILL_SNIPPETS if owner == "Netresearch" else ():
         if snippet not in text:
             issues.append(
-                f"{skill_name}/SKILL.md is missing required attribution text: {snippet}"
+                f"{skill_name} attribution is missing required text: {snippet}"
             )
 
     expected_repo_line = f"Original repository: {source_url}"
     if expected_repo_line not in text:
         issues.append(
-            f"{skill_name}/SKILL.md is missing upstream repository line: {expected_repo_line}"
+            f"{skill_name} attribution is missing upstream repository line: {expected_repo_line}"
         )
     if owner not in text:
         issues.append(f"{skill_name}/SKILL.md does not name upstream owner `{owner}`")

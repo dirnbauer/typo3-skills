@@ -1,0 +1,326 @@
+[
+  {
+    "name": "site_set_structure",
+    "prompt": "I need to create a site set for my TYPO3 v13 project that uses Bootstrap Package. The site is called 'acme-website'. What files do I need and what goes in config.yaml?",
+    "assertions": [
+      {
+        "type": "content",
+        "pattern": "Configuration/Sets"
+      },
+      {
+        "type": "content",
+        "pattern": "config\\.yaml"
+      },
+      {
+        "type": "content",
+        "pattern": "bootstrap-package"
+      },
+      {
+        "type": "content",
+        "pattern": "dependencies"
+      }
+    ]
+  },
+  {
+    "name": "sys_template_cleanup",
+    "prompt": "After migrating to site sets in TYPO3 v13, I still get 'No page configured for type=0'. What's wrong?",
+    "assertions": [
+      {
+        "type": "content",
+        "pattern": "sys_template"
+      },
+      {
+        "type": "content",
+        "pattern": "include_static_file"
+      },
+      {
+        "type": "content",
+        "pattern": "(DELETE|delete|remove)"
+      }
+    ]
+  },
+  {
+    "name": "imagemagick_docker",
+    "prompt": "My TYPO3 v14 site in Docker serves huge unprocessed images. All images are full-size originals. What's missing?",
+    "assertions": [
+      {
+        "type": "content",
+        "pattern": "(ImageMagick|imagemagick|GraphicsMagick)"
+      },
+      {
+        "type": "content",
+        "pattern": "(Dockerfile|Docker|apk add|apt-get)"
+      },
+      {
+        "type": "content",
+        "pattern": "(processor|GFX|processor_path)"
+      }
+    ]
+  },
+  {
+    "name": "scss_variables_over_css",
+    "prompt": "I need to change the primary color to #585961 and secondary to #2f99a4 in my TYPO3 v14 Bootstrap Package site. Should I use CSS overrides?",
+    "assertions": [
+      {
+        "type": "content",
+        "pattern": "plugin\\.bootstrap_package\\.settings\\.scss"
+      },
+      {
+        "type": "content",
+        "pattern": "settings\\.yaml"
+      },
+      {
+        "type": "content",
+        "pattern": "primary"
+      }
+    ]
+  },
+  {
+    "name": "bs4_to_bs5_data_attributes",
+    "prompt": "After upgrading from TYPO3 v11 to v14, my dropdown menus and carousels stopped working. What changed?",
+    "assertions": [
+      {
+        "type": "content",
+        "pattern": "data-bs-"
+      },
+      {
+        "type": "content",
+        "pattern": "(Bootstrap 5|BS5|BS4)"
+      }
+    ]
+  },
+  {
+    "name": "navbar_scroll_flicker",
+    "prompt": "My TYPO3 v14 site's sticky navbar flickers on scroll - it keeps switching between collapsed and expanded states. How do I fix this?",
+    "assertions": [
+      {
+        "type": "content",
+        "pattern": "margin-bottom"
+      },
+      {
+        "type": "content",
+        "pattern": "(sticky|transition|height)"
+      }
+    ]
+  },
+  {
+    "name": "hover_dropdowns_restoration",
+    "prompt": "In our old TYPO3 v11 site, navigation dropdowns opened on hover. After upgrading to v14 with Bootstrap Package v16, they only open on click. How to restore hover behavior?",
+    "assertions": [
+      {
+        "type": "content",
+        "pattern": "(hover|:hover)"
+      },
+      {
+        "type": "content",
+        "pattern": "(dropdown-menu|nav-item)"
+      },
+      {
+        "type": "content",
+        "pattern": "(display:\\s*block|display: block)"
+      }
+    ]
+  },
+  {
+    "name": "settings_yaml_constants_mapping",
+    "prompt": "I'm migrating from TYPO3 v11 to v14. My old TypoScript constants had page.logo.file, page.theme.navigation.style, and page.theme.breadcrumb.enable. Where do these go now?",
+    "assertions": [
+      {
+        "type": "content",
+        "pattern": "settings\\.yaml"
+      },
+      {
+        "type": "content",
+        "pattern": "page\\.logo\\.file"
+      },
+      {
+        "type": "content",
+        "pattern": "(site set|Site Set)"
+      }
+    ]
+  },
+  {
+    "name": "per_page_typoscript_conditions",
+    "prompt": "In TYPO3 v11, I had different sys_template records per page for different layouts. How do I handle per-page behavior in v14 with site sets?",
+    "assertions": [
+      {
+        "type": "content",
+        "pattern": "(traverse|condition|\\[traverse)"
+      },
+      {
+        "type": "content",
+        "pattern": "(TypoScript|typoscript)"
+      }
+    ]
+  },
+  {
+    "name": "cards_in_colored_frames",
+    "prompt": "After upgrading to Bootstrap Package v16, text inside cards that are within colored background frames is invisible (white text on white card background). How do I fix this?",
+    "assertions": [
+      {
+        "type": "content",
+        "pattern": "(frame-background|--frame-color|color-contrast)"
+      },
+      {
+        "type": "content",
+        "pattern": "(card|--bs-body-color)"
+      }
+    ]
+  },
+  {
+    "name": "min_contrast_ratio",
+    "prompt": "My TYPO3 v14 site's colored frames show different text colors than the old v11 site. The old site had white text on teal backgrounds but now it's black.",
+    "assertions": [
+      {
+        "type": "content",
+        "pattern": "min-contrast-ratio"
+      },
+      {
+        "type": "content",
+        "pattern": "(color-contrast|4\\.5|3)"
+      }
+    ]
+  },
+  {
+    "name": "processed_files_cleanup",
+    "prompt": "I just added ImageMagick to my TYPO3 Docker container but images still look wrong. Some show old v11 processed versions.",
+    "assertions": [
+      {
+        "type": "content",
+        "pattern": "sys_file_processedfile"
+      },
+      {
+        "type": "content",
+        "pattern": "_processed_"
+      },
+      {
+        "type": "content",
+        "pattern": "(TRUNCATE|cache:flush|rm)"
+      }
+    ]
+  },
+  {
+    "name": "site_config_dependencies",
+    "prompt": "I created a site set but TYPO3 v13 doesn't load my TypoScript. The config.yaml and setup.typoscript are in the right place. What am I missing?",
+    "assertions": [
+      {
+        "type": "content",
+        "pattern": "config/sites"
+      },
+      {
+        "type": "content",
+        "pattern": "dependencies"
+      }
+    ]
+  },
+  {
+    "name": "upgrade_inventory_phase",
+    "prompt": "I'm about to upgrade a TYPO3 v11 project to v14. What should I inventory before starting?",
+    "assertions": [
+      {
+        "type": "content",
+        "pattern": "sys_template"
+      },
+      {
+        "type": "content",
+        "pattern": "(content element|tt_content|CType)"
+      },
+      {
+        "type": "content",
+        "pattern": "(extension|ext)"
+      }
+    ]
+  },
+  {
+    "name": "visual_comparison_methodology",
+    "prompt": "How do I systematically compare my old TYPO3 v11 site with the new v14 site to find migration gaps?",
+    "assertions": [
+      {
+        "type": "content",
+        "pattern": "(curl|HTTP|http_code|status)"
+      },
+      {
+        "type": "content",
+        "pattern": "(compare|comparison|diff)"
+      }
+    ]
+  },
+  {
+    "name": "link_decoration_scss",
+    "prompt": "After the Bootstrap Package v16 upgrade, all my links have underlines that weren't there before. How do I remove them without CSS !important?",
+    "assertions": [
+      {
+        "type": "content",
+        "pattern": "link-decoration"
+      },
+      {
+        "type": "content",
+        "pattern": "(scss|SCSS|settings\\.yaml)"
+      },
+      {
+        "type": "content",
+        "pattern": "none"
+      }
+    ]
+  },
+  {
+    "name": "carousel_autoplay_database",
+    "prompt": "Our carousel content elements stopped auto-playing after the TYPO3 v14 upgrade. Bootstrap Package v16 seems to default to no autoplay.",
+    "assertions": [
+      {
+        "type": "content",
+        "pattern": "(autoplay|pi_flexform)"
+      },
+      {
+        "type": "content",
+        "pattern": "(UPDATE|tt_content|SQL)"
+      }
+    ]
+  },
+  {
+    "name": "navigation_split_button",
+    "prompt": "After upgrading to Bootstrap Package v16, my navigation CSS targeting .nav-link.dropdown-toggle no longer works. What changed in the nav markup?",
+    "assertions": [
+      {
+        "type": "content",
+        "pattern": "(nav-link-main|nav-link-toggle|split)"
+      },
+      {
+        "type": "content",
+        "pattern": "(accessibility|button)"
+      }
+    ]
+  },
+  {
+    "name": "rss_feed_page_migration",
+    "prompt": "In TYPO3 v11 I had a special sys_template on page 99 that made it output RSS XML instead of HTML. How do I migrate this to v14 site sets?",
+    "assertions": [
+      {
+        "type": "content",
+        "pattern": "(traverse|condition|\\[traverse)"
+      },
+      {
+        "type": "content",
+        "pattern": "(Content-Type|rss|xml|additionalHeaders)"
+      }
+    ]
+  },
+  {
+    "name": "categorize_differences",
+    "prompt": "I found 15 visual differences between my old v11 and new v14 TYPO3 sites. How should I categorize and prioritize them?",
+    "assertions": [
+      {
+        "type": "content",
+        "pattern": "(MIGRATION GAP|migration gap)"
+      },
+      {
+        "type": "content",
+        "pattern": "(BS5 CHANGE|BS5 change|accept)"
+      },
+      {
+        "type": "content",
+        "pattern": "(CSS OVERRIDE|override)"
+      }
+    ]
+  }
+]

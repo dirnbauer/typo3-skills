@@ -39,3 +39,12 @@ Scripts written for this collection use:
 
 Codes 3 and 5 exist because collapsing them loses the distinction that matters most: an environment
 drift is not a subject regression, and a guard refusal is not a broken tool.
+
+## Credits & Attribution
+
+This skill is based on the excellent work by **Netresearch DTT GmbH**.
+Original repository: https://github.com/netresearch/typo3-testing-skill
+
+Special thanks to Netresearch for publishing and maintaining these skills.
+Copyright (c) Netresearch DTT GmbH; original licence files are preserved.
+Adapted by webconsulting.at for this skill collection through this overlay only; the upstream skill is unmodified.

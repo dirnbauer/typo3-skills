@@ -1,6 +1,6 @@
 # Functional Test Patterns for TYPO3 12/13
 
-> **Source**: Real-world patterns from netresearch/contexts extension testing (2024-12)
+> **Source**: Real-world patterns from testing a production TYPO3 extension (2024-12)
 
 ## Container Reset Between Tests
 
@@ -308,3 +308,9 @@ A helper named `jsonResponse` with a narrower visibility or different signature
 is a **fatal** "access level must be …" / signature error at class-load time —
 not a lint warning. Name controller JSON helpers something else (`respondJson`,
 `streamLine`, …).
+
+## Removing a constructor property? Grep the property name across `Tests/`
+
+Functional/E2E suites often build controllers with `newInstanceWithoutConstructor()` plus reflection injection (`setPrivateProperty($c, 'propName', …)` or a `createControllerWithReflection(X::class, ['propName' => …])` helper). Those factory calls never mention the action methods you moved — so a call-site grep scoped to the refactor misses them, and PHPStan, unit, cgl and rector all stay green. The failure appears only in the functional suite: `ReflectionException: Property X::$prop does not exist`.
+
+Before removing or moving a constructor property, grep the **property name as a string literal** across `Tests/`, and resolve each hit against the class its enclosing factory actually instantiates — most hits usually belong to sibling controllers that legitimately keep the dependency.

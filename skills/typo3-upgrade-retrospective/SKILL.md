@@ -3,7 +3,7 @@ name: typo3-upgrade-retrospective
 description: >-
   Audit one or more past or incomplete TYPO3 upgrade runs, project repositories, Codex
   tasks/threads, and evidence directories to determine what was requested, asked, changed,
-  solved, left open, slow, good, bad, risky, or unverifiable. Use after several projects,
+  solved, left open, slow, good, bad, risky, or unverifiable. Use when reviewing several projects,
   when Git claims completion but run status is stale or the update folder is missing, when
   improving typo3-upgrade-run from real failures, or
   before claiming an old upgrade complete. Produces a problem→cause→solution→control matrix

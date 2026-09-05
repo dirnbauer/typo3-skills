@@ -3,7 +3,7 @@
 Track `invariance`. Resolve every dependency before touching application code.
 
 ## Preconditions
-P04 green.
+The deterministic baseline node passed. P03/P04 optional improvements are not prerequisites.
 
 ## Steps
 1. Align the DDEV environment with the ladder rung, not with the destination: keep a PHP version the
@@ -19,11 +19,13 @@ P04 green.
    planned Core Composer transaction; do not run an unrelated broad update. Package setup and
    editor permissions follow `references/feature-upgrades.md`.
 7. Migrate extension metadata to `composer.json` per #108345.
-8. If committed credentials are discovered, stop exposing them and record rotation as a security
-   follow-up. Do not turn a routine core upgrade into a dotenv architecture migration unless the
-   credential issue blocks safe local execution or the user explicitly includes that work.
-9. Keep the project's existing PHPStan and deployment tooling unless compatibility requires a
-   change. Upgrading PHPStan or installing `deployer_information` is optional assurance work.
+8. Read `references/project-environment.md`: use ignored root env files or environment injection
+   for credentials, retaining a compatible existing loader. Verify CLI and web precedence with
+   non-secret fixtures. Historical exposure still requires a rotation finding.
+9. Require compatible `spooner/deployer-information` and verify registration/toolbar at P12.
+   Keep PHPStan and the Deployer CLI major unless compatibility requires a change; neither is
+   the information extension. Require the latest stable Bootstrap 5.x when present; migrate
+   project jQuery to native JS with tested, explicit exceptions only for unavoidable dependencies.
 10. `ddev composer validate --strict`, update with the narrowest justified command, inspect the
    lockfile diff.
 

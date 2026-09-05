@@ -51,3 +51,12 @@ prove finishers/mail before deleting the old extension.
 Fluid cache warm-up is not render coverage. A custom ViewHelper namespace must be declared in every
 independently parsed template or partial that uses it; render every retained CType, plugin/list type
 and page template at least once.
+
+## Credits & Attribution
+
+This skill is based on the excellent work by **Netresearch DTT GmbH**.
+Original repository: https://github.com/netresearch/typo3-extension-upgrade-skill
+
+Special thanks to Netresearch for publishing and maintaining these skills.
+Copyright (c) Netresearch DTT GmbH; original licence files are preserved.
+Adapted by webconsulting.at for this skill collection through this overlay only; the upstream skill is unmodified.

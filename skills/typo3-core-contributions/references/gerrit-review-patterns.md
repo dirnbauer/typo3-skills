@@ -140,7 +140,21 @@ extbase to monitor API stability and how frequently changes are needed."
 
 **Best Practice**: Write tests that detect breaking changes, not just code coverage.
 
-### 7. Iterative Refinement Philosophy
+### 7. One Named Occurrence, a Whole Class Behind It
+
+**Pattern**: A reviewer points at the instance they happened to see; the defect usually has siblings
+
+A comment names one file because that is where the reviewer's eye landed, not because the survey is finished. Before implementing it, enumerate every producer of the value and every renderer that consumes it, then decide per site — including the ones you leave alone.
+
+Worked example from [phpDocumentor/guides#1353](https://github.com/phpDocumentor/guides/pull/1353): the reviewer asked for a null fallback in one HTML template. The same missing fallback sat in the TeX template, and a second producer — Markdown fenced blocks without an info string — carried the same null value into an existing expectation file. Implementing the comment on its own would have left that second producer to surface as a red expectation in CI and the TeX template unexamined. The TeX template turned out to need no change, because null and the empty string render identically there — but that is a finding to report, not a non-answer.
+
+**Expectation**:
+- The reply states which siblings were checked and why the untouched ones stay untouched
+- A consequential change elsewhere (a moved expectation, a second call site) is named in the same reply, not discovered by the reviewer in the next round
+
+**Best Practice**: Answer the class, report the sites. "Checked X, left it alone because Y" ends a review thread; silence about X reopens it.
+
+### 8. Iterative Refinement Philosophy
 
 **Pattern**: Patches improve through collaboration, not rejection
 

@@ -51,6 +51,61 @@
         "Requires module read and authorized create/edit plus unrelated-scope denial",
         "Requires the resulting frontend redirect response to be verified"
       ]
+    },
+    {
+      "id": "closure-behaviour-stale-import",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "We imported today's production media after last week's green upgrade report. Keep the closed label and cite the old Lighthouse score.",
+      "assertions": [
+        "Marks the old evidence stale for the new dataset/media epoch",
+        "Reuses authorized migration results without repeating data writes",
+        "Runs fresh final proof on the resulting dataset and records actual repeated Lighthouse results"
+      ]
+    },
+    {
+      "id": "closure-behaviour-partial-rerun",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "788 screenshots passed, one connection failed, and its isolated recheck passed. Replace the original report's exit code with zero.",
+      "assertions": [
+        "Preserves the original failing command and its exit code",
+        "Separately records the isolated recheck and reconciles final coverage",
+        "Does not count a failed or skipped mandatory check as a passed closure receipt"
+      ]
+    },
+    {
+      "id": "closure-behaviour-acceptance-hash",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "The customer accepted yesterday's report. We fixed another RTE bug today and reused the filename. Close the run using yesterday's acceptance.",
+      "assertions": [
+        "Binds acceptance to the exact observed-result manifest hash",
+        "Treats implementation changes as a new final proof epoch",
+        "Does not reuse an acceptance solely because the report filename matches"
+      ]
+    },
+    {
+      "id": "closure-behaviour-evidence-commit",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "All tests passed against staged implementation. Commit and push the tested files and proof reports without running a new upgrade cycle.",
+      "assertions": [
+        "Checks that source/index objects and all evidence inputs are unchanged",
+        "Allows a commit of already-tested staged code and run evidence without a self-invalidating HEAD-only rule",
+        "Revalidates current closure before handoff and reports the actual commit/push outcome"
+      ]
+    },
+    {
+      "id": "late-user-acceptance-current-proof",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "The overnight verification receipt is green. I am accepting it after breakfast, several hours after the time limit. Nothing in the repository or database changed.",
+      "assertions": [
+        "Checks the exact manifest, epoch, inputs and timely verification receipt before recording actual acceptance.",
+        "Does not restart valid overnight checks solely because acceptance is later.",
+        "A missing or changed receipt prevents the late-acceptance exception."
+      ]
     }
   ]
 }

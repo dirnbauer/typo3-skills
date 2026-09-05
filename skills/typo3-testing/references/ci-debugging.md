@@ -42,12 +42,13 @@ Setting `$GLOBALS['TYPO3_REQUEST']` in `setUp()` affects ALL tests in the class:
 
 - **v14:** Requires `applicationType` attribute — missing it causes `RuntimeException` in PageRenderer/DI container resolution (63+ errors)
 - **v13:** Enables additional processing paths — existing test assertions may no longer match (7+ failures)
+- **Both:** the attribute value is the int bitmask `SystemEnvironmentBuilder::REQUESTTYPE_FE`/`_BE`, not the `ApplicationType` enum case — `ApplicationType::fromRequest()` guards with `is_int()` and throws `RuntimeException` 1606222812 otherwise
 
 **Fix:** Set the global only in specific test methods that need it, with `try/finally` cleanup:
 
 ```php
 $GLOBALS['TYPO3_REQUEST'] = $this->request
-    ->withAttribute('applicationType', ApplicationType::FRONTEND);
+    ->withAttribute('applicationType', SystemEnvironmentBuilder::REQUESTTYPE_FE);
 
 try {
     // test code
@@ -68,6 +69,41 @@ try {
 ### Test Isolation Between Matrix Entries
 
 Each matrix entry (PHP version × TYPO3 version) runs independently. A test passing on `8.2 + v13` but failing on `8.5 + v14` indicates version-specific behavior, not flakiness.
+
+## Run each gate in the image its own CI job uses
+
+A pipeline rarely runs every job in one image, and the differences are not
+cosmetic. In one repository `test:php`, `test:rector` and `test:phpstan` run in
+`ghcr.io/devgine/composer-php:v2-php8.4-alpine` while `test:unit` runs in plain
+`php:8.4` and installs what it needs first:
+
+```yaml
+before_script:
+  - apt-get install git unzip zlib1g-dev libzip-dev -yqq
+  - docker-php-ext-install zip
+```
+
+The alpine image has **no `ext-zip`**. Reproducing the suite there makes every
+zip-touching test error out locally while CI is green, and the failure names the
+test, not the image — so it reads as a broken test. `composer install
+--ignore-platform-reqs`, which these pipelines use, removes the one signal that
+would have said otherwise.
+
+Read `.gitlab-ci.yml` / the workflow file for the `image:` **and** the
+`before_script:` of the specific job before reproducing it, and mirror both. A
+throwaway Dockerfile that copies the job's `before_script` is worth it as soon as
+you run the suite more than twice:
+
+```dockerfile
+FROM php:8.4
+RUN apt-get update -yqq \
+ && apt-get install -yqq git unzip zip zlib1g-dev libzip-dev \
+ && docker-php-ext-install zip
+```
+
+Also mirror the flags: the phpstan job runs `php -d memory_limit=2G`, and without
+it PHPStan dies with *reached configured PHP memory limit: 128M* and reports
+"Found 2 errors" that have nothing to do with the code.
 
 ## Testing-Framework Version Mapping
 
@@ -179,3 +215,7 @@ preg_replace_callback('/<[^>]+>/', static function (array $match): string {
 ```
 
 **Related bug:** Never use `explode(' ', $returnComment, 2)` to split type from description when generic types are involved — types like `array<string, string>` contain internal spaces. Use bracket-depth-aware parsing instead.
+
+## `CoversClass` on a coverage-excluded class: red in CI, green locally
+
+`#[CoversClass(X::class)]` where `X` is excluded from the coverage source set in `Build/phpunit.xml` emits *"Class X is not a valid target for code coverage"* — one PHPUnit warning per test, and with `failOnWarning="true"` that is a red build. The trap: the warning only exists when coverage is **enabled**. `runTests.sh -s unit` runs without coverage and reports zero warnings; CI runs with Xdebug and sees them all. Reproduce locally with `runTests.sh -s unitCoverage` before pushing, whenever you add `CoversClass` attributes or touch the coverage include/exclude lists.

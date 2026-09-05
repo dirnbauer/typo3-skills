@@ -9,7 +9,7 @@
 #
 # Skill authoring standard:
 #   • Add each skill once under skills/<name>/SKILL.md
-#   • Optionally add one .sync-config.json entry for upstream-managed skills
+#   • Refresh upstream through the reviewed offline sync and vendor-lock.json
 #   • Do not add per-client symlink code for individual skills
 #   • The installer fans every skill out to supported clients automatically
 #   • Local skills such as typo3-webcomponents and typo3-upgrade-run are included
@@ -19,7 +19,7 @@
 # Options:
 #   --user-only     Only install user-level skills (skip project-level)
 #   --project-only  Only install project-level skills (skip user-level)
-#   --no-sync       Skip external skill sync
+#   --no-sync       Compatibility flag; installs always use pinned sources
 #   --generate-only Regenerate catalog, cross-client files, and manifests, then exit
 #   --help          Show this help message
 #
@@ -62,14 +62,12 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-NORMALIZE_SKILL_FRONTMATTER="$SCRIPT_DIR/scripts/normalize_skill_frontmatter.py"
 TYPO3_CONVENTION="TYPO3 skills primarily target TYPO3 v14.x; typo3-translations also covers TYPO3 13/14 translation compatibility."
 
 USER_ONLY=false
 PROJECT_ONLY=false
 NO_SYNC=false
 GENERATE_ONLY=false
-SYNC_SUBDIRS=(agents assets evals examples reference references rules scripts templates)
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -83,8 +81,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Generation is a local, deterministic operation. It must not refresh upstream skills or delete
-# repository-owned overlays before writing catalogs and client manifests. Full installs retain the
-# existing sync behaviour; callers can also pass --no-sync explicitly there.
+# repository-owned overlays before writing catalogs and client instructions. Full installs also
+# use the same pinned sources; upstream maintenance is separate.
 if [ "$GENERATE_ONLY" = true ]; then
     NO_SYNC=true
 fi
@@ -125,136 +123,14 @@ fi
 # 2. Sync External Skills (from .sync-config.json)
 # =============================================================================
 
-if [ "$NO_SYNC" = false ] && [ -f "$SCRIPT_DIR/.sync-config.json" ] && command -v jq &> /dev/null && command -v git &> /dev/null; then
-    echo ""
-    echo "→ Syncing external skills from .sync-config.json..."
-
-    SKILLS=$(jq -r '.skills[] | select(.enabled == true) | @base64' "$SCRIPT_DIR/.sync-config.json" 2>/dev/null)
-
-    resolve_target_dir() {
-        local target="$1"
-        if [ -z "$target" ]; then
-            return 1
-        fi
-        case "$target" in
-            /*) printf '%s\n' "$target" ;;
-            *) printf '%s\n' "$SCRIPT_DIR/$target" ;;
-        esac
-    }
-
-    copy_repo_tree() {
-        local source_dir="$1"
-        local target_dir="$2"
-        rm -rf "$target_dir"
-        mkdir -p "$target_dir"
-        (
-            cd "$source_dir" || exit 1
-            shopt -s nullglob dotglob
-            for item in * .[!.]* ..?*; do
-                [ "$item" = ".git" ] && continue
-                cp -R "$item" "$target_dir/"
-            done
-        )
-    }
-
-    restore_script_executables() {
-        local target_dir="$1"
-        [ -d "$target_dir/scripts" ] || return 0
-        find "$target_dir/scripts" -type f \( \
-            -name "*.sh" -o \
-            -name "*.py" -o \
-            -name "*.rb" -o \
-            -name "*.js" -o \
-            -name "*.mjs" -o \
-            -name "*.ps1" -o \
-            ! -name "*.*" \
-        \) -exec chmod u+x {} +
-    }
-
-    for skill_b64 in $SKILLS; do
-        skill=$(echo "$skill_b64" | base64 --decode)
-        name=$(echo "$skill" | jq -r '.name')
-        source=$(echo "$skill" | jq -r '.source')
-        branch=$(echo "$skill" | jq -r '.branch')
-        path=$(echo "$skill" | jq -r '.path // "."')
-        copy_mode=$(echo "$skill" | jq -r '.copyMode // "skill"')
-        target=$(echo "$skill" | jq -r '.target // ""')
-
-        echo "  Syncing: $name..."
-
-        TEMP_DIR=$(mktemp -d)
-        if git clone --depth 1 --branch "$branch" "$source" "$TEMP_DIR" 2>/dev/null; then
-            SOURCE_DIR="$TEMP_DIR/$path"
-
-            if [ "$copy_mode" = "repo" ]; then
-                TARGET_DIR=$(resolve_target_dir "$target")
-                if [ -d "$SOURCE_DIR" ]; then
-                    copy_repo_tree "$SOURCE_DIR" "$TARGET_DIR"
-                    echo "  ✓ Mirrored repo: $name"
-                else
-                    echo "  ⚠ No directory found in $source (path: $path)"
-                fi
-            else
-                TARGET_DIR="$SCRIPT_DIR/skills/$name"
-
-                if [ -f "$SOURCE_DIR/SKILL.md" ]; then
-                    mkdir -p "$TARGET_DIR"
-                    cp "$SOURCE_DIR/SKILL.md" "$TARGET_DIR/SKILL.md"
-                    if command -v python3 &> /dev/null; then
-                        python3 "$NORMALIZE_SKILL_FRONTMATTER" "$TARGET_DIR/SKILL.md"
-                    else
-                        echo "  ⚠ python3 not installed, skipping SKILL.md frontmatter normalization for $name"
-                    fi
-
-                    find "$TARGET_DIR" -maxdepth 1 -type f ! -name "SKILL.md" -delete
-                    for support_file in "$SOURCE_DIR"/*; do
-                        [ -f "$support_file" ] || continue
-                        [ "$(basename "$support_file")" = "SKILL.md" ] && continue
-                        cp "$support_file" "$TARGET_DIR/"
-                    done
-
-                    for subdir in "${SYNC_SUBDIRS[@]}"; do
-                        if [ -d "$SOURCE_DIR/$subdir" ]; then
-                            rm -rf "$TARGET_DIR/$subdir"
-                            cp -r "$SOURCE_DIR/$subdir" "$TARGET_DIR/"
-                        fi
-                    done
-
-                    restore_script_executables "$TARGET_DIR"
-
-                    echo "  ✓ Synced: $name"
-                else
-                    echo "  ⚠ No SKILL.md found in $source (path: $path)"
-                fi
-            fi
-        else
-            echo "  ⚠ Failed to sync: $name (clone failed)"
-        fi
-        rm -rf "$TEMP_DIR"
-    done
-
-    if command -v python3 &> /dev/null; then
-        echo ""
-        echo "→ Restoring source attribution blocks..."
-        python3 "$SCRIPT_DIR/scripts/sync_source_notes.py"
-        echo "→ Refreshing README source owners..."
-        python3 "$SCRIPT_DIR/scripts/sync_readme_sources.py"
-        echo "→ Validating attribution guardrails..."
-        python3 "$SCRIPT_DIR/scripts/check_attribution_guardrails.py"
-    else
-        echo ""
-        echo "→ python3 not installed, skipping attribution restoration and validation"
-    fi
-elif [ "$NO_SYNC" = true ]; then
-    echo ""
-    echo "→ Skipping external sync (--no-sync)"
-else
-    echo ""
-    if [ ! -f "$SCRIPT_DIR/.sync-config.json" ]; then
-        echo "→ No .sync-config.json found, skipping external sync"
-    elif ! command -v jq &> /dev/null; then
-        echo "→ jq not installed, skipping external sync (install with: brew install jq)"
-    fi
+# Installing a collection must not rewrite its pinned vendor sources or delete overlays.
+# Upstream refresh is a separate, reviewed maintenance operation.
+if [ "$NO_SYNC" = false ]; then
+    echo "→ Using pinned vendor sources. Refresh explicitly with scripts/sync_netresearch.py --cache PATH --write."
+fi
+if command -v python3 &> /dev/null; then
+    python3 "$SCRIPT_DIR/scripts/generate_inventory.py"
+    python3 "$SCRIPT_DIR/scripts/check_attribution_guardrails.py"
 fi
 
 # =============================================================================

@@ -100,11 +100,50 @@ jq -r '(.packages + (."packages-dev" // []))[] | select(.name=="typo3/testing-fr
 
 All four values should agree on the target major. If you ran tests in the v13 worktree but claimed v14, the claim is false.
 
+## Prove the Test Can Fail — Name the Production Change
+
+Step 2 of the loop only works when the test is written first. When the code
+already exists — a review finding, a fix you wrote before thinking about the
+test, a test added to cover old behaviour — there is no observed red state, and
+"the suite is green" then says nothing about whether the test guards anything.
+
+Before calling such a test done, answer one question in writing:
+
+> Which single production change would make this test fail?
+
+Then make that change, run the test, and confirm it fails. Revert. This is a
+one-minute mutation probe and it is the only evidence that the test is load-bearing:
+
+```bash
+# 1. revert the fix (or invert the condition) in the production file
+# 2. run only the test that is supposed to guard it
+Build/Scripts/runTests.sh -s unit -- --filter <TestName>   # MUST fail
+# 3. restore the production file
+# 4. run the exact same command again
+Build/Scripts/runTests.sh -s unit -- --filter <TestName>   # MUST pass
+```
+
+If you cannot name a change that breaks it, the test is decorative — delete it
+or move it to the level where the behaviour actually lives.
+
+**The failure mode this catches.** A fix moved a value from the wrong source to
+the right one in a service, and the accompanying test asserted that the
+*downstream setter* stored what it was handed. Green, and worthless: reverting
+the actual fix — the caller passing the wrong value again — left the test green,
+because it never involved the caller. The whole bug was restorable with a
+passing suite. A reviewer found it; the probe above would have found it in a
+minute.
+
+Watch for the shape: a test that exercises a collaborator one layer *below* the
+line you changed. Assert on the seam you actually moved.
+
 ## Anti-Patterns
 
 | Anti-pattern | What it looks like | Why it's wrong |
 |--------------|--------------------|----------------|
 | "Looks fine, should work" | No command run | Zero evidence |
+| Test written after the fix, never seen red | Green suite, no observed failure | Proves nothing; run the mutation probe above |
+| Asserting on a setter instead of the changed seam | `assertSame($x, $entity->getX())` for a fix in the *caller* | Reverting the fix leaves the test green |
 | "Tests pass locally" | No output pasted | Unverifiable claim |
 | Sharing a mock DB in a multi-test setup | One DB fixture across tests | Test pollution; flaky failures |
 | Same service instance reused across tests | `private static Service $sharedService` at class scope | State bleed between tests |

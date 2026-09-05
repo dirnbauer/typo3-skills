@@ -651,6 +651,11 @@ def owner_from_url(url: str) -> str | None:
 
 
 def discover_source_info(skill_name: str, text: str) -> tuple[str, str | None, list[str]]:
+    lock_path = ROOT / "vendor-lock.json"
+    if lock_path.is_file():
+        locked = next((s for s in json.loads(lock_path.read_text())["skills"] if s["name"] == skill_name), None)
+        if locked:
+            return locked["owner"], locked["repository"], [locked["repository"]]
     override = SOURCE_MAP.get(skill_name)
     markers = [normalize_source_url(marker) for marker in find_attribution_markers(text)]
 
@@ -694,6 +699,8 @@ def audit_skill(skill_dir: Path, duplicate_names: dict[str, list[str]]) -> Skill
         pass_1.append(
             f"duplicate frontmatter name `{skill_name}` shared by {', '.join(duplicate_names[skill_name])}"
         )
+    if not description:
+        pass_1.append("missing frontmatter description")
 
     if skill_name and skill_name != skill_dir.name:
         pass_1.append(f"frontmatter name `{skill_name}` does not match directory `{skill_dir.name}`")
@@ -705,10 +712,10 @@ def audit_skill(skill_dir: Path, duplicate_names: dict[str, list[str]]) -> Skill
             + ", ".join(f"`{key}`" for key in unexpected)
         )
 
-    if line_count > 500:
+    owner, source_url, markers = discover_source_info(skill_dir.name, text)
+    if line_count > 500 and owner == "webconsulting":
         pass_1.append(f"SKILL.md is {line_count} lines; skill-creator recommends keeping it under 500")
 
-    owner, source_url, markers = discover_source_info(skill_dir.name, text)
     if source_url:
         if not any(source_url in marker or marker in source_url for marker in markers):
             pass_2.append("expected upstream source is not explicitly attributed inside SKILL.md")
@@ -830,14 +837,18 @@ def write_markdown(audits: list[SkillAudit]) -> None:
     (CATALOG_DIR / "skill-audit.md").write_text("\n".join(lines))
 
 
-def main() -> None:
+def main() -> int:
     CATALOG_DIR.mkdir(exist_ok=True)
     audits = build_audits()
     write_json(audits)
     write_markdown(audits)
     print(f"Wrote {CATALOG_DIR / 'skill-sources.json'}")
     print(f"Wrote {CATALOG_DIR / 'skill-audit.md'}")
+    blocking = [a for a in audits if a.source_owner == 'webconsulting' and (a.pass_1 or any('1024' in p for p in a.pass_3))]
+    for a in blocking:
+        print(f"FAIL {a.directory}: {a.pass_1 + a.pass_3}")
+    return 1 if blocking else 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

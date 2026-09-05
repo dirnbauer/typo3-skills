@@ -16,7 +16,7 @@ A Python script can automate badge data submission using session cookies:
 """Submit OpenSSF Best Practices Badge data.
 
 Usage:
-    BADGE_COOKIE='...' python3 submit-badge.py [--dry-run] [--level LEVEL]
+    BADGE_COOKIE='...' ${CLAUDE_SKILL_DIR}/scripts/submit-badges.py [--dry-run] [--level LEVEL]
 """
 
 import json

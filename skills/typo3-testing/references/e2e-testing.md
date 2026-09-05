@@ -557,6 +557,116 @@ const frame = page.frameLocator('#typo3-contentIframe');
 await expect(frame.locator('#my-field')).toBeAttached();
 ```
 
+**WebAuthn needs a secure context, and a container name over http is not one**
+
+Anything touching `navigator.credentials` — passkey login, WebAuthn MFA — is
+unavailable unless the page is a secure context. A TYPO3 served from a container
+the browser reaches by name over plain http is not: `window.isSecureContext` is
+`false`, `window.PublicKeyCredential` is `undefined`, and every ceremony spec
+fails on the environment rather than on the code.
+
+Chromium trusts anything under `.localhost`, so point the browser at a name in
+that space and resolve it to the container:
+
+```typescript
+const target = new URL(process.env.TYPO3_BASE_URL ?? 'http://localhost:8080');
+
+use: {
+    baseURL: 'http://typo3.localhost',
+    launchOptions: {
+        args: [`--host-resolver-rules=MAP typo3.localhost ${target.host}`],
+    },
+},
+```
+
+The replacement in a `MAP` rule may carry a port, and it overrides the
+destination port — so `baseURL` stays port-less even when the instance listens
+somewhere else. Measured: `MAP typo3.localhost probe-web:8080` with
+`page.goto('http://typo3.localhost')` answers 200.
+
+`--unsafely-treat-insecure-origin-as-secure` is the obvious alternative and does
+not work here: Chromium honours it only together with `--user-data-dir`, and
+`browserType.launch()` rejects that argument outright. Measured in the Playwright
+image — plain container name: `isSecureContext=false`; with the flag: still
+`false`; with the `.localhost` alias: `true`, and the CDP virtual authenticator
+attaches.
+
+The instance then sees `Host: typo3.localhost`, so anything deriving a WebAuthn
+rpId or origin from the request host has to be configured to match. Gate the
+rewrite on a variable your runner sets, or a run pointed at a real instance via
+`TYPO3_BASE_URL` gets sent to a name its vhost never heard of.
+
+**`page.request` resolves through Node, not through Chromium**
+
+`--host-resolver-rules` is a browser flag. `page.request.*` and
+`request.newContext()` are Playwright's own HTTP client and resolve with Node,
+which knows nothing about it — so browser-driven specs pass while every API spec
+dies with `getaddrinfo ENOTFOUND typo3.localhost`. Give the Playwright container
+a hosts entry as well:
+
+```bash
+# The argument to add, alongside whatever the runner already passes
+# (-v "${ROOT_DIR}:${ROOT_DIR}", -w, `npm ci &&`, ${IMAGE_PLAYWRIGHT}):
+--add-host "typo3.localhost:${apache_ip}"
+```
+
+Read the address off the web container once it is up, since it is per run:
+
+```bash
+apache_ip=$(${CONTAINER_BIN} inspect "apache-${SUFFIX}" \
+    --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}')
+```
+
+Measured both ways: without it `page.goto` returns 200 while `page.request` and
+`request.newContext` both fail; with it all three answer 200.
+
+**`config/system/additional.php` must assign, not return**
+
+TYPO3 `require`s that file for its side effects and discards its return value
+(`ConfigurationManager::exportConfiguration()`). A provisioning script that
+writes `<?php return ['SYS' => [...]];` configures nothing at all, and the file
+is valid PHP either way, so nothing catches it by inspection — the tell is an
+exception in an e2e run reported by the `ProductionExceptionHandler` while the
+file names the `DebugExceptionHandler`.
+
+```php
+<?php
+// Wrong: TYPO3 never reads this
+return ['SYS' => ['displayErrors' => 1]];
+
+// Right
+$GLOBALS['TYPO3_CONF_VARS']['SYS']['displayErrors'] = 1;
+```
+
+Worth an executed check rather than a review comment: cut the generated file
+out, `require` it, and assert the keys arrive in `TYPO3_CONF_VARS`.
+
+**A server-side file cache usually cannot be reset from the test side**
+
+The instinct — delete the cache directory between tests to clear a counter — hits
+two walls in a containerised instance. PHP-FPM typically runs as root there, so
+the cache files belong to root in a directory that is not group-writable, and the
+Playwright container gets `EACCES` on every attempt. Renaming the directory *is*
+permitted when the parent is world-writable and still does not work: PHP-FPM
+resolves the old path out of its **realpath cache** until `realpath_cache_ttl`
+expires — 120 seconds by default, and configurable — and keeps writing into the
+directory that was moved aside, so the counter goes on climbing in a directory
+nothing is looking at.
+
+Configure the instance instead — raise the limit, shorten the window — and keep
+the deletion only as the path that works when the instance belongs to whoever
+runs the suite.
+
+**Do not assert a shared per-IP counter at this level**
+
+Rate limiters key on the client address, and every spec in a run arrives from the
+same one. A spec that deliberately exhausts the budget takes it from everything
+that runs after it, and the verdicts then follow the execution order rather than
+the code: which specs fail changes with the file order. Assert the refusal where
+it can be driven deterministically — a unit test over the limiter service — and
+keep the e2e assertion to what only this level sees, that the endpoint holds its
+contract under a burst instead of answering 500.
+
 ## E2E Testing for AJAX Endpoints
 
 Backend modules often use AJAX routes for dynamic functionality. Test these endpoints thoroughly:

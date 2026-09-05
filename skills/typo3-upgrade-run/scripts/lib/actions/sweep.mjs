@@ -336,16 +336,15 @@ export async function lighthouse({ values, paths, log }) {
   const manifest = await readJson(paths.urlManifest);
   if (!manifest) throw new PreconditionError('No URL manifest. Run "t3u discover-urls" first.');
   const evidenceContext = await readEvidenceContext(paths);
-  if (evidenceContext.state.contract_a?.status !== 'closed') {
-    throw new PreconditionError(
-      'Lighthouse-driven optimization starts after Contract A closes. Record opportunities now only after the invariance certificate exists.',
-    );
-  }
-  if (!evidenceContext.state.contract_b?.unlocked) {
-    throw new PreconditionError('Contract B is locked. Close and countersign Contract A first.');
-  }
-  const loopName = await resolveElevationLoop(paths, values.loop, evidenceContext.state);
+  const loopName = await resolveQualityLoop(paths, values, evidenceContext.state);
   const loopId = loopName.slice(0, 3);
+  const runs = intOpt(values, 'runs', 3);
+  if (runs < 3) throw new PreconditionError('Lighthouse requires at least three measurements per URL.');
+  const formFactor = values['form-factor'] ?? 'mobile';
+  if (!['mobile', 'desktop'].includes(formFactor)) throw new PreconditionError('--form-factor must be mobile or desktop.');
+  // Validate configuration before starting Chrome or spending minutes auditing pages.
+  if (!values.budget) throw new PreconditionError('Lighthouse requires an explicit predeclared --budget; no budget is not a pass.');
+  const budget = await readLighthouseBudget(values.budget, values.mode ?? 'verify', formFactor);
 
   let lighthouseMod;
   let chromeLauncher;
@@ -356,8 +355,6 @@ export async function lighthouse({ values, paths, log }) {
     throw new HarnessError(`Lighthouse is not installed: ${err.message}. Run npm ci.`);
   }
 
-  const runs = intOpt(values, 'runs', 3);
-  const formFactor = values['form-factor'] ?? 'mobile';
   const allUrls = manifest.allUrls.map((entry) => entry.url);
   const urls = finalLighthouseSample(allUrls, manifest.baseUrl, manifest.seed ?? 'lighthouse-final');
   const guard = await UrlGuard.create({ allowedOrigins: manifest.allowedOrigins });
@@ -376,6 +373,7 @@ export async function lighthouse({ values, paths, log }) {
   });
 
   const results = [];
+  const rawRuns = [];
   try {
     for (const url of urls) {
       await guard.assertUrl(url, { purpose: 'lighthouse' });
@@ -394,8 +392,12 @@ export async function lighthouse({ values, paths, log }) {
           intOpt(values, 'timeout', 120) * 1000,
           `lighthouse timed out on ${url}`,
         )).lhr;
+        if (!completeLighthouseAudit(lhr)) {
+          throw new HarnessError('Lighthouse returned an incomplete audit or runtime error; this is not a measured pass.');
+        }
         await guard.assertUrl(lhr.finalDisplayedUrl ?? url, { purpose: 'lighthouse-final' });
         perUrl.push(lhr);
+        rawRuns.push(lhr);
       }
       results.push(summarise(url, perUrl, formFactor));
       log.debug(`lighthouse ${url}: perf ${results.at(-1).scores.performance.median}`);
@@ -408,7 +410,6 @@ export async function lighthouse({ values, paths, log }) {
   }
 
   // Only a budget produces findings. A local absolute score is indicative, not a verdict.
-  const budget = values.budget ? await readLighthouseBudget(values.budget) : null;
   const findings = lighthouseBudgetFindings(results, budget, loopId, formFactor);
   const verdict = findings.length ? 'findings' : 'pass';
   const optimizationCandidates = results
@@ -429,7 +430,7 @@ export async function lighthouse({ values, paths, log }) {
     run: {
       ...evidenceContext.run,
       loopId,
-      track: 'elevation',
+      track: values.mode === 'elevation' ? 'elevation' : 'invariance',
     },
     inputs: evidenceContext.inputs,
     verdict,
@@ -437,22 +438,25 @@ export async function lighthouse({ values, paths, log }) {
     findings,
     extra: {
       lighthouse: { formFactor, runsPerUrl: runs, aggregate: 'median' },
+      toolVersion: rawRuns[0]?.lighthouseVersion,
+      browser: rawRuns[0]?.environment?.hostUserAgent,
+      rawRuns,
       caveats: [
         'Measured locally in DDEV. Absolute scores are indicative; the delta between runs is the evidence.',
         'TBT is reported as an INP PROXY. INP is a field metric and cannot be measured in the lab.',
-        'Local TTFB is unrealistically low and is not transferable.',
+        'Local TTFB can be faster or slower than hosting and is not transferable.',
       ],
       results,
       optimizationCandidates,
       agentBrief: {
-        moment: 'after Contract A closure, before final reporting, in an approved Contract B performance loop',
-        workflow: [
+        moment: values.mode === 'elevation' ? 'approved Contract B performance work' : 'Contract A verification only; do not implement unrelated opportunities',
+        workflow: values.mode === 'elevation' ? [
           'Select the highest measured opportunity by expected savings.',
           'Add or update regression tests before changing the site.',
           'Change one cause only.',
           'Run the project tests and the same three-page Lighthouse sample.',
           'Keep the change only when tests pass, the measured target improves, and Contract A checks remain green.',
-        ],
+        ] : ['Inspect failed budgets and preserve raw reports.', 'Route actual upgrade regressions to the affected graph node; unrelated optimization needs separately approved scope.'],
       },
       budgetApplied: Boolean(budget),
     },
@@ -479,14 +483,12 @@ export async function axeAudit({ values, paths, log }) {
   const manifest = await readJson(paths.urlManifest);
   if (!manifest) throw new PreconditionError('No URL manifest. Run "t3u discover-urls" first.');
   const evidenceContext = await readEvidenceContext(paths);
-  if (evidenceContext.state.contract_a?.status !== 'closed' || !evidenceContext.state.contract_b?.unlocked) {
-    throw new PreconditionError('axe quality work starts after Contract A closes and Contract B is unlocked.');
-  }
-  const loopName = await resolveElevationLoop(paths, values.loop, evidenceContext.state);
+  const loopName = await resolveQualityLoop(paths, values, evidenceContext.state);
   const loopId = loopName.slice(0, 3);
   const urls = finalAxeSample(manifest, intOpt(values, 'sample', 12));
   const viewports = listOpt(values, 'viewports', ['desktop', 'tablet', 'mobile']);
-  const states = listOpt(values, 'states', ['default', 'nav-open', 'consent-modal-open']);
+  const states = listOpt(values, 'states', ['default', 'keyboard-focus', 'nav-open']);
+  if (states.length > 3) throw new PreconditionError('Use at most three global states; test extra widgets in targeted journeys.');
   const unknown = states.filter((state) => !stateByName(state));
   if (unknown.length) throw new HarnessError(`Unknown axe interaction state(s): ${unknown.join(', ')}`);
   const tags = listOpt(values, 'tags', ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']);
@@ -597,7 +599,7 @@ export async function axeAudit({ values, paths, log }) {
     ?? path.join(paths.loopArtifacts(loopName), `report.axe.${label}.json`);
   const written = await writeReport(reportPath, envelope({
     kind: 'axe',
-    run: { ...evidenceContext.run, loopId, track: 'elevation' },
+    run: { ...evidenceContext.run, loopId, track: values.mode === 'elevation' ? 'elevation' : 'invariance' },
     inputs: evidenceContext.inputs,
     verdict,
     counts: {
@@ -720,12 +722,13 @@ export function finalLighthouseSample(urls, baseUrl, seed = 'lighthouse-final') 
       try { return new URL(url).pathname !== '/'; } catch { return false; }
     })
     .sort();
-  if (candidates.length < 2) {
-    throw new PreconditionError(
-      `Final Lighthouse reporting requires two non-home pages; the manifest has ${candidates.length}.`,
-    );
-  }
-  return [root, ...seededSample(candidates, 2, seed)];
+  return [root, ...seededSample(candidates, Math.min(2, candidates.length), seed)];
+}
+
+export function completeLighthouseAudit(lhr) {
+  return Boolean(lhr && !lhr.runtimeError && ['performance', 'accessibility', 'best-practices', 'seo']
+    .every(id => Number.isFinite(lhr.categories?.[id]?.score)
+      && lhr.categories[id].score >= 0 && lhr.categories[id].score <= 1));
 }
 
 export function lighthouseBudgetFindings(results, budget, loopId = '500', formFactor = 'mobile') {
@@ -806,7 +809,27 @@ async function resolveElevationLoop(paths, reference, state) {
   return loopName;
 }
 
-async function readLighthouseBudget(file) {
+export async function resolveQualityLoop(paths, values, state) {
+  const mode = values.mode ?? 'verify';
+  if (!['verify', 'elevation'].includes(mode)) throw new PreconditionError('--mode must be verify or elevation.');
+  if (mode === 'elevation') {
+    if (state.contract_a?.status !== 'closed' || !state.contract_b?.unlocked) throw new PreconditionError('Contract B is locked. Close and countersign Contract A first.');
+    return resolveElevationLoop(paths, values.loop, state);
+  }
+  const dirs = await readdir(paths.loopsDir);
+  const matches = dirs.filter(name => values.loop && (name === values.loop || name.startsWith(`${values.loop}-`)));
+  if (matches.length !== 1) throw new PreconditionError('Verification requires --loop naming one open Contract A invariance loop.');
+  const loop = matches[0];
+  const body = await readFile(paths.loopDoc(loop, '00-charter.md'), 'utf8');
+  const charter = parseYaml(body.match(/^---\r?\n([\s\S]*?)\r?\n---/)?.[1] ?? '');
+  if (charter?.contract !== 'A' || charter?.track !== 'invariance' || charter?.baseline_ref !== 'A-original'
+    || !state.baselines?.['A-original']?.sealed || state.loops?.[loop.slice(0, 3)] !== 'open') {
+    throw new PreconditionError('Verification requires open Contract A evidence against sealed A-original.');
+  }
+  return loop;
+}
+
+export async function readLighthouseBudget(file, mode, formFactor = 'mobile') {
   let parsed;
   try {
     const body = await readFile(file, 'utf8');
@@ -814,7 +837,16 @@ async function readLighthouseBudget(file) {
   } catch (error) {
     throw new HarnessError(`Cannot read Lighthouse budget ${file}: ${error.message}`);
   }
-  return parsed.contract_b ?? parsed;
+  const selected = mode === 'elevation' ? 'contract_b' : 'contract_a';
+  const budget = parsed && ('contract_a' in parsed || 'contract_b' in parsed) ? parsed[selected] : parsed;
+  for (const key of [`performance.lighthouse_performance_${formFactor}`, 'performance.lighthouse_best_practices',
+    'accessibility.lighthouse_accessibility', 'seo.lighthouse_seo']) {
+    const value = readPath(budget, key);
+    if (!Number.isFinite(value) || value <= 0 || value > 100) {
+      throw new PreconditionError(`${selected} budget must predeclare ${key} in (0, 100]; an empty or other-contract budget cannot pass.`);
+    }
+  }
+  return budget;
 }
 
 function readPath(value, dotted) {

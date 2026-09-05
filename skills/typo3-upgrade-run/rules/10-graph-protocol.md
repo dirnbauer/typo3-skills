@@ -17,11 +17,21 @@ Every node declares:
 
 The legal lifecycle is `pending → ready → running → passed | failed | blocked | invalid | skipped`.
 A retry edge may return a terminal node state to `ready`; it increments `attempts` and preserves
-history. No other operation rewinds a node.
+history. A fresh outcome arriving at a completed recovery/join node may activate the next bounded
+work item. Historical edge counts alone never repeat completed work. The shared per-node attempt
+budget applies across different recovery causes; state is not manually rewound.
 
 Open with `t3u node-open`; close with `t3u node-close --outcome … --evidence …`. Evidence is a path
 or stable report reference, never “the agent checked it.” `not-applicable` needs evidence explaining
 why the node does not apply.
+
+Use `node-open --applicability-only` only for an optional node whose absence or unrequested
+scope was established at intake. It permits read-only inspection without a mutation approval,
+snapshot or rollback anchor, and can close only `not-applicable` or `blocked`, never `pass`.
+Do not start implementation in this mode. Choose the normal guarded open when the feature applies.
+
+The shipped graph requires a real, nonempty run-relative artifact at node closure and records its
+SHA-256. `graph-validate` checks passed/skipped node artifacts against those recorded hashes.
 
 ## 10.2 Edge contract
 
@@ -51,6 +61,7 @@ backend operations. It must not restart unrelated migration nodes.
 
 Resources are capacity-one locks. The shipped graph declares:
 
+- `project-write` — every code/stateful node and frozen final proof; keeps rendering away from writes;
 - `composer` — dependency resolution and lockfile mutation;
 - `ddev-stateful` — database/file state and TYPO3 setup operations;
 - `browser-proof` — authoritative rendering/capture environment;
@@ -60,6 +71,9 @@ Resources are capacity-one locks. The shipped graph declares:
 `t3u graph-next` lists ready nodes and compatible parallel sets. Parallel execution is optional; it
 requires user/runtime authorization and disjoint resources. Agents do not bypass locks, edit graph
 state directly, or infer that two stateful actions are safe because they touch different tables.
+Jobs waiting on an existing lock are reported separately, not advertised as runnable. Before the
+baseline/migration, `graph-forecast` must admit the selected route against pilot estimates and the
+sealed size profile. This predicts throughput; it does not grant parallel-execution authority.
 
 ## 10.5 Cycles are bounded recovery edges
 
@@ -67,6 +81,9 @@ The graph without `retry: true` edges must be acyclic. Every retry edge declares
 `max_traversals: 1..5`. The edge count, node attempt history, and last traversal time are persisted.
 When the bound is reached, stop and re-plan. Changing the bound changes the sealed graph and
 invalidates the current run unless reconciled as a new graph/run.
+
+The default graph also caps all node starts at three and aggregate retry traversals at twelve.
+These ceilings are shared with leaf work, not multiplied by a second specialist-owned retry loop.
 
 Bounded loops inside a node may still enforce one cause per attempt, change budgets, progress,
 oscillation, and fixed-point evidence. They do not choose the next node.
@@ -103,5 +120,14 @@ must prove:
 - no unbounded cycle exists;
 - every proof node carries the required green loop and evidence reference.
 
+Graph validity is not closure. `closure-check` must also bind complete, hashed final reports to
+the current code/data epoch. The Contract A transition requires actual human acceptance of that
+manifest hash; `node-close` writes the closure state atomically. `validate-run` refuses stale
+closed records, and `handover` rechecks current evidence after any approved elevation.
+
 The append-only journal records `graph`, `node`, `edge`, and `lock` events. A transcript is not graph
 state and cannot repair missing evidence.
+
+Before the overnight deadline, `closure-verify` can persist a verified-awaiting-acceptance receipt.
+Human acceptance may follow later, but only for that timely, still-current evidence. This separates
+human waiting from compute time; it does not extend the deadline for tests or implementation.

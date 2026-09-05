@@ -3,6 +3,7 @@ name: "typo3-icon14"
 description: "Designs and migrates TYPO3 extension icons to the v14 line-art style, including source SVG cleanup, light/dark behavior, IconRegistry naming, backend module icons, and verification. Use when the user asks for TYPO3 v14 icons, backend module icon migration, extension icon modernization, SVG icon rules, or icon registration."
 compatibility: "TYPO3 14.x"
 metadata:
+  skill_type: capability
   version: "1.4.0"
   origin: "webconsulting"
 license: "MIT / CC-BY-SA-4.0"

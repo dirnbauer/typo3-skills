@@ -1,8 +1,9 @@
 ---
 name: "typo3-fractor"
-description: "Automatically rewrites the non-PHP files of a TYPO3 upgrade with Fractor: TypoScript conditions and syntax, FlexForm XML, Fluid .html templates carrying deprecated ViewHelper syntax, YAML, XLIFF, Htaccess and composer.json. Use when a tool should fix these files for you rather than editing them by hand, when Rector has finished and left every .typoscript, .yaml and .html file untouched, or when migrating FlexForms and TypoScript to v14. PHP source code is typo3-rector."
+description: "Automatically rewrite TYPO3 non-PHP files with Fractor: outdated TypoScript condition syntax, FlexForm XML migrations to v14, deprecated ViewHelper syntax in Fluid .html templates, YAML, XLIFF and Htaccess. Use when a tool should fix configuration or template files, or Rector left the .typoscript, .yaml and .html upgrade work untouched. Owns mechanical transformations of these formats, not general TypoScript authoring or PHP changes."
 compatibility: "TYPO3 14.x"
 metadata:
+  skill_type: preference
   version: "1.2.0"
   origin: "webconsulting"
 license: "MIT / CC-BY-SA-4.0"
@@ -183,8 +184,10 @@ ddev exec vendor/bin/fractor process
 
 ### Reach a fixed point and recover generated registries
 
-Repeat **dry run → review → apply** until a fresh dry run reports zero changed files. Fractor handles
-files only; it cannot see legacy TypoScript stored in `sys_template`, page TSconfig or group TSconfig,
+Use **dry run → review → apply → dry run** to test a fixed point. In an upgrade graph, return after
+one bounded repair pass and let the parent spend any remaining retry budget. Standalone, cap apply
+passes at three; stop earlier on two non-improving results or oscillation and report the residual
+diff. Fractor handles files only; it cannot see legacy TypoScript stored in `sys_template`, page TSconfig or group TSconfig,
 so query those database fields for every removed construct as a separate migration check.
 
 If Fractor cannot boot after a Composer recovery performed with `--no-plugins`, first run a normal,

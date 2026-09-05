@@ -2,7 +2,8 @@
 
 Track `invariance`.
 
-This is a risk-routed closure checklist, not a mandatory independent programme. Run the project's
+Read `../closure-currentness.md`; its thirteen evidence checks are mandatory. This is a
+risk-routed checklist, not thirteen independent implementation programmes. Run the project's
 canonical tests and the checks whose subject was changed by the upgrade. Keep the detailed recipes
 below for those cases; record the rest `not-applicable` with inventory evidence. A full security,
 conformance, simplification, editor-permission, search, CI, and documentation programme is optional
@@ -39,8 +40,8 @@ Verify the teardown rather than assuming it:
 ddev mysql -N -e "SELECT COUNT(*) FROM be_users WHERE username='_t3u_upgrade_probe';"   # 0
 ```
 
-- **Backend module sweep** (only when local backend modules, permissions, or backend UI configuration
-  changed): every module opens without exception output, server errors or severe
+- **Backend module sweep**: the Core major changed the backend boundary, so verify expected modules
+  on every whole-site upgrade. Every module opens without exception output, server errors or severe
   console errors. **100% coverage is required** — module *groups* are distinguished from real
   modules, and an unexpected skip fails the run. A sweep that reports "12 ok, 3 skipped" and exits 0
   is how unchecked modules ship.
@@ -73,8 +74,9 @@ ddev mysql -N -e "SELECT COUNT(*) FROM be_users WHERE username='_t3u_upgrade_pro
   `sys_file_reference` insert. That is a deliberate trade: a flaky step in a gate is worse than an
   honest one, and the assertion that matters — the frontend resolving the reference — is unaffected.
   Say which method was used in the report; never let a reader infer more coverage than exists.
-- Scheduler: enumerate **every** row in `tx_scheduler_task`, resolve each task's PHP class, and
-  force-execute one instance of each. On a fresh clone almost nothing is due, so "run due tasks"
+- Scheduler: enumerate rows and resolve each task's PHP class. Execute only safe local task
+  instances with side effects intercepted or disabled and explicit fixture scope. Never force real
+  imports, emails, payments or remote jobs. On a fresh clone almost nothing is due, so "run due tasks"
   passes vacuously; tasks whose class came from a removed or renamed extension are unrunnable rows
   that fail silently after deploy — nightly imports, newsletters, cache warmers.
 - Redirects: require `typo3/cms-redirects:^14.3`; when it was absent, set it up from the operation
@@ -130,7 +132,7 @@ ddev mysql -N -e "SELECT COUNT(*) FROM be_users WHERE username='_t3u_upgrade_pro
   replaced ten EXT:form hooks with PSR-14 events, so a form can render pixel-identical while its
   email finisher silently stops sending.
 - Linkvalidator where installed; triage broken links.
-- **Deployment visibility.** With `EXT:deployer_information` installed, open System Information and
+- **Deployment visibility.** Require `spooner/deployer-information`; open System Information and
   verify “Last Deployment” renders without exceptions and uses the intended standard/legacy/custom
   detection mode. This is a local integration check; the real timestamp remains an explicit P15
   operator verification. See `references/deployment-handover.md`.
@@ -148,6 +150,12 @@ The smoke test is a **deterministic read-only flow**, not random link clicking. 
 trigger logout, cache clearing, deletion, unsubscribe, scheduler actions or large downloads.
 
 ## Static analysis and tests
+- Lighthouse and axe verification run before closure with `--mode verify` on the open A loop.
+  Require at least three pinned Lighthouse runs per sampled URL, predeclared budgets, medians/ranges,
+  raw JSON and tool/Chrome versions. Single live-vs-DDEV scores are not a controlled benchmark.
+  Keep at most three global states; exercise extra widgets only in targeted Playwright journeys.
+- Use `typo3-playwright` for RTE link insertion/save/reopen, non-admin editing, real plugin/FlexForm
+  previews, hidden-content permission behavior, media/video and re-operated AJAX filters.
 - When frontend source, Fluid asset inclusion or build configuration changed, run the canonical
   clean Vite production build, then `node scripts/vite-production-check.mjs --manifest …
   --public-root …`. Require every declared entry/import/CSS/asset to exist with a content hash.

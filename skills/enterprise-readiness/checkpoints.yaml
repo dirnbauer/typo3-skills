@@ -332,31 +332,165 @@ mechanical:
   # ER-33 moved to llm_reviews — mechanical regex cannot distinguish org-internal vs third-party workflows
 
   # === MUTATION TESTING QUALITY ===
+  # ER-70/71/72 share ONE candidate-path list, in Infection's own resolution
+  # order followed by the explicit-configuration layout used across the estate:
+  #   1.-4. infection.json5, infection.json, infection.json5.dist,
+  #         infection.json.dist — the four defaults, in exactly the order of
+  #         SchemaConfigurationLoader::POSSIBLE_DEFAULT_CONFIG_FILE_NAMES
+  #   5.-8. the same four under Build/, reached via
+  #         `infection --configuration=Build/infection.json5` (t3x-nr-passkeys-be,
+  #         t3x-nr-passkeys-fe)
+  # The lists MUST stay identical across the three checkpoints: when ER-70
+  # accepted a path that ER-71/72 did not read, a project with mutation
+  # thresholds configured was reported as having none. What differs is what
+  # each does with the list — ER-70 asks whether ANY entry exists, ER-71/72
+  # select the FIRST that exists and read only that one, because that is the
+  # file Infection would load.
+  #
+  # Paths are enumerated explicitly rather than searched, so no tree walk can
+  # reach vendor/, node_modules/ or .Build/.
   - id: ER-70
     type: command
-    command: "test -f infection.json5 -o -f infection.json"
+    pattern: "find infection.json5 infection.json infection.json5.dist infection.json.dist Build/infection.json5 Build/infection.json Build/infection.json5.dist Build/infection.json.dist -maxdepth 0 -type f 2>/dev/null | grep -q ."
     severity: warning
-    desc: "Infection config should exist for mutation testing"
+    desc: "Infection config should exist for mutation testing (infection.json5/.json/.json5.dist/.json.dist, at the root or under Build/)"
 
-  # ER-71/ER-72: extract numeric value from infection config and assert >=90.
-  # Pure-pipeline form (no ; && || $()) so the assessment-runner allowlist
-  # accepts it. Pattern semantics:
-  #   1. cat both candidate files (only one usually exists)
-  #   2. grep for the key:value occurrence with a numeric value
-  #   3. extract the trailing integer
-  #   4. grep -qE matches when the integer is 90-99 or 100+ (i.e. >=90)
-  # Missing file or missing key => empty pipeline => grep -q fails => fail.
+  # ER-71/ER-72: read the mutation-score threshold from the ONE configuration
+  # file Infection would use, and assert >= 90.
+  #
+  # Both are `type: script` + `command: |` — the runner writes a multi-line
+  # body to a temp file and runs it with bash. A single-line `pattern:` cannot
+  # carry this: the allowlist rejects `;`, `&&`, `||`, backticks and `$( )`,
+  # which rules out both the loop and a `php -r` program.
+  #
+  # Step 1, selection: walk the candidate list above and stop at the FIRST
+  # file that exists — that is the file Infection reads. The previous form
+  # `cat`-ed all eight and took the first match anywhere in the concatenation,
+  # so a stale `infection.json.dist` carrying `"minMsi": 95` satisfied the
+  # check for a project whose active `infection.json5` sets no threshold at
+  # all. No candidate exists => exit 1 => fail.
+  #
+  # Step 2, parsing: `php -r` scans that one file instead of grepping its raw
+  # text. The grep form was wrong in both directions, measured over a 13-case
+  # fixture matrix:
+  #   * it required a QUOTED key, so the valid JSON5 `minMsi: 95` failed;
+  #   * it matched inside comments, so `// "minMsi": 100` and the same line
+  #     inside a `/* */` block passed while the setting was inactive;
+  #   * it matched a nested `"phpUnit": { "minMsi": 100 }`, and on duplicate
+  #     keys took the first — JSON5 decoding is last-wins, so the LAST
+  #     occurrence is the effective one.
+  # The scanner tracks brace/bracket depth, skips `//` and `/* */`, consumes
+  # string literals whole (so `https://…` in a value is not read as a comment,
+  # and `minMsi` inside a value is not read as a key), accepts the key quoted
+  # or bare, and takes the last depth-1 occurrence.
+  #
+  # PHP string literals are written with double quotes and chr(), so the
+  # program contains no `'` and survives inside the shell single quotes.
+  # `php` is on the runner's allowlist and typo3-docs TD-05 uses the same
+  # shape. The cost is a dependency on `php` at assessment time: without it
+  # these two report fail, not blocked.
   # Note: the previous `expected:` field was silently ignored by the runner
-  # for type=command checkpoints; the threshold is now enforced inline.
+  # for type=command checkpoints; the threshold is enforced inline.
   - id: ER-71
-    type: command
-    pattern: "cat infection.json5 infection.json 2>/dev/null | grep -oE '\"minMsi\"[[:space:]]*:[[:space:]]*[0-9]+' | grep -oE '[0-9]+$' | grep -qE '^(9[0-9]|100)$'"
+    type: script
+    command: |
+      cfg=""
+      for f in infection.json5 infection.json infection.json5.dist infection.json.dist \
+               Build/infection.json5 Build/infection.json Build/infection.json5.dist Build/infection.json.dist; do
+        if [ -f "$f" ]; then cfg="$f"; break; fi
+      done
+      if [ -z "$cfg" ]; then exit 1; fi
+      php -r '$s = @file_get_contents($argv[1]);
+      if ($s === false) { exit(1); }
+      $k = $argv[2]; $min = (float) $argv[3];
+      $q1 = chr(34); $q2 = chr(39); $bs = chr(92); $dl = chr(36);
+      $n = strlen($s); $i = 0; $depth = 0; $val = null;
+      $skip = function ($j) use ($s, $n) {
+        while ($j < $n) {
+          if ($s[$j] === "/" && $j + 1 < $n && $s[$j + 1] === "/") { $e = strpos($s, "\n", $j); $j = $e === false ? $n : $e + 1; continue; }
+          if ($s[$j] === "/" && $j + 1 < $n && $s[$j + 1] === "*") { $e = strpos($s, "*/", $j + 2); $j = $e === false ? $n : $e + 2; continue; }
+          if (!ctype_space($s[$j])) { break; }
+          $j++;
+        }
+        return $j;
+      };
+      while (($i = $skip($i)) < $n) {
+        $c = $s[$i];
+        if ($c === "{" || $c === "[") { $depth++; $i++; continue; }
+        if ($c === "}" || $c === "]") { $depth--; $i++; continue; }
+        if ($c === $q1 || $c === $q2) {
+          $b = ++$i;
+          while ($i < $n && $s[$i] !== $c) { if ($s[$i] === $bs) { $i++; } $i++; }
+          $t = substr($s, $b, $i - $b); $i++;
+        } elseif (ctype_alpha($c) || $c === "_" || $c === $dl) {
+          $b = $i;
+          while ($i < $n && (ctype_alnum($s[$i]) || $s[$i] === "_" || $s[$i] === $dl)) { $i++; }
+          $t = substr($s, $b, $i - $b);
+        } else { $i++; continue; }
+        if ($depth !== 1 || $t !== $k) { continue; }
+        $j = $skip($i);
+        if ($j >= $n || $s[$j] !== ":") { continue; }
+        $j = $skip($j + 1); $b = $j;
+        if ($j < $n && ($s[$j] === "-" || $s[$j] === "+")) { $j++; }
+        while ($j < $n && (ctype_digit($s[$j]) || $s[$j] === ".")) { $j++; }
+        $v = substr($s, $b, $j - $b);
+        $val = is_numeric($v) ? (float) $v : null; $i = $j;
+      }
+      exit($val !== null && $val >= $min ? 0 : 1);' -- "$cfg" minMsi 90
+      exit $?
     severity: warning
     desc: "Enterprise projects should have minMsi >= 90% for mutation testing"
 
+  # Same body as ER-71, with the key and the description changed. The two
+  # cannot share it: a checkpoint runs from the repository under assessment,
+  # where this skill's scripts/ does not exist, so every body is inlined.
   - id: ER-72
-    type: command
-    pattern: "cat infection.json5 infection.json 2>/dev/null | grep -oE '\"minCoveredMsi\"[[:space:]]*:[[:space:]]*[0-9]+' | grep -oE '[0-9]+$' | grep -qE '^(9[0-9]|100)$'"
+    type: script
+    command: |
+      cfg=""
+      for f in infection.json5 infection.json infection.json5.dist infection.json.dist \
+               Build/infection.json5 Build/infection.json Build/infection.json5.dist Build/infection.json.dist; do
+        if [ -f "$f" ]; then cfg="$f"; break; fi
+      done
+      if [ -z "$cfg" ]; then exit 1; fi
+      php -r '$s = @file_get_contents($argv[1]);
+      if ($s === false) { exit(1); }
+      $k = $argv[2]; $min = (float) $argv[3];
+      $q1 = chr(34); $q2 = chr(39); $bs = chr(92); $dl = chr(36);
+      $n = strlen($s); $i = 0; $depth = 0; $val = null;
+      $skip = function ($j) use ($s, $n) {
+        while ($j < $n) {
+          if ($s[$j] === "/" && $j + 1 < $n && $s[$j + 1] === "/") { $e = strpos($s, "\n", $j); $j = $e === false ? $n : $e + 1; continue; }
+          if ($s[$j] === "/" && $j + 1 < $n && $s[$j + 1] === "*") { $e = strpos($s, "*/", $j + 2); $j = $e === false ? $n : $e + 2; continue; }
+          if (!ctype_space($s[$j])) { break; }
+          $j++;
+        }
+        return $j;
+      };
+      while (($i = $skip($i)) < $n) {
+        $c = $s[$i];
+        if ($c === "{" || $c === "[") { $depth++; $i++; continue; }
+        if ($c === "}" || $c === "]") { $depth--; $i++; continue; }
+        if ($c === $q1 || $c === $q2) {
+          $b = ++$i;
+          while ($i < $n && $s[$i] !== $c) { if ($s[$i] === $bs) { $i++; } $i++; }
+          $t = substr($s, $b, $i - $b); $i++;
+        } elseif (ctype_alpha($c) || $c === "_" || $c === $dl) {
+          $b = $i;
+          while ($i < $n && (ctype_alnum($s[$i]) || $s[$i] === "_" || $s[$i] === $dl)) { $i++; }
+          $t = substr($s, $b, $i - $b);
+        } else { $i++; continue; }
+        if ($depth !== 1 || $t !== $k) { continue; }
+        $j = $skip($i);
+        if ($j >= $n || $s[$j] !== ":") { continue; }
+        $j = $skip($j + 1); $b = $j;
+        if ($j < $n && ($s[$j] === "-" || $s[$j] === "+")) { $j++; }
+        while ($j < $n && (ctype_digit($s[$j]) || $s[$j] === ".")) { $j++; }
+        $v = substr($s, $b, $j - $b);
+        $val = is_numeric($v) ? (float) $v : null; $i = $j;
+      }
+      exit($val !== null && $val >= $min ? 0 : 1);' -- "$cfg" minCoveredMsi 90
+      exit $?
     severity: warning
     desc: "Enterprise projects should have minCoveredMsi >= 90%"
 

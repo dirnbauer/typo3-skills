@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "note": "Explicit September import overlaps, not a fungible collision budget. Native descriptions retain useful domain terms; upstream files remain immutable. New pairs or larger overlaps fail. These are recorded maintainer policies, not human-signed eval coverage.",
+  "pairs": [
+    {"a": "web-design-guidelines", "b": "web-platform-design", "max_overlap": 0.32, "reason": "Immutable Vercel/ehmo guidance; select UI review versus platform implementation by the request."},
+    {"a": "postgres-best-practices", "b": "web-design-guidelines", "max_overlap": 0.16, "reason": "Immutable sources share generic design/review terms; database work is distinct from UI review."},
+    {"a": "typo3-project-upgrade", "b": "typo3-typoscript-ref", "max_overlap": 0.15, "reason": "Project-upgrade is a companion through the local graph; TypoScript reference remains standalone."},
+    {"a": "typo3-a11y", "b": "typo3-accessibility", "max_overlap": 0.20, "reason": "Local accessibility owns remediation; upstream a11y is an on-demand pattern companion, enforced by routing-policy.json."},
+    {"a": "typo3-fractor", "b": "typo3-typoscript-ref", "max_overlap": 0.15, "reason": "Mechanical non-PHP rewriting versus manual TypoScript authoring/reference. Positive and negative Fractor cases exercise this boundary."}
+  ]
+}

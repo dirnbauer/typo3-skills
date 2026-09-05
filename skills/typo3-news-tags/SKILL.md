@@ -3,6 +3,7 @@ name: "typo3-news-tags"
 description: "Bulk-generates thematic tags for georgringer/news (EXT:news) and assigns them to existing news records via keyword matching. Use when tagging large news corpora, defining a generic tag catalogue, building a Symfony console command for tag assignment, working with tx_news_domain_model_tag / tx_news_domain_model_news_tag_mm, or installing b13/tag as a generic site-wide tagging capability alongside news tags."
 compatibility: "TYPO3 14.x (EXT:news ^14)"
 metadata:
+  skill_type: preference
   version: "1.0.0"
   origin: "webconsulting"
 license: "MIT / CC-BY-SA-4.0"

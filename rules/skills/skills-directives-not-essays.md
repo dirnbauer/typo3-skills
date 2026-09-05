@@ -29,7 +29,13 @@ script:  the exact command sequence
 
 Prose that must be followed literally is a program written in the wrong language.
 
+Put a reference beside the branch that needs it, and define the job's inputs, authority,
+evidence and completion condition. A specialist returns its bounded result to the parent;
+it does not create a second outer retry controller. Link the canonical guard instead of
+copying it into every skill. See `SKILL-SPEC.md` S6 and the September collection review.
+
 > Why: loading everything defeats progressive disclosure, which is the mechanism the whole
 > collection depends on; and an over-specified skill cannot handle the case its author did
 > not foresee.
-> Source: Philipp Schmid, *8 Tips for Writing Agent Skills*; `references/skill-evals.md`.
+> Sources: Philipp Schmid, *8 Tips for Writing Agent Skills*; Matt Pocock, *writing-for-agents*;
+> `references/skill-evals.md`; `references/skills-review-2026-09.md`.

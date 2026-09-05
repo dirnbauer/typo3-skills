@@ -263,7 +263,7 @@ Performance tests are typically **not run in CI** due to variable execution time
 
 ## Real-World Examples
 
-### Parser Benchmark (from t3x-nr-xliff-streaming)
+### Parser Benchmark (streaming versus DOM, large XLIFF files)
 
 ```php
 /**
@@ -300,7 +300,7 @@ public function streamingVsDomComparison(): void
 }
 ```
 
-### Cache Efficiency Test (from t3x-nr-temporal-cache)
+### Cache Efficiency Test (harmonised cache keys)
 
 ```php
 /**

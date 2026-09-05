@@ -18,7 +18,7 @@ This guide covers testing patterns for JavaScript code in TYPO3 extensions.
 
 CKEditor plugins define model attributes that must be properly handled through upcast (view→model) and downcast (model→view) conversions.
 
-**Example from t3x-rte_ckeditor_image:**
+**Example — an RTE image plugin:**
 
 The plugin added a `noScale` attribute to prevent image processing. This requires testing:
 

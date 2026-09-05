@@ -1,6 +1,22 @@
 ---
-name: "php-modernization"
+name: php-modernization
 description: "Use when modernizing PHP code: PHP 8.1-8.5 features, PSR/PHP-FIG/PER-CS compliance, PHPStan/Rector/PHP-CS-Fixer/PHPat tooling, DTOs/enums/readonly/property hooks, type safety. Triggers: PHP modernization, type safety, PHPStan, Rector, PHP-CS-Fixer, enum, DTO, readonly, strict_types, property hooks, PHP 8.4, PHP 8.5."
+license: "(MIT AND CC-BY-SA-4.0)"
+compatibility: "Requires php 8.1+, composer."
+metadata:
+  version: "1.23.0"
+  repository: "https://github.com/netresearch/php-modernization-skill"
+  author: "Netresearch DTT GmbH"
+allowed-tools:
+  - "Bash(php:*)"
+  - "Bash(composer:*)"
+  - "Bash(uv:*)"
+  - "Bash(vendor/bin/*)"
+  - "Bash(.Build/bin/*)"
+  - "Read"
+  - "Write"
+  - "Glob"
+  - "Grep"
 ---
 
 # PHP Modernization
@@ -25,7 +41,7 @@ description: "Use when modernizing PHP code: PHP 8.1-8.5 features, PSR/PHP-FIG/P
 | PHP-CS-Fixer deprecations | `references/php-cs-fixer-deprecations.md` |
 | DTOs / VOs / inputs | `references/type-safety.md`, `references/request-dtos.md` |
 | Adapter / registry | `references/adapter-registry-pattern.md` |
-| Multi-version compat | `references/multi-version-adapters.md` |
+| Multi-version compat | `references/multi-version-adapters.md`, `references/composer-package-metadata.md` |
 | Symfony patterns | `references/symfony-patterns.md` |
 | PSR-15 middleware | `references/psr15-middleware-architecture.md` |
 | Doctrine edges | `references/doctrine-modernization-edges.md` |
@@ -36,6 +52,7 @@ description: "Use when modernizing PHP code: PHP 8.1-8.5 features, PSR/PHP-FIG/P
 | Migration planning | `references/migration-strategies.md` |
 | PHPUnit 12→13, mock vs stub | `references/phpunit-modernization.md` |
 | Multi-agent dispatch hazards | `references/multi-agent-pitfalls.md` |
+| Reading a PHP config file without running it | `references/reading-php-config-safely.md` |
 
 ## Hard guardrails
 
@@ -62,17 +79,3 @@ description: "Use when modernizing PHP code: PHP 8.1-8.5 features, PSR/PHP-FIG/P
 - [ ] Property hooks (8.4); `array_find/any/all` (8.4); pipe `|>` (8.5)
 - [ ] PHPUnit 12+: stubs use `createStub`, mocks `createMock` + `expects` (no `self::any()` in 13)
 - [ ] Rector `withComposerBased(symfony: true)` (per-version `SymfonySetList::SYMFONY_*` are `@deprecated`)
-
----
-
-## Credits & Attribution
-
-This skill is based on the excellent work by
-**[Netresearch DTT GmbH](https://www.netresearch.de/)**.
-
-Original repository: https://github.com/netresearch/php-modernization-skill
-
-**Copyright (c) Netresearch DTT GmbH** — Methodology and best practices (MIT / CC-BY-SA-4.0)
-
-Special thanks to [Netresearch DTT GmbH](https://www.netresearch.de/) for their generous open-source contributions to the TYPO3 community, which helped shape this skill collection.
-Adapted by webconsulting.at for this skill collection

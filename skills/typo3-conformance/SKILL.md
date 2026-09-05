@@ -1,6 +1,10 @@
 ---
-name: "typo3-conformance"
-description: "Use when assessing TYPO3 extension quality, conformance checking, standards compliance, modernization to v12/v13/v14 (v14.3 LTS is the default/gold standard), TER readiness, or best practices review. Also triggers on: extension audit, quality score, full assessment, fix all findings, conformance audit, Fluid 5 strict ViewHelpers, ext_tables.php removal, Extbase attributes (Authorize/RateLimit), HashService removal, Bootstrap 5 migration, CSP compliance, ViewHelper security, XLIFF hygiene, PHP 8.4/8.5 compat."
+name: typo3-conformance
+description: "Use when checking which TYPO3 versions an extension says it supports, when composer.json and ext_emconf.php disagree, when a version bump must reach every file that states it, when reviewing a TYPO3 extension for what needs attention, or when auditing coding standards, TER readiness, deprecations and modernization to v12/v13/v14 (v14.3 LTS is the default)."
+metadata:
+  version: "2.19.3"
+  repository: https://github.com/netresearch/typo3-conformance-skill
+  author: Netresearch DTT GmbH
 ---
 
 # TYPO3 Extension Conformance Checker
@@ -15,7 +19,7 @@ Evaluate TYPO3 extensions against TYPO3 coding standards, architecture patterns,
 
 ## Delegation
 
-Testing -> `typo3-testing` | Docs -> `typo3-docs` | OpenSSF -> `enterprise-readiness`
+Testing -> `typo3-testing` | Docs -> `typo3-docs` | OpenSSF -> `enterprise-readiness` | Release/TER -> `github-release`
 
 **Scope:** extensions only. **Site/project** repos (`type: project` + Compose) — score with the gold checker [`typo3-14-gold`](https://git.netresearch.de/typo3/typo3-14-gold)`/tools/conformance`.
 
@@ -80,17 +84,3 @@ See `references/`:
 - **Practices & backend:** `development-environment.md`, `backend-module-v13.md`, `ter-publishing.md`, `report-template.md`, `excellence-indicators.md`, `localization-coverage.md`, `crowdin-integration.md`
 
 Asset templates in `assets/Build/`: PHPStan, PHP-CS-Fixer, Rector, ESLint, Stylelint, TypoScript lint.
-
----
-
-## Credits & Attribution
-
-This skill is based on the excellent work by
-**[Netresearch DTT GmbH](https://www.netresearch.de/)**.
-
-Original repository: https://github.com/netresearch/typo3-conformance-skill
-
-**Copyright (c) Netresearch DTT GmbH** — Methodology and best practices (MIT / CC-BY-SA-4.0)
-
-Special thanks to [Netresearch DTT GmbH](https://www.netresearch.de/) for their generous open-source contributions to the TYPO3 community, which helped shape this skill collection.
-Adapted by webconsulting.at for this skill collection

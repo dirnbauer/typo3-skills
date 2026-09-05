@@ -3,6 +3,7 @@ name: "typo3-security"
 description: "Hardens TYPO3 v14 installations and extensions: secure configuration, trusted hosts, file permissions, locking down the Install Tool, backend user accounts and two-factor authentication, CSP, and safe database access. Use when user input is concatenated straight into an SQL query and should be written with QueryBuilder instead, when output needs escaping against XSS, when CSRF checks are missing, when the Install Tool may be reachable from outside, or when asking what must be locked down before an installation goes live."
 compatibility: "TYPO3 14.x"
 metadata:
+  skill_type: preference
   version: "2.0.0"
   origin: "webconsulting"
 license: "MIT / CC-BY-SA-4.0"
@@ -12,7 +13,11 @@ license: "MIT / CC-BY-SA-4.0"
 > Source: https://github.com/dirnbauer/webconsulting-skills
 
 > **Compatibility:** TYPO3 v14.x
-> All security configurations in this skill work on TYPO3 v14.
+> Configuration examples require verification against the installed v14 source and the deployment's trust/proxy model; they are not a universal drop-in preset.
+
+For an assessment, inspect and report without changing configuration, accounts or permissions.
+Implement hardening only when requested. Inside an upgrade graph, address the assigned finding and
+return evidence; unrelated hardening belongs to separately authorized scope, not an automatic loop.
 
 > **TYPO3 API First:** Always use TYPO3's built-in APIs, core features, and established conventions before creating custom implementations. Do not reinvent what TYPO3 already provides. Always verify that the APIs and methods you use exist and are not deprecated in TYPO3 v14 by checking the official TYPO3 documentation.
 

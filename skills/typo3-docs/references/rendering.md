@@ -2,29 +2,19 @@
 
 Complete reference for rendering TYPO3 documentation locally using Docker.
 
-Based on: https://docs.typo3.org/m/typo3/docs-how-to-document/main/en-us/Reference/RenderingContainer.html
+Based on: https://docs.typo3.org/permalink/h2document:rendering-container
 
 ## Overview
 
-TYPO3 documentation is rendered using a Docker container that processes reStructuredText files into HTML. This enables local preview before committing changes.
-
-## Container Image
-
-```
-ghcr.io/typo3-documentation/render-guides:latest
-```
-
-## Rendering Documentation
-
-### Basic Render Command
-
-Execute from the project root (where `composer.json` is located):
-
-```bash
-docker run --rm --pull always -v $(pwd):/project -it \
-  ghcr.io/typo3-documentation/render-guides:latest \
-  --config=Documentation
-```
+Rendering runs via the official container — image, basic command
+(`docker run --rm --pull always -v $(pwd):/project -it
+ghcr.io/typo3-documentation/render-guides:latest --config=Documentation`),
+output at `Documentation-GENERATED-temp/Index.html`, and `init` for new
+documentation:
+[Rendering container](https://docs.typo3.org/m/typo3/docs-how-to-document/main/en-us/Reference/RenderingContainer.html)
+and
+[Rendering howto](https://docs.typo3.org/m/typo3/docs-how-to-document/main/en-us/Howto/RenderingDocs/Index.html)
+`[upstream]` — canonical, win on conflict (see `canonical-sources.md`).
 
 ### Command Options Explained
 
@@ -46,14 +36,37 @@ Documentation-GENERATED-temp/Index.html
 
 Open this file in a browser to preview the documentation.
 
-## Initializing New Documentation
+#### `--output` is a container path
 
-When no `Documentation/` directory exists, **always use the init command** to scaffold the structure:
+`--output` is resolved **inside** the container, not on the host. Pointing it
+at a host directory that is not under the `-v` mount writes the HTML into the
+container's own filesystem, which `--rm` then discards — and the render still
+prints `Successfully placed N rendered HTML … files into <path>`, so the run
+looks like a success:
 
 ```bash
-docker run --rm --pull always -v $(pwd):/project -it \
-  ghcr.io/typo3-documentation/render-guides:latest init
+# WRONG — /tmp is the container's /tmp; nothing appears on the host
+docker run --rm -v "$(pwd)":/project -w /project \
+  ghcr.io/typo3-documentation/render-guides:latest \
+  --config=Documentation --output=/tmp/rendered-docs
+
+# RIGHT — inside the mount, so it lands in ./.build/rendered-docs on the host
+docker run --rm -v "$(pwd)":/project -w /project \
+  ghcr.io/typo3-documentation/render-guides:latest \
+  --config=Documentation --output=/project/.build/rendered-docs
 ```
+
+This matters when a check *reads back* the rendered HTML — asserting a new
+anchor exists, diffing output between branches, feeding a link checker. The
+assertion then fails with `No such file or directory` on a render that
+genuinely succeeded, which reads as a docs error rather than a path mistake.
+Pick a mounted, git-ignored target (`.build/`, `var/`) so the artefacts stay
+out of the working tree.
+
+## Initializing New Documentation
+
+`init` itself is `[upstream]` (Rendering container page). Kept below: the
+prompt sequence and post-init workflow the upstream page does not show.
 
 ### Prerequisites
 
@@ -92,7 +105,7 @@ After running init:
 
 ### Reference
 
-- **Writing Documentation for Extensions:** https://docs.typo3.org/m/typo3/docs-how-to-document/main/en-us/Howto/WritingDocForExtension/Index.html
+- **Writing Documentation for Extensions:** https://docs.typo3.org/permalink/h2document:how-to-document-an-extension
 
 ## Convenience Scripts
 
@@ -154,36 +167,11 @@ After rendering, always verify the output visually:
 
 ## Live View (Watch Mode)
 
-For real-time preview while editing, use watch mode. The container monitors file changes and automatically re-renders, enabling WYSIWYG-style editing.
-
-### Live View Command
-
-```bash
-docker run --rm -it --pull always \
-  -v "./Documentation:/project/Documentation" \
-  -v "./Documentation-GENERATED-temp:/project/Documentation-GENERATED-temp" \
-  -p 1337:1337 \
-  ghcr.io/typo3-documentation/render-guides:latest \
-  --config="Documentation" --watch
-```
-
-Then open `http://localhost:1337/Index.html` in your browser.
-
-### Command Differences from Basic Render
-
-| Option | Purpose |
-|--------|---------|
-| `-p 1337:1337` | Expose built-in web server on port 1337 |
-| `--watch` | Enable file watching and auto-rebuild |
-| Separate volume mounts | Required for watch mode to detect changes |
-
-### Custom Port
-
-If port 1337 is in use, change the host port:
-
-```bash
--p 8080:1337  # Access via http://localhost:8080/
-```
+Watch-mode command (both mounts, `-p 1337:1337`, `--watch`), custom port,
+shell alias, DDEV addon, and the four limitations (guides.xml changes, new
+files, menu changes, moved files require a restart):
+[Automatic re-rendering](https://docs.typo3.org/permalink/h2document:rendering-wysiwyg)
+`[upstream]`.
 
 ### Convenience Script: scripts/watch_docs.sh
 
@@ -315,6 +303,10 @@ rm -rf Documentation-GENERATED-temp/
 
 ### Debugging Render Failures
 
+`[regression]` caveat: `--fail-on-log` is not documented in the manual
+(upstream's own CI examples use `--no-progress --minimal-test`). It works
+today; if it disappears, switch to log-grepping the render output.
+
 For verbose error output:
 ```bash
 docker run --rm --pull always -v $(pwd):/project -it \
@@ -327,7 +319,11 @@ Check the last few lines of output for specific RST file and line number causing
 
 ## CI/CD Integration
 
-For GitHub Actions, add documentation rendering to your workflow:
+`[upstream]` ships GitHub Actions and GitLab CI examples (SHA-pinned action,
+`mkdir -p Documentation-GENERATED-temp` before the render, `--no-progress
+--minimal-test`) on the rendering pages — prefer those as the base. The
+variant below additionally fails on log warnings (`--fail-on-log`, see the
+caveat above); pin `actions/checkout` to a full SHA per NR policy:
 
 ```yaml
 name: Documentation
@@ -366,6 +362,11 @@ Documentation-GENERATED-temp/
 
 ## References
 
-- **Rendering Container:** https://docs.typo3.org/m/typo3/docs-how-to-document/main/en-us/Reference/RenderingContainer.html
-- **Live View (Watch Mode):** https://docs.typo3.org/m/typo3/docs-how-to-document/main/en-us/Howto/RenderingDocs/Watch.html
-- **guides.xml Reference:** https://docs.typo3.org/m/typo3/docs-how-to-document/main/en-us/Reference/GuidesXml.html
+- **Rendering Container:** https://docs.typo3.org/permalink/h2document:rendering-container
+- **Live View (Watch Mode):** https://docs.typo3.org/permalink/h2document:rendering-wysiwyg
+- **guides.xml Reference:** https://docs.typo3.org/permalink/h2document:guides-xml
+
+## Renderer gotchas: symlinks in Documentation/, permalinks for outbound links
+
+- **No symlinks inside `Documentation/`** — `[upstream]` since 2026-08-15, stated in [File structure](https://docs.typo3.org/permalink/h2document:file-structure): the render walks the tree literally and a symlink breaks the walk. The delta that stays here: a *regular* `Documentation/AGENTS.md` file is fine, because unknown `.md` files are ignored — only the symlink breaks it. So agent-rules tooling that generates scoped instruction files across an extension tree must exclude `Documentation/` from **linking**, not from having such a file at all.
+- **Link TO docs.typo3.org with permalinks, not path URLs**: `https://docs.typo3.org/permalink/<identifier>` survives restructuring; full `…/main/en-us/<Path>.html` URLs rot and reviewers flag them. Applies everywhere — code comments, PR bodies, chat, docs.

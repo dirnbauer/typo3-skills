@@ -1,6 +1,13 @@
 ---
-name: "enterprise-readiness"
+name: enterprise-readiness
 description: "Use when evaluating projects for production or enterprise readiness, implementing supply chain security (SLSA, cosign, SBOMs, pnpm), hardening CI/CD pipelines, establishing quality gates (TYPO3: CI matrix PHP 8.2-8.5 x TYPO3 12.4/13.4/14.3 LTS), pursuing OpenSSF Best Practices Badge (Passing/Silver/Gold) or OSPS Baseline levels, reviewing code quality, writing ADRs, or configuring Git hooks and CI pipelines."
+license: "(MIT AND CC-BY-SA-4.0). See LICENSE-MIT and LICENSE-CC-BY-SA-4.0"
+compatibility: "Requires gh CLI, python3, cosign, docker."
+metadata:
+  author: Netresearch DTT GmbH
+  version: "4.17.3"
+  repository: https://github.com/netresearch/enterprise-readiness-skill
+allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/*) Bash(bash ${CLAUDE_SKILL_DIR}/scripts/*) Bash(gh:*) Bash(cosign:*) Read Write Glob Grep
 ---
 
 # Enterprise Readiness Assessment
@@ -64,19 +71,6 @@ Required coverage: CI, CodeQL, Scorecard, dependency review, composer audit, SBO
 | `references/harden-runner-guide.md` | Harden-Runner |
 | `references/solo-maintainer-guide.md` | N/A criteria |
 | `references/npm-pnpm-supply-chain.md` | pnpm |
+| `references/python-pip-supply-chain.md` | pip |
 
 Related skills: `go-development`, `github-project`, `security-audit`, `git-workflow`.
-
----
-
-## Credits & Attribution
-
-This skill is based on the excellent work by
-**[Netresearch DTT GmbH](https://www.netresearch.de/)**.
-
-Original repository: https://github.com/netresearch/enterprise-readiness-skill
-
-**Copyright (c) Netresearch DTT GmbH** — Methodology and best practices (MIT / CC-BY-SA-4.0)
-
-Special thanks to [Netresearch DTT GmbH](https://www.netresearch.de/) for their generous open-source contributions to the TYPO3 community, which helped shape this skill collection.
-Adapted by webconsulting.at for this skill collection

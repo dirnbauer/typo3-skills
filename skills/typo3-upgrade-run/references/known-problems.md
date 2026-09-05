@@ -572,7 +572,7 @@ is the code that decides.
 
 ---
 
-## Rector is clean only after a second applied pass
+## Generated code can require another bounded Rector pass
 
 **Symptom.** Rector applies successfully, then a dry run immediately proposes changes inside an
 upgrade wizard or other file Rector just generated.
@@ -580,9 +580,11 @@ upgrade wizard or other file Rector just generated.
 **Cause.** A rule can create code that exposes a later rule. On a real v14 run, generated
 list-type-to-CType wizards still carried namespaces that the next pass migrated.
 
-**Fix.** Treat both Rector and Fractor as fixed-point tools: dry run, review, apply, repeat until a
-fresh dry run reports zero changed files. Include generated code in the configured paths. “The tool
-ran once” is not an exit criterion.
+**Fix.** Dry run, review, apply once and dry run again, including generated code in the configured
+paths. Zero remaining changes is the fixed-point proof, not permission for an unbounded loop. Return
+remaining findings to the parent graph; another pass spends its shared attempt/time budget. Stop on
+oscillation or two no-progress attempts. Standalone use permits at most three applied passes.
+“The tool ran once” is not a clean result, but a residual diff is not authority to run forever.
 
 ---
 

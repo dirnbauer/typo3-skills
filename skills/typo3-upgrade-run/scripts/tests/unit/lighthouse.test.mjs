@@ -1,11 +1,16 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtemp, writeFile, rm } from 'node:fs/promises';
+import path from 'node:path';
+import os from 'node:os';
 
 import {
   finalLighthouseSample,
   lighthouseBudgetFindings,
   stratifyByTemplate,
   withDeadline,
+  completeLighthouseAudit,
+  readLighthouseBudget,
 } from '../../lib/actions/sweep.mjs';
 import { HarnessError, PreconditionError } from '../../lib/cli/exit-codes.mjs';
 
@@ -28,11 +33,9 @@ describe('lighthouse sampling', () => {
     assert.equal(new Set(picked).size, 3);
   });
 
-  test('refuses a final report when two non-home pages cannot be found', () => {
-    assert.throws(
-      () => finalLighthouseSample([u('/only/')], BASE, 'run-seed'),
-      (error) => error instanceof PreconditionError && /requires two non-home pages/.test(error.message),
-    );
+  test('audits all available pages on a one- or two-page site without inventing URLs', () => {
+    assert.deepEqual(finalLighthouseSample([u('/only/')], BASE, 'run-seed'), [BASE, u('/only/')]);
+    assert.deepEqual(finalLighthouseSample([], BASE, 'run-seed'), [BASE]);
   });
 
   test('adds the site root when the sitemap omits it', () => {
@@ -70,6 +73,27 @@ describe('lighthouse sampling', () => {
 });
 
 describe('lighthouse quality budgets', () => {
+  test('runtime errors, missing categories and null scores cannot pass', () => {
+    const lhr = { categories: Object.fromEntries(['performance', 'accessibility', 'best-practices', 'seo'].map(k => [k, { score: 0.9 }])) };
+    assert.equal(completeLighthouseAudit(lhr), true);
+    for (const bad of [null, {}, { ...lhr, runtimeError: {} }, { categories: {} },
+      { categories: { ...lhr.categories, seo: { score: null } } }]) assert.equal(completeLighthouseAudit(bad), false);
+  });
+  test('an empty, null or wrong-contract budget is a precondition failure', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 't3u-lh-budget-'));
+    const file = path.join(root, 'budget.json');
+    const valid = { performance: { lighthouse_performance_mobile: 80, lighthouse_best_practices: 95 },
+      accessibility: { lighthouse_accessibility: 95 }, seo: { lighthouse_seo: 95 } };
+    try {
+      for (const bad of [null, {}, { contract_b: valid }, { contract_a: { performance: { lighthouse_performance_mobile: 0 } } }]) {
+        await writeFile(file, JSON.stringify(bad));
+        await assert.rejects(readLighthouseBudget(file, 'verify'), PreconditionError);
+      }
+      await writeFile(file, JSON.stringify({ contract_a: valid }));
+      assert.deepEqual(await readLighthouseBudget(file, 'verify'), valid);
+      await assert.rejects(readLighthouseBudget(file, 'elevation'), PreconditionError);
+    } finally { await rm(root, { recursive: true, force: true }); }
+  });
   test('turns measured misses into actionable quality-gap findings', () => {
     const results = [{
       url: u('/news/a/'),

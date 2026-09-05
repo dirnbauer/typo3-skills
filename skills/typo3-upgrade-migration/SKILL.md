@@ -2,7 +2,7 @@
 name: typo3-upgrade-migration
 description: >-
   Execute one graph-authorized dependency, code, schema, or data migration node within a
-  whole-site TYPO3 v12/v13 to 14.3 upgrade. Use after Baseline A is sealed for the 13.4
+  whole-site TYPO3 v12/v13 to 14.3 upgrade. Use when Baseline A is sealed for the 13.4
   rung, Composer blocker resolution, Rector/Fractor pass, manual API/data migration,
   stored `list_type` to `CType` ordering, 14.3 rung, schema quarantine, or fixed-point reconciliation. Enforces rollback anchors,
   snapshots, v14-only constraints, one-cause budgets, and specialist routing. Never owns
@@ -43,13 +43,18 @@ One job: change one authorized cause and return inspectable evidence to the grap
 - TypoScript/Fluid/YAML/XLIFF → `typo3-fractor`
 - Assets/Gulp/Bootstrap → `typo3-vite`
 - Solr/indexing/order → `typo3-solr`
-- RTE/inline editing → `typo3-visual-editor`
+- CKEditor/RTE presets and link dialogs → `typo3-ckeditor5`
+- Inline frontend editing → `typo3-visual-editor`
+- Executable visitor/editor journeys → `typo3-playwright`
+- Environment secrets/Deployer information → [orchestrator environment reference](../typo3-upgrade-run/references/project-environment.md)
 - Redirect install/editor groups → DDEV Composer + `typo3-backend-rights`
 - Security finding → `typo3-security`/`security-audit`, without disguising it as Composer failure
 
 If `typo3/cms-redirects` is absent, dependency resolution installs a constraint compatible with the
 locked 14.3 core, inside DDEV. Snapshot before setup/schema. The later rights node proves intended
 editor access and least privilege.
+Also require `spooner/deployer-information`, current stable Bootstrap 5.x when used, and native
+project JavaScript where compatible. Preserve existing functionality and prove any approved exception.
 
 ## Evidence and exit
 

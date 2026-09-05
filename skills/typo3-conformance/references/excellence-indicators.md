@@ -466,83 +466,52 @@ ls .github/workflows/*ter*.yml 2>/dev/null && echo "✅ TER workflow found"
 
 ## Category 3: Documentation Excellence (0-4 points)
 
-### 3.1 Complete Documentation Structure (+3 points)
+**Feature-coverage based** — the same single model as the evaluation
+checklist further down. File counts and raw section counts measure volume,
+not coverage: 22 focused RST files can be complete, a 150-file dump with
+undocumented CLI commands is not.
 
-**Directory:** `Documentation/`
+### 3.1 Scope classification
 
-**Purpose:** Documentation appropriate for extension complexity with all required sections
+Classify by PHP class count: **focused** (≤30) / **medium** (31–100) /
+**large** (>100).
 
-**Required Sections (scale with extension complexity):**
-
-| Extension Complexity | Required Sections | Example |
-|---------------------|-------------------|---------|
-| **Simple** (1-2 features) | Index, Installation, Configuration | Single-purpose utility extension |
-| **Medium** (3-5 features) | + Administration, Reference | Content element, backend module |
-| **Complex** (6+ features) | + Tutorials, FAQ, API docs | Full CMS feature like EXT:news |
-
-**Scoring:**
-- Complete documentation for extension scope: +3 points
-  - All required sections present for complexity level
-  - Each section has meaningful content (not stub/placeholder)
-  - Configuration options documented with examples
-- Partial documentation: +2 points
-  - Most required sections present
-  - Some sections incomplete or missing examples
-- Basic documentation: +1 point
-  - Index.rst and Installation present
-  - Minimal configuration documentation
-- No documentation: 0 points
-
-**Example Structure (medium complexity):**
-```
-Documentation/
-├── Index.rst           # Overview and quick links
-├── Installation/       # Setup and requirements
-│   └── Index.rst
-├── Configuration/      # All options with examples
-│   └── Index.rst
-├── Administration/     # Backend usage guide
-│   └── Index.rst
-├── Reference/          # Technical reference
-│   └── Index.rst
-└── Images/             # Visual assets
-```
-
-**Validation:**
 ```bash
-# Check for required documentation sections
-REQUIRED_SECTIONS=("Index.rst" "Installation" "Configuration")
-SCORE=0
-for section in "${REQUIRED_SECTIONS[@]}"; do
-    if [ -e "Documentation/$section" ] || [ -e "Documentation/${section}/Index.rst" ]; then
-        ((SCORE++))
-    fi
-done
-
-# Assess completeness relative to extension complexity
 CLASSES_COUNT=$(find Classes -name "*.php" 2>/dev/null | wc -l)
-if [ $CLASSES_COUNT -gt 20 ]; then
-    COMPLEXITY="complex"
-    REQUIRED_SECTIONS+=("Administration" "Reference" "Tutorials")
-elif [ $CLASSES_COUNT -gt 5 ]; then
-    COMPLEXITY="medium"
-    REQUIRED_SECTIONS+=("Administration" "Reference")
-fi
-
-# Score based on completeness for scope
-echo "Extension complexity: $COMPLEXITY"
-echo "Documentation score based on completeness for scope"
+if [ "$CLASSES_COUNT" -gt 100 ]; then SCOPE="large"
+elif [ "$CLASSES_COUNT" -gt 30 ]; then SCOPE="medium"
+else SCOPE="focused"; fi
 ```
 
-**Benefits:**
-- Documentation appropriate for extension scope
-- Quality over quantity approach
-- Reduces user confusion
-- Improves onboarding efficiency
+### 3.2 Feature coverage scoring (0-4)
 
----
+Inventory the shipped features and check each is documented:
 
-### 3.2 Modern Documentation Tooling (+1 point)
+- **User-facing:** installation, configuration options, backend modules,
+  editorial workflows
+- **Developer-facing:** CLI commands (`Classes/Command/`), events and
+  listeners, public APIs
+- **Quality q:** `confval` directives, working examples, modern tooling
+  (`guides.xml` + `screenshots.json` — example below)
+
+With u = documented share of user features, d = of developer features:
+
+| Scope | Score |
+|---|---|
+| focused | u≥90% and q≥80% → **3** · u≥75% → 2 · u≥60% → 1 · else 0 |
+| medium | u≥90% and d≥80% → **4** · u≥90% and d≥40% → 3 · u≥80% → 2 · u≥60% → 1 · else 0 |
+| large | (u+d)/2 ≥90% → **4** · ≥75% → 3 · ≥60% → 2 · ≥40% → 1 · else 0 |
+
+Thresholds follow the model in
+[typo3-conformance-skill#102](https://github.com/netresearch/typo3-conformance-skill/issues/102),
+which resolves three ambiguities in the typo3-docs prose deliberately:
+focused caps at 3 (developer docs are optional there — never penalized),
+medium triggers at u≥90% rather than 100%, large aggregates as the average
+(u+d)/2. The feature-inventory procedure is owned by typo3-docs-skill
+(`references/documentation-coverage-analysis.md`).
+
+### 3.3 Modern Documentation Tooling (part of quality q)
+
 
 **Files:**
 - `Documentation/guides.xml`
@@ -583,7 +552,7 @@ echo "Documentation score based on completeness for scope"
 
 **Validation:**
 ```bash
-[ -f "Documentation/guides.xml" ] && echo "✅ Modern documentation tooling (+1)"
+[ -f "Documentation/guides.xml" ] && echo "✅ Modern documentation tooling (part of quality q)"
 ```
 
 ---
@@ -706,9 +675,9 @@ SET_COUNT=$(find Configuration/Sets -mindepth 1 -maxdepth 1 -type d | wc -l)
 ### Example Report Section
 
 ```markdown
-## Excellence Indicators (Bonus Score: 12/20)
+## Excellence Indicators (Bonus Score: 13/22)
 
-### ✅ Community & Internationalization (4/6)
+### ✅ Community & Internationalization (5/6)
 - ✅ Crowdin integration (crowdin.yml): +2 points
 - ✅ GitHub issue templates (3 templates): +1 point
 - ❌ .gitattributes export optimization: 0 points
@@ -718,16 +687,18 @@ SET_COUNT=$(find Configuration/Sets -mindepth 1 -maxdepth 1 -type d | wc -l)
   - Download stats: ✅
   - Compatibility matrix: ✅
 
-### ✅ Advanced Quality Tooling (5/7)
+### ✅ Advanced Quality Tooling (5/9)
 - ✅ Fractor configuration (Build/fractor/fractor.php): +2 points
 - ❌ TYPO3 CodingStandards package: 0 points (uses custom config)
 - ✅ StyleCI integration (.styleci.yml): +1 point
 - ❌ Makefile automation: 0 points
 - ✅ Comprehensive CI matrix (4 PHP versions, composerInstallLowest/Highest): +2 points
+- ❌ TER publish workflow: 0 points
 
 ### ✅ Documentation Excellence (3/4)
-- ✅ Extensive documentation (183 RST files): +3 points
-- ❌ Modern documentation tooling (guides.xml): 0 points
+- Scope: large (140 classes) — feature-based scoring
+- ✅ Coverage: user 90%, developer 60% → (u+d)/2 = 75%: +3 points
+- ℹ️ (u+d)/2 below 90% caps a large extension at 3; the missing guides.xml is a quality gap worth fixing regardless
 
 ### ❌ Extension Configuration (0/3)
 - ❌ ext_conf_template.txt: 0 points
@@ -740,6 +711,7 @@ This extension demonstrates exceptional quality in documentation and CI/CD pract
 - TYPO3 CodingStandards package for official community standards
 - Makefile for task automation
 - Modern documentation tooling (guides.xml, screenshots.json)
+- A TER publish workflow for automated releases
 - Extension configuration template for backend settings
 ```
 
@@ -764,15 +736,33 @@ Advanced Quality Tooling (0-9):
 □ CI matrix: 3+ PHP versions + composerInstall variants (+2)
 □ TER publish workflow (.github/workflows/*ter*.yml) (+2)
 
-Documentation Excellence (0-4):
-□ 50-99 RST files (+1) / 100-149 (+2) / 150+ (+3)
-□ guides.xml + screenshots.json (+1)
+Documentation Excellence (0-4) — feature coverage, not file count:
+□ Classify scope by PHP class count: focused (≤30) / medium (31-100) / large (>100)
+□ Inventory shipped features and check each is documented —
+  user-facing: installation, configuration, backend modules, workflows;
+  developer-facing: CLI commands, events, public APIs
+□ Assess quality q: TYPO3 directives (confval), working examples,
+  modern tooling (guides.xml + screenshots.json)
+□ Score by scope (u = user coverage, d = developer coverage):
+  focused: u≥90% and q≥80% → 3 | u≥75% → 2 | u≥60% → 1 | else 0
+  medium:  u≥90% and d≥80% → 4 | u≥90% and d≥40% → 3 | u≥80% → 2 | u≥60% → 1 | else 0
+  large:   (u+d)/2 ≥90% → 4 | ≥75% → 3 | ≥60% → 2 | ≥40% → 1 | else 0
 
 Extension Configuration (0-3):
 □ ext_conf_template.txt present (+1)
 □ Composer doc scripts (doc-init, doc-make, doc-watch) (+1)
 □ 2+ Configuration Sets in Configuration/Sets/ (+1)
 ```
+
+**Why Documentation Excellence is feature-based:** file counts measure
+volume, not coverage — 22 focused RST files can be a complete, EXCELLENT
+documentation for a small extension, while a 150-file dump with undocumented
+CLI commands is not. The feature-inventory procedure (what counts as a
+user-facing vs developer-facing feature, how to measure coverage) is owned by
+typo3-docs-skill: `references/documentation-coverage-analysis.md`. Never
+penalize a focused extension for lacking developer API docs — at that scope
+they are optional (source: netresearch/typo3-conformance-skill#102, moved
+here from typo3-docs-skill during the 2026-08 authority reconciliation).
 
 ---
 
@@ -782,7 +772,7 @@ Extension Configuration (0-3):
 
 1. **Never penalize** missing excellence indicators
 2. **Always report** excellence indicators separately from base conformance
-3. **Score format:** `Base: 94/100 | Excellence: 12/20 | Total: 106/120`
+3. **Score format:** `Base: 94/100 | Excellence: 13/22 | Total: 107/122`
 4. **Optional evaluation:** Can be disabled with flag if user only wants base conformance
 
 **Example CLI:**

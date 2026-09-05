@@ -2,6 +2,7 @@
 name: "legal-impressum"
 description: "Creates and reviews Austrian Impressum and disclosure content for websites, including ECG, UGB, GewO, MedienG, Offenlegung, and company-form-specific templates. Use when the user mentions Impressum, legal notice, imprint, Austria, Oesterreich, Mediengesetz, Offenlegung, or website operator disclosure."
 metadata:
+  skill_type: capability
   version: "1.0.0"
   origin: "webconsulting"
 license: "MIT / CC-BY-SA-4.0"

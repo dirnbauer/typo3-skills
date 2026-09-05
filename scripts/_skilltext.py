@@ -10,8 +10,10 @@ disagreement is invisible in their output.
 from __future__ import annotations
 
 import re
+import json
 from collections import Counter
 from pathlib import Path
+from functools import lru_cache
 
 # Deliberately small. Over-stripping hides real overlap between descriptions.
 STOP = {
@@ -27,6 +29,28 @@ STOP = {
     "help", "make", "sure", "so", "one", "many", "same", "says", "say", "large", "covers",
     "cover", "apply", "applies", "run", "runs",
 }
+
+
+@lru_cache(maxsize=1)
+def routing_policy() -> dict:
+    policy = Path(__file__).resolve().parent.parent / 'catalog/routing-policy.json'
+    return json.loads(policy.read_text()) if policy.is_file() else {}
+
+
+def domain_eligible(name: str, prompt: str) -> bool:
+    """Product boundaries from AGENTS.md, not score boosts or per-eval exceptions.
+
+    Eval prompts are standalone: no unspoken project context is assumed. A caller
+    with real project context can include it in the prompt. Explicit skill names win.
+    """
+    if re.search(rf"(?<![\w-]){re.escape(name)}(?![\w-])", prompt, re.I):
+        return True
+    if name in routing_policy().get('companions', {}):
+        return False
+    if name.startswith("typo3-") and not re.search(r"\btypo3\b", prompt, re.I):
+        if re.search(r"\b(?:react|next\.?js|vue|svelte|angular|wordpress|drupal|shopify)\b", prompt, re.I):
+            return False
+    return True
 
 
 def read_frontmatter(path: Path) -> dict:

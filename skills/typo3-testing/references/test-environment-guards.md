@@ -313,7 +313,7 @@ TYPO3\TestingFramework\Core\Exception: Can not remove folder:
 Directory ".../public/typo3temp/var/tests" could not be created
 ```
 
-This is a **cascade** — one permission fatal aborts the whole class, so you see N identical `setUp()` errors, not N real failures. Read the *first* one.
+This is a **cascade** — one permission fatal aborts the whole class, so you see N identical `setUp()` errors, not N real failures. Read the *first* one. The same cascade shape appears for a PHP **compile** fatal (parse error, `Cannot declare self-referencing constant`): PHPUnit exits **255** ("An error occurred inside PHPUnit"), and the per-test `getcwd`/unique-constraint errors are downstream noise. Treat exit 255 as compile/bootstrap fatal, never as flaky infra — and remember `gh run rerun` replays the ORIGINAL commit SHA, so it "reproduces" a since-fixed break and proves nothing. Classic unit-invisible/functional-fatal trap after literal→constant extraction: a `replace_all` that rewrites the constant's own declaration to `= self::THE_CONST` (grep `const [A-Z_]* = self::` after such sweeps).
 
 **Prevent:** always pass `--user "$(id -u):$(id -g)"` to `docker run` for test containers (the skill's `runTests.sh` does this on Linux; see `test-runners.md`).
 

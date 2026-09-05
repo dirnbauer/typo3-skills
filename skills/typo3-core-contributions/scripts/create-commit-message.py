@@ -4,10 +4,33 @@ TYPO3 Core Contribution Commit Message Generator
 Creates properly formatted commit messages following TYPO3 standards
 """
 
+from __future__ import annotations
+
 import argparse
-import sys
 import re
-from typing import Optional
+import sys
+from pathlib import Path
+
+
+def resolve_output_file(raw: str) -> Path:
+    """Confine a user-supplied output path to the working directory.
+
+    The commit message belongs next to the checkout it describes, so the target
+    is resolved against the current directory and anything escaping it is
+    refused. That keeps a mistyped or hostile --output from writing outside the
+    tree. Exits non-zero with the reason rather than returning, so callers stay
+    branch-free.
+    """
+    base = Path.cwd().resolve()
+    path = (base / Path(raw).expanduser()).resolve()
+
+    if not path.is_relative_to(base):
+        sys.exit(f"Error: --output must stay inside {base}, got: {raw}")
+    if path.is_dir():
+        sys.exit(f"Error: Output path is a directory: {raw}")
+    if not path.parent.is_dir():
+        sys.exit(f"Error: Target directory does not exist: {path.parent}")
+    return path
 
 
 COMMIT_TYPES = {
@@ -21,7 +44,7 @@ COMMIT_TYPES = {
 BREAKING_CHANGE_PREFIX = "[!!!]"
 
 
-def validate_subject(subject: str, has_breaking: bool) -> tuple[bool, Optional[str]]:
+def validate_subject(subject: str, has_breaking: bool) -> tuple[bool, str | None]:
     """Validate subject line against TYPO3 rules"""
     max_length = 52 if not has_breaking else 47  # Account for [!!!] prefix
 
@@ -182,8 +205,7 @@ Examples:
     print("=" * 60)
 
     if args.output:
-        with open(args.output, "w") as f:
-            f.write(message)
+        resolve_output_file(args.output).write_text(message, encoding="utf-8")
         print(f"\n✓ Commit message saved to: {args.output}")
         print(f"  Use: git commit -F {args.output}")
     else:

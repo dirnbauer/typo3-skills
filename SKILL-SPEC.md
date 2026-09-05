@@ -73,7 +73,7 @@ A capable model handles negation. The description should not need it to.
 
 ## S3 — Overlapping triggers are measured, not assumed
 
-With 42 skills in one collection, descriptions compete. Two skills sharing vocabulary give
+In a multi-skill collection, descriptions compete. Two skills sharing vocabulary give
 the agent no basis for choosing, and the wrong playbook loads — a failure that is invisible
 in normal use, because the agent still answers.
 
@@ -95,10 +95,9 @@ more obvious name belongs to the skill users most often want. In this collection
 `typo3-update` was the API reference while `typo3-14-update` did the upgrading. Renaming them
 to `typo3-v14-reference` and `typo3-upgrade-run` removed the pair entirely.
 
-One pair remains — `typo3-conformance` and `typo3-extension-upgrade`, both vendored, so
-neither can be reworded. It is documented rather than fixed, and pinned from the owned side
-with negative evals. The budget is ratcheted to exactly that one: a second pair fails the
-build.
+Record unavoidable pairs in `catalog/trigger-collision-allowlist.json` with an exact boundary.
+Do not raise a fungible collision-count budget. An unlisted pair fails the build; immutable
+upstream wording is routed by owned overlays and `catalog/routing-policy.json` instead of edited.
 
 Lexical overlap is a signal, not the whole truth. Two skills can collide conceptually while
 sharing few words. The analyser finds the cheap cases; judgement covers the rest.
@@ -112,10 +111,11 @@ Three kinds, in priority order:
 | Kind | Asks | Why first |
 |---|---|---|
 | `trigger-positive` | Does the skill fire when it should? | Most problems are in the trigger, not the instructions |
-| `trigger-negative` | Does it stay silent when it should? | Prevents a 37-skill collection from firing everything at once |
+| `trigger-negative` | Does it stay silent when it should? | Prevents unrelated skills from firing together |
 | `behaviour` | Does it produce the right result once loaded? | Most expensive; add where the stakes justify it |
 
-Start at 10–20 cases drawn from **real usage**, not imagined usage. Negative cases are not
+Ship at least six meaningful cases; grow toward 10–20 where real failures and risks justify them.
+Draw prompts from **real usage**, not the skill's own vocabulary. Negative cases are not
 optional: a skill that fires on everything is as broken as one that never fires.
 
 A negative case must say what should happen *instead*: either `expect_skill` naming the
@@ -171,6 +171,12 @@ Write what the model does not already know. Direct commands over background.
 - Give the reason for a rule; a rule whose reason is unstated gets discarded under pressure.
 - Do not overfit to one project's shape.
 
+For branch-heavy workflows, put each pointer beside the decision that needs it; do not send the
+agent through every reference first. State the job's inputs, permitted changes, evidence and done
+condition. One controller owns retry counts and deadlines: a called specialist returns findings
+instead of starting a second "until green" programme. Remove duplicate instructions when the
+canonical rule is already linked. See the [September authoring review](references/skills-review-2026-09.md).
+
 ## S7 — Progressive disclosure, with navigation
 
 Three layers, loaded on demand: frontmatter always → `SKILL.md` when triggered →
@@ -218,12 +224,14 @@ This repository claims Claude Code, Cursor, Codex, Gemini CLI and Windsurf suppo
 depending on `scripts/`, `assets/` or `templates/` does **not** work in an `.mdc`-only
 client, which receives the skill body alone.
 
-Either verify the claim or state the degradation in the skill. `typo3-upgrade-run` states it:
-an `.mdc`-only client cannot run the harness and must fall back, at a lower evidence bar.
+Either verify the claim or state the limitation. An `.mdc`-only client cannot execute the complete
+upgrade harness: obtain the full skill bundle and required runtime, or report the unavailable
+capability. A reduced client is not permission to lower the evidence bar or claim closure.
 
 ## S13 — A rule enforced by nothing is not a rule
 
-Every rule in this file is checked by a script, or it does not belong here.
+Give each rule a named check: a deterministic validator where possible, otherwise an explicit
+behavior trial. Do not describe unexecuted assertions as enforced behavior.
 
 This is not a stylistic preference. S6 and S7 were prose for several commits, and were
 violated inside that window — four references passed 300 lines with no navigation, and
@@ -234,9 +242,10 @@ the description of the skill used as its own example.
 ./scripts/check.sh
 ```
 
-One command, seven gates, correct thresholds. The thresholds are **ratchets** set at measured
-values, not aspirations: a third colliding pair or a reviewed trigger case that stops passing
-fails the build rather than drifting quietly.
+One command, the current gates, correct thresholds. The thresholds are **ratchets** set at measured
+values, not aspirations: an unrecorded colliding pair or a reviewed/proposed trigger regression
+fails the build rather than drifting quietly. Deterministic scripts cannot enforce every semantic
+instruction: name those limits and use isolated behavior trials for the remaining claims.
 
 Before trusting the gate, confirm it can go red. Weaken a description and watch `run_evals`
 fail; add "is recommended" to a skill and watch `validate_structure` fail. A gate that has
@@ -262,8 +271,9 @@ python3 scripts/audit_skills.py                      # frontmatter, size, naming
 python3 scripts/validate_structure.py                # S6 directives, S7 disclosure + TOCs
 python3 scripts/validate_evals.py --min-cases 6      # eval structure, coverage, circularity
 python3 scripts/run_evals.py --grader lexical --fail-under 1.0 --fail-under-proposed 1.0
-python3 scripts/trigger_collisions.py --threshold 0.13 --fail-over 2
+python3 scripts/trigger_collisions.py --threshold 0.13 --allowlist catalog/trigger-collision-allowlist.json --fail-over 0
 python3 scripts/check_attribution_guardrails.py      # vendored skills unmodified
+node scripts/skill_doctor.mjs                        # pinned advisory lint; no automatic fixes
 ```
 
 S6 and S7 were prose-only until a sweep found four owned references over 300 lines with no
@@ -275,17 +285,16 @@ Their evals, where we add them, live in the overlay and are marked as ours.
 
 ## Honest status
 
-```
-28 owned skills (14 vendored, exempt)
-suites present    : 26/26
-human-reviewed    :  4/26   (49/185 cases)
-awaiting signature: 22/26   (136/185 cases — not coverage until signed)
-scaffold remaining: 0      (all 132 generated cases replaced)
-lexical grader    : reviewed 100%  ·  proposed 100%  ·  1 xfail
-```
+Use `python3 scripts/validate_evals.py --min-cases 6` for live suite/status counts and
+`python3 scripts/run_evals.py --grader lexical` for trigger results. The generated catalog is the
+inventory; do not copy stale counts into prose. Only a person's signature counts as reviewed.
+Skill Doctor findings are triaged against this repository's schema, real paths and immutable
+vendor boundaries. Mapping schema mismatches is not permission to hide unresolved owned findings.
 
-`scripts/run_evals.py` grades every trigger case; `evals-baseline.json` pins the numbers and
-`--fail-under` gates CI.
+`scripts/run_evals.py` grades trigger cases; `--fail-under` and `--fail-under-proposed` gate CI.
+Behavior assertions need actual isolated model trials; a file containing them is not a passed run.
+
+### Historical lessons (not current coverage counts)
 
 Reviewed cases went 60% → 100% in one session, and the useful part is *what* moved it.
 
@@ -302,7 +311,7 @@ elevation, loop protocol — and not the user's: update, looks, same, project. `
 lacked "automatically", "fix", "deprecated". Both are S2 failures committed while writing
 the rule against them.
 
-**Draft cases now score *below* reviewed ones — 88% against 100%.** Earlier they scored
+**In that audit, draft cases scored below reviewed ones — 88% against 100%.** Earlier they scored
 higher, which was the tell: drafts are derived from the descriptions, so they test a
 description against its own vocabulary. As the real cases got fixed, the circular ones fell
 behind. That inversion is S5 measured rather than asserted.

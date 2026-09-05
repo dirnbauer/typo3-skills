@@ -20,9 +20,13 @@ Two real failure modes that no static gate catches:
 
 ### 1. StandaloneView (functional, no browser)
 
-For ViewHelper-level correctness, render the template through `StandaloneView` in a
-functional test (see `functional-testing.md`). This catches namespace registration,
-argument, and output errors **without** a browser and runs in CI.
+For ViewHelper-level correctness, render the template in a functional test (see
+`functional-testing.md`). This catches namespace registration, argument, and output
+errors **without** a browser and runs in CI.
+
+`StandaloneView` is the v13 way and is **gone on 14.3 and main** — resolve the view
+through `ViewFactoryInterface` / `ViewFactoryData` instead, which exist on 13.4,
+14.3 and main and therefore survive the whole CI matrix.
 
 Limitation: it does **not** reproduce the `ModuleTemplate` / backend doc-header
 context, asset inclusion (CSS/JS), or browser layout — so it cannot catch the
@@ -87,6 +91,54 @@ vendor/bin/typo3 extension:setup
 
 Take the verification screenshot at **≥1440px** viewport (narrow viewports hide
 sidebar/column overflow). The screenshot doubles as documentation evidence.
+
+## Ad-hoc: render a template from the CLI, no test and no page tree
+
+To settle a "does this attribute actually reach the markup" question without
+writing a test, boot TYPO3 in a CLI script and hand the source straight to a
+rendering context. This runs against the project's own `vendor/`, so it answers
+for the version that is actually installed:
+
+```php
+<?php
+// usage: php render.php <template-file> [<section>]
+$templateFile = $argv[1] ?? throw new InvalidArgumentException('template file expected');
+$section      = $argv[2] ?? null;
+
+$classLoader = require '/var/www/html/vendor/autoload.php';
+SystemEnvironmentBuilder::run(0, SystemEnvironmentBuilder::REQUESTTYPE_FE);
+$container = Bootstrap::init($classLoader);
+
+$serverRequest = (new ServerRequest('https://example.local/', 'POST'))
+    // int bitmask, NOT ApplicationType::FRONTEND - see functional-testing.md
+    ->withAttribute('applicationType', SystemEnvironmentBuilder::REQUESTTYPE_FE)
+    ->withAttribute('extbase', new ExtbaseRequestParameters());
+$GLOBALS['TYPO3_REQUEST'] = $serverRequest;
+
+$context = $container->get(RenderingContextFactory::class)->create();
+$context->setRequest(new ExtbaseRequest($serverRequest));
+$context->getTemplatePaths()->setTemplateSource(file_get_contents($templateFile));
+
+$view = new TemplateView($context);
+echo $section === null
+    ? $view->render()
+    : $view->renderSection($section, ['someVariable' => 'value'], true);
+```
+
+Three things cost time when this is written from scratch:
+
+- **`RenderingContextFactory::create()` reads `$GLOBALS['TYPO3_REQUEST']` itself**
+  (through `ViewHelperResolver`), so the global must be set *before* the factory
+  call — not only on the context. A wrong or missing `applicationType` throws
+  `RuntimeException` 1606222812 from inside `create()`, before any view helper
+  runs, so a `try/catch` around `render()` never sees it.
+- **A template starting with `<f:layout>` fails** with *The Fluid template files ""
+  could not be loaded* unless the layout paths are set. Pass the section name as
+  the second argument above and the script calls `renderSection()` instead.
+- **`f:form` still needs a real frontend.** It builds its action URI through
+  routing, which needs a site and a page tree. Extract the field view helpers into
+  a snippet and render those; everything except the `<form>` element is reachable
+  this way.
 
 ## Checklist before declaring a backend module "done"
 

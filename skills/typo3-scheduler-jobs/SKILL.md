@@ -1,5 +1,7 @@
 ---
 name: typo3-scheduler-jobs
+metadata:
+  skill_type: preference
 description: "Audits, plans, configures, groups, and verifies TYPO3 14.3 Scheduler tasks for a specific installation, including Core cache/table/privacy/FAL maintenance, LinkValidator, Reports, Form and Workspace cleanup, extension-provided commands, and EXT:solr Index Queue workers per Site root. Use for missing or overdue cron jobs, Scheduler backend setup, task groups, safe execution intervals, deciding which recurring jobs an installed TYPO3 project needs, or repairing tx_scheduler_task rows with an empty tasktype after a v14 update to JSON storage."
 ---
 
@@ -57,7 +59,7 @@ Creating recurring task records is separate from installing the infrastructure r
 - A DDEV project is not an exception. Development convenience does not imply permission for
   unattended execution.
 
-## Audit the selected installation
+## Workflow: audit the selected installation
 
 Run the bundled read-only audit from the Composer project root:
 

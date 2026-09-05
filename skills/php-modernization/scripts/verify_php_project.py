@@ -63,9 +63,16 @@ RECTOR_CONFIG_CANDIDATES: tuple[str, ...] = (
     "Build/rector.php",
     "Build/rector/rector.php",
 )
+# Root first, then Build/ — the same list and the same order as PM-04/PM-05/
+# PM-06/PM-24/PM-30 in checkpoints.yaml. A TYPO3 extension that keeps its build
+# tooling under Build/ carries the config at Build/.php-cs-fixer.php; with a
+# root-only list this verifier reported PM-04 as failed for a project that has
+# one, while the YAML checkpoint passed.
 PHP_CS_FIXER_CANDIDATES: tuple[str, ...] = (
     ".php-cs-fixer.php",
     ".php-cs-fixer.dist.php",
+    "Build/.php-cs-fixer.php",
+    "Build/.php-cs-fixer.dist.php",
 )
 PHPSTAN_BASELINE_CANDIDATES: tuple[str, ...] = (
     "phpstan-baseline.neon",
@@ -79,14 +86,19 @@ PHPSTAN_LEVEL_RE = re.compile(r"^[\t ]*level:[\t ]*(?P<level>\S+)", re.MULTILINE
 # follows the keyword, regardless of inline (``includes: ['a', 'b']``) or
 # indented dash form (``includes:\n    - a\n    - b``).
 PHPSTAN_INCLUDES_BLOCK_RE = re.compile(
-    # Match the includes block. The block ends at the next top-level key
-    # (a non-whitespace identifier followed by ":"), NOT at the next
-    # non-whitespace character — that earlier rule incorrectly terminated on
-    # unindented dash-list items like `- shared/level.neon` which are valid
-    # NEON list members at any indent level.
-    r"^[\t ]*includes:[\t ]*(?P<rest>.*?)(?=^[A-Za-z_][\w.-]*\s*:|\Z)",
+    # Capture everything after the keyword; the block is then truncated at
+    # the next top-level key with PHPSTAN_TOP_LEVEL_KEY_RE in a second
+    # step (a single anchored-alternation lookahead would do it in one
+    # regex, but its operator precedence is hard to read).
+    r"^[\t ]*includes:[\t ]*(?P<rest>.*)",
     re.MULTILINE | re.DOTALL,
 )
+# A top-level key (a non-whitespace identifier followed by ":") terminates
+# the includes block. The next non-whitespace character must NOT — that
+# earlier rule incorrectly terminated on unindented dash-list items like
+# `- shared/level.neon` which are valid NEON list members at any indent
+# level.
+PHPSTAN_TOP_LEVEL_KEY_RE = re.compile(r"^[A-Za-z_][\w.-]*\s*:", re.MULTILINE)
 PHPSTAN_INCLUDES_ITEM_RE = re.compile(
     r"""
     (?:^|[\s,\[])             # boundary: line start, whitespace, comma, or [
@@ -243,6 +255,9 @@ def parse_phpstan_includes(text: str) -> list[str]:
     if not block_match:
         return []
     block = block_match.group("rest")
+    key_match = PHPSTAN_TOP_LEVEL_KEY_RE.search(block)
+    if key_match:
+        block = block[: key_match.start()]
     paths: list[str] = []
     seen: set[str] = set()
 
@@ -1127,16 +1142,16 @@ def run_composer_audit(root: Path) -> ToolRun | None:
 # ---------------------------------------------------------------------------
 
 
+# Derived from the candidate tuples rather than repeated as literals: a config
+# path that the checks look for but the signature does not watch is a stale
+# cache hit after that file changes (Build/.php-cs-fixer.php and
+# Build/rector.php were exactly that).
 CACHE_INVALIDATION_FILES: tuple[str, ...] = (
     "composer.json",
     "composer.lock",
-    "phpstan.neon",
-    "phpstan.neon.dist",
-    "Build/phpstan.neon",
-    "Build/phpstan/phpstan.neon",
-    "rector.php",
-    ".php-cs-fixer.php",
-    ".php-cs-fixer.dist.php",
+    *PHPSTAN_CONFIG_CANDIDATES,
+    *RECTOR_CONFIG_CANDIDATES,
+    *PHP_CS_FIXER_CANDIDATES,
 )
 
 

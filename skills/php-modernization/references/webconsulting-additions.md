@@ -34,3 +34,12 @@ like a code problem rather than a configuration one — which is why it costs so
 Never lower an existing stricter level. No new suppressions or baseline entries for new or touched
 code; the baseline must **shrink** across an upgrade, and gate A5 of `typo3-upgrade-run` checks that
 it did.
+
+## Credits & Attribution
+
+This skill is based on the excellent work by **Netresearch DTT GmbH**.
+Original repository: https://github.com/netresearch/php-modernization-skill
+
+Special thanks to Netresearch for publishing and maintaining these skills.
+Copyright (c) Netresearch DTT GmbH; original licence files are preserved.
+Adapted by webconsulting.at for this skill collection through this overlay only; the upstream skill is unmodified.

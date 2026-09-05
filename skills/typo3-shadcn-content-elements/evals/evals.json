@@ -51,6 +51,16 @@
       "prompt": "Apply the webconsulting.at brand typography and teal palette to this page.",
       "expect_skill": "webconsulting-branding",
       "note": "Both are shadcn-adjacent; the brand system is a different target."
+    },
+    {
+      "id": "bounded-theme-overhaul",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Our shadcn content blocks look mostly correct now, but a tiny spacing difference remains after two identical repair attempts. Keep rechecking the entire website until it disappears.",
+      "assertions": [
+        "Stops repeated non-progress and identifies the unresolved cause instead of unbounded full-site reruns.",
+        "Uses targeted repair checks between the required initial and final inventory passes."
+      ]
     }
   ]
 }

@@ -144,6 +144,44 @@ for V in '^12.4' '^13.4' '^14.3'; do
 done
 ```
 
+### Type-narrowing and core-stub differences: the v13 leg fails on code the v14 leg accepts
+
+Version differences are not limited to class existence — the **resolved PHPStan
+version and the core stubs differ per dependency set**, so identical code can
+type-check on the `^14.x` leg and fail only on `^13.4`:
+
+- **First-class-callable filters are narrowed inconsistently.**
+  `array_filter(array_keys($fieldArray), \is_string(...))` is inferred as
+  `list<string>` by the PHPStan the v14 set resolves, but stays `array` on the
+  v13 set — so a downstream `implode(', ', $columns)` fails with *"Parameter #2
+  \$array of function implode expects array<string>, array given"* **only in the
+  v13 matrix legs**. An explicit loop narrows identically everywhere:
+
+  ```php
+  $columns = [];
+  foreach (array_keys($fieldArray) as $column) {
+      if (\is_string($column)) {
+          $columns[] = $column;
+      }
+  }
+  // list<string> on every PHPStan version in the matrix
+  ```
+
+- **Loosely-typed core properties differ between version stubs.**
+  `DataHandler::$errorLog` is plain `array` in the v13 core, so string
+  operations over it (`implode(', ', $dataHandler->errorLog)`) fail the v13
+  legs. In assertions, prefer forms that need no string coercion at all:
+
+  ```php
+  $errorLog = $dataHandler->errorLog;
+  self::assertSame([], $errorLog); // prints the offending entries itself on failure
+  ```
+
+Diagnostic shortcut: when **only the `^13.4` PHPStan legs are red** while
+`^14.x` and the local run are green, suspect a narrowing/stub difference before
+suspecting the code — and reproduce with the `--with "typo3/cms-core:^13.4"`
+loop above rather than pushing blind fixes.
+
 ### Inline `@phpstan-ignore` is rejected — use neon `ignoreErrors`
 
 `ergebnis/phpstan-rules` (in the shared `typo3-ci-workflows` config) **bans inline

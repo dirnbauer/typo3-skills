@@ -1,0 +1,175 @@
+# Checkpoints for typo3-ckeditor5 skill
+# Validates CKEditor 5 plugin structure and TYPO3 integration
+#
+# CONSTRAINTS EVERY `type: command` PATTERN BELOW MUST OBEY — read before editing.
+# They are not style; each one produced a checkpoint that could not pass at all,
+# or that fired against a project this skill does not apply to.
+#
+# 1. Prune the dependency trees. A bare `find .` reaches .Build/vendor/, vendor/
+#    and node_modules/ — all gitignored, none of them this project's code. An
+#    unpruned precondition matched .Build/vendor/typo3/cms-core/Configuration/RTE/
+#    SysNews.yaml in an extension with no RTE code at all, so all 14 checks ran and
+#    every failure was noise. Hence the `'(' -name .Build -o -name vendor -o -name
+#    node_modules ')' -prune -o` prefix on every find, with the explicit `-print`
+#    the `-o` form needs (without it the pruned directories print themselves).
+#    Quote the parentheses: bare `(` is shell syntax.
+# 2. No `find -exec`. The runner's allowlist rejects the substring `exec ` as a
+#    dangerous pattern, so `-exec grep -l X {} +` never runs — the check reports
+#    "Command rejected" on every project, forever. Use `-print | xargs grep -l X`.
+# 3. No `||`, `&&`, `;`, backticks or command substitution — the runner rejects
+#    them outright. That also means a trailing `|| true` is not a way to make a
+#    check advisory; it makes the check permanently fail. Plain pipes are fine.
+# 4. Never write the two characters `$(` — the allowlist reads them as command
+#    substitution even inside a quoted grep pattern. Spell a literal `$(` for grep
+#    as the bracket expression `[$][(]`.
+#
+# Three spellings appear throughout because they carry the file's whole file-type
+# vocabulary in one glob each: `*.y*ml` covers .yaml and .yml, `[Cc]keditor`
+# covers both directory spellings the precondition accepts, and `*.[jt]s` covers
+# .js and .ts so a TypeScript-authored plugin is scanned by the same content
+# checks that gate a .js one — CK-07 accepted .ts while CK-08/09/12/13 read only
+# .js, so a .ts plugin passed the existence check with its jQuery use unscanned.
+#
+# In `-path`, `*` matches `/` as well (find(1): the metacharacters do not treat
+# `/` or `.` specially), so `*/JavaScript/[Cc]keditor*.[jt]s` reaches both
+# `JavaScript/Ckeditor/bundle.js` and `JavaScript/CkeditorFoo.js`. No trailing
+# `/*` variant is needed and adding one would drop the flat spelling.
+
+version: 1
+skill_id: typo3-ckeditor5
+
+preconditions:
+  - type: file_exists
+    target: ext_emconf.php
+  # Both branches name exactly the paths the checks below inspect. A wider
+  # precondition activates all 14 checks against a project none of them apply
+  # to: `*/RTE/*.y*ml` let `Documentation/RTE/example.yaml` in, and a bare
+  # `*/JavaScript/[Cc]keditor*` let any file under such a directory in — a
+  # README, an image. Measured on both: 14 checks ran, 8 failed, and not one
+  # of the failures was about the project.
+  - type: command
+    pattern: 'find . \( -name .Build -o -name vendor -o -name node_modules \) -prune -o -type f \( -path "*/JavaScript/[Cc]keditor*.[jt]s" -o -path "*/Configuration/RTE/*.y*ml" \) -print | grep -q .'
+
+mechanical:
+  # === PLUGIN REGISTRATION ===
+  - id: CK-01
+    type: file_exists
+    target: ext_localconf.php
+    severity: error
+    desc: "ext_localconf.php must exist for plugin registration"
+
+  - id: CK-02
+    type: contains
+    target: ext_localconf.php
+    pattern: "RTE"
+    severity: warning
+    desc: "ext_localconf.php should register RTE presets"
+
+  - id: CK-03
+    type: contains
+    target: ext_localconf.php
+    pattern: "ckeditor5"
+    severity: warning
+    desc: "ext_localconf.php should register CKEditor 5 plugins"
+
+  # === RTE YAML CONFIGURATION ===
+  - id: CK-04
+    type: command
+    pattern: "find . '(' -name .Build -o -name vendor -o -name node_modules ')' -prune -o -type f -path '*/Configuration/RTE/*.y*ml' -print | head -1 | grep -q ."
+    severity: warning
+    desc: "RTE YAML preset should exist in Configuration/RTE/"
+
+  - id: CK-05
+    type: command
+    pattern: "find . '(' -name .Build -o -name vendor -o -name node_modules ')' -prune -o -type f -path '*/Configuration/RTE/*.y*ml' -print | xargs grep -l 'editor:' | grep -q ."
+    severity: warning
+    desc: "RTE YAML preset should have editor configuration block"
+
+  - id: CK-06
+    type: command
+    pattern: "find . '(' -name .Build -o -name vendor -o -name node_modules ')' -prune -o -type f -path '*/Configuration/RTE/*.y*ml' -print | xargs grep -l 'toolbar:' | grep -q ."
+    severity: info
+    desc: "RTE YAML preset should configure toolbar items"
+
+  # === PLUGIN JS FILES ===
+  - id: CK-07
+    type: command
+    pattern: "find . '(' -name .Build -o -name vendor -o -name node_modules ')' -prune -o -type f -path '*/JavaScript/[Cc]keditor*.[jt]s' -print | head -1 | grep -q ."
+    severity: warning
+    desc: "CKEditor plugin JavaScript files should exist"
+
+  # === NO JQUERY IN CKEDITOR CODE ===
+  - id: CK-08
+    type: command
+    pattern: "! find . '(' -name .Build -o -name vendor -o -name node_modules ')' -prune -o -type f -path '*/JavaScript/[Cc]keditor*.[jt]s' -print | xargs grep -li 'jquery' | grep -q ."
+    severity: error
+    desc: "CKEditor 5 plugins must not import jQuery"
+
+  - id: CK-09
+    type: command
+    pattern: "! find . '(' -name .Build -o -name vendor -o -name node_modules ')' -prune -o -type f -path '*/JavaScript/[Cc]keditor*.[jt]s' -print | xargs grep -lE '([$]|jQuery)[(]' | grep -q ."
+    severity: warning
+    desc: "CKEditor 5 plugins should use native DOM APIs, not jQuery selectors"
+
+  # === LEGACY PATTERNS ===
+  - id: CK-10
+    type: command
+    pattern: "! find . '(' -name .Build -o -name vendor -o -name node_modules ')' -prune -o -type f -path '*/Configuration/RTE/*.y*ml' -print | xargs grep -l 'CKEditor4' | grep -q ."
+    severity: warning
+    desc: "RTE config should not reference CKEditor 4 patterns"
+
+  # === PROCESSING SECTION IN RTE YAML ===
+  - id: CK-11
+    type: command
+    pattern: "find . '(' -name .Build -o -name vendor -o -name node_modules ')' -prune -o -type f -path '*/Configuration/RTE/*.y*ml' -print | xargs grep -l 'processing:' | grep -q ."
+    severity: info
+    desc: "RTE YAML preset should have processing section (allowTags, allowAttributes)"
+
+  # === NO $.DEFERRED IN CKEditor CODE ===
+  - id: CK-12
+    type: command
+    pattern: "! find . '(' -name .Build -o -name vendor -o -name node_modules ')' -prune -o -type f -path '*/JavaScript/[Cc]keditor*.[jt]s' -print | xargs grep -l 'Deferred' | grep -q ."
+    severity: warning
+    desc: "CKEditor 5 plugins should use native Promise, not jQuery $.Deferred"
+
+  # === NO FETCH WITH JQUERY ===
+  - id: CK-13
+    type: command
+    pattern: |
+      ! find . '(' -name .Build -o -name vendor -o -name node_modules ')' -prune \
+          -o -type f -path '*/JavaScript/[Cc]keditor*.[jt]s' -print \
+        | xargs grep -lE '([$]|jQuery)[.](get|ajax|post)' | grep -q .
+    severity: warning
+    desc: "CKEditor 5 plugins should use native fetch(), not jQuery AJAX methods"
+
+  # === PLUGIN HAS SEPARATE EDITING AND UI ===
+  - id: CK-14
+    type: command
+    pattern: "find . '(' -name .Build -o -name vendor -o -name node_modules ')' -prune -o -type f -path '*/JavaScript/[Cc]keditor*[Ee]diting*' -print | head -1 | grep -q ."
+    severity: info
+    desc: "CKEditor 5 plugins should separate Editing and UI concerns into separate files"
+
+llm_reviews:
+  - id: CK-20
+    domain: ckeditor5
+    prompt: |
+      Review the CKEditor 5 TYPO3 integration for correctness:
+      1. Is the plugin registered in ext_localconf.php with correct entryPoint path?
+      2. Does the RTE YAML preset follow the editor.config structure?
+      3. Does the plugin follow class-based architecture (separate Editing + UI plugins)?
+      4. Are schema, converters, and commands properly separated?
+      5. Do AJAX response handlers use correct backend property names?
+    severity: warning
+    desc: "CKEditor 5 plugin structure and registration"
+
+  - id: CK-21
+    domain: ckeditor5
+    prompt: |
+      Review the CKEditor 5 plugin for modern patterns:
+      1. Are native DOM APIs used instead of jQuery?
+      2. Is the plugin compatible with TYPO3 v12+ CKEditor 5 API?
+      3. Are toolbar items properly named and grouped in YAML?
+      4. Is content processing (upcast/downcast converters) correctly implemented?
+      5. Does the plugin avoid deprecated CKEditor 4 patterns?
+    severity: info
+    desc: "CKEditor 5 modern pattern adherence"

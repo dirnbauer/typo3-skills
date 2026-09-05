@@ -22,6 +22,8 @@
         "sealed_at": { "type": ["string", "null"], "format": "date-time" },
         "size_profile": { "enum": ["small", "large", "huge", null] },
         "size_evidence_ref": { "type": ["string", "null"] },
+        "forecast_ref": { "type": "string" },
+        "forecast_hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
         "migration_cutoff_at": { "type": ["string", "null"], "format": "date-time" },
         "deadline_at": { "type": ["string", "null"], "format": "date-time" },
         "max_hours": { "type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 14 },
@@ -73,7 +75,17 @@
         "phase": { "type": "string", "pattern": "^P[0-9]{2}$" },
         "status": { "enum": ["open", "closed", "blocked"] },
         "closed_at": { "type": ["string", "null"], "format": "date-time" },
-        "closure_ref": { "type": ["string", "null"] }
+        "closure_ref": { "type": ["string", "null"] },
+        "verification": {
+          "type": "object", "additionalProperties": false,
+          "required": ["at", "evidence_ref", "epoch_hash", "manifest_hash"],
+          "properties": {
+            "at": { "type": "string", "format": "date-time" },
+            "evidence_ref": { "type": "string" },
+            "epoch_hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+            "manifest_hash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+          }
+        }
       }
     },
     "contract_b": {
@@ -178,7 +190,9 @@
               "completed_at": { "type": ["string", "null"], "format": "date-time" },
               "outcome": { "type": ["string", "null"] },
               "evidence": { "type": ["string", "null"] },
+              "evidence_sha256": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
               "evidence_loop": { "type": ["string", "null"], "pattern": "^[0-9]{3}$" },
+              "applicability_only": { "type": "boolean" },
               "history": { "type": "array", "items": { "type": "object" } }
             }
           }

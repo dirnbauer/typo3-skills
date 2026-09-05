@@ -1,33 +1,29 @@
 ---
-name: "typo3-core-contributions"
-description: "Use when analyzing TYPO3 Forge issues, submitting patches to Gerrit, contributing core bug fixes, documentation contributions, cherry-pick workflows, or CI debugging on Gerrit. Core `main` branch is v15-in-progress (PHP 8.4/8.5); v14.3 LTS bugfixes land on branch `14.3` and are backported via cherry-pick. Also triggers on: forge.typo3.org, core patch, Gerrit review, TYPO3 Core contribution."
+name: typo3-core-contributions
+description: "Use when contributing to TYPO3 Core — Forge issues, Gerrit patches, cherry-picks, CI debugging — or when working on **git.typo3.org**, the t3o site GitLab (`services/t3o-sites/**`: extensions.typo3.org/ter, common/t3olayout, anubis): merge requests, issues, work items, labels, pipelines. Core `main` is v15-in-progress (PHP 8.4/8.5); v14.3 LTS fixes land on branch `14.3` via cherry-pick. Triggers on: forge.typo3.org, review.typo3.org, git.typo3.org, t3o-sites, core patch, Gerrit review, TYPO3 Core contribution, TER website, t3olayout."
 ---
 
 # TYPO3 Core Contributions
 
-Guide for contributing to TYPO3 Core: Forge issues, Gerrit patches, CI debugging, and review workflows.
+## When to Use — route by host
 
-## When to Use
-
-- Forge issue analysis or creation (`forge.typo3.org/issues/*`)
-- Patch submission, CI debugging, Gerrit review workflow
-- Commit message formatting, cherry-picks, rebasing
+`review.typo3.org` (Gerrit), `forge.typo3.org` (Redmine), `git.typo3.org/typo3/CI/cms` (CI logs) are **Core**: Forge issues, patches, review, commit format, cherry-picks, rebasing — everything below. `git.typo3.org/services/t3o-sites/**` is plain GitLab for the t3o **sites**: no Gerrit, `refs/for/main` means nothing. Read `references/t3o-gitlab-workflow.md` first.
 
 ## Prerequisites
 
-Run `${CLAUDE_SKILL_DIR}/scripts/verify-prerequisites.sh` to check: TYPO3.org account, Gerrit SSH (`ssh -p 29418 <user>@review.typo3.org`), Git email matching Gerrit. See `references/account-setup.md`.
+Run `${CLAUDE_SKILL_DIR}/scripts/verify-prerequisites.sh`: TYPO3.org account, Gerrit SSH (`ssh -p 29418 <user>@review.typo3.org`), Git email matching Gerrit.
 
 ## Workflow
 
-1. **Setup**: Account + environment (`${CLAUDE_SKILL_DIR}/scripts/setup-typo3-coredev.sh`, `references/ddev-setup-workflow.md`)
+1. **Setup**: `${CLAUDE_SKILL_DIR}/scripts/setup-typo3-coredev.sh`
 2. **Branch**: `git checkout -b feature/<issue>-description`
-3. **Analyze**: Understand root cause, reproduction steps, affected versions before coding
-4. **Develop**: Implement fix + tests, validate with typo3-conformance-skill
-5. **Commit**: Follow format below, include `Resolves: #<issue>` + `Releases:`
-6. **Push**: `git push origin HEAD:refs/for/main` (starts as WIP)
-7. **CI**: Wait for all jobs. Read actual GitLab logs at `git.typo3.org/typo3/CI/cms/-/jobs/<id>`. Fix ALL failures in one amend+push
-8. **Ready**: Mark ready via `git push origin HEAD:refs/for/main%ready` or Gerrit UI "Start Review"
-9. **Review**: Address feedback, amend commit, preserve Change-Id. Fetch reviewer's patchset first to preserve their message edits: `git fetch origin refs/changes/XX/NNNNN/N && git reset --soft FETCH_HEAD`
+3. **Analyze**: root cause, reproduction, affected versions first
+4. **Develop**: fix + tests, validate with typo3-conformance-skill. Prove each test fails without the fix — `references/proving-a-test.md`
+5. **Commit**: format below, `Resolves: #<issue>` + `Releases:`
+6. **Push**: `git push origin HEAD:refs/for/main%wip` — a plain push is **not** WIP; reviewers vote and amending outdates their votes
+7. **CI**: wait for all jobs, read the actual logs at `git.typo3.org/typo3/CI/cms/-/jobs/<id>`, fix ALL failures in one amend+push
+8. **Ready**: `git push origin HEAD:refs/for/main%ready` or Gerrit UI "Start Review"
+9. **Review**: amend, preserve Change-Id. Fetch the reviewer's patchset first: `git fetch origin refs/changes/XX/NNNNN/N && git reset --soft FETCH_HEAD`
 10. **Update**: `git commit --amend && git push origin HEAD:refs/for/main`
 
 ## Commit Format
@@ -41,32 +37,29 @@ Resolves: #12345
 Releases: main, 13.4, 12.4
 ```
 
-**Types**: `[BUGFIX]`, `[FEATURE]` (main only), `[TASK]`, `[DOCS]`, `[SECURITY]`
-**Breaking**: `[!!!][TYPE]` prefix, `Releases: main` only
-**Required**: Every commit MUST have `Resolves:` (not just `Related:`)
+`[BUGFIX]` `[FEATURE]` (main only) `[TASK]` `[DOCS]` `[SECURITY]`; breaking: `[!!!]`, `Releases: main` only. Every commit MUST carry `Resolves:`, not `Related:`.
 
 ## CI Debugging
 
-Read ALL failing job logs (never guess). Common jobs: `cgl pre-merge` (code style), `phpstan` (static analysis), `unit`/`functional` (tests). Fix all in one patchset. Local checks:
+Read ALL failing job logs, never guess; fix everything in one patchset. Locally:
 
 ```bash
 ./Build/Scripts/runTests.sh -s unit && ./Build/Scripts/runTests.sh -s functional
-./Build/Scripts/cglFixMyCommit.sh
-./Build/Scripts/runTests.sh -s phpstan
+./Build/Scripts/cglFixMyCommit.sh && ./Build/Scripts/runTests.sh -s phpstan
 ```
 
 ## Key Operations
 
 | Task | Command |
 |------|---------|
-| Push to Gerrit | `git push origin HEAD:refs/for/main` |
+| Push to Gerrit | `git push origin HEAD:refs/for/main%wip` |
 | Mark ready | `git push origin HEAD:refs/for/main%ready` |
-| Set WIP | `git push origin HEAD:refs/for/main%wip` |
 | Rebase | `git fetch origin && git rebase origin/main` |
 | Cherry-pick patch | `git fetch origin refs/changes/XX/NNNNN/N && git cherry-pick FETCH_HEAD` |
 | Install hook | `cp Build/git-hooks/commit-msg .git/hooks/ && chmod +x .git/hooks/commit-msg` |
 | Fix email mismatch | `GIT_COMMITTER_EMAIL="registered@email" git commit --amend --no-edit` |
 | Forge API | `${CLAUDE_SKILL_DIR}/scripts/create-forge-issue.sh`, `references/forge-api.md` |
+| t3o GitLab | `python3 ${CLAUDE_SKILL_DIR}/scripts/t3o-gitlab.py access\|issue\|mr\|link\|probe` |
 
 ## References
 
@@ -79,19 +72,7 @@ Read ALL failing job logs (never guess). Common jobs: `cgl pre-merge` (code styl
 | Modern patterns | `references/modern-typo3-patterns.md` |
 | DDEV setup | `references/ddev-setup-workflow.md` |
 | Forge API | `references/forge-api.md` |
+| t3o sites on git.typo3.org | `references/t3o-gitlab-workflow.md` |
 | Commit hook | `references/commit-msg-hook.md` |
+| Proving a test | `references/proving-a-test.md` |
 | Troubleshooting | `references/troubleshooting.md` |
-
----
-
-## Credits & Attribution
-
-This skill is based on the excellent work by
-**[Netresearch DTT GmbH](https://www.netresearch.de/)**.
-
-Original repository: https://github.com/netresearch/typo3-core-contributions-skill
-
-**Copyright (c) Netresearch DTT GmbH** — Methodology and best practices (MIT / CC-BY-SA-4.0)
-
-Special thanks to [Netresearch DTT GmbH](https://www.netresearch.de/) for their generous open-source contributions to the TYPO3 community, which helped shape this skill collection.
-Adapted by webconsulting.at for this skill collection

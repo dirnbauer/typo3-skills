@@ -1,16 +1,24 @@
 # RST Coding Guidelines
 
-Complete reference for TYPO3 documentation coding standards.
+Working summary of the TYPO3 documentation coding standards, plus the
+labelled Netresearch deltas. **The canonical source is the official manual —
+on conflict it wins; report the drift instead of enforcing a stale copy**
+(see `canonical-sources.md`):
 
-Based on: https://docs.typo3.org/m/typo3/docs-how-to-document/main/en-us/Advanced/CodingGuidelines.html
+- [CGL for ReST files](https://docs.typo3.org/m/typo3/docs-how-to-document/main/en-us/Reference/CodingGuidelines/Index.html) `[upstream]`
+- [Coding guidelines (with .editorconfig sample)](https://docs.typo3.org/m/typo3/docs-how-to-document/main/en-us/Advanced/CodingGuidelines.html) `[upstream]`
 
-## .editorconfig (Required)
+## .editorconfig `[NR policy]`
 
-Every `Documentation/` folder **must** contain an `.editorconfig` file to enforce consistent formatting:
+Upstream ships a sample `.editorconfig`; Netresearch makes it mandatory:
+every `Documentation/` folder **must** contain one to enforce consistent
+formatting:
 
 ```editorconfig
 # Documentation/.editorconfig
-root = true
+# root = false, as in upstream's sample: root = true here would stop the
+# upward lookup and shadow the project's own root .editorconfig.
+root = false
 
 [*]
 charset = utf-8
@@ -38,10 +46,12 @@ indent_size = 2
 - Prevents common issues: wrong indentation, trailing whitespace, mixed line endings
 - Auto-enforces TYPO3 documentation standards
 
-## Encoding
+## Encoding, Whitespace, Line Wrapping `[upstream]`
 
-- **UTF-8** encoding for all files
-- Include special characters directly (no escape sequences)
+UTF-8, spaces-not-tabs, no trailing whitespace, final newline, LF endings,
+wrap at 80 chars where possible:
+[CGL for ReST files](https://docs.typo3.org/m/typo3/docs-how-to-document/main/en-us/Reference/CodingGuidelines/Index.html)
+and [Coding guidelines](https://docs.typo3.org/m/typo3/docs-how-to-document/main/en-us/Advanced/CodingGuidelines.html).
 
 ## Indentation
 
@@ -49,8 +59,8 @@ indent_size = 2
 |------|-------|
 | Indentation style | **Spaces only** (never tabs) |
 | RST indentation size | **4 spaces** per level |
-| YAML indentation size | 2 spaces per level |
-| XLIFF indentation size | **2 spaces** per level (TYPO3 v14+, Important [#107971](https://docs.typo3.org/c/typo3/cms-core/main/en-us/Changelog/14.1/Important-107971-XLFFilesUseTwoSpaceIndentation.html)) |
+| YAML indentation size | 2 spaces per level `[NR policy]` (not stated on the upstream CGL pages) |
+| XLIFF indentation size | **2 spaces** per level (TYPO3 **core** changelog [#107971](https://docs.typo3.org/c/typo3/cms-core/main/en-us/Changelog/14.1/Important-107971-XLFFilesUseTwoSpaceIndentation.html) — not a docs-manual rule) |
 | RST code examples | 4 spaces indentation |
 
 **Critical:** Incorrect indentation causes rendering failures. RST is whitespace-sensitive. The file-type split above matches the `.editorconfig` block shown earlier: `[*]` (and `[*.rst]`) use 4 spaces, `[*.{yaml,yml}]` and `[*.xlf]` use 2.
@@ -66,37 +76,6 @@ indent_size = 2
     // Code block content also uses 4 spaces
     $example = 'value';
 ```
-
-## Line Length
-
-- Maximum **80 characters** per line
-- Shorter lines improve:
-  - Source code readability
-  - GitHub diff viewing
-  - Side-by-side editing
-
-**Breaking long lines:**
-
-```rst
-This is a long paragraph that needs to be broken into multiple
-lines to stay under the 80-character limit. Continue on the next
-line without extra indentation for paragraph text.
-
-.. confval:: some_very_long_configuration_name
-   :type: string
-   :default: some_default_value
-
-   Description wraps naturally when it exceeds the line limit.
-```
-
-## Whitespace
-
-| Rule | Requirement |
-|------|-------------|
-| Trailing whitespace | **Remove** from all line endings |
-| Blank lines | Use to separate sections and directives |
-| Final newline | **Required** at end of file |
-| Line endings | **LF** (Unix-style), not CRLF |
 
 ## Heading Hierarchy
 
@@ -114,7 +93,9 @@ Use consistent underlining characters per heading level:
 | 8 | `#` below | Rarely used |
 
 **Rules:**
-- Underline must be **exactly** the same length as heading text
+- Underline must be **exactly** the same length as heading text (`[NR policy]`
+  — upstream says "as long as the line but this is not enforced"; a mismatch
+  renders, but keep them equal)
 - Each file starts with level 1, regardless of document hierarchy
 - Use **sentence case** (not Title Case)
 
@@ -133,47 +114,18 @@ Sub-subsection heading
 ~~~~~~~~~~~~~~~~~~~~~~
 ```
 
-## Version Hints
+## Version Hints `[upstream]`
 
-Use standard TYPO3 directives for version information:
+`versionadded`/`versionchanged`/`deprecated` — see
+[Versions](https://docs.typo3.org/permalink/h2document:versions).
+Write the directive for the release you are building; `rst-syntax.md` covers the
+one case that is a defect, a number the project later skipped.
 
-```rst
-.. versionadded:: 12.0
-   This feature was added in TYPO3 12.0.
+## GUI and Keyboard References `[upstream]`
 
-.. versionchanged:: 13.0
-   The behavior was modified in TYPO3 13.0.
-
-.. deprecated:: 12.4
-   This feature is deprecated and will be removed in TYPO3 14.0.
-```
-
-## GUI and Keyboard References
-
-### Menu Paths
-
-Use `:guilabel:` with `>` separator:
-
-```rst
-Navigate to :guilabel:`Admin Tools > Settings > Extension Configuration`.
-```
-
-### Keyboard Shortcuts
-
-Use `:kbd:` role:
-
-```rst
-Press :kbd:`Ctrl+S` to save.
-Use :kbd:`Ctrl+Shift+P` to open the command palette.
-```
-
-### Button Labels
-
-Match exact GUI spelling:
-
-```rst
-Click :guilabel:`Save and close` to apply changes.
-```
+`:guilabel:` (menu paths with `>`) and `:kbd:` are documented upstream
+([Coding guidelines](https://docs.typo3.org/m/typo3/docs-how-to-document/main/en-us/Advanced/CodingGuidelines.html));
+note upstream's `:kbd:` idiom is one role per key, e.g. two `:kbd:` roles joined by `+` for Ctrl+S.
 
 ## Common Formatting Errors
 
@@ -219,7 +171,12 @@ Wrong: tab character after ..
 Correct: spaces only
 ```
 
-## No Email Addresses in Documentation
+## No Email Addresses in Documentation `[NR policy]`
+
+**This is a deliberate Netresearch policy, stricter than upstream.** The
+official guides.xml reference explicitly allows `mailto:` for
+`project-contact` (it is even the documented example). Netresearch forbids it
+anyway — do not present this rule as a TYPO3 standard.
 
 **NEVER** include email addresses (`mailto:` links or raw email addresses) in public documentation. This applies to:
 
@@ -237,7 +194,7 @@ Correct: spaces only
 1. ✅ `.editorconfig` exists in `Documentation/`
 2. ✅ All files use UTF-8 encoding
 3. ✅ Indentation uses 4 spaces (no tabs)
-4. ✅ Lines are under 80 characters
+4. ✅ Lines wrapped at 80 characters where possible
 5. ✅ No trailing whitespace
 6. ✅ Files end with a newline
 7. ✅ Line endings are LF (Unix-style)
@@ -264,5 +221,6 @@ Plug 'editorconfig/editorconfig-vim'
 
 ## References
 
-- **Coding Guidelines:** https://docs.typo3.org/m/typo3/docs-how-to-document/main/en-us/Advanced/CodingGuidelines.html
+- **CGL for ReST files (canonical):** https://docs.typo3.org/m/typo3/docs-how-to-document/main/en-us/Reference/CodingGuidelines/Index.html
+- **Coding Guidelines (with .editorconfig sample):** https://docs.typo3.org/m/typo3/docs-how-to-document/main/en-us/Advanced/CodingGuidelines.html
 - **EditorConfig:** https://editorconfig.org/

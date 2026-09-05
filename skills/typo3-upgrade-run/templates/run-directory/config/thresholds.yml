@@ -35,6 +35,20 @@ budgets:
   oscillation_abort_after: 1
   selftest_max_age_hours: 24
 
+# Contract A: agree these four category budgets at intake, before measuring final results.
+# Nulls intentionally fail the Lighthouse command: no measurement target means no pass.
+# Record local baseline/requirements and justification; do not copy production scores or
+# lower a budget after a failing run. Absolute local scores are not field performance.
+contract_a:
+  performance:
+    lighthouse_performance_mobile: null
+    lighthouse_performance_desktop: null
+    lighthouse_best_practices: null
+  accessibility:
+    lighthouse_accessibility: null
+  seo:
+    lighthouse_seo: null
+
 # Contract B targets. Every one is measured locally in DDEV, which is why every one
 # carries a caveat in references/quality-bars.md. Do not quote an absolute local score
 # without it.

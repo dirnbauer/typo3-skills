@@ -58,6 +58,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--threshold", type=float, default=0.18)
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--allowlist", type=Path, help="exact named overlaps with rationales and score ceilings")
     ap.add_argument("--fail-over", type=int, default=None,
                     help="exit 1 when more than N pairs exceed the threshold")
     args = ap.parse_args()
@@ -83,21 +84,43 @@ def main() -> int:
             if score >= args.threshold:
                 pairs.append({"a": a, "b": b, "overlap": round(score, 3), "shared": shared})
     pairs.sort(key=lambda p: -p["overlap"])
+    allowed = load_allowlist(args.allowlist) if args.allowlist else {}
+    for p in pairs:
+        entry = allowed.get(tuple(sorted((p['a'], p['b']))))
+        p['acknowledged'] = bool(entry and p['overlap'] <= entry['max_overlap'])
+        if entry:
+            p['reason'] = entry['reason']
+    unexpected = [p for p in pairs if not p['acknowledged']]
 
     if args.json:
-        print(json.dumps({"skills": len(corpus), "threshold": args.threshold, "pairs": pairs}, indent=2))
+        print(json.dumps({"skills": len(corpus), "threshold": args.threshold, "pairs": pairs, "unexpected": len(unexpected)}, indent=2))
     else:
         print(f"{len(corpus)} skills, {len(pairs)} pair(s) at or above overlap {args.threshold}\n")
         for p in pairs:
             print(f"  {p['overlap']:.3f}  {p['a']}  <->  {p['b']}")
             print(f"         shared: {', '.join(p['shared'])}")
+            if p['acknowledged']:
+                print(f"         recorded boundary: {p['reason']}")
         if not pairs:
             print("  no collisions")
 
-    if args.fail_over is not None and len(pairs) > args.fail_over:
-        print(f"\nFAIL: {len(pairs)} colliding pair(s) exceeds the allowed {args.fail_over}", file=sys.stderr)
+    if args.fail_over is not None and len(unexpected) > args.fail_over:
+        print(f"\nFAIL: {len(unexpected)} unacknowledged colliding pair(s) exceeds the allowed {args.fail_over}", file=sys.stderr)
         return 1
     return 0
+
+
+def load_allowlist(file: Path) -> dict:
+    entries = {}
+    for item in json.loads(file.read_text())['pairs']:
+        a, b = item.get('a', ''), item.get('b', '')
+        key = tuple(sorted((a, b)))
+        if (not all(re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*', n) for n in key)
+            or a == b or key in entries or not item.get('reason')
+            or not isinstance(item.get('max_overlap'), (int, float)) or not 0 < item['max_overlap'] < 1):
+            raise ValueError('Collision exceptions need a unique exact pair, rationale and bounded overlap ceiling')
+        entries[key] = item
+    return entries
 
 
 if __name__ == "__main__":

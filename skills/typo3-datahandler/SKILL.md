@@ -3,6 +3,7 @@ name: "typo3-datahandler"
 description: "Creates, updates, moves, localizes and deletes TYPO3 records programmatically from PHP - import scripts, CLI commands, data migrations - using DataHandler datamaps and cmdmaps. Use when writing hundreds of pages or records from JSON, CSV or another system and the parent references must stay intact, when the reference index goes stale after moving records, when imported records show up owned by nobody because the backend user context is wrong, when localizing an existing element into another language from code, or when extending record operations with hooks and PSR-14 events. Workspace-aware."
 compatibility: "TYPO3 14.x"
 metadata:
+  skill_type: preference
   version: "2.1.0"
   origin: "webconsulting"
 license: "MIT / CC-BY-SA-4.0"

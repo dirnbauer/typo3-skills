@@ -1,53 +1,53 @@
 # webconsulting additions — `typo3-vite`
 
-> **Overlay.** The vendored `SKILL.md` and its references are upstream Netresearch content, kept
-> byte-identical. This file is webconsulting's addition and changes nothing above it.
+Upstream Netresearch files stay byte-identical. This overlay names the project's upgrade choices.
 
-## Deviation: plain Vite without `praetorius/vite-asset-collector`
+## Existing integrations and security
 
-The upstream skill documents Vite integration through `praetorius/vite-asset-collector`, and that is
-a sound, well-maintained approach.
+Keep a working supported `praetorius/vite-asset-collector` integration, or a correct project-owned
+manifest loader. Neither adding nor removing the bridge is mandatory for an upgrade. Prove that
+manifest imports, CSS, fonts and images are present in served pages, including after cache warmup.
+External bundling replaces the removed Core asset optimizers; Vite itself is not a Core requirement.
 
-**`typo3-upgrade-run` deliberately deviates**: it requires the build to emit hashed entrypoints plus a
-manifest, referenced **directly** from Fluid layouts or TypoScript, with no bridge extension.
+Use explicit DDEV host/origin allowlists for HMR. Do **not** copy upstream `allowedHosts: true` or
+`cors: true` defaults into a customer environment: they broaden who can fetch source code.
+Verify the current Vite security documentation and the exact local URL first. Never expose HMR
+in the production build. Preserve CSP nonces through the actual integration.
 
-Why the deviation exists — it is a trade, not a correction:
+## Bootstrap and native JavaScript gate
 
-| | Bridge extension | Plain Vite |
-|---|---|---|
-| Integration effort | lower | higher, once |
-| Dev-server ergonomics | better (HMR detection built in) | manual |
-| Extensions to migrate at the next LTS | one more | one fewer |
-| Failure surface during an upgrade | extension compatibility matters | build output only |
+When Bootstrap 5 is used, resolve the latest stable **5.x** from official releases at the start
+of the assets node, update older 5.x dependencies and commit the lockfile/production assets.
+Checked 2026-09-05: 5.3.8. Do not add Bootstrap to unrelated frontends or jump majors implicitly.
 
-During a v12/v13 → 14.3 migration the last two rows dominate: every extension in the critical
-rendering path is another thing that must resolve on the new core before the site boots at all.
+Inventory imports, globals, inline snippets and plugins before removing jQuery. Convert
+project-owned selectors/events/AJAX to DOM APIs and fetch; preserve delegation, abort/error
+handling, initialization after AJAX replacement, keyboard controls and focus. Replace jQuery-only
+widgets only with compatible, tested native alternatives. Verify no jQuery scripts/globals load
+on representative pages and run the real slider/tab/form/filter journeys. A retained plugin
+needs explicit user acceptance, current vulnerability checks and a removal plan.
 
-**Use the upstream skill for the build configuration** — Vite 7 setup, SCSS architecture, selective
-Bootstrap imports, PostCSS, SVGO, font loading — and skip its extension-based integration section
-when working under `typo3-upgrade-run`. Outside an upgrade run, the upstream approach is fine.
+A supported Bootstrap release does not guarantee pixel parity. Keep an audited compatibility
+stylesheet only for known rendered differences; do not leave the entire obsolete distribution
+loaded alongside the new one. Freeze screenshot inputs before migration and require strict-zero
+comparison or specific accepted visible changes. Broad SCSS redesign remains Contract B.
 
-## v14 context
+## Production-build regression checks
 
-TYPO3 v14 removed core asset concatenation and compression (#108055), so an external build tool is
-mandatory and the Vite build owns bundling and minification. Both approaches satisfy that; the
-choice is only about how the manifest reaches the template.
+- Use a relative base such as `./` when assets live below content-addressed extension paths.
+- On older Core rungs, inherited Bootstrap Package settings may re-enable legacy concatenation;
+  preserve the source pipeline during baseline and disable those flags only in the assets node.
+- Avoid re-minifying already-minified legacy CSS during parity work; measure before switching.
+- Rebuild once per source change; invalidate/warm the local TYPO3 page cache so old asset hashes
+  do not survive. Verify both cold and warm requests, not only files on disk.
+- Test with no HMR process, zero failed assets/console errors and pinned Lighthouse runs against
+  predeclared budgets. Optimize after the appropriate approved graph decision, not in every loop.
 
-## CSP
+## Credits & Attribution
 
-Under `typo3-upgrade-run` the asset tags are emitted without the bridge, so the CSP nonce has to come
-from TYPO3's own API at render time rather than from the extension's ViewHelper. Verify nonce
-propagation explicitly — a working page with a silently violated CSP is a common outcome here.
+This skill is based on the excellent work by **Netresearch DTT GmbH**.
+Original repository: https://github.com/netresearch/typo3-vite-skill
 
-## Upgrade-parity traps
-
-- On the v12/v13 rungs, Bootstrap Package can re-enable all four legacy TYPO3 asset flags after an
-  earlier sitepackage setting. Load the theme override after Bootstrap Package and set
-  `concatenateCss`, `compressCss`, `concatenateJs` and `compressJs` explicitly to `0`. They become
-  inert on v14, but they still alter the source-rung baseline the Vite migration must preserve.
-- Use `base: './'` when Vite output is published under TYPO3's content-addressed extension path.
-  Root-relative `/assets/...` URLs escape that path and break CSS fonts/images even when entrypoint
-  CSS and JS load correctly.
-- During Contract A parity, set `cssMinify: false` for an already-minified legacy CSS input. A second
-  minification can change text rasterisation across hundreds of screenshots without changing layout
-  or content. Re-enable or change minification only in a measured Contract B performance loop.
+Special thanks to Netresearch for publishing and maintaining these skills.
+Copyright (c) Netresearch DTT GmbH; original licence files are preserved.
+Adapted by webconsulting.at for this skill collection through this overlay only; the upstream skill is unmodified.

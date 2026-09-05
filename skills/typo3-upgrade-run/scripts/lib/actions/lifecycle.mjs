@@ -198,7 +198,7 @@ export async function approvalRecord({ values, paths, log, journal }) {
   return { exitCode: EXIT.PASS, verdict: 'pass', id, stage, granted, file, message: `${id} recorded` };
 }
 
-export async function validateRun({ paths, log }) {
+export async function validateRun({ paths, log, values = {} }) {
   const state = await new StateStore(paths).read();
   const issues = [];
   const loopDirs = await readdir(paths.loopsDir).catch(() => []);
@@ -247,6 +247,11 @@ export async function validateRun({ paths, log }) {
   }
   if (issues.length) throw new PreconditionError(`Run validation failed:\n  - ${issues.join('\n  - ')}`);
   if (state.graph) await graphValidate({ paths, log });
+  if (state.contract_a?.status === 'closed') {
+    const { closureCheck, verifyRecordedClosureAcceptance } = await import('./closure.mjs');
+    await closureCheck({ paths, log, values: { evidence: values.evidence ?? state.contract_a.closure_ref } });
+    await verifyRecordedClosureAcceptance(paths, state);
+  }
   log.success('Run directory, state schema, loop documents, and evidence references are valid.');
   return { exitCode: EXIT.PASS, verdict: 'pass', loops: Object.keys(state.loops).length, message: 'run valid' };
 }

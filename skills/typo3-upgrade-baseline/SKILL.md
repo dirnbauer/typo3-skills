@@ -21,7 +21,7 @@ One job: build a trustworthy source instrument before the first site change.
 - No site/configuration/dependency repair has happened before capture.
 - The host renderer and DDEV application environment pass `t3u doctor`.
 
-## Procedure
+## Workflow
 
 1. Seal environment and source editorial/file fingerprints. Core/PHP are recorded migration
    subjects; renderer/tool/browser/fonts/GFX are comparison inputs.

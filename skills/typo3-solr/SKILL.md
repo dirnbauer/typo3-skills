@@ -3,6 +3,7 @@ name: "typo3-solr"
 description: "Runs and debugs the site's own search with Apache Solr in TYPO3 (EXT:solr): what gets indexed and why results come back empty after adding a new page type, facets for category or year on the results page, autocomplete and suggest, PDF and file indexing through Tika, and an indexing queue that is stuck. Use when searching the site returns nothing or the wrong things, or when configuring configsets, custom indexers, routing, solrfal or vector search. Visibility in external search engines is typo3-seo."
 compatibility: "TYPO3 14.x"
 metadata:
+  skill_type: preference
   version: "1.0.0"
   related_skills: "typo3-content-blocks, typo3-datahandler, typo3-seo, ai-search-optimization"
   origin: "webconsulting"
@@ -12,7 +13,7 @@ license: "MIT / CC-BY-SA-4.0"
 
 > Source: https://github.com/dirnbauer/webconsulting-skills
 
-> **Compatibility:** This skill targets **TYPO3 v14.x**. Match **EXT:solr** (and Solr server version) using the [official Version Matrix](https://docs.typo3.org/p/apache-solr-for-typo3/solr/main/en-us/Appendix/VersionMatrix.html) and Packagist — `14.0.x` availability may lag docs; use the branch/matrix the project documents until a stable tag ships.
+> **Compatibility:** Target **TYPO3 14.3** and match EXT:solr, server and configset using the [official Version Matrix](https://docs.typo3.org/p/apache-solr-for-typo3/solr/main/en-us/Appendix/VersionMatrix.html) and actual package metadata. Stable EXT:solr 14 is available; recheck compatible stable releases at execution time.
 > All custom PHP examples use TYPO3 v14 conventions (PHP 8.2+, constructor promotion, `#[AsEventListener]` where shown).
 
 > **TYPO3 API First:** Always use TYPO3's built-in APIs and EXT:solr's TypoScript/PSR-14 events before creating custom implementations. Do not reinvent what EXT:solr already provides.
@@ -103,7 +104,8 @@ sequenceDiagram
 | **14.0.x** (see matrix / Packagist) | **14.x** | per matrix | `ext_solr_14_0_0` (when used) | **^8.2** | per matrix | per matrix |
 | 13.1.x | *(not a target for this collection)* | 9.10.1 | `ext_solr_13_1_0` | ^8.2 | 13.1 | 13.0 |
 
-While **14.0.x** has no stable tag on Packagist (betas are published), follow the **TYPO3 v14 Readiness** subsection below (`^14.0@beta` / docs workflow) until a stable tag ships.
+Stable **14.0.1** was published on 2026-09-03 and requires Core `^v14.3.0` and PHP `^8.2`.
+Use compatible stable constraints; the old beta-only guidance is retired.
 
 ### TYPO3 v14 Readiness
 
@@ -111,15 +113,18 @@ The [Version Matrix](https://docs.typo3.org/p/apache-solr-for-typo3/solr/main/en
 
 - `main` requires `typo3/cms-core: ^v14.3.0` (see `composer.json` on `main`)
 - branch alias **`dev-main` -> `14.0.x-dev`**
-- **Composer reality check:** `14.0.0-beta1`–`beta3` are published on Packagist; no stable `14.0` tag exists yet, so install via the `@beta` stability flag (or fall back to `dev-main` for the bleeding edge).
+- **Composer reality check:** [Packagist](https://packagist.org/packages/apache-solr-for-typo3/solr)
+  lists stable `14.0.0` and `14.0.1`. Prefer stable; a development fork/branch needs a specific reason
+  and explicit approval, not a stale assumption that v14 is unreleased.
 
-**Until a stable `14.0` is published on Packagist:**
+**Resolve against the selected local project's lock:**
 
 ```bash
-composer require apache-solr-for-typo3/solr:^14.0@beta
+ddev composer require apache-solr-for-typo3/solr:^14.0
 ```
 
-> **Warning:** Re-check Packagist/GitHub when you upgrade — switch from `^14.0@beta` to a plain `^14.0` constraint as soon as stable releases exist.
+Verify the chosen lock, server, Java and configset together. Do not infer Docker-image availability
+from a Composer release, and do not move an incompatible v14 project back to EXT:solr 13.1.
 
 ### CVE-2025-24814 Migration
 
@@ -184,9 +189,8 @@ hooks:
 ```yaml
 services:
   solr:
-    # Note: as of March 2026, no stable 14.0 tag exists on Docker Hub.
-    # Use 14.0.x-dev for testing, or 13.1 for production until 14.0 ships.
-    image: typo3solr/ext-solr:14.0.x-dev
+    # Resolve the matching stable server/configset image and record its digest first.
+    image: ${SOLR_IMAGE:?Set a reviewed compatible image tag or digest}
     ports:
       - "8983:8983"
     volumes:

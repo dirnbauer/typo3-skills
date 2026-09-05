@@ -3,6 +3,7 @@ name: "typo3-workspaces"
 description: "Lets TYPO3 editors prepare and hold finished content before it goes live, then stage, review and publish it. Use when finished work must wait for a launch, when previewing unpublished work returns the already-published page, when publishing loses file references, when your own code must query records so drafts resolve correctly, or when working with workspace overlays, versioning, staging, permissions, review workflows and workspace-specific bugs."
 compatibility: "TYPO3 14.x"
 metadata:
+  skill_type: preference
   version: "2.0.0"
   origin: "webconsulting"
 license: "MIT / CC-BY-SA-4.0"

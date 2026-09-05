@@ -1,5 +1,5 @@
 ---
-name: "typo3-testing"
+name: typo3-testing
 description: "Use when setting up TYPO3 extension test infrastructure, writing unit/functional/E2E tests, configuring PHPUnit 11/12/13, mutation testing, mocking final classes (v14), CI/CD matrix across TYPO3 12/13/14.3 LTS, dev-dependency consolidation via typo3-ci-workflows meta-package, or debugging CI failures. Also triggers on: testing-framework setup, ensure proper testing, test matrix, integration testing, e2e testing, coverage, test generation."
 ---
 
@@ -13,9 +13,9 @@ description: "Use when setting up TYPO3 extension test infrastructure, writing u
 automated-assessment typo3-testing
 ```
 
-> Install other skills (e.g. `typo3-conformance`, `enterprise-readiness`) for broader coverage.
+> Install `typo3-conformance` and `enterprise-readiness` for broader coverage.
 
-Generates a gap report from 73+ checkpoints (PHPUnit, PHPStan, runTests.sh, CaptainHook, architecture, mutation, CI matrix, coverage).
+Generates a gap report from 73+ checkpoints (PHPUnit, PHPStan, runTests.sh, architecture, mutation, CI matrix, coverage).
 
 **Use the report as the task list.** Resolve mechanical failures before manual test writing.
 
@@ -28,8 +28,6 @@ Generates a gap report from 73+ checkpoints (PHPUnit, PHPStan, runTests.sh, Capt
 
 ---
 
-References for TYPO3 extension testing.
-
 ## Test Type Selection
 
 | Type | Use When | Speed |
@@ -39,15 +37,15 @@ References for TYPO3 extension testing.
 | **Architecture** | Layer constraints, dependency rules (phpat) | Fast |
 | **E2E (Playwright)** | User workflows, browser, accessibility | Slow |
 | **Integration** | HTTP client, API mocking, OAuth flows | Medium |
-| **Mutation** | Test quality verification, 70%+ coverage | CI/Release |
+| **Mutation** | Test quality, 70%+ coverage | CI/Release |
 
 ## runTests.sh - Mandatory
 
-`Build/Scripts/runTests.sh` is mandatory. Must be executable, support `-s` (suite) and `-p` (PHP version).
+`Build/Scripts/runTests.sh` is mandatory: executable, with `-s` (suite) and `-p` (PHP version).
 
 ## Git Hooks
 
-Netresearch default: `Build/captainhook.json` (declared in composer.json `extra.captainhook.config`). Verify: `ls Build/captainhook.json .git/hooks/pre-commit 2>/dev/null` (see `references/captainhook-setup.md`).
+Netresearch default: `Build/captainhook.json` (declared in composer.json `extra.captainhook.config`). Verify: `ls Build/captainhook.json .git/hooks/pre-commit` (see `references/captainhook-setup.md`).
 
 ## Commands
 
@@ -69,7 +67,7 @@ Unit tests required (70%+ coverage). Functional tests required for DB operations
 
 ## References (in `references/`, `.md` implied)
 
-`unit-testing.md` | `functional-testing.md` | `functional-test-patterns.md` | `integration-testing.md` | `e2e-testing.md` | `accessibility-testing.md` | `ddev-testing.md` | `test-runners.md` | `architecture-testing.md` | `ci-debugging.md` | `ci-cd.md` | `quality-tools.md` | `mutation-testing.md` | `fuzz-testing.md` | `performance-testing.md` | `typo3-v14-final-classes.md` | `mock-validity.md` | `javascript-testing.md` | `captainhook-setup.md` | `enforcement-rules.md` | `event-dispatch-testing.md` | `crypto-testing.md` | `test-environment-guards.md` | `sonarcloud.md` | `typo3-ci-config-patterns.md` | `tdd-discipline.md` | `ci-workflows-meta-package.md` | `synthetic-secret-fixtures.md` | `release-workflow-validation.md` | `asset-templates-guide.md` | `backend-module-render-verification.md` | `backend-user-access-testing.md`
+`unit-testing.md` | `functional-testing.md` | `functional-test-patterns.md` | `integration-testing.md` | `e2e-testing.md` | `accessibility-testing.md` | `ddev-testing.md` | `test-runners.md` | `architecture-testing.md` | `ci-debugging.md` | `ci-cd.md` | `quality-tools.md` | `mutation-testing.md` | `fuzz-testing.md` | `performance-testing.md` | `typo3-v14-final-classes.md` | `mock-validity.md` | `javascript-testing.md` | `captainhook-setup.md` | `enforcement-rules.md` | `event-dispatch-testing.md` | `crypto-testing.md` | `test-environment-guards.md` | `sonarcloud.md` | `typo3-ci-config-patterns.md` | `tdd-discipline.md` | `ci-workflows-meta-package.md` | `synthetic-secret-fixtures.md` | `release-workflow-validation.md` | `asset-templates-guide.md` | `backend-module-render-verification.md` | `backend-user-access-testing.md` | `framework-compat-gate.md`
 
 ### Content Triggers
 
@@ -83,6 +81,7 @@ Unit tests required (70%+ coverage). Functional tests required for DB operations
 - Burned tag, validate before tagging → `release-workflow-validation.md`
 - Backend module 500 / wrong ViewHelper namespace / runaway canvas → `backend-module-render-verification.md`
 - Non-admin BE-user access enforcement → `backend-user-access-testing.md`
+- Package will not install next to TYPO3 → `framework-compat-gate.md`
 
 ## Links
 
@@ -90,17 +89,3 @@ Unit tests required (70%+ coverage). Functional tests required for DB operations
 [Tea Extension](https://github.com/TYPO3BestPractices/tea) |
 [phpat](https://github.com/carlosas/phpat) |
 [Infection](https://infection.github.io/)
-
----
-
-## Credits & Attribution
-
-This skill is based on the excellent work by
-**[Netresearch DTT GmbH](https://www.netresearch.de/)**.
-
-Original repository: https://github.com/netresearch/typo3-testing-skill
-
-**Copyright (c) Netresearch DTT GmbH** — Methodology and best practices (MIT / CC-BY-SA-4.0)
-
-Special thanks to [Netresearch DTT GmbH](https://www.netresearch.de/) for their generous open-source contributions to the TYPO3 community, which helped shape this skill collection.
-Adapted by webconsulting.at for this skill collection

@@ -812,6 +812,93 @@
         "Keeps the evidence gap visible in handover"
       ],
       "files": []
+    },
+    {
+      "id": "overnight-forecast-not-guarantee",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "This project has 60,000 public routes, several custom forks and a 900 GB media archive. Guarantee the entire job will be green by tomorrow morning.",
+      "assertions": [
+        "Measures size and effective throughput before admitting mutation",
+        "Keeps the maximum overnight window at fourteen hours",
+        "Explains any infeasible required work and requests separately scoped prerequisites instead of reducing mandatory proof"
+      ]
+    },
+    {
+      "id": "no-second-upstream-orchestrator",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "We imported every Netresearch plugin. Call all their TYPO3 workflows one after another inside this upgrade until every nested loop is green.",
+      "assertions": [
+        "Keeps one parent evidence graph with bounded retries",
+        "Loads upstream specialists only for ready, applicable work",
+        "Does not repeat full-site sweeps or start nested project orchestration"
+      ]
+    },
+    {
+      "id": "v14-environment-packages",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Move our database credentials out of committed TYPO3 settings. Pick a loader compatible with the installed Core, and make deployment information visible.",
+      "assertions": [
+        "Does not print secrets or source an env file as shell code",
+        "Verifies current package constraints and distinguishes dotenv-connector from typo3-config-handling",
+        "Uses a gitignored private env file or injected environment with documented precedence",
+        "Installs and verifies deployer-information without claiming or performing a deployment"
+      ]
+    },
+    {
+      "id": "frontend-modernization-boundary",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "The site has Bootstrap 5.1, old jQuery plugins and a working Vite bridge. Modernize it during the v14 update and keep the nightly job short.",
+      "assertions": [
+        "Checks the latest stable Bootstrap 5 release and upgrades the existing installation",
+        "Replaces compatible project jQuery code with native JavaScript and records any plugin exception requiring approval",
+        "Preserves a working asset integration rather than imposing an unrelated bridge replacement",
+        "Verifies affected journeys and final Lighthouse evidence with at most three global states"
+      ]
+    },
+    {
+      "id": "shared-recovery-budget",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "The upgrade controller already retried twice. Rector says it can start three more attempts, and the browser checker also wants three. Let each one finish its own retries.",
+      "assertions": [
+        "Keeps a single graph-owned attempt/deadline budget across specialist calls.",
+        "Returns bounded findings to the controller instead of multiplying nested retry loops."
+      ]
+    },
+    {
+      "id": "overnight-proof-without-fake-acceptance",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Everything tested green at 04:20, but I will not be back until 09:00. Do not spend the rest of the night testing again just to keep the task alive.",
+      "assertions": [
+        "Runs closure-verify before the sealed deadline and records the exact proof hash.",
+        "Waits for actual human acceptance; does not invent approval or treat verified-awaiting-acceptance as accepted.",
+        "Retains unchanged valid evidence and refuses stale source or dataset proof."
+      ]
+    },
+    {
+      "id": "locked-workers-are-not-speedup",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Composer is still changing the dependency tree. Start the final screenshots in a second worker so we save time.",
+      "assertions": [
+        "Does not overlap final frozen-source measurement with workspace writes.",
+        "Explains or uses the shared project-write/resource locks; parallel capacity alone does not authorize parallel execution."
+      ]
+    },
+    {
+      "id": "repair-harness-without-rebaseline",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "The final browser run failed because Chrome crashed. Can we jump back to the initial capture and rebuild all the snapshots?",
+      "assertions": [
+        "Routes to closure harness recovery, retaining sealed Baseline A.",
+        "Reruns only invalidated final proof with bounded attempts; does not restart unrelated migration jobs or overwrite the original baseline."
+      ]
     }
   ]
 }

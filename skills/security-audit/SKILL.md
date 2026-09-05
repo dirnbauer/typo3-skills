@@ -1,6 +1,13 @@
 ---
-name: "security-audit"
-description: "Use when conducting security assessments \u2014 OWASP Top 10 / API / LLM, CWE Top 25, CVSS scoring \u2014 auditing PHP/TYPO3, APIs, frontend, Terraform/K8s/Docker IaC, AWS cloud, AI agent configs, or scanning dependencies."
+name: security-audit
+description: "Use when conducting security assessments — OWASP Top 10 / API / LLM, CWE Top 25, CVSS scoring — auditing PHP/TYPO3, APIs, frontend, Terraform/K8s/Docker IaC, AWS cloud, AI agent configs, or scanning dependencies."
+license: "(MIT AND CC-BY-SA-4.0). See LICENSE-MIT and LICENSE-CC-BY-SA-4.0"
+compatibility: "Requires grep, jq, gh CLI."
+metadata:
+  author: Netresearch DTT GmbH
+  version: "2.11.2"
+  repository: https://github.com/netresearch/security-audit-skill
+allowed-tools: Bash(grep:*) Bash(jq:*) Bash(gh:*) Read Glob Grep
 ---
 
 # Security Audit Skill
@@ -19,7 +26,7 @@ Security audit patterns (OWASP Top 10, LLM Top 10 2025, CWE Top 25 2025, CVSS v4
 
 - **Core**: owasp-top10, cwe-top25, xxe-prevention, cvss-scoring, api-key-encryption
 - **Prevention**: deserialization-prevention, path-traversal-prevention, file-upload-security, input-validation, error-message-sanitization
-- **Architecture**: authentication-patterns, security-headers, security-logging, cryptography-guide, security-invariants
+- **Architecture**: authentication-patterns, security-headers, security-logging, cryptography-guide, security-invariants, indistinguishability-defences
 - **Language features** (`*-security-features`): php, python, javascript-typescript, nodejs, go
 - **Frameworks** (`*-security`): typo3, typo3-fluid, typo3-typoscript, symfony, react, vue
 - **Cloud & IaC**: aws-security, iac-security
@@ -58,17 +65,3 @@ Dispatcher detects the stack from indicator files and runs matching `scripts/sca
 ---
 
 > Contributing: https://github.com/netresearch/security-audit-skill
-
----
-
-## Credits & Attribution
-
-This skill is based on the excellent work by
-**[Netresearch DTT GmbH](https://www.netresearch.de/)**.
-
-Original repository: https://github.com/netresearch/security-audit-skill
-
-**Copyright (c) Netresearch DTT GmbH** — Methodology and best practices (MIT / CC-BY-SA-4.0)
-
-Special thanks to [Netresearch DTT GmbH](https://www.netresearch.de/) for their generous open-source contributions to the TYPO3 community, which helped shape this skill collection.
-Adapted by webconsulting.at for this skill collection

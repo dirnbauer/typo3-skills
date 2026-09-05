@@ -1,0 +1,276 @@
+{
+  "schema": 1,
+  "tool": "skill-doctor@0.1.0",
+  "integrity": "sha512-80daQIGVLbKxjlGBc9ZBQXaKgz54vYayT1UsFV43j65ResKSjzLrNcY63r+1HhSBms4SeuXlDKAsSRlL8cvnRg==",
+  "checkedAt": "2026-09-05T13:23:35.273Z",
+  "skills": 59,
+  "diagnostics": 714,
+  "byRule": {
+    "evals.invalid-schema": 379,
+    "evals.missing-expected-output": 313,
+    "skill.invalid-frontmatter-description": 2,
+    "skill.large-inline-skill": 1,
+    "skill.missing-mentioned-resource": 8,
+    "skill.missing-usage-guidance": 2,
+    "skill.reference-outside-root": 9
+  },
+  "byDisposition": {
+    "native-schema-check-required": 689,
+    "upstream-advisory": 13,
+    "verified-command-with-arguments": 3,
+    "verified-sibling-reference": 9
+  },
+  "caveat": "Advisory static scan, not behavioural validation. Native string-ID trigger suites are validated by scripts/validate_evals.py; do not convert reviewed cases to satisfy a different schema. Upstream files stay immutable. Inspect resource warnings individually.",
+  "findings": [
+    {
+      "skill": "enterprise-readiness",
+      "vendored": true,
+      "file": "evals/evals.json",
+      "line": 1,
+      "rule": "evals.invalid-schema",
+      "severity": "error",
+      "message": "The `evals/evals.json` file does not match the expected top-level shape.",
+      "disposition": "upstream-advisory"
+    },
+    {
+      "skill": "security-audit",
+      "vendored": true,
+      "file": "SKILL.md",
+      "line": 63,
+      "rule": "skill.missing-mentioned-resource",
+      "severity": "warning",
+      "message": "Referenced resource `scripts/scanners/*.sh` was not found.",
+      "disposition": "upstream-advisory"
+    },
+    {
+      "skill": "security-incident-reporting",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 26,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../security-audit/SKILL.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "security-incident-reporting",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 27,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-security/SKILL.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "security-incident-reporting",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 75,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../security-audit/SKILL.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-backend-rights",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 248,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-workspaces/SKILL.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-backend-rights",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 430,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-workspaces/SKILL.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-batch",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 62,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-datahandler/SKILL.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-ddev",
+      "vendored": true,
+      "file": "SKILL.md",
+      "line": 24,
+      "rule": "skill.missing-mentioned-resource",
+      "severity": "warning",
+      "message": "Referenced resource `scripts/provision-without-ddev.sh --extension . --serve` was not found.",
+      "disposition": "upstream-advisory"
+    },
+    {
+      "skill": "typo3-docs",
+      "vendored": true,
+      "file": "SKILL.md",
+      "line": 29,
+      "rule": "skill.missing-mentioned-resource",
+      "severity": "warning",
+      "message": "Referenced resource `scripts/validate_docs.sh /path/to/extension` was not found.",
+      "disposition": "upstream-advisory"
+    },
+    {
+      "skill": "typo3-docs",
+      "vendored": true,
+      "file": "SKILL.md",
+      "line": 30,
+      "rule": "skill.missing-mentioned-resource",
+      "severity": "warning",
+      "message": "Referenced resource `scripts/render_docs.sh /path/to/extension` was not found.",
+      "disposition": "upstream-advisory"
+    },
+    {
+      "skill": "typo3-extension-upgrade",
+      "vendored": true,
+      "file": "SKILL.md",
+      "line": 1,
+      "rule": "skill.invalid-frontmatter-description",
+      "severity": "error",
+      "message": "The description should be plain text without angle brackets and stay under 1024 characters.",
+      "disposition": "upstream-advisory"
+    },
+    {
+      "skill": "typo3-extension-upgrade",
+      "vendored": true,
+      "file": "SKILL.md",
+      "line": 115,
+      "rule": "skill.missing-mentioned-resource",
+      "severity": "warning",
+      "message": "Referenced resource `scripts/scan-deprecations.sh <path>` was not found.",
+      "disposition": "upstream-advisory"
+    },
+    {
+      "skill": "typo3-icon14",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 46,
+      "rule": "skill.missing-mentioned-resource",
+      "severity": "warning",
+      "message": "Referenced resource `scripts/verify-icon.sh <file> <type>` was not found.",
+      "disposition": "verified-command-with-arguments"
+    },
+    {
+      "skill": "typo3-icon14",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 233,
+      "rule": "skill.missing-mentioned-resource",
+      "severity": "warning",
+      "message": "Referenced resource `scripts/verify-icon.sh <file> <type>` was not found.",
+      "disposition": "verified-command-with-arguments"
+    },
+    {
+      "skill": "typo3-project-upgrade",
+      "vendored": true,
+      "file": "SKILL.md",
+      "line": 5,
+      "rule": "skill.missing-usage-guidance",
+      "severity": "warning",
+      "message": "The body does not obviously explain how the skill should be used once triggered.",
+      "disposition": "upstream-advisory"
+    },
+    {
+      "skill": "typo3-project-upgrade",
+      "vendored": true,
+      "file": "evals/evals.json",
+      "line": 1,
+      "rule": "evals.invalid-schema",
+      "severity": "error",
+      "message": "The `evals/evals.json` file does not match the expected top-level shape.",
+      "disposition": "upstream-advisory"
+    },
+    {
+      "skill": "typo3-seo",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 24,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-structured-data/SKILL.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-shadcn-content-elements",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 344,
+      "rule": "skill.missing-mentioned-resource",
+      "severity": "warning",
+      "message": "Referenced resource `scripts/audit-content-elements.php <repo-root>` was not found.",
+      "disposition": "verified-command-with-arguments"
+    },
+    {
+      "skill": "typo3-typoscript-ref",
+      "vendored": true,
+      "file": "SKILL.md",
+      "line": 1,
+      "rule": "skill.invalid-frontmatter-description",
+      "severity": "error",
+      "message": "The description should be plain text without angle brackets and stay under 1024 characters.",
+      "disposition": "upstream-advisory"
+    },
+    {
+      "skill": "typo3-typoscript-ref",
+      "vendored": true,
+      "file": "evals/evals.json",
+      "line": 1,
+      "rule": "evals.invalid-schema",
+      "severity": "error",
+      "message": "The `evals/evals.json` file does not match the expected top-level shape.",
+      "disposition": "upstream-advisory"
+    },
+    {
+      "skill": "typo3-upgrade-intake",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 50,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/project-environment.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-migration",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 49,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/project-environment.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-vite",
+      "vendored": true,
+      "file": "SKILL.md",
+      "line": 5,
+      "rule": "skill.missing-usage-guidance",
+      "severity": "warning",
+      "message": "The body does not obviously explain how the skill should be used once triggered.",
+      "disposition": "upstream-advisory"
+    },
+    {
+      "skill": "web-platform-design",
+      "vendored": true,
+      "file": "SKILL.md",
+      "line": 5,
+      "rule": "skill.large-inline-skill",
+      "severity": "warning",
+      "message": "The skill is large but does not appear to lean on references or scripts for progressive disclosure.",
+      "disposition": "upstream-advisory"
+    }
+  ]
+}

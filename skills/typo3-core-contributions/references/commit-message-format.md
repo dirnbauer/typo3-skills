@@ -269,6 +269,7 @@ For reverting patches:
 This reverts commit abc123def456.
 
 Resolves: #12347
+Releases: main, 14.3
 Reverts: I1234567890abcdef1234567890abcdef12345678
 ```
 
@@ -353,7 +354,7 @@ Change-Id: Iaa11bb22cc33dd44ee55ff66gg77hh88ii99jj00
 - [ ] Uses imperative mood
 - [ ] No period at end
 - [ ] Length ≤ 52 chars (recommended) or ≤ 72 chars (absolute)
-- [ ] No extension names (EXT:) in subject
+- [ ] No extension names (EXT:) in subject — `scripts/validate-commit-message.py` warns; 11 of the 500 most recently merged core changes keep one, so it is a preference
 
 ### Body
 
@@ -364,10 +365,10 @@ Change-Id: Iaa11bb22cc33dd44ee55ff66gg77hh88ii99jj00
 
 ### Footer
 
-- [ ] `Resolves:` present **(REQUIRED for ALL commits)**
+- [ ] `Resolves:` present **(REQUIRED for ALL commits)** — enforced by `scripts/validate-commit-message.py`
   **Critical**: The commit-msg hook WILL REJECT commits without at least one `Resolves:` line
 - [ ] `Related:` used only in addition to `Resolves:` (optional, cannot be used alone)
-- [ ] `Releases:` present with valid versions
+- [ ] `Releases:` present with valid versions — enforced by `scripts/validate-commit-message.py`
 - [ ] `Change-Id:` present (added by hook)
 - [ ] Proper format: `Tag: value` (colon + space)
 - [ ] Issue references use `#` prefix: `#12345`
@@ -385,6 +386,25 @@ Change-Id: Iaa11bb22cc33dd44ee55ff66gg77hh88ii99jj00
 ```
 [TASK] Add validation for extension configuration arrays
 ```
+
+---
+
+### ❌ Wrong: Extension Key in Subject
+
+```
+[BUGFIX] Expose EXT:form multi checkbox groups as role="group"
+```
+
+### ✅ Correct: Extension Named by the Changed Paths
+
+```
+[BUGFIX] Mark multi checkbox groups as role="group"
+```
+
+The diff usually says which extension it is, and the subject budget is 52
+characters. This is a preference rather than a rule: 11 of the 500 most
+recently merged core changes keep the prefix, so the validator warns instead of
+failing. Name the extension in the body if the paths do not make it obvious.
 
 ---
 

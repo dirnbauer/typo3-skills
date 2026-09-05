@@ -2,14 +2,14 @@
 
 **Agent Skills for TYPO3 v14 development, upgrades and operations.**
 
-52 skills, plus an always-on rules layer, for AI coding agents working on TYPO3 projects — Claude
+59 skills, plus an always-on rules layer, for AI coding agents working on TYPO3 projects — Claude
 Code, Cursor, Codex, Gemini CLI, Windsurf, and anything else that reads `SKILL.md` files.
 
 This is the active repository for TYPO3 skills. It began as a focused extraction from
 [webconsulting-skills](https://github.com/dirnbauer/webconsulting-skills) — 140 skills across many
-domains, now archived and read-only — and carries only the TYPO3, PHP and database set, so a TYPO3
-project installs what it needs and nothing it does not. Everything here is maintained; the
-non-TYPO3 skills stay available in the archive at their final state.
+domains, now archived and read-only. This collection contains **48 `typo3-*` skills and 11 existing supporting skills**. The **16 explicitly selected Netresearch repositories** are pinned and
+refreshable; unrelated marketplace skills are excluded. Supporting skills load on demand, not as
+additional mandatory phases in a TYPO3 upgrade.
 
 **Doing an upgrade?** Go straight to [`skills/typo3-upgrade-run/SKILL.md`](skills/typo3-upgrade-run/SKILL.md)
 — its "Start here" section is the whole method in one screen.
@@ -43,6 +43,14 @@ state, and the only cycles are explicitly bounded retries. Five leaf skills keep
 `typo3-upgrade-intake`, `typo3-upgrade-baseline`, `typo3-upgrade-migration`,
 `typo3-upgrade-closure`, and `typo3-upgrade-retrospective`. Bounded loop directories remain as node
 evidence and backwards-compatible history.
+
+Overnight admission uses measured per-node estimates and resource locks, with **8/12/14-hour**
+small/large/huge windows and protected closure time. Intermediate checks target affected pages plus
+a reproducible sample; final checks use at most **three global states** and include Lighthouse.
+Hashed, current proof can wait for morning human acceptance without repeating unchanged tests.
+See the [graph design and source review](skills/typo3-upgrade-run/references/graph-architecture.md)
+and [September collection review](references/skills-review-2026-09.md). These are execution budgets,
+not a promise that any arbitrary site can be completely upgraded overnight.
 
 ### TYPO3 development
 
@@ -125,7 +133,7 @@ A rule answers *is this change allowed?*. A skill answers *how do I build this?*
 
 ## Vendored skills
 
-14 of the 52 are not authored by webconsulting and are vendored **byte-identical** so they stay
+20 of the 59 are not authored by webconsulting and are vendored **byte-identical** so they stay
 re-syncable and their attribution stays intact. Improvements live in separate
 `references/webconsulting-additions.md` overlays that never silently override upstream behaviour.
 
@@ -148,11 +156,11 @@ off.** Coverage is reported as reviewed-versus-total so the number cannot flatte
 Thresholds are ratchets set at measured values, so a regression fails the build rather than
 drifting quietly. CI runs the same script.
 
-Current: **all 38 owned skills ship an eval suite — 346 cases**; 14 vendored skills are exempt.
-52 cases across four skills are human-reviewed, 281 are proposed and awaiting a signature, and 13
-predate the status field. Reviewed and proposed cases both pass at **100%** under the offline grader;
-no scaffolded cases remain. A case counts as evidence only once a human signs it off (S5), so the
-reviewed number is the one that matters.
+Current coverage and case counts come from `python3 scripts/validate_evals.py --min-cases 6`;
+the [generated catalog](catalog/skill-audit.md) lists every skill. Human-reviewed, proposed and
+draft cases remain separate. The offline trigger grader and Skill Doctor are structural/router
+checks, not proof that an agent completes real upgrades. No new human signatures or live-site
+behavior results are inferred from their green output.
 
 ## Contributing
 
@@ -173,76 +181,100 @@ the upstream state recorded in [VENDORED.md](VENDORED.md).
 
 | Skill | What it does | Owner |
 |---|---|---|
-| `enterprise-readiness` | Use when evaluating projects for production or enterprise readiness, implementing supply chain … | Netresearch |
-| `php-modernization` | Use when modernizing PHP code: PHP 8.1-8.5 features, PSR/PHP-FIG/PER-CS compliance, PHPStan/Rec… | Netresearch |
-| `postgres-best-practices` | Postgres performance optimization and best practices: indexes, locks, schema, batch writes, mon… | Supabase |
-| `web-design-guidelines` | General web design and accessibility audit guidance (non-TYPO3) | Vercel |
-| `web-platform-design` | WCAG 2.2, responsive design, forms and platform UI patterns | ehmo |
-| `security-audit` | Use when conducting security assessments — OWASP Top 10 / API / LLM, CWE Top 25, CVSS scor… | Netresearch |
-| `typo3-conformance` | Use when assessing TYPO3 extension quality, conformance checking, standards compliance, moderni… | Netresearch |
-| `typo3-core-contributions` | Use when analyzing TYPO3 Forge issues, submitting patches to Gerrit, contributing core bug fixe… | Netresearch |
-| `typo3-ddev` | Use when providing DDEV URLs, accessing TYPO3 backend in browser, performing any ddev command (… | Netresearch |
-| `typo3-docs` | Use when creating, editing, or reviewing TYPO3 extension documentation (Documentation/*.rst, gu… | Netresearch |
-| `typo3-extension-upgrade` | Use when upgrading TYPO3 extensions to newer LTS versions (v11->v12, v12->v13, v13->v14 - v14.3… | Netresearch |
-| `typo3-simplify` | Simplify and refine TYPO3 extension code for clarity, consistency, and maintainability while pr… | Anthropic |
-| `typo3-testing` | Use when setting up TYPO3 extension test infrastructure, writing unit/functional/E2E tests, con… | Netresearch |
-| `typo3-vite` | Use when configuring Vite 7 for TYPO3 v13/v14 LTS projects, setting up SCSS architecture with B… | Netresearch |
-| `architecture-decision-records` | Creates and reviews architecture decision records (ADRs), decision logs, and supersession histo… | webconsulting |
-| `typo3-upgrade-intake` | Read-only identity, dataset, URL, extension, credential and backup preflight for an upgrade graph | webconsulting |
-| `typo3-upgrade-baseline` | Builds deterministic source evidence and seals immutable Baseline A before migration | webconsulting |
-| `typo3-upgrade-migration` | Executes one authorized dependency, code, schema or data migration graph node | webconsulting |
-| `typo3-upgrade-closure` | Proves source-to-target parity, backend/runtime/rights/quality gates and local closure | webconsulting |
-| `typo3-upgrade-retrospective` | Converts past run/task evidence into problem, cause, solution and process controls | webconsulting |
-| `typo3-upgrade-run` | Update a TYPO3 v12 or v13 site to TYPO3 14.3 LTS inside a local DDEV project under two contract… | webconsulting |
-| `typo3-accessibility` | Audits and implements TYPO3 accessibility patterns for WCAG 2.2 AA, including Fluid templates, … | webconsulting |
-| `typo3-batch` | Plans and executes batch TYPO3 migrations and large-scale refactors across hooks, PSR-14 events… | webconsulting |
-| `typo3-content-blocks` | Guides TYPO3 Content Blocks modeling for Content Elements, Record Types, Page Types, and File T… | webconsulting |
-| `typo3-datahandler` | Guides transactional TYPO3 record manipulation with DataHandler, including datamaps, cmdmaps, b… | webconsulting |
-| `typo3-fractor` | Automates non-PHP TYPO3 upgrade migrations with Fractor for FlexForms, TypoScript, Fluid, YAML,… | webconsulting |
-| `typo3-icon14` | Designs and migrates TYPO3 extension icons to the v14 line-art style, including source SVG clea… | webconsulting |
-| `typo3-idea-extension-blog` | Evaluates external ideas for TYPO3 extension potential, builds the extension, and drafts the co… | webconsulting |
-| `typo3-initial-release` | Prepare, verify, review, tag, and document the first official release of a TYPO3 14.3+ extensio… | webconsulting |
-| `typo3-news-tags` | Bulk-generates thematic tags for georgringer/news (EXT:news) and assigns them to existing news … | webconsulting |
-| `typo3-powermail` | Guides Powermail 13+ form development for TYPO3, including form setup, finishers, validators, s… | webconsulting |
-| `typo3-records-list-types` | Configures TYPO3 v14 Records module list types and custom backend views, including grid, compac… | webconsulting |
-| `typo3-rector` | Applies TYPO3 Rector upgrade patterns for PHP migrations toward TYPO3 v14, including Rector con… | webconsulting |
-| `typo3-security` | Hardens TYPO3 v14 installations and extensions with secure configuration, trusted hosts, file p… | webconsulting |
-| `typo3-seo` | Handles TYPO3 sitemaps, canonical URLs, hreflang, metadata, social previews and robots rules… | webconsulting |
-| `typo3-structured-data` | Audits, preserves, implements and verifies schema.org structured data and server-rendered JSON-LD… | webconsulting |
-| `typo3-shadcn-content-elements` | Produces, audits, and overhauls TYPO3 Content Blocks content elements styled with shadcn/ui pre… | webconsulting |
-| `typo3-solr` | Configures and debugs Apache Solr search for TYPO3, including EXT:solr, configsets, indexing qu… | webconsulting |
-| `typo3-translations` | Guides TYPO3 13/14 localization with locallang.xlf, labels.xlf, XLIFF 1.2 and 2.0, ICU MessageF… | webconsulting |
-| `typo3-v14-reference` | Guides TYPO3 v14 extension development and upgrades, including version constraints, PHP require… | webconsulting |
-| `typo3-visual-editor` | Installs, configures, removes, and migrates TYPO3 sitepackages for FriendsOfTYPO3 Visual Editor… | webconsulting |
-| `typo3-wcag22-aa-agentic` | Use this skill to audit, fix, and document accessibility for TYPO3 websites and Fluid sitepacka… | webconsulting |
-| `typo3-webcomponents` | Build, review, or migrate TYPO3 v14 backend Web Components with Lit, ES module import maps, Ass… | webconsulting |
-| `typo3-workspaces` | Guides TYPO3 Workspaces versioning, staging, publishing, overlays, workspace-aware queries, fil… | webconsulting |
-| `webconsulting-branding` | Applies the current webconsulting.at design system: borderless square surfaces, Hanken Grotesk … | webconsulting |
-| `webconsulting-create-documentation` | Creates product documentation systems with help pages, AI-generated screenshots, Remotion produ… | webconsulting |
+| `architecture-decision-records` | Writes and maintains architecture decision records (ADRs) and decision logs: what was decided, why, which alternati… | webconsulting |
+| `enterprise-readiness` | Use when evaluating projects for production or enterprise readiness, implementing supply chain security (SLSA, cosi… | Netresearch |
+| `legal-impressum` | Creates and reviews Austrian Impressum and disclosure content for websites, including ECG, UGB, GewO, MedienG, Offe… | webconsulting |
+| `php-modernization` | Use when modernizing PHP code: PHP 8.1-8.5 features, PSR/PHP-FIG/PER-CS compliance, PHPStan/Rector/PHP-CS-Fixer/PHP… | Netresearch |
+| `postgres-best-practices` | Postgres performance optimization and best practices from Supabase. Use this skill when writing, reviewing, or opti… | Supabase |
+| `security-audit` | Use when conducting security assessments — OWASP Top 10 / API / LLM, CWE Top 25, CVSS scoring — auditing PHP/TYPO3,… | Netresearch |
+| `security-incident-reporting` | Builds security incident reports, DDoS post-mortems, timelines, IoC sections, CVE correlation, severity scoring, an… | webconsulting |
+| `typo3-a11y` | Use when building accessible navigation, forms, filters, tables, skip links, disclosure widgets, or reviewing front… | Netresearch |
+| `typo3-accessibility` | Accessible markup patterns for TYPO3 v14: skip links, landmark regions, heading structure, keyboard and tab order, … | webconsulting |
+| `typo3-backend-rights` | Build and audit TYPO3 backend editor rights after an explicit choice between one user-facing main group with simple… | webconsulting |
+| `typo3-batch` | Roll out one repeated change over multiple TYPO3 extensions in a monorepo or packages/ directory. Use when inventor… | webconsulting |
+| `typo3-ckeditor5` | Use when developing CKEditor 5 custom plugins for TYPO3 v12+ (v14.3 LTS bundles CKE5 v47; v13 shipped 41-42), confi… | Netresearch |
+| `typo3-conformance` | Use when checking which TYPO3 versions an extension says it supports, when composer.json and ext_emconf.php disagre… | Netresearch |
+| `typo3-content-blocks` | Defines what a TYPO3 block IS: its field definitions in config.yaml, and how fields nest into collections or repeat… | webconsulting |
+| `typo3-core-contributions` | Use when contributing to TYPO3 Core — Forge issues, Gerrit patches, cherry-picks, CI debugging — or when working on… | Netresearch |
+| `typo3-datahandler` | Creates, updates, moves, localizes and deletes TYPO3 records programmatically from PHP - import scripts, CLI comman… | webconsulting |
+| `typo3-ddev` | Use whenever a running TYPO3 instance is wanted, started or reached: ddev commands, backend URLs, DDEV setup, multi… | Netresearch |
+| `typo3-design-system-page` | Build and maintain an accessible design-system overview inside a chosen TYPO3 installation: audit the rendered site… | webconsulting |
+| `typo3-docs` | Use when creating, editing, or reviewing TYPO3 extension documentation (Documentation/*.rst, guides.xml, README.md,… | Netresearch |
+| `typo3-extension-upgrade` | Use when an extension has to work with a newer or the current TYPO3 LTS, when a version bump breaks compatibility o… | Netresearch |
+| `typo3-fractor` | Automatically rewrite TYPO3 non-PHP files with Fractor: outdated TypoScript condition syntax, FlexForm XML migratio… | webconsulting |
+| `typo3-icon14` | Designs and migrates TYPO3 extension icons to the v14 line-art style, including source SVG cleanup, light/dark beha… | webconsulting |
+| `typo3-idea-extension-blog` | Evaluates whether an outside idea is worth building as a TYPO3 extension, checks whether someone has already done i… | webconsulting |
+| `typo3-initial-release` | Prepare the first public 1.0.0 release of a TYPO3 14.3+ extension. Use for initial TER upload or Packagist publicat… | webconsulting |
+| `typo3-news-tags` | Bulk-generates thematic tags for georgringer/news (EXT:news) and assigns them to existing news records via keyword … | webconsulting |
+| `typo3-playwright` | Use when building or repairing Playwright browser tests for TYPO3 visitor journeys, AJAX widgets, CKEditor dialogs,… | webconsulting |
+| `typo3-powermail` | Builds and debugs Powermail 13+ contact and enquiry forms in TYPO3: form setup and validation, conditional fields t… | webconsulting |
+| `typo3-project-upgrade` | Use when upgrading a deployed TYPO3 project/instance to a new LTS version (v14.3 LTS is the current target, release… | Netresearch |
+| `typo3-records-list-types` | Changes how records are presented in the TYPO3 v14 Records module: cards with thumbnails instead of a plain table o… | webconsulting |
+| `typo3-rector` | Automatically fix deprecated PHP calls in TYPO3 code by running Rector: configuration, dry run, review the diff, ap… | webconsulting |
+| `typo3-scheduler-jobs` | Audits, plans, configures, groups, and verifies TYPO3 14.3 Scheduler tasks for a specific installation, including C… | webconsulting |
+| `typo3-security` | Hardens TYPO3 v14 installations and extensions: secure configuration, trusted hosts, file permissions, locking down… | webconsulting |
+| `typo3-seo` | Makes TYPO3 pages show up correctly in search engines like Google through XML sitemaps, canonical URLs, hreflang ac… | webconsulting |
+| `typo3-shadcn-content-elements` | Produces, audits, and overhauls TYPO3 Content Blocks content elements styled with shadcn/ui presets, semantic token… | webconsulting |
+| `typo3-simplify` | Simplify and refine TYPO3 extension code for clarity, consistency, and maintainability while preserving functionali… | Anthropic |
+| `typo3-site-conformance` | Use when assessing or hardening a deployable TYPO3 SITE/PROJECT repo (composer type:project + Docker/Compose) — not… | Netresearch |
+| `typo3-solr` | Runs and debugs the site's own search with Apache Solr in TYPO3 (EXT:solr): what gets indexed and why results come … | webconsulting |
+| `typo3-structured-data` | Audits, preserves, implements, and verifies schema.org structured data and server-rendered JSON-LD in TYPO3 14.3 pr… | webconsulting |
+| `typo3-testing` | Use when setting up TYPO3 extension test infrastructure, writing unit/functional/E2E tests, configuring PHPUnit 11/… | Netresearch |
+| `typo3-translations` | Fixes TYPO3 labels and localization: label files (locallang.xlf, labels.xlf) in XLIFF 1.2 and 2.0, singular and plu… | webconsulting |
+| `typo3-typoscript-ref` | Use when writing, editing, reviewing or debugging TypoScript, TSconfig or Fluid templates in TYPO3 projects (v14.3 … | Netresearch |
+| `typo3-upgrade-baseline` | Build and seal the deterministic pre-change Baseline A for a whole-site TYPO3 14.3 upgrade graph. Use when prefligh… | webconsulting |
+| `typo3-upgrade-closure` | Prove and close Contract A after a whole-site TYPO3 14.3 upgrade. Use when the target is stable for target-content-… | webconsulting |
+| `typo3-upgrade-effort-model` | Use when estimating effort for TYPO3 LTS major version upgrades (current target: v14.3 LTS, released 2026-04-21). P… | Netresearch |
+| `typo3-upgrade-intake` | Perform the read-only preflight for an orchestrated CMS transition: prove the selected repository, local applicatio… | webconsulting |
+| `typo3-upgrade-migration` | Execute one graph-authorized dependency, code, schema, or data migration node within a whole-site TYPO3 v12/v13 to … | webconsulting |
+| `typo3-upgrade-retrospective` | Audit one or more past or incomplete TYPO3 upgrade runs, project repositories, Codex tasks/threads, and evidence di… | webconsulting |
+| `typo3-upgrade-run` | Plan and execute the entire DDEV-based TYPO3 project/site update from 12 or 13 to supported 14.3 LTS and prove noth… | webconsulting |
+| `typo3-v14-reference` | TYPO3 v14 API reference: how to write v14 code. Covers controllers, building a view with ViewFactory, Fluid templat… | webconsulting |
+| `typo3-visual-editor` | Lets TYPO3 editors click into a page and type directly on the frontend instead of opening backend forms, using Frie… | webconsulting |
+| `typo3-vite` | Use when configuring Vite 7 for TYPO3 v13/v14 LTS projects, setting up SCSS architecture with Bootstrap 5.3 theming… | Netresearch |
+| `typo3-wcag22-aa-agentic` | Runs automated accessibility audits against a live TYPO3 URL with Playwright and axe-core, maps every violation bac… | webconsulting |
+| `typo3-webcomponents` | Build, review, or migrate TYPO3 v14 backend Web Components with Lit, ES module import maps, AssetCollector/f:asset.… | webconsulting |
+| `typo3-webmcp` | Designs, implements, secures, and verifies browser-side WebMCP tools for TYPO3 14.3 frontends through document.mode… | webconsulting |
+| `typo3-workspaces` | Lets TYPO3 editors prepare and hold finished content before it goes live, then stage, review and publish it. Use wh… | webconsulting |
+| `web-design-guidelines` | Review UI code for Web Interface Guidelines compliance. Use when asked to \"review my UI\", \"check accessibility\"… | Vercel |
+| `web-platform-design` | Web platform design and accessibility guidelines. Use when building web interfaces, auditing accessibility, impleme… | ehmo |
+| `webconsulting-branding` | Applies the current webconsulting.at design system: borderless square surfaces, Hanken Grotesk typography, teal/ink… | webconsulting |
+| `webconsulting-create-documentation` | Creates product documentation systems with help pages, AI-generated screenshots, Remotion product tours, GSAP anima… | webconsulting |
 
 ### Upstream repositories
 
 - https://github.com/anthropics/claude-plugins-official/tree/main/plugins/code-simplifier
+- https://github.com/ehmo/platform-design-skills
 - https://github.com/netresearch/enterprise-readiness-skill
 - https://github.com/netresearch/php-modernization-skill
 - https://github.com/netresearch/security-audit-skill
-- https://github.com/supabase/agent-skills
-- https://github.com/vercel-labs/agent-skills
-- https://github.com/ehmo/platform-design-skills
+- https://github.com/netresearch/typo3-a11y-skill
+- https://github.com/netresearch/typo3-ckeditor5-skill
 - https://github.com/netresearch/typo3-conformance-skill
 - https://github.com/netresearch/typo3-core-contributions-skill
 - https://github.com/netresearch/typo3-ddev-skill
 - https://github.com/netresearch/typo3-docs-skill
 - https://github.com/netresearch/typo3-extension-upgrade-skill
+- https://github.com/netresearch/typo3-project-upgrade-skill
+- https://github.com/netresearch/typo3-site-conformance-skill
 - https://github.com/netresearch/typo3-testing-skill
+- https://github.com/netresearch/typo3-typoscript-ref-skill
+- https://github.com/netresearch/typo3-upgrade-effort-model-skill
 - https://github.com/netresearch/typo3-vite-skill
+- https://github.com/supabase/agent-skills
+- https://github.com/vercel-labs/agent-skills
 
 ## Credits
 
-Netresearch for `typo3-ddev`, `typo3-testing`, `typo3-docs`, `typo3-conformance`,
-`typo3-extension-upgrade`, `typo3-core-contributions`, `typo3-vite`, `php-modernization`,
-`security-audit` and `enterprise-readiness` — thank you for publishing them openly.
+**Thank you, Netresearch DTT GmbH**, for openly publishing and maintaining the 16 skills selected
+from your marketplace: 13 TYPO3 skills and three existing supporting skills. Original licences, source revisions and per-file hashes are
+preserved; our integration guidance and thanks remain separate overlays.
 Anthropic for `typo3-simplify` and the skill-authoring conventions this collection follows.
+
+Thank you to **Matt Pocock** for the [writing-for-agents](https://github.com/mattpocock/skills/blob/main/skills/productivity/writing-for-agents/SKILL.md)
+authoring guidance, and **Lev Selector** and **Alex Sprogis** for the architecture/graph material.
+Our [research notes](skills/typo3-upgrade-run/references/graph-architecture.md) distinguish verified
+source material, local design choices and remaining validation work.
 
 ## Licence
 

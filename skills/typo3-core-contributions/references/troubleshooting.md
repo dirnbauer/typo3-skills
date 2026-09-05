@@ -1,740 +1,203 @@
 # TYPO3 Contribution Troubleshooting Guide
 
-Common issues and solutions for TYPO3 Core contributions.
+Failures specific to contributing to TYPO3 Core through Gerrit. Generic Git,
+Composer and DDEV problems are not covered here — the error message is enough to
+solve those, and repeating them buries the parts that are actually TYPO3's.
 
-## Git Configuration Issues
+Related: `gerrit-workflow.md` (the workflow itself), `commit-message-format.md`
+(subject, type, footer tags), `commit-msg-hook.md`, `ddev-setup-workflow.md`.
 
-### Problem: "Permission denied (publickey)"
+## Gerrit access and identity
 
-**Symptoms**:
+### Problem: "Permission denied (publickey)" against Gerrit
+
 ```
-git@github.com: Permission denied (publickey).
-fatal: Could not read from remote repository.
+ssh: connect / Permission denied (publickey)
 ```
 
-**Causes**:
-- SSH keys not configured
-- Wrong SSH key being used
-- Key not added to Gerrit/GitHub
+The SSH key must be registered at **review.typo3.org**, not my.typo3.org — the
+accounts are linked but the key store is not:
 
-**Solutions**:
+1. <https://review.typo3.org/settings/#SSHKeys> → "Add new SSH key"
+2. Paste `cat ~/.ssh/id_ed25519.pub`
 
-**Check SSH keys exist**:
+Gerrit speaks SSH on port **29418**, so the connection test and the remote both
+carry the port and your Gerrit username:
+
 ```bash
-ls -la ~/.ssh/
-# Look for id_ed25519 or id_rsa files
-```
-
-**Generate new SSH key if needed**:
-```bash
-ssh-keygen -t ed25519 -C "your-email@example.org"
-```
-
-**Add key to SSH agent**:
-```bash
-eval "$(ssh-agent -s)"
-ssh-add ~/.ssh/id_ed25519
-```
-
-**Test connection**:
-```bash
-# Test GitHub
-ssh -T git@github.com
-
-# Test Gerrit
 ssh -p 29418 <username>@review.typo3.org
+git remote set-url origin ssh://<username>@review.typo3.org:29418/Packages/TYPO3.CMS
 ```
 
-**Verify key on Gerrit**:
-1. Visit https://review.typo3.org/settings/#SSHKeys (NOT my.typo3.org!)
-2. Click "Add new SSH key"
-3. Paste your public key: `cat ~/.ssh/id_ed25519.pub`
-4. Ensure your public key is listed
+`~/.ssh/config` avoids repeating both:
 
-**Configure SSH for Gerrit** (add to `~/.ssh/config`):
 ```
 Host review.typo3.org
-    User your-typo3-username
+    User <your-typo3-username>
     IdentityFile ~/.ssh/id_ed25519
     Port 29418
 ```
 
-**Update Git remote URL** to include your username:
+### Problem: "SSH timeout connecting to Gerrit"
+
+```
+ssh: connect to host review.typo3.org port 29418: Operation timed out
+```
+
+Port 29418 is the usual casualty of a corporate firewall — a timeout here is a
+network verdict, not an account problem. `telnet review.typo3.org 29418` tells
+you which. HTTPS is available as a fallback, uncommon for TYPO3:
+
 ```bash
-cd /path/to/typo3
-git remote set-url origin ssh://your-typo3-username@review.typo3.org:29418/Packages/TYPO3.CMS
-# Or add as separate remote
-git remote add gerrit ssh://your-typo3-username@review.typo3.org:29418/Packages/TYPO3.CMS
-```
-
-### Problem: "fatal: refusing to merge unrelated histories"
-
-**Symptoms**:
-```
-fatal: refusing to merge unrelated histories
-```
-
-**Cause**: Trying to merge branches with no common ancestor
-
-**Solution**:
-```bash
-# Only if you're absolutely sure you want to merge
-git pull origin main --allow-unrelated-histories
-
-# Better: Start fresh clone
-cd ..
-git clone git@github.com:typo3/typo3.git typo3-new
+git config remote.origin.url https://review.typo3.org/Packages/TYPO3.CMS
 ```
 
 ### Problem: "email address is not registered in your account"
 
-**Symptoms**:
 ```
 remote: ERROR: commit abc123: email address user@example.com is not registered
 in your account, and you lack 'forge committer' permission.
-remote: The following addresses are currently registered:
-remote:    other@example.com
 ```
 
-**Cause**: Git commit email doesn't match any email registered in your Gerrit account
+A commit carries **two** email addresses, and Gerrit checks the one people
+overlook:
 
-**IMPORTANT**: Git commits have TWO email addresses:
-- **Author**: Who wrote the code (shown in `git log`)
-- **Committer**: Who committed the code (used by Gerrit for permission checks)
+- **Author** — who wrote the code, shown in `git log`
+- **Committer** — who ran the commit; **this is what Gerrit validates**
 
-Gerrit checks the **committer** email, not the author email. You can keep a different author email if needed.
+So a patch can keep a foreign author and still pass, as long as the committer
+email is one of yours at <https://review.typo3.org/settings#EmailAddresses>.
 
-**Solution**:
-
-**1. Check your Gerrit registered emails**:
-Visit: https://review.typo3.org/settings#EmailAddresses
-
-**2. Update Git configuration to match** (for future commits):
 ```bash
-# Use one of your registered emails
-git config user.email "your-registered@email.com"
-
-# If working in TYPO3 repo, update local config
-cd /path/to/typo3
-git config user.email "your-registered@email.com"
+git config user.email "your-registered@email.com"     # future commits
+git commit --amend --reset-author --no-edit           # fix: both fields
 ```
 
-**3. Fix existing commit** - choose one option:
+Keeping the original author but fixing only the committer:
 
-**Option A: Change both author and committer**:
-```bash
-git commit --amend --reset-author --no-edit
-```
-
-**Option B: Change only committer (keep original author)**:
 ```bash
 GIT_COMMITTER_NAME="Your Name" \
 GIT_COMMITTER_EMAIL="your-registered@email.com" \
 git commit --amend --no-edit
 ```
 
-This is useful when you want to preserve the original author (e.g., `info@yourdomain.de`) but need to use a different registered email for the committer.
+### Problem: "Can't access Gerrit"
 
-**4. Push again**:
-```bash
-git push origin HEAD:refs/for/main
-```
+Two separate systems: <https://my.typo3.org> holds the account,
+<https://review.typo3.org> is Gerrit and signs in with those credentials. An
+account that works on my.typo3.org and not on Gerrit is usually a stale session
+— try a private window before suspecting the account.
 
-**Prevention**: Always verify your Git email matches Gerrit **before** making commits. Run `verify-prerequisites.sh` script before starting work.
-
-### Problem: "Your branch is ahead of 'origin/main' by X commits"
-
-**Symptoms**:
-```
-Your branch is ahead of 'origin/main' by 5 commits.
-  (use "git push" to publish your local commits)
-```
-
-**Cause**: You have commits not yet pushed
-
-**Solutions**:
-
-**If commits should be separate patches**:
-```bash
-# Push each commit separately
-git push origin <commit-hash>:refs/for/main
-```
-
-**If commits should be one patch** (most common):
-```bash
-# Squash into single commit
-git rebase -i origin/main
-# Change all but first "pick" to "squash"
-# Edit commit message
-git push origin HEAD:refs/for/main
-```
-
-### Problem: "Branch 'main' set up to track remote branch 'main' from 'origin'"
-
-**Symptoms**: Can't push, tracking wrong remote
-
-**Solution**:
-```bash
-# Reset remote configuration
-git config remote.origin.pushurl ssh://<USERNAME>@review.typo3.org:29418/Packages/TYPO3.CMS.git
-git config remote.origin.push +refs/heads/main:refs/for/main
-```
-
-## Gerrit Issues
+## Pushing to Gerrit
 
 ### Problem: "Change-Id not found in commit message footer"
 
-**Symptoms**:
 ```
 remote: ERROR: commit abc123: missing Change-Id in message footer
 ```
 
-**Cause**: commit-msg hook not installed or bypassed
-
-**Solutions**:
-
-**Install hook** (choose one method):
+The `commit-msg` hook is not installed, or was bypassed. Any of:
 
 ```bash
-# Method 1: Via composer (if available)
-composer gerrit:setup
+composer gerrit:setup                       # if the repo provides it
 
-# Method 2: Via curl (recommended - always gets latest version)
 curl -o "$(git rev-parse --git-dir)/hooks/commit-msg" \
   https://review.typo3.org/tools/hooks/commit-msg && \
 chmod +x "$(git rev-parse --git-dir)/hooks/commit-msg"
 
-# Method 3: Copy from Build directory (if exists)
-cp Build/git-hooks/commit-msg .git/hooks/
-chmod +x .git/hooks/commit-msg
+cp Build/git-hooks/commit-msg .git/hooks/ && chmod +x .git/hooks/commit-msg
 ```
 
-**Fix existing commit**:
-```bash
-# Amend to trigger hook
-git commit --amend --no-edit
+Then `git commit --amend --no-edit` to let the hook run over the existing
+message. If the Change-Id still does not appear, run the hook by hand:
 
-# Verify Change-Id added
-git log -1
-```
-
-**If Change-Id still missing**:
 ```bash
-# Manually run hook
 .git/hooks/commit-msg .git/COMMIT_EDITMSG
-
-# Amend with new message
 git commit --amend -F .git/COMMIT_EDITMSG
 ```
 
 ### Problem: "Prohibited by Gerrit: not permitted to upload"
 
-**Symptoms**:
 ```
-remote: ERROR: [a1b2c3] missing Change-Id in message footer
 remote: ERROR: Prohibited by Gerrit: not permitted to upload
 ```
 
-**Causes**:
-- Pushing to wrong ref
-- Account permissions issue
-- SSH key not configured
+Almost always the ref, not the permission. Gerrit takes patches on
+`refs/for/<branch>`; a push to the branch itself is refused:
 
-**Solutions**:
-
-**Check push URL**:
 ```bash
-git config remote.origin.pushurl
-# Should be: ssh://<USERNAME>@review.typo3.org:29418/Packages/TYPO3.CMS.git
+git push origin HEAD:refs/for/main          # not HEAD:main
+git config remote.origin.pushurl            # ssh://<USERNAME>@review.typo3.org:29418/Packages/TYPO3.CMS.git
 ```
 
-**Push to correct ref**:
-```bash
-# Push to refs/for/main, NOT directly to main
-git push origin HEAD:refs/for/main
-```
+A permanent setup for the same thing:
 
-**Verify SSH connection**:
 ```bash
-ssh -p 29418 <USERNAME>@review.typo3.org
-```
-
-**Check username**:
-```bash
-git config remote.origin.pushurl
-# Ensure <USERNAME> matches your Gerrit username
+git config remote.origin.push +refs/heads/main:refs/for/main
 ```
 
 ### Problem: "Invalid Change-Id"
 
-**Symptoms**: Gerrit rejects Change-Id format
+A hand-written or edited Change-Id. Delete the line, then let the hook generate
+a fresh one:
 
-**Cause**: Manually created or corrupted Change-Id
-
-**Solution**:
 ```bash
-# Remove invalid Change-Id from commit message
-git commit --amend
-# Delete the Change-Id line
-# Save and exit
-
-# Re-amend to generate new Change-Id
-git commit --amend --no-edit
-
-# Verify format: "Change-Id: I" followed by 40 hex characters
-git log -1 | grep Change-Id
+git commit --amend            # remove the Change-Id line, save
+git commit --amend --no-edit  # hook writes a new one
+git log -1 | grep Change-Id   # "Change-Id: I" + 40 hex characters
 ```
 
-### Problem: "New Patchset Not Appearing"
+### Problem: "New patchset not appearing"
 
-**Symptoms**: Push succeeds but no new patchset on Gerrit
+The push succeeded but Gerrit shows nothing new. Either the commit is identical
+to the current patchset, or the Change-Id changed — in which case the push
+created a *separate* review, and the push output names its URL.
 
-**Causes**:
-- No actual changes (identical commit)
-- Change-Id modified (created new review instead)
-
-**Solutions**:
-
-**Check if new review created**:
-- Look for different review URL in push output
-- Search Gerrit for your recent changes
-
-**Ensure actual changes**:
 ```bash
-# View last commit changes
-git show HEAD
-
-# Compare with Gerrit patchset
 git fetch origin refs/changes/XX/XXXX/X
-git diff FETCH_HEAD
+git diff FETCH_HEAD           # what Gerrit already has vs. your commit
 ```
 
-**If Change-Id was modified**:
+If the Change-Id was lost, copy it back from the Gerrit page into the commit
+message and push again; a new Change-Id cannot be merged into the old review.
+
+### Problem: merge conflict while rebasing a patch
+
+Resolve as usual, then continue the rebase and push a new patchset — the point
+that differs from a normal Git workflow is the push target:
+
 ```bash
-# Get original Change-Id from Gerrit
-# Edit commit message to restore it
-git commit --amend
-# Restore original Change-Id
-# Save and push
-```
-
-## Rebase and Merge Issues
-
-### Problem: "CONFLICT (content): Merge conflict in file.php"
-
-**Symptoms**:
-```
-CONFLICT (content): Merge conflict in path/to/file.php
-Automatic merge failed; fix conflicts and then commit the result.
-```
-
-**Solution**: See "Resolving Merge Conflicts" in gerrit-workflow.md
-
-**Quick steps**:
-```bash
-# 1. Open conflicted file, resolve conflicts
-vim path/to/file.php
-
-# 2. Remove conflict markers (<<<<<<<, =======, >>>>>>>)
-
-# 3. Stage resolved file
-git add path/to/file.php
-
-# 4. Continue rebase
 git rebase --continue
-
-# 5. Push updated patch
 git push origin HEAD:refs/for/main
 ```
 
-### Problem: "Cannot rebase: You have unstaged changes"
-
-**Symptoms**:
-```
-error: cannot rebase: You have unstaged changes.
-error: Please commit or stash them.
-```
-
-**Solutions**:
-
-**Option A: Stash changes**:
-```bash
-git stash
-git rebase origin/main
-git stash pop
-```
-
-**Option B: Commit changes**:
-```bash
-git add .
-git commit --amend
-git rebase origin/main
-```
-
-**Option C: Discard changes** (if unwanted):
-```bash
-git checkout -- .
-git rebase origin/main
-```
-
-### Problem: "Already up to date"
-
-**Symptoms**: Rebase says "up to date" but Gerrit shows conflicts
-
-**Cause**: Rebasing wrong branch or remote not updated
-
-**Solutions**:
-```bash
-# Fetch latest changes first
-git fetch origin
-
-# Ensure on correct branch
-git branch
-# Should show * feature/your-branch
-
-# Try rebase again
-git rebase origin/main
-```
-
-## Test Failures
-
-### Problem: "Bamboo CI Tests Failing"
-
-**Symptoms**: Red X on Gerrit review, tests failed
-
-**Solutions**:
-
-**View test results**:
-1. Click test result on Gerrit
-2. Read error messages
-3. Identify failing tests
-
-**Run tests locally**:
-```bash
-# Unit tests
-composer test:unit
-
-# Specific test class
-composer test:unit -- path/to/TestClass.php
-
-# Functional tests
-composer test:functional
-
-# All tests
-composer test
-```
-
-**Common test failures**:
-
-**PHP syntax error**:
-```bash
-php -l path/to/file.php
-```
-
-**Coding standards**:
-```bash
-composer cs:check
-composer cs:fix
-```
-
-**Missing dependencies**:
-```bash
-composer install
-```
-
-**Fix and resubmit**:
-```bash
-# After fixing
-git add .
-git commit --amend
-git push origin HEAD:refs/for/main
-```
-
-### Problem: "Tests Pass Locally But Fail on CI"
-
-**Causes**:
-- PHP version differences
-- Missing dependencies
-- Environment-specific issues
-
-**Solutions**:
-
-**Check PHP version**:
-```bash
-# Local version
-php -v
-
-# CI uses multiple versions (7.4, 8.0, 8.1, 8.2)
-# Ensure code compatible with all
-```
-
-**Test multiple PHP versions locally**:
-```bash
-# Using Docker
-docker run --rm -v $(pwd):/app php:8.2-cli composer test
-
-docker run --rm -v $(pwd):/app php:8.1-cli composer test
-```
-
-**Check CI logs carefully**:
-- Look for deprecation warnings
-- Check for missing extensions
-- Verify database-specific issues
-
-## Development Environment Issues
-
-### Problem: "Composer command not found"
-
-**Solution**:
-```bash
-# Install Composer globally
-curl -sS https://getcomposer.org/installer | php
-sudo mv composer.phar /usr/local/bin/composer
-
-# Or use specific version
-php composer.phar <command>
-```
-
-### Problem: "DDEV not starting"
-
-**Solutions**:
-
-**Check Docker running**:
-```bash
-docker ps
-```
-
-**Restart DDEV**:
-```bash
-ddev restart
-```
-
-**Reset DDEV**:
-```bash
-ddev stop
-ddev clean
-ddev start
-```
-
-**Check logs**:
-```bash
-ddev logs
-```
-
-### Problem: "Out of memory" during Composer operations
-
-**Solution**:
-```bash
-# Increase PHP memory limit
-php -d memory_limit=2G /usr/local/bin/composer install
-
-# Or set in php.ini
-memory_limit = 2G
-```
-
-## Commit Message Issues
-
-### Problem: "Subject line too long"
-
-**Symptoms**: Validation fails, >72 characters
-
-**Solution**:
-```bash
-# Amend commit
-git commit --amend
-
-# Shorten subject line to ≤52 chars (recommended)
-# Or ≤72 chars (absolute max)
-```
-
-### Problem: "Wrong commit type"
-
-**Example**: Used `[FEATURE]` on bugfix
-
-**Solution**:
-```bash
-# Amend commit
-git commit --amend
-
-# Change [FEATURE] to [BUGFIX]
-# Save and exit
-```
-
-### Problem: "Missing footer tags"
-
-**Symptoms**: No Resolves or Releases tags
-
-**Solution**:
-```bash
-# Amend commit
-git commit --amend
-
-# Add required footer:
-# Resolves: #12345
-# Releases: main, 13.4
-# (Keep Change-Id unchanged!)
-```
-
-## Account Issues
-
-### Problem: "Can't access Gerrit"
-
-**Solutions**:
-
-**Verify TYPO3.org account**:
-- Visit https://my.typo3.org
-- Confirm account active
-
-**Sign in to Gerrit**:
-- Visit https://review.typo3.org
-- Click "Sign In"
-- Use TYPO3.org credentials
-
-**Clear browser cache**:
-- Cookies might be stale
-- Try incognito/private mode
-
-### Problem: "SSH timeout connecting to Gerrit"
-
-**Symptoms**:
-```
-ssh: connect to host review.typo3.org port 29418: Operation timed out
-```
-
-**Causes**:
-- Firewall blocking port 29418
-- Network restrictions
-- Corporate VPN issues
-
-**Solutions**:
-
-**Try different network**:
-- Use mobile hotspot
-- Try from different location
-
-**Check firewall**:
-```bash
-telnet review.typo3.org 29418
-```
-
-**Use HTTPS instead** (less common for TYPO3):
-```bash
-git config remote.origin.url https://review.typo3.org/Packages/TYPO3.CMS
-```
-
-## Getting Help
-
-### Where to Ask
-
-**Slack**: #typo3-cms-coredev
-```
-@here I'm having trouble with [issue]. I've tried [solutions].
-Error message: [paste error]
-Gerrit review: https://review.typo3.org/c/...
-```
-
-**Forge**: https://forge.typo3.org
-- Create issue if you found a bug in contribution process
-
-**Documentation**: https://docs.typo3.org/m/typo3/guide-contributionworkflow/
-
-### What to Include When Asking
-
-1. **What you're trying to do**
-2. **What you've tried**
-3. **Error messages** (full text)
-4. **Links** (Gerrit review, Forge issue)
-5. **Environment** (OS, PHP version, Git version)
-6. **Relevant commands** and their output
-
-### Example Help Request
-
-```
-I'm trying to push my patch for #105737 but getting this error:
-
-```
-remote: ERROR: missing Change-Id in message footer
-```
-
-I've tried:
-- Running composer gerrit:setup
-- Checking that .git/hooks/commit-msg exists and is executable
-- Running git commit --amend --no-edit
-
-My setup:
-- macOS 12.6
-- Git 2.37.1
-- PHP 8.1.12
-
-Review (if already created): https://review.typo3.org/c/Packages/TYPO3.CMS/+/12345
-
-Any ideas what I'm missing?
-```
-
-## Preventive Measures
-
-### Before Starting
-
-- [ ] Run `scripts/verify-prerequisites.sh`
-- [ ] Verify SSH access to Gerrit
-- [ ] Check git configuration
-- [ ] Ensure hooks installed
-
-### Before Committing
-
-- [ ] Run tests locally
-- [ ] Check coding standards
-- [ ] Validate commit message format
-- [ ] Review changes with `git diff`
-
-### Before Pushing
-
-- [ ] Rebase on latest main
-- [ ] Ensure single commit
-- [ ] Verify Change-Id present
-- [ ] Check no `composer.lock` changes: `git diff --cached --name-only | grep composer.lock`
-- [ ] Test one more time
-
-### After Pushing
-
-- [ ] Verify patch on Gerrit
-- [ ] Watch CI test results
-- [ ] Respond to initial feedback
-- [ ] Update if tests fail
-
-## CI/GitLab Issues
+Details in `gerrit-workflow.md`, "Resolving Merge Conflicts".
+
+## CI (GitLab)
+
+TYPO3 Core CI runs on **GitLab** (`git.typo3.org`) and reports back onto the
+Gerrit review; the pipeline definition lives in `Build/gitlab-ci.yml` and
+`Build/gitlab-ci/` in the core repository. There is no Bamboo left in the core
+repo — a guide that still tells you to read Bamboo results is describing a CI
+that is gone.
 
 ### Problem: "How do I find ALL failing CI jobs?"
 
-**Critical**: Never assume what failed - always check ALL job logs!
+**Never assume what failed — read every job log.** A patch commonly fails
+several jobs for one root cause, and just as commonly for several.
 
-**Step-by-Step Process**:
+1. Open the review: `https://review.typo3.org/c/Packages/TYPO3.CMS/+/<number>`
+2. Scroll to the CI results and note **every** red job, not the first
+3. Follow each into GitLab (`https://git.typo3.org/typo3/CI/cms/-/jobs/<id>`) and
+   append `/raw` or click "Show complete raw" to read the actual error
 
-**1. Open your Gerrit review**:
-```
-https://review.typo3.org/c/Packages/TYPO3.CMS/+/YOUR_NUMBER
-```
+Job names follow `<what> php <version> pre-merge`: `cgl pre-merge`,
+`phpstan php X.X pre-merge`, `unit php X.X pre-merge`,
+`functional php X.X pre-merge`. The PHP version in the name matters — a failure
+on one version and not another is a compatibility finding, not a flake.
 
-**2. Find CI Results section**:
-- Scroll down to see GitLab CI results
-- Look for red ❌ marks next to job names
-- Note ALL failing job names (there may be multiple!)
+### Problem: "Code Style (cgl) failed"
 
-**3. For each failing job**:
-- Click the job name/link
-- You'll be redirected to GitLab: `https://git.typo3.org/typo3/CI/cms/-/jobs/XXXXXX`
-- Click "Show complete raw" or append `/raw` to URL
-- Read the ACTUAL error messages
-
-**Common Failing Jobs**:
-- `cgl pre-merge` - Code style violations
-- `phpstan php X.X pre-merge` - Static analysis errors
-- `unit php X.X pre-merge` - Unit test failures (may fail on multiple PHP versions)
-- `functional php X.X pre-merge` - Functional test failures
-
-### Problem: "Code Style (cgl) Failed"
-
-**Symptoms**:
 ```
 1) path/to/File.php (single_quote)
    ---------- begin diff ----------
@@ -743,427 +206,168 @@ https://review.typo3.org/c/Packages/TYPO3.CMS/+/YOUR_NUMBER
    ----------- end diff -----------
 ```
 
-**Cause**: Code doesn't match TYPO3 coding standards (PSR-12 + TYPO3 rules)
+TYPO3 CGL is PSR-12 plus TYPO3 rules; the recurring offenders are double quotes
+on simple strings, indentation and stray spaces. The repo ships the fixer:
 
-**Common Issues**:
-- Double quotes instead of single quotes for simple strings
-- Wrong indentation (spaces vs tabs)
-- Missing/extra spaces
-- Line length violations
-
-**Solutions**:
-
-**Option 1: Auto-fix with PHP CS Fixer** (recommended):
 ```bash
-# Install PHP CS Fixer if not available
-composer require --dev friendsofphp/php-cs-fixer
-
-# Run fixer on specific file
 ./Build/Scripts/cglFixMyCommit.sh
-
-# Or manually on specific files
-vendor/bin/php-cs-fixer fix path/to/File.php
 ```
 
-**Option 2: Manual fix**:
-```bash
-# Read the diff carefully
-# Fix issues manually in your editor
-vim path/to/File.php
+### Problem: "PHPStan failed"
 
-# Amend and push
-git add path/to/File.php
-git commit --amend --no-edit
-git push origin HEAD:refs/for/main
 ```
-
-### Problem: "PHPStan Failed"
-
-**Symptoms**:
-```
------- ---------------------------------------------------------------------
- Line   path/to/File.php
------- ---------------------------------------------------------------------
  236    Call to static method Assert::assertNotNull()
         with string will always evaluate to true.
------- ---------------------------------------------------------------------
 ```
 
-**Cause**: Static analysis detected potential bugs or redundant code
-
-**Common Issues**:
-- Redundant type checks (asserting non-null on typed return values)
-- Undefined variables
-- Type mismatches
-- Incorrect PHPDoc annotations
-
-**Solutions**:
+Run the same analysis the job runs, rather than a locally installed PHPStan:
 
 ```bash
-# Run PHPStan locally to see all issues
 ./Build/Scripts/runTests.sh -s phpstan
-
-# Fix the issues:
-# - Remove redundant assertions
-# - Add proper type hints
-# - Fix type mismatches
-# - Update PHPDoc blocks
-
-# Example: Remove redundant assertNotNull()
-# Before:
-$result = $subject->bodyDescription($dto); // returns string
-self::assertNotNull($result); // WRONG - string can't be null
-
-# After:
-$result = $subject->bodyDescription($dto);
-self::assertNotEmpty($result); // CORRECT - checks string is not empty
-
-# Amend and push
-git add path/to/File.php
-git commit --amend --no-edit
-git push origin HEAD:refs/for/main
 ```
 
-### Problem: "Unit Tests Failed"
+The frequent finding in test code is an assertion that cannot fail — asserting
+non-null on a value the signature already types as `string`. `assertNotEmpty()`
+is usually what was meant.
 
-**Symptoms**:
-```
-FAILURES!
-Tests: 11683, Assertions: 20300, Failures: 1.
+### Problem: "Unit tests failed"
 
-1) Vendor\Package\Tests\Unit\ClassTest::testMethod
-Failed asserting that two strings are equal.
---- Expected
-+++ Actual
-@@ @@
--''
-+'unexpected content'
-```
-
-**Cause**: Test assertions don't match actual behavior
-
-**Solutions**:
-
-**1. Read the full error**:
 ```bash
-# Get the full test output from GitLab job log
-# Look for:
-# - Which test failed (full class name and method)
-# - What was expected vs actual
-# - Any exception messages or stack traces
-```
-
-**2. Run test locally**:
-```bash
-# Run specific test
 ./Build/Scripts/runTests.sh -s unit path/to/Tests/Unit/ClassTest.php::testMethod
-
-# Or run all tests in file
 ./Build/Scripts/runTests.sh -s unit path/to/Tests/Unit/ClassTest.php
 ```
 
-**3. Fix the issue**:
-- If test logic is wrong: Update test assertions
-- If implementation is wrong: Fix the implementation
-- If test is no longer valid: Remove it (with good reason!)
+`runTests.sh` runs the suite in a container (docker or podman), which is why it
+reproduces CI where a locally installed PHPUnit often does not. A test that only
+fails on one PHP version of the matrix is reproduced with `-p`:
 
-**4. Verify and push**:
 ```bash
-# Run tests locally to confirm fix
-./Build/Scripts/runTests.sh -s unit
-
-# Amend and push
-git add .
-git commit --amend --no-edit
-git push origin HEAD:refs/for/main
+./Build/Scripts/runTests.sh -s unit -p 8.6
 ```
 
-### Problem: "Multiple jobs failed - which do I fix first?"
+The accepted values follow the branch — on `main` today 8.5 (default) and 8.6.
+`./Build/Scripts/runTests.sh -h` lists what the checked-out branch supports;
+passing a version outside that set is rejected rather than silently ignored.
 
-**Answer**: Fix ALL of them in ONE patchset!
+### Problem: "Multiple jobs failed — which do I fix first?"
 
-**Process**:
+All of them, in **one** patchset. Gerrit reviews patchsets, not commits: three
+pushes for three fixes cost three CI runs and make the review history harder to
+read than the change deserves.
 
 ```bash
-# 1. List all failures
-# Example: cgl, phpstan, 3x unit tests all failed
-
-# 2. Read ALL job logs
-# - cgl: Double quotes issue
-# - phpstan: Redundant assertion
-# - unit tests: Test logic error
-
-# 3. Fix all issues locally
-vim Tests/Unit/IndexerTest.php
-# - Change double quotes to single quotes (cgl fix)
-# - Remove assertNotNull() (phpstan fix)
-# - Fix test logic (unit test fix)
-
-# 4. Verify fixes locally
 ./Build/Scripts/cglFixMyCommit.sh
 ./Build/Scripts/runTests.sh -s phpstan
 ./Build/Scripts/runTests.sh -s unit
-
-# 5. Commit and push ONCE
-git add Tests/Unit/IndexerTest.php
 git commit --amend --no-edit
 git push origin HEAD:refs/for/main
-
-# 6. Wait for re-verification
-# All 5 jobs should now pass
 ```
 
-### Problem: "Patch is in WIP state - reviewers can't see it"
+### Problem: "CI takes forever"
 
-**Symptoms**:
-- Patch shows [WIP] tag on Gerrit
-- No review feedback after several days
-- CI tests passed but no reviews
+A full pipeline is 10–20 minutes. Beyond ~30 the pipeline is usually queued
+behind other patches — <https://git.typo3.org/typo3/CI/cms/-/pipelines> shows
+whether that is the case, and #typo3-cms-coredev reports outages.
 
-**Cause**: New patches are WIP by default - reviewers can't see them!
+Pushing again while CI runs does not speed it up: it queues another pipeline
+behind the current one and the earlier result becomes worthless.
 
-**Solution**:
-
-**1. Verify all CI jobs pass**:
-```
-Go to Gerrit review page
-Check all CI results are green ✅
-If any red ❌, fix those first!
-```
-
-**2. Mark as ready for review**:
-```
-Click "More" button (top right on Gerrit)
-Click "Start Review"
-Optionally add comment: "Ready for review. All CI checks passing."
-```
-
-**3. Advertise on Slack** (optional, for visibility):
-```
-#typo3-cms-coredev channel:
-"Submitted patch for #105737 - ready for review when you have time:
-https://review.typo3.org/c/Packages/TYPO3.CMS/+/12345"
-```
-
-### Problem: "CI takes forever to run"
-
-**Typical Duration**: 10-20 minutes for full pipeline
-
-**If longer than 30 minutes**:
-- Check GitLab CI status page: https://git.typo3.org/typo3/CI/cms/-/pipelines
-- Pipeline might be queued behind other patches
-- Check Slack #typo3-cms-coredev for CI outages
-- Be patient - pipelines run in order
-
-**Don't**:
-- Push multiple updates while CI is running
-- Spam push repeatedly
-- Rebase while CI is active
-
-**Do**:
-- Wait for current CI to finish
-- Make all fixes in one commit
-- Push once with all fixes
-
-## Common Patch Pitfalls
+## Patch content
 
 ### Problem: "composer.lock included in patch"
 
-**Symptoms**:
-- Gerrit shows `composer.lock` in changed files
-- Reviewer mentions lock file shouldn't be changed
-- Large diff with dependency changes
+TYPO3 Core manages dependencies centrally. A lock file change belongs in its own
+dedicated patch, never inside a bugfix or feature — a reviewer seeing it in a
+feature patch will ask for it to be removed before anything else is discussed.
 
-**Cause**: Running `composer install` or `composer update` and accidentally staging the lock file
-
-**Why This Matters**:
-- TYPO3 Core manages dependencies centrally
-- `composer.lock` changes should NEVER be part of feature/bugfix patches
-- Lock file changes require separate, dedicated patches with proper review
-
-**Solution**:
-
-**If already committed but not pushed**:
 ```bash
-# Remove composer.lock from the commit
 git reset HEAD~ -- composer.lock
 git checkout -- composer.lock
 git commit --amend --no-edit
-```
-
-**If already pushed to Gerrit**:
-```bash
-# Remove from current commit
-git reset HEAD~ -- composer.lock
-git checkout -- composer.lock
-git commit --amend --no-edit
-
-# Push new patchset
 git push origin HEAD:refs/for/main
 ```
 
-**Prevention**:
-```bash
-# Before committing, always check what's staged
-git status
-git diff --cached --name-only
+It gets in through `git add .` after a `composer install`. Stage named paths, and
+check before committing:
 
-# Only stage specific files
-git add path/to/changed/files
-# NOT: git add .  (this catches everything including composer.lock)
+```bash
+git diff --cached --name-only | grep composer.lock
 ```
 
 ### Problem: "patch was created without a push certificate"
 
-**Symptoms**:
-- Gerrit shows warning: "this patch was created without a push certificate"
-- Yellow/orange indicator on patch
+Informational, and safe to ignore — patches are merged without one every day.
+Worth knowing why the obvious fix does not apply:
 
-**Background**:
-- Push certificates are cryptographic signatures proving who pushed the code
-- They use **GPG (GNU Privacy Guard)**, NOT SSH keys
-- This is **completely optional** for TYPO3 contributions
-- Many successful contributors never use push certificates
+- Push certificates are **GPG**, not SSH. Having an SSH key on Gerrit does not
+  produce one, and adding another SSH key never will.
+- They sign the *push operation*, not the commit.
+- They are optional for TYPO3 contributions.
 
-**What Push Certificates Are**:
-```
-Push certificates use GPG to sign the push operation itself (not the commit).
-This proves that the person with access to the GPG key initiated the push.
-It's an additional layer of verification beyond SSH authentication.
-```
+If you want one anyway:
 
-**Why You Might See This Warning**:
-- You don't have GPG configured (most common - totally fine!)
-- GPG is configured but not linked to Git
-- Your GPG key isn't uploaded to Gerrit
-
-**Solutions**:
-
-**Option A: Ignore It (Recommended for most contributors)**:
-- The warning is informational only
-- Patches are accepted without push certificates
-- SSH authentication is sufficient for contribution
-
-**Option B: Set Up GPG Signing (Optional)**:
 ```bash
-# 1. Generate GPG key if you don't have one
-gpg --full-generate-key
-
-# 2. List your keys
-gpg --list-secret-keys --keyid-format=long
-
-# 3. Configure Git to use GPG
-git config --global user.signingkey YOUR_KEY_ID
+git config --global user.signingkey <KEY_ID>
 git config --global push.gpgSign true
-
-# 4. Upload public key to Gerrit
-# Go to: https://review.typo3.org/settings/#GPGKeys
-# Paste output of: gpg --armor --export YOUR_KEY_ID
+# public key to https://review.typo3.org/settings/#GPGKeys
 ```
 
-**Key Points**:
-- ❌ SSH keys do NOT create push certificates
-- ✅ GPG keys are required for push certificates
-- ✅ Push certificates are optional for TYPO3 contributions
-- ✅ Patches are merged without push certificates regularly
+### Commit message rejected
 
-## Quick Diagnostic Commands
+Subject too long, wrong type, missing footer — all fixed with
+`git commit --amend`, keeping the `Change-Id` line untouched. The format itself
+(≤52 characters recommended and 72 maximum, `[BUGFIX]` vs `[FEATURE]`,
+`Resolves:` and `Releases:` footers) is in `commit-message-format.md`.
 
-```bash
-# Check git configuration
-git config -l | grep -E "user\.|remote\.origin"
+## WIP state
 
-# Verify SSH connection
-ssh -T -p 29418 <username>@review.typo3.org
-
-# Check git hooks
-ls -la .git/hooks/ | grep -E "commit-msg|pre-commit"
-
-# View last commit
-git log -1 --pretty=full
-
-# Check remote configuration
-git remote -v
-
-# Verify Change-Id in last commit
-git log -1 | grep Change-Id
-
-# Check for unstaged changes
-git status
-
-# View diff of changes
-git diff HEAD
-
-# List all branches
-git branch -a
-```
-
-## Additional Resources
-
-- **Contribution Guide**: https://docs.typo3.org/m/typo3/guide-contributionworkflow/
-- **Gerrit Documentation**: https://review.typo3.org/Documentation/
-- **Git Documentation**: https://git-scm.com/doc
-- **Slack**: https://typo3.slack.com (#typo3-cms-coredev)
-- **Forge**: https://forge.typo3.org
-
-
----
-
-## Gerrit WIP State Management
-
-### Problem: "How do I mark my patch as ready for review?"
-
-**Background**:
-- All new patches start as WIP (Work in Progress) automatically
-- Reviewers cannot see WIP patches
-- You must mark patches as "ready" before reviewers can see them
-
-**Solution A - Command Line (Recommended)**:
-
-Remove WIP state via git push with %ready flag:
+**Every new patch is WIP, and reviewers cannot see WIP patches.** This is the
+reason a patch with green CI can sit for days with no feedback: nobody has seen
+it. Marking it ready is a step you take, not one that happens.
 
 ```bash
-# If no code changes needed, create empty patchset
-git commit --amend --allow-empty --no-edit
+git push origin HEAD:refs/for/main%ready    # with your changes
+git commit --amend --allow-empty --no-edit  # nothing to change? empty patchset
 git push origin HEAD:refs/for/main%ready
+git push origin HEAD:refs/for/main%wip      # deliberately back to WIP
 ```
 
-**Solution B - Web UI**:
+The web UI does the same through "Start Review" in the ⋮ menu.
 
-1. Open your review: `https://review.typo3.org/c/Packages/TYPO3.CMS/+/XXXXX`
-2. Click "Start Review" button (top right, near your avatar)
-3. Done - patch now visible to reviewers
-
-**Solution C - Combined with Code Changes**:
-
-If you're pushing code fixes, add %ready to remove WIP at the same time:
+What does **not** work, having been tried: the SSH `gerrit review` command has no
+WIP flags at all.
 
 ```bash
-git commit --amend
-git push origin HEAD:refs/for/main%ready
-```
-
-**Setting WIP State**:
-
-```bash
-# Mark as WIP on initial push
-git push origin HEAD:refs/for/main%wip
-
-# Or set WIP via web UI: More menu → "Mark as Work in Progress"
-```
-
-**What DOESN'T Work**:
-
-```bash
-# ❌ SSH 'gerrit review' command has NO WIP flags
+# both are rejected
 ssh -p 29418 user@review.typo3.org gerrit review --ready 12345,1
 ssh -p 29418 user@review.typo3.org gerrit review --wip 12345,1
 ```
 
-**Key Points**:
+Fix the CI before marking ready — a reviewer's first look at a red patch is a
+wasted one.
 
-- ✅ Use `%wip` and `%ready` flags with `git push`
-- ✅ Empty pushes with `--allow-empty` are accepted
-- ❌ SSH `gerrit review` command does NOT support WIP operations
-- ✅ Web UI works but command line is faster
+## Before you push
 
+- `scripts/verify-prerequisites.sh` — SSH, hooks, Git identity in one run
+- One commit per patch, with its `Change-Id`
+- Rebased on current `main`
+- `git diff --cached --name-only | grep composer.lock` comes back empty
+- `./Build/Scripts/runTests.sh -s unit` and `-s phpstan` pass locally
+
+## Quick diagnostics
+
+```bash
+git config -l | grep -E "user\.|remote\.origin"   # identity + push URL
+ssh -T -p 29418 <username>@review.typo3.org       # Gerrit reachability
+git log -1 | grep Change-Id                       # patch is pushable
+ls -la .git/hooks/commit-msg                      # hook installed and +x
+```
+
+## Where to ask
+
+- Slack **#typo3-cms-coredev** (<https://typo3.slack.com>) — include the Gerrit
+  URL and the full error, not a paraphrase
+- Forge: <https://forge.typo3.org>
+- Contribution guide:
+  <https://docs.typo3.org/m/typo3/guide-contributionworkflow/>
+- Gerrit documentation: <https://review.typo3.org/Documentation/>

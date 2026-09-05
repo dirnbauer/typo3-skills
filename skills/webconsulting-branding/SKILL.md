@@ -3,6 +3,7 @@ name: "webconsulting-branding"
 description: "Applies the current webconsulting.at design system: borderless square surfaces, Hanken Grotesk typography, teal/ink color tokens, invoice-led information hierarchy, a header-only brand notice, logo-first project icons, MDX patterns, dark mode, accessibility, and shadcn/ui integration. Use when building or reviewing webconsulting.at pages, internal tools, tracker/GitLab themes, project catalogs, TYPO3 templates, brand assets, or visual consistency."
 compatibility: "TYPO3 14.x"
 metadata:
+  skill_type: preference
   version: "3.0.0"
   origin: "webconsulting"
 license: "MIT / CC-BY-SA-4.0"

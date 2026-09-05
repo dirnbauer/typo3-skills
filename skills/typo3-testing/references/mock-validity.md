@@ -146,6 +146,53 @@ After any production code change that adds parameters to a method call, search f
 grep -rn "method('process')" Tests/ | grep -A5 "willReturnCallback"
 ```
 
+### A Missing `use` in a Callback Signature Passes the Suite
+
+The sibling failure of a stale signature: a callback whose parameter *type* is not imported. PHP resolves a parameter's class type only when a value is actually checked against it, and `null` never is — so a nullable parameter that only ever receives `null` in the test never touches the unresolvable name.
+
+```php
+// The test file has no `use ...\ValueObject\AgentRunReference;`
+$mgr->method('chatWithTools')->willReturnCallback(
+    function (
+        array $messages,
+        ?AgentRunReference $run = null,   // resolves to the CURRENT namespace
+        ?InjectedContext $injected = null,
+    ) use (&$seen): CompletionResponse {
+        $seen = $injected;
+
+        return $this->response('done');
+    },
+);
+```
+
+Green. Every call in the test passes `null` for `$run`, so PHP never loads
+`Netresearch\NrLlm\Tests\Unit\Service\Tool\AgentRunReference` — a class that
+does not exist. The day production starts passing a real object, the test dies
+with `Argument #2 must be of type ?AgentRunReference` naming a class nobody
+recognises.
+
+**PHPStan finds it and the suite cannot:**
+
+```
+Parameter $run of anonymous function has invalid type
+Netresearch\NrLlm\Tests\Unit\Service\Tool\AgentRunReference.
+```
+
+The recommended PHPStan configuration in `quality-tools.md` lists `Tests` in
+`paths`, so the analyser does see this — but only if you run it **after**
+writing the tests, over the final tree. Ordering matters here in a way it does
+not for production code: a green `runTests.sh -s unit` is not evidence that a
+new test file is even type-correct, so analysing before the tests exist checks
+the half that was already fine.
+
+Two habits close it without waiting for the analyser:
+
+- Copy the parameter list from the interface, then copy its `use` statements.
+  A signature pasted without its imports is the whole failure mode.
+- Treat every `?Type $x = null` parameter in a test double as unverified until
+  something passes a non-null value — either a second test case that does, or
+  PHPStan.
+
 ## Test Assertion Specificity After Refactoring
 
 When refactoring production code, test assertions must maintain equivalent specificity. A refactoring that changes the API surface (e.g., replacing `toWebp()->save()` with `save('output.webp')`) requires updated assertions that verify the same behavior.

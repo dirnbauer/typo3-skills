@@ -187,7 +187,7 @@ the reusable workflow rather than trying to run both engines in one:
       typo3-versions: '["^14.3"]'
       run-functional-tests: true
       functional-test-db: mariadb
-      db-image: 'mariadb:10.11'
+      db-image: 'mariadb:11.8'
 ```
 
 Two traps that make the leg silently *not* test MariaDB, or fail to start:
@@ -196,12 +196,20 @@ Two traps that make the leg silently *not* test MariaDB, or fail to start:
   alone does **not** run against MariaDB — the DB service image is a separate
   input. Without `db-image: 'mariadb:...'` the "MariaDB leg" runs on MySQL. Set
   both.
-- **MariaDB images ≥ 11 break the reusable workflow's health check.** The job
-  health-checks the DB service with a hardcoded `mysqladmin ping`. MariaDB
+- **MariaDB images ≥ 11 used to break the reusable workflow's health check.** The
+  job health-checked the DB service with a hardcoded `mysqladmin ping`; MariaDB
   dropped the `mysql*` compatibility symlinks at 11.0 and ships only
-  `mariadb-admin`, so `mariadb:11.x` never turns healthy → "Failed to initialize
-  container". Pin **`mariadb:10.11`** (LTS, still carries the `mysql*` symlinks)
-  until the reusable workflow's health check covers both binaries.
+  `mariadb-admin`, so `mariadb:11.x` never turned healthy → "Failed to initialize
+  container". Fixed in [typo3-ci-workflows#174](https://github.com/netresearch/typo3-ci-workflows/pull/174):
+  the health command now tries both binaries. A caller that still pins
+  `mariadb:10.11` for this reason can move to a current series — but only if it
+  references the workflow `@main`; a call pinned to an older SHA carries the old
+  health check with it.
+- **Pick a series MariaDB still supports.** Per the
+  [maintenance policy](https://mariadb.org/about/#maintenance-policy) those are
+  10.11 (until 2028-02), 11.4 (2029-05), 11.8 (2028-06) and 12.3 (2029-06).
+  12.0–12.2 are rolling releases, not LTS, and Docker Hub stopped rebuilding
+  `mariadb:12.2` in May 2026 — a tag that looks current and is not.
 
 Also expect the enabled leg to surface **pre-existing** MySQL-strict-mode bugs
 in an e2e-backend suite that has only ever run on SQLite — file those separately

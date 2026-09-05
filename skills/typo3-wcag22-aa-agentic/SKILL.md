@@ -7,6 +7,7 @@ compatibility: >-
   MCP Server plus AXE_API_KEY or AXE_ACCESS_TOKEN. Designed for TYPO3 local
   DDEV/staging URLs and CI.
 metadata:
+  skill_type: preference
   author: webconsulting accessibility workflow
   version: "1.0.0"
 ---
@@ -213,7 +214,12 @@ Optionally include `best-practice` as advisory, not as a WCAG gate.
 
 ### 4. Fix loop
 
-For every finding:
+Batch findings by shared component/root cause. In an upgrade graph, take only the assigned
+upgrade-induced findings, run one repair pass and return evidence to the parent; a full conformance
+programme requires its own request. Standalone, cap a batch at three repair passes and stop earlier
+after two non-improving results. Run a full scan at baseline and final verification, not per finding.
+
+For each root-cause batch:
 
 1. Identify URL and state.
 2. Identify selector and HTML snippet.

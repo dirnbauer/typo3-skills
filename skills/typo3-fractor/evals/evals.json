@@ -59,6 +59,23 @@
       "prompt": "Fractor cannot boot because the TYPO3 extension registry is missing after a Composer --no-plugins recovery. Regenerate it and finish the non-PHP migration.",
       "expect_skill": "typo3-fractor",
       "note": "Fractor bootstrap recovery plus fixed-point completion."
+    },
+    {
+      "id": "typo3-fractor-trigger-neg-manual-reference",
+      "kind": "trigger-negative",
+      "status": "proposed",
+      "prompt": "Explain the difference between TypoScript setup and TSconfig. Show a PAGEVIEW configuration for a new sitepackage.",
+      "expect_skill": "typo3-typoscript-ref"
+    },
+    {
+      "id": "parent-budget-survives-handoff",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Fractor has remaining findings after the pass assigned by the upgrade controller. Run its entire standalone repair workflow before returning.",
+      "assertions": [
+        "Returns remaining findings with exact commands and diffs to the graph owner.",
+        "Does not reset graph retry/time limits by invoking the standalone workflow."
+      ]
     }
   ]
 }

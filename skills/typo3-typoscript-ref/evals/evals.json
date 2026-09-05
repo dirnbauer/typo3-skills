@@ -1,0 +1,190 @@
+[
+  {
+    "name": "lookup_stdwrap",
+    "prompt": "I need to use stdWrap wrap in my TYPO3 TypoScript setup. Look up the reference for me.",
+    "assertions": [
+      { "type": "tool_use", "tool": "Bash", "pattern": "lookup\\.sh.*stdWrap" },
+      { "type": "content", "pattern": "stdWrap|wrap" }
+    ]
+  },
+  {
+    "name": "lookup_fluidtemplate",
+    "prompt": "How do I configure a FLUIDTEMPLATE content object in TYPO3 v12 TypoScript?",
+    "assertions": [
+      { "type": "tool_use", "tool": "Bash", "pattern": "lookup\\.sh.*FLUIDTEMPLATE" },
+      { "type": "content", "pattern": "templateRootPaths|templateName" },
+      { "type": "content", "pattern": "(v12|version 12)" }
+    ]
+  },
+  {
+    "name": "pageview_vs_fluidtemplate",
+    "prompt": "Should I use PAGEVIEW or FLUIDTEMPLATE for a new TYPO3 v13 project?",
+    "assertions": [
+      { "type": "content", "pattern": "PAGEVIEW" },
+      { "type": "content", "pattern": "(recommend|prefer|modern|new)" },
+      { "type": "content", "pattern": "FLUIDTEMPLATE" }
+    ]
+  },
+  {
+    "name": "recipe_page_setup",
+    "prompt": "Show me the recipe for a basic page setup in TypoScript.",
+    "assertions": [
+      { "type": "tool_use", "tool": "Bash", "pattern": "lookup\\.sh.*--recipe.*page-setup" },
+      { "type": "content", "pattern": "page\\s*=\\s*PAGE" }
+    ]
+  },
+  {
+    "name": "recipe_menu_setup",
+    "prompt": "How do I create a navigation menu in TypoScript? Show me the recipe.",
+    "assertions": [
+      { "type": "tool_use", "tool": "Bash", "pattern": "lookup\\.sh.*--recipe.*menu" },
+      { "type": "content", "pattern": "(HMENU|MenuProcessor|menu)" }
+    ]
+  },
+  {
+    "name": "deprecations_v13",
+    "prompt": "What TypoScript features are deprecated in TYPO3 v13?",
+    "assertions": [
+      { "type": "tool_use", "tool": "Bash", "pattern": "lookup\\.sh.*--deprecations" },
+      { "type": "content", "pattern": "(INCLUDE_TYPOSCRIPT|Site Sets|deprecated)" }
+    ]
+  },
+  {
+    "name": "deprecations_v14",
+    "prompt": "What TypoScript changes are removed in TYPO3 v14?",
+    "assertions": [
+      { "type": "content", "pattern": "INCLUDE_TYPOSCRIPT" },
+      { "type": "content", "pattern": "(removed|removal)" }
+    ]
+  },
+  {
+    "name": "debug_page_not_configured",
+    "prompt": "I get 'The page is not configured' error in my TYPO3 frontend. How do I fix it?",
+    "assertions": [
+      { "type": "tool_use", "tool": "Bash", "pattern": "lookup\\.sh.*--debug.*page.*not configured" },
+      { "type": "content", "pattern": "(PAGE|page\\s*=|typeNum)" }
+    ]
+  },
+  {
+    "name": "debug_template_not_found",
+    "prompt": "TYPO3 shows 'No TypoScript template found' on my page. What is wrong?",
+    "assertions": [
+      { "type": "tool_use", "tool": "Bash", "pattern": "lookup\\.sh.*--debug" },
+      { "type": "content", "pattern": "(sys_template|Site Set|root)" }
+    ]
+  },
+  {
+    "name": "checklist_typoscript",
+    "prompt": "Give me a code review checklist for TypoScript files.",
+    "assertions": [
+      { "type": "tool_use", "tool": "Bash", "pattern": "lookup\\.sh.*--checklist.*typoscript" },
+      { "type": "content", "pattern": "(no_cache|deprecated|stdWrap)" }
+    ]
+  },
+  {
+    "name": "checklist_fluid",
+    "prompt": "What should I check when reviewing Fluid templates?",
+    "assertions": [
+      { "type": "tool_use", "tool": "Bash", "pattern": "lookup\\.sh.*--checklist.*fluid" },
+      { "type": "content", "pattern": "(f:translate|f:format\\.raw|escap)" }
+    ]
+  },
+  {
+    "name": "review_existing_typoscript",
+    "prompt": "Review this TypoScript for issues:\n```typoscript\npage = PAGE\npage.10 = FLUIDTEMPLATE\npage.10.file = EXT:my_ext/template.html\nconfig.no_cache = 1\n[globalVar = GP:L=1]\n  config.sys_language_uid = 1\n[end]\n```",
+    "assertions": [
+      { "type": "content", "pattern": "(no_cache|deprecated|production)" },
+      { "type": "content", "pattern": "(condition|globalVar|legacy|Symfony)" },
+      { "type": "content", "pattern": "(templateRootPaths|file)" }
+    ]
+  },
+  {
+    "name": "lint_rules_lookup",
+    "prompt": "What lint rules should I follow when writing TypoScript?",
+    "assertions": [
+      { "type": "tool_use", "tool": "Bash", "pattern": "lookup\\.sh.*--lint" },
+      { "type": "content", "pattern": "(indent|spacing|lint)" }
+    ]
+  },
+  {
+    "name": "site_sets_v13",
+    "prompt": "How do I set up Site Sets in TYPO3 v13 to distribute my extension's TypoScript?",
+    "assertions": [
+      { "type": "content", "pattern": "config\\.yaml" },
+      { "type": "content", "pattern": "(settings\\.definitions|dependencies|Configuration/Sets)" }
+    ]
+  },
+  {
+    "name": "coa_vs_coa_int",
+    "prompt": "When should I use COA_INT instead of COA in TypoScript?",
+    "assertions": [
+      { "type": "content", "pattern": "COA_INT" },
+      { "type": "content", "pattern": "(uncached|dynamic|per.request|every request)" },
+      { "type": "content", "pattern": "(cache|performance|overhead)" }
+    ]
+  },
+  {
+    "name": "copy_vs_reference",
+    "prompt": "What is the difference between < and =< operators in TypoScript?",
+    "assertions": [
+      { "type": "content", "pattern": "(copy|independent)" },
+      { "type": "content", "pattern": "(reference|linked|current state)" }
+    ]
+  },
+  {
+    "name": "fluid_xss_prevention",
+    "prompt": "How do I prevent XSS in my Fluid templates?",
+    "assertions": [
+      { "type": "content", "pattern": "(escape|auto.escap|f:format\\.raw)" },
+      { "type": "content", "pattern": "(f:sanitize\\.html|trusted|user.input)" }
+    ]
+  },
+  {
+    "name": "dataprocessor_usage",
+    "prompt": "I need to fetch news records and display them in a Fluid template. Should I use CONTENT cObject or DatabaseQueryProcessor?",
+    "assertions": [
+      { "type": "content", "pattern": "DatabaseQueryProcessor" },
+      { "type": "content", "pattern": "(Fluid|prefer|dataProcessing)" }
+    ]
+  },
+  {
+    "name": "condition_syntax_v12",
+    "prompt": "How do I write a condition in TypoScript that checks if a backend user is logged in (TYPO3 v12+)?",
+    "assertions": [
+      { "type": "content", "pattern": "backend\\.user\\.isLoggedIn" },
+      { "type": "content", "pattern": "(Symfony|Expression Language|\\[)" }
+    ]
+  },
+  {
+    "name": "migration_v12_to_v13",
+    "prompt": "What TypoScript changes are needed when upgrading from TYPO3 v12 to v13?",
+    "assertions": [
+      { "type": "content", "pattern": "(Site Sets|PAGEVIEW|config\\.baseURL)" },
+      { "type": "content", "pattern": "(migration|upgrade|replace)" }
+    ]
+  },
+  {
+    "name": "migration_v13_to_v14_conditions",
+    "prompt": "My TypoScript condition [getTSFE() && getTSFE().id == 42] stopped working after upgrading to TYPO3 v14. Why?",
+    "assertions": [
+      { "type": "content", "pattern": "(removed in v14|getTSFE\\(\\) was removed|107473)" },
+      { "type": "content", "pattern": "(page\\[\"uid\"\\]|page\\['uid'\\]|getPageArguments|request)" }
+    ]
+  },
+  {
+    "name": "review_flags_tsfe_getdata_v14",
+    "prompt": "Review this TYPO3 v14 TypoScript snippet: lib.link = TEXT\nlib.link.typolink.parameter.data = TSFE:id",
+    "assertions": [
+      { "type": "content", "pattern": "(TSFE.*(removed|not available|v14)|v14.*TSFE)" },
+      { "type": "content", "pattern": "page\\s*:\\s*uid|page:uid" }
+    ]
+  },
+  {
+    "name": "fluid_unbraced_condition",
+    "prompt": "In a TYPO3 Fluid partial the f:else branch of <f:if condition=\"accessTokens\"> never renders, not even when the user has no access tokens. Why?",
+    "assertions": [
+      { "type": "content", "pattern": "\\{accessTokens\\}" },
+      { "type": "content", "pattern": "(string|literal|always (true|truthy))" }
+    ]
+  }
+]

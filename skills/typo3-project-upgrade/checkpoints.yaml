@@ -1,0 +1,125 @@
+# Checkpoints for typo3-project-upgrade skill
+# Validates TYPO3 project upgrade completeness and correctness
+
+version: 1
+skill_id: typo3-project-upgrade
+
+preconditions:
+  - type: command
+    pattern: "grep -qE '\\\"type\\\"[[:space:]]*:[[:space:]]*\\\"(project|typo3-cms-project)\\\"' composer.json"
+    desc: "composer type:project — these checks audit a site/project repo, not an extension"
+
+mechanical:
+  # === SITE SET CHECKS ===
+  - id: TPU-01
+    type: command
+    target: "find . -path '*/Configuration/Sets/*/config.yaml' | head -1 | grep -q ."
+    severity: error
+    desc: "Project must have at least one Site Set (Configuration/Sets/*/config.yaml)"
+
+  - id: TPU-02
+    type: command
+    target: "find config/sites -name 'config.yaml' -exec grep -l 'dependencies' {} \\;"
+    severity: error
+    desc: "Site configuration must reference site set via dependencies"
+
+  - id: TPU-03
+    type: not_contains
+    target: config/sites/*/config.yaml
+    pattern: "include_static_file"
+    severity: error
+    desc: "Site config must not use include_static_file (replaced by site set dependencies)"
+
+  # === SYS_TEMPLATE CLEANUP ===
+  - id: TPU-04
+    type: command
+    target: "grep -rq 'DELETE FROM sys_template' docker/ || grep -rq 'TRUNCATE.*sys_template' docker/"
+    severity: warning
+    desc: "Docker entrypoint should clean up legacy sys_template records"
+
+  # === IMAGE PROCESSING ===
+  - id: TPU-05
+    type: command
+    target: "grep -rq 'imagemagick\\|ImageMagick\\|graphicsmagick' docker/ Dockerfile* 2>/dev/null"
+    severity: error
+    desc: "Docker image must include ImageMagick or GraphicsMagick for image processing"
+
+  - id: TPU-06
+    type: command
+    target: "grep -rq 'processor.*ImageMagick\\|processor.*GraphicsMagick' docker/ config/ 2>/dev/null"
+    severity: warning
+    desc: "GFX processor should be configured in settings.php or entrypoint"
+
+  # === SCSS OVER CSS ===
+  - id: TPU-07
+    type: command
+    target: "! grep -rq '!important' packages/*/Configuration/Sets/*/setup.typoscript 2>/dev/null || test $? -eq 1"
+    severity: info
+    desc: "Prefer SCSS variables over CSS !important overrides in setup.typoscript"
+
+  # === BOOTSTRAP PACKAGE DEPENDENCIES ===
+  - id: TPU-08
+    type: command
+    target: "find . -path '*/Configuration/Sets/*/config.yaml' -exec grep -l 'bootstrap-package' {} \\;"
+    severity: warning
+    desc: "Site set should declare bootstrap-package dependency"
+
+  # === COMPOSER DEPENDENCIES MATCH SITE SET ===
+  - id: TPU-09
+    type: file_exists
+    target: composer.json
+    severity: error
+    desc: "Project must have composer.json"
+
+llm_reviews:
+  # === SITE SET COMPLETENESS ===
+  - id: TPU-20
+    domain: code-quality
+    prompt: |
+      Check if the site set configuration is complete:
+      1. Does config.yaml list all required dependencies?
+      2. Does settings.yaml override colors/branding via SCSS variables?
+      3. Does setup.typoscript exist for custom TypoScript?
+      4. Are CSS overrides in setup.typoscript documented with WHY comments?
+      5. Are there any CSS !important rules that could be SCSS variables instead?
+    severity: warning
+    desc: "Site set configuration should be complete and prefer SCSS over CSS"
+
+  # === BS4→BS5 MIGRATION ===
+  - id: TPU-21
+    domain: code-quality
+    prompt: |
+      Check for incomplete Bootstrap 4→5 migration:
+      1. Are there any data-toggle attributes (should be data-bs-toggle)?
+      2. Are there references to deprecated BS4 classes?
+      3. Is color-contrast()/min-contrast-ratio handled for custom colors?
+      4. Are cards inside colored frames handled (custom property inheritance)?
+      5. Are link-decoration and link-hover-decoration set via SCSS if needed?
+    severity: warning
+    desc: "Bootstrap 4 to 5 migration should be complete"
+
+  # === NAVIGATION MIGRATION ===
+  - id: TPU-22
+    domain: code-quality
+    prompt: |
+      Check navigation migration completeness:
+      1. Is navbar-default-transition used appropriately (homepage vs inner pages)?
+      2. Are dropdown hover rules scoped to nav-style-simple/nav-style-mega only?
+      3. Is sticky header scroll flicker addressed (margin-bottom compensation)?
+      4. Are inner pages handled for transparent→opaque navbar transition?
+    severity: warning
+    desc: "Navigation should be properly migrated for BS Package v16"
+
+  # === INFRASTRUCTURE ===
+  - id: TPU-23
+    domain: repo-health
+    prompt: |
+      Check Docker/infrastructure completeness:
+      1. Is ImageMagick installed in the Docker image?
+      2. Is GFX configured in TYPO3 settings?
+      3. Are sys_template records cleaned up on first boot?
+      4. Is the sys_template DELETE comprehensive (not just config column)?
+      5. Are processed files cleared after adding ImageMagick?
+      6. Does CI validate the site actually responds with 200?
+    severity: error
+    desc: "Docker infrastructure should support full TYPO3 functionality"

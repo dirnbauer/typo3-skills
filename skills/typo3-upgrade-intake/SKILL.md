@@ -4,7 +4,7 @@ description: >-
   Perform the read-only preflight for an orchestrated CMS transition: prove the selected
   repository, local application runtime, database, fileadmin, site configuration and dated-dataset identity; inspect URL
   discovery, installed-extension compatibility, credential boundaries, backup readiness,
-  risks and conditional routes. Use before any mutation or when the selected dataset/runtime
+  risks and conditional routes. Use when preparing any mutation or when the selected dataset/runtime
   may be wrong. Produces evidence and routing decisions; never changes the
   site, resolves Composer constraints, captures Baseline A, or performs migration work.
 metadata:
@@ -39,18 +39,25 @@ One job: prove exactly what will be upgraded and define the graph before mutatio
    ```
 
 5. Require one resolution strategy per v14 blocker; do not implement it here.
-6. Check `typo3/cms-redirects`. If absent, activate the dependency-resolution branch. Always activate
+6. Check `typo3/cms-redirects` and `spooner/deployer-information`. If absent, activate dependency resolution. Always activate
    the editor-rights verification branch for Redirects.
 7. Identify Mask/Content Blocks, Vite/assets, Solr/search, RTE/Visual Editor, Powermail/forms,
    scheduler, custom backend modules/rights, local extensions, and schema/data migrations.
 8. Record credential origins without reading/printing values. Reject committed/hard-coded secrets,
    ambiguous origins, production sessions, or cross-origin credential flows as security findings.
+   Inventory the env loader, Bootstrap version, jQuery/plugin dependencies and the live-sync helper
+   without executing it. Plan their scoped modernization; read the orchestrator's
+   [project environment](../typo3-upgrade-run/references/project-environment.md) for the dotenv/config-handling distinction.
 9. Verify backup capability: artifact type, timestamp, checksum, target identity, restore command,
    and storage path. This is readiness evidence; take snapshots only immediately before stateful nodes.
 10. Read `../typo3-upgrade-run/references/runtime-sizing.md`. Record all nine sizing metrics and
     their source artifacts in `nodes/intake/runtime-size.json`; select no profile yourself. Let
     `t3u runtime-seal` calculate and seal the smallest fitting small/large/huge profile.
 11. Produce risk/cost order, graph applicability outcomes, and a smallest-decision list for the user.
+12. Resolve known approvals before unattended execution. Forecast work from measured capture/test
+    throughput as well as site size. Read `../typo3-upgrade-run/references/overnight-controller.md`,
+    write the selected-route runtime plan and run `t3u graph-forecast` before the baseline. A missing
+    or non-fitting estimate blocks admission. The 14h ceiling is not a completion guarantee.
 
 ## Routes
 

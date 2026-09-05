@@ -1,6 +1,6 @@
 ---
-name: "typo3-extension-upgrade"
-description: "Use when upgrading TYPO3 extensions to newer LTS versions (v11->v12, v12->v13, v13->v14 - v14.3 LTS is the current target), running Extension Scanner, Rector, Fractor, PHPStan, fixing deprecated APIs, or resolving compatibility issues. Also triggers on: migration, version upgrade, deprecated API, dual-version compatibility, Fluid 5 strict VHs, HashService removal, ext_tables.php split."
+name: typo3-extension-upgrade
+description: "Use when an extension has to work with a newer or the current TYPO3 LTS, when a version bump breaks compatibility or leaves deprecated APIs behind, when upgrading v11->v12, v12->v13 or v13->v14 (v14.3 LTS is the current target), when one codebase must stay compatible with two versions, when running Extension Scanner, Rector, Fractor or PHPStan against a target version, or when a specific v14 breaker bites - Fluid 5 strict ViewHelpers, HashService removal, the ext_tables.php split."
 ---
 
 # TYPO3 Extension Upgrade Skill
@@ -21,15 +21,56 @@ Extension code only, not project/core upgrades.
 
 1. Complete planning phase (consult `references/pre-upgrade.md`)
 2. Create feature branch (verify git is clean)
-3. Update `composer.json` constraints for target version
+3. Update `composer.json` constraints for the target version. **v14's LTS minor is 3: write `^14.3`, never `^14.4`** — `^13.4 || ^14.3` to support both. v11.5, v12.4 and v13.4 make `14.4` look like the next in line; it matches no release, so `composer update` fails dependency resolution, exits non-zero and installs nothing. Constraints for every version pair: `references/upgrade-v13-to-v14.md`
 4. **Audit third-party dependencies** for major version changes (consult `references/third-party-dependency-upgrades.md`)
 5. Run `rector process --dry-run` then review and apply
 6. Run `fractor process --dry-run` then review and apply
 7. Run `php-cs-fixer fix`
 8. Run `phpstan analyse` **against each supported dependency version** and fix errors
-9. Run `phpunit` and fix tests
-10. Test in target TYPO3 version(s)
+9. Run `phpunit` and fix tests. **`Tests/` is part of the upgrade, not a
+   consequence of it.** A class v14 removed, referenced from a test, is fatal
+   rather than failing: in an import, a parent, a property or a signature it
+   stops PHPUnit while it loads the suite, so nothing runs at all. Search for
+   the removed types across both trees before running anything:
+   `grep -rnE 'TypoScriptFrontendController|StandaloneView|TemplateView|HashService|LocalPreviewHelper|LocalCropScaleMaskHelper|FreezableBackendInterface' Classes/ Tests/`
+   Every hit is a fix. `createMock` on one of them cannot be repaired by
+   swapping the name — see `references/upgrade-v13-to-v14.md`
+10. **Install the target version and run the suite against it.** A green suite
+    on the version already installed proves nothing about the target — that is
+    the old code passing old tests. Install first, then test:
+    `composer update "typo3/*" --with typo3/cms-core:^14.3 -W && vendor/bin/phpunit -c Build/phpunit/UnitTests.xml`
+    The package argument matters: without it `composer update` moves every
+    dependency, and the test result then depends on upgrades that have nothing
+    to do with TYPO3. `-W` lets the TYPO3 packages' own dependencies follow.
 11. Verify success criteria (consult `references/verification.md`)
+
+**Done means the suite passes with the target version installed.** Not that the
+constraint was widened, and not that the suite is green where it was already
+green.
+
+Where a removed class is referenced decides when it bites. In an `import`, a
+parent class, a property or a signature it is resolved while PHPUnit *loads*
+the suite, so nothing runs at all and the failure looks nothing like a test
+failure. Referenced only inside a method body, it fails when that one test
+executes, and the rest of the suite still passes — which is the more
+comfortable failure and the easier one to miss in a summary line.
+
+## When the migration breaks the tests
+
+It will. A suite that was green before Rector routinely comes back with dozens
+of errors, and working through them is the job.
+
+**Never revert the migration to get back to green.** Measured: an agent ran
+Rector, saw `Tests: 719, Errors: 34`, discarded every migrated file under
+`Classes/`, got `OK (719 tests, 1176 assertions)`, and committed
+`composer.json`, `ext_emconf.php` and two build files — no code at all. That
+commit claims support for a version the code does not have, and it is the worst
+of the three possible outcomes: a failing upgrade is visible, an unattempted one
+is honest, and this one is neither.
+
+Green after a revert is the state you started in. The only green that counts is
+the one from step 10, with the target version installed and the migration in
+place.
 
 ## When NOT to Apply Automatically
 
@@ -78,17 +119,3 @@ Config templates in `assets/`: `rector.php`, `fractor.php`, `phpstan.neon`, `php
 - [TYPO3 Rector](https://github.com/sabbelasichon/typo3-rector)
 - [Fractor](https://github.com/andreaswolf/fractor)
 - [TYPO3 Core Changelog](https://docs.typo3.org/c/typo3/cms-core/main/en-us/)
-
----
-
-## Credits & Attribution
-
-This skill is based on the excellent work by
-**[Netresearch DTT GmbH](https://www.netresearch.de/)**.
-
-Original repository: https://github.com/netresearch/typo3-extension-upgrade-skill
-
-**Copyright (c) Netresearch DTT GmbH** — Methodology and best practices (MIT / CC-BY-SA-4.0)
-
-Special thanks to [Netresearch DTT GmbH](https://www.netresearch.de/) for their generous open-source contributions to the TYPO3 community, which helped shape this skill collection.
-Adapted by webconsulting.at for this skill collection

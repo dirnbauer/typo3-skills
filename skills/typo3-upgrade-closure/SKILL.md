@@ -22,7 +22,10 @@ One job: decide whether Contract A is actually proven.
 - Migration and applicable specialist nodes are passed/skipped with evidence.
 - Stateful migrations reached fixed points; source content fingerprint remains immutable.
 
-## Proof graph
+## Workflow: proof graph
+
+Read `../typo3-upgrade-run/references/closure-currentness.md`. After the last migration/build,
+reconcile the target content epoch first; then use `t3u closure-start` and bind every check to it.
 
 1. Reconcile every expected DB/file/schema/generated-asset change in the content-transition ledger;
    seal the target editorial epoch. Unledgered content drift is `INVALID`.
@@ -35,17 +38,21 @@ One job: decide whether Contract A is actually proven.
    language and project-critical flows.
 5. Verify backend login, expected module inventory, editor roles, cache/task/data write round-trip,
    runtime logs, scheduler/search as applicable, Composer audit, schema, and migration idempotence.
+   Use `typo3-playwright`: non-admin save/reopen, RTE page/record/file link dialogs, actual plugin
+   previews, media/video and category fields. Test mobile filters a second time after AJAX results
+   replacement and UTF-8 search/suggest when present. Verify the web PHP runtime, not only CLI.
 6. Redirects is mandatory: package/module present, intended editor group can read/create/edit only in
    authorized scope, unrelated actions remain denied, and frontend redirect response is correct.
 7. Run version-pinned Lighthouse repeated on fixed URLs and axe over representative visible states.
    Report medians/ranges and all findings. Automated green is not WCAG conformance.
+   Use `--mode verify` before closure, not the optional Contract B optimization mode.
 8. Re-run the complete final measurement unchanged and require the same verdict.
 
 ## Classification and routes
 
 - HTTP+DOM+pixels → routing/template/content recovery.
 - DOM+pixels → markup/template recovery.
-- pixels only → classify CSS, assets/fonts/images, content, session/consent, or harness.
+- pixels only → classify CSS, assets, fonts, images, content, session/consent, or harness.
 - component failure → interaction recovery; search order is output, not incidental index state.
 - malformed/missing/hash/input mismatch → harness recovery and `INVALID`, not site findings.
 - policy/identity/credential/approval failure → blocked security path.
@@ -55,10 +62,17 @@ declared change with before/after evidence. Do not refresh Baseline A or relax m
 
 ## Closure certificate
 
-Close only with zero unapproved regressions and passing `t3u graph-validate`/`validate-run`. Record:
+Close only with zero unapproved regressions and passing `t3u closure-check`, `graph-validate` and
+`validate-run`. Missing/failed/skipped checks cannot be waived by a narrative summary. Record:
 project/remote/branch/HEAD, core/PHP, dataset date, source/target hashes, graph hash, backup/restore,
 commands and exit codes, coverage, declared changes, residual risks, and exact next local step. State
 that no staging/live action occurred. Contract B remains locked until countersigned.
+Use `closure-verify` before the deadline to record complete proof awaiting actual human acceptance.
+This receipt can be accepted later only while its source/data/renderer inputs and artifacts remain
+current. Never set contract fields manually. `node-close --node contract-a-gate` validates proof and
+human acceptance before updating them. Changed source/data make earlier closure stale; evidence-only
+commits do not invalidate their own reports. Preserve
+history and obtain current evidence. A missing source baseline cannot be recreated after upgrade.
 
 ## Boundaries
 

@@ -42,7 +42,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SKILLS = ROOT / "skills"
 VENDORED = ROOT / "VENDORED.md"
 
-from _skilltext import STOP, read_frontmatter, stem, terms  # noqa: F401
+from _skilltext import STOP, domain_eligible, read_frontmatter, stem, terms  # noqa: F401
 
 
 def load_corpus() -> dict[str, str]:
@@ -94,6 +94,9 @@ def rank_skills(prompt: str, corpus: dict[str, str], index: dict) -> list[tuple[
     docs, idf, lengths, avgdl = index["docs"], index["idf"], index["lengths"], index["avgdl"]
     scores = []
     for name, tf in docs.items():
+        if not domain_eligible(name, prompt):
+            scores.append((name, 0.0))
+            continue
         dl = lengths[name]
         norm = BM25_K1 * (1 - BM25_B + BM25_B * (dl / avgdl if avgdl else 1.0))
         s = 0.0
@@ -170,7 +173,7 @@ NONE if no skill applies. Reply with nothing else."""
 
 
 def grade_claude(case: dict, skill: str, corpus: dict[str, str], timeout: int) -> dict:
-    catalogue = "\n".join(f"- {n}: {d[:300]}" for n, d in sorted(corpus.items()))
+    catalogue = "\n".join(f"- {n}: {d[:300]}" for n, d in sorted(corpus.items()) if domain_eligible(n, case['prompt']))
     prompt = CLAUDE_TEMPLATE.format(catalogue=catalogue, prompt=case["prompt"])
     try:
         proc = subprocess.run(
@@ -192,7 +195,7 @@ def grade_claude(case: dict, skill: str, corpus: dict[str, str], timeout: int) -
         ok = answer == skill
     elif kind == "trigger-negative":
         expected = case.get("expect_skill")
-        ok = (answer == expected) if expected else (answer.upper() == "NONE" or answer != skill)
+        ok = (answer == expected) if expected else answer.upper() == "NONE"
     else:
         return {"result": "skipped", "why": "behaviour grading not implemented"}
     return {"result": "pass" if ok else "fail", "why": f"answered {answer!r}", "answer": answer}
@@ -315,31 +318,32 @@ def main() -> int:
         for group, rows in (("reviewed", reviewed), ("proposed", proposed), ("draft", drafts)):
             if not rows:
                 continue
-            failed = [r for r in rows if not r["pass_pow_k"] and r["result"] != "error"]
-            print(f"  {group:8s} {len(rows) - len(failed)}/{len(rows)} pass  ({rate(rows):.0%})")
+            measured = [r for r in rows if r['result'] not in ('error', 'xfail', 'xpass')]
+            failed = [r for r in measured if not r["pass_pow_k"]]
+            print(f"  {group:8s} {len(measured) - len(failed)}/{len(measured)} measured pass  ({rate(rows):.1%})")
             for r in failed[:12]:
                 print(f"      FAIL {r['id']}")
                 print(f"           {r['why']}")
             if len(failed) > 12:
                 print(f"      … and {len(failed) - 12} more")
             print()
-        print(f"  reviewed pass rate : {summary['reviewed_pass_rate']:.0%}")
+        print(f"  reviewed pass rate : {rate(reviewed):.1%}")
         if proposed:
-            print(f"  proposed pass rate : {summary['proposed_pass_rate']:.0%}  (awaiting signature)")
-        print(f"  draft pass rate    : {summary['draft_pass_rate']:.0%}")
+            print(f"  proposed pass rate : {rate(proposed):.1%}  (awaiting signature)")
+        print(f"  draft pass rate    : {rate(drafts):.1%}")
         if args.grader == "lexical":
             print("\n  NOTE: the lexical grader is a router proxy, not a model test. It shows whether a")
             print("  description carries the vocabulary a user would type. Use --grader claude for real")
             print("  routing behaviour.")
 
     failed = False
-    if args.fail_under is not None and summary["reviewed_pass_rate"] < args.fail_under:
-        print(f"\nFAIL: reviewed pass rate {summary['reviewed_pass_rate']:.0%} "
+    if args.fail_under is not None and rate(reviewed) < args.fail_under:
+        print(f"\nFAIL: reviewed pass rate {rate(reviewed):.1%} "
               f"below {args.fail_under:.0%}", file=sys.stderr)
         failed = True
     if (args.fail_under_proposed is not None and proposed
-            and summary["proposed_pass_rate"] < args.fail_under_proposed):
-        print(f"\nFAIL: proposed pass rate {summary['proposed_pass_rate']:.0%} "
+            and rate(proposed) < args.fail_under_proposed):
+        print(f"\nFAIL: proposed pass rate {rate(proposed):.1%} "
               f"below {args.fail_under_proposed:.0%}", file=sys.stderr)
         failed = True
     if xpass:

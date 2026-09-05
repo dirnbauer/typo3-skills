@@ -3,6 +3,7 @@ name: "typo3-translations"
 description: "Fixes TYPO3 labels and localization: label files (locallang.xlf, labels.xlf) in XLIFF 1.2 and 2.0, singular and plural forms through ICU MessageFormat, LLL references, translation domains and Content Blocks labels. Use when an untranslated key appears on screen in place of its text, when trans-unit ids end up duplicated after merging two branches, when keys are missing, or when relocating localization files to the v14 directory conventions."
 compatibility: "TYPO3 13.4 and TYPO3 14.x; TYPO3 14 preferred"
 metadata:
+  skill_type: preference
   version: "2.1.0"
   related_skills: "typo3-content-blocks, typo3-shadcn-content-elements, typo3-conformance, typo3-v14-reference"
   origin: "webconsulting"

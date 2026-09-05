@@ -67,6 +67,17 @@
       "prompt": "Write a Python script that renames files in a folder by their EXIF date.",
       "expect_no_skill": true,
       "note": "Unrelated domain. No TYPO3 skill may fire."
+    },
+    {
+      "id": "one-template-not-hundreds-of-repairs",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "The same missing button name appears on 400 TYPO3 pages. We have ninety minutes left in the migration window.",
+      "assertions": [
+        "Repairs the shared component once and checks affected representatives.",
+        "Returns bounded upgrade findings to the parent; does not start a full separate accessibility improvement programme.",
+        "Preserves final required accessibility coverage and reports incomplete if it cannot fit."
+      ]
     }
   ]
 }

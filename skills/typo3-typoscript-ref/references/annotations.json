@@ -1,0 +1,160 @@
+{
+  "12": {
+    "content-objects/fluidtemplate": {
+      "level": "recommended",
+      "message": "Consider PAGEVIEW (available in v13+) as the modern replacement for FLUIDTEMPLATE.",
+      "recipe": "page-setup"
+    },
+    "frontend/conditions": {
+      "level": "required",
+      "message": "Legacy conditions ([globalVar = TS:xx], [browser], [system], [device]) were removed in v12. Use Symfony Expression Language exclusively."
+    },
+    "about/usage": {
+      "level": "recommended",
+      "message": "Site Sets (introduced in v13) are the modern way to distribute TypoScript. In v12, prefer structured sys_template includes over inline TypoScript blocks."
+    },
+    "frontend/config": {
+      "level": "tip",
+      "message": "config.no_cache = 1 must never be used in production. Use COA_INT or USER_INT for uncached content objects instead."
+    },
+    "content-objects/user": {
+      "level": "tip",
+      "message": "USER_INT renders this object on every request (page is cached with placeholders). Use sparingly — each INT object adds per-request overhead."
+    },
+    "functions/stdwrap": {
+      "level": "tip",
+      "message": "Prefer getData (getText) over stdWrap.field for simple value access — more readable and avoids unnecessary stdWrap overhead."
+    },
+    "content-objects/hmenu": {
+      "level": "recommended",
+      "message": "Consider MenuProcessor with a Fluid template for new navigation implementations. More flexible than HMENU and aligns with the Fluid-based rendering approach."
+    },
+    "content-objects/content": {
+      "level": "recommended",
+      "message": "In Fluid-based page setups, prefer DatabaseQueryProcessor over the CONTENT cObject for fetching records into Fluid templates."
+    },
+    "backend/page-tsconfig/tceform": {
+      "level": "tip",
+      "message": "Use TCEFORM to restrict editors to valid choices instead of relying on validation alone. Reduces editor errors at the source."
+    }
+  },
+  "13": {
+    "content-objects/fluidtemplate": {
+      "level": "recommended",
+      "message": "PAGEVIEW is the recommended page rendering approach in v13+. FLUIDTEMPLATE continues to work but PAGEVIEW requires less configuration.",
+      "recipe": "page-setup",
+      "migration": "migration-v12-to-v13.md#1-pageview-as-preferred-page-template-object"
+    },
+    "content-objects/pageview": {
+      "level": "recommended",
+      "message": "PAGEVIEW is the modern page rendering cObject in v13+. Replaces FLUIDTEMPLATE for page-level templates. Requires a Fluid template with layoutRootPaths and templateRootPaths.",
+      "recipe": "page-setup"
+    },
+    "content-objects/hmenu": {
+      "level": "recommended",
+      "message": "Consider MenuProcessor with Fluid for new navigation implementations. More flexible and maintainable than HMENU/TMENU.",
+      "recipe": "menu-setup"
+    },
+    "frontend/config": {
+      "level": "required",
+      "message": "config.no_cache = 1 must NEVER be used in production. It disables the page cache entirely. Use COA_INT or USER_INT for uncached content objects.",
+      "recipe": null
+    },
+    "about/usage": {
+      "level": "recommended",
+      "message": "Site Sets are the modern way to organize and distribute TypoScript in v13+. They replace sys_template-based static includes. Prefer Site Sets for new extensions and projects.",
+      "recipe": "site-sets"
+    },
+    "frontend/conditions": {
+      "level": "tip",
+      "message": "Use Symfony Expression Language for all conditions. Legacy bracket syntax ([globalVar], [browser], etc.) was removed in v12."
+    },
+    "functions/stdwrap": {
+      "level": "tip",
+      "message": "Prefer getData over stdWrap.field for simple value access. More readable and avoids unnecessary stdWrap overhead."
+    },
+    "content-objects/user": {
+      "level": "tip",
+      "message": "USER_INT renders this object on every request (page is cached with placeholders). Use sparingly — each INT object adds per-request overhead."
+    },
+    "data-processors/database-query-processor": {
+      "level": "recommended",
+      "message": "DatabaseQueryProcessor replaces the CONTENT cObject for Fluid-based templates. Cleaner separation of data retrieval and rendering."
+    },
+    "content-objects/content": {
+      "level": "recommended",
+      "message": "In Fluid-based page setups, prefer DatabaseQueryProcessor over the CONTENT cObject for fetching records into templates."
+    },
+    "content-objects/coa": {
+      "level": "tip",
+      "message": "COA_INT renders only this object per request while the rest of the page stays cached (placeholder-based). Prefer COA_INT over USER_INT where possible."
+    },
+    "functions/typolink": {
+      "level": "tip",
+      "message": "For generating links in Fluid templates, prefer the f:uri.typolink and f:link.typolink ViewHelpers over TypoScript typolink to keep logic in Fluid."
+    },
+    "backend/page-tsconfig/tceform": {
+      "level": "tip",
+      "message": "Use TCEFORM to restrict editors to valid field choices. This prevents invalid data at the source rather than relying on frontend validation."
+    },
+    "content-objects/records": {
+      "level": "tip",
+      "message": "RECORDS is suited for rendering a fixed set of records by UID. For dynamic queries, use CONTENT or DatabaseQueryProcessor instead."
+    },
+    "data-processors/menu-processor": {
+      "level": "recommended",
+      "message": "MenuProcessor is the preferred way to build navigations in Fluid-based setups. Replaces HMENU/TMENU for new projects.",
+      "recipe": "menu-setup"
+    }
+  },
+  "14": {
+    "content-objects/fluidtemplate": {
+      "level": "recommended",
+      "message": "Use PAGEVIEW instead of FLUIDTEMPLATE for page rendering in v14. FLUIDTEMPLATE is legacy for page templates (not officially deprecated) and remains valid for non-page rendering such as emails.",
+      "recipe": "page-setup",
+      "migration": "migration-v12-to-v13.md#1-pageview-as-preferred-page-template-object"
+    },
+    "content-objects/pageview": {
+      "level": "recommended",
+      "message": "PAGEVIEW is the standard page rendering cObject in v14. Use it for all page-level Fluid template rendering.",
+      "recipe": "page-setup"
+    },
+    "about/usage": {
+      "level": "required",
+      "message": "Site Sets are the required way to provide TypoScript in v14. sys_template-based static includes from extensions are no longer supported.",
+      "recipe": "site-sets",
+      "migration": "migration-v12-to-v13.md#2-site-sets-replacing-sys_template-includes-and-typoscript-constants"
+    },
+    "frontend/config": {
+      "level": "required",
+      "message": "config.no_cache = 1 must NEVER be used. It disables the page cache entirely. Use COA_INT or USER_INT for uncached content.",
+      "recipe": null
+    },
+    "content-objects/user": {
+      "level": "tip",
+      "message": "USER_INT renders this object on every request (page is cached with placeholders). Use sparingly — each INT object adds per-request overhead."
+    },
+    "content-objects/hmenu": {
+      "level": "recommended",
+      "message": "MenuProcessor with Fluid is the recommended navigation approach in v14. HMENU remains available but is not the preferred pattern for new projects.",
+      "recipe": "menu-setup"
+    },
+    "data-processors/database-query-processor": {
+      "level": "recommended",
+      "message": "DatabaseQueryProcessor is the standard way to fetch records for Fluid templates in v14. Prefer over the CONTENT cObject in Fluid-based setups."
+    },
+    "frontend/conditions": {
+      "level": "tip",
+      "message": "Use Symfony Expression Language for all conditions. getTSFE() was removed in v14 (#107473) — use page, request, site instead. New in v14: the site.locale expression (#107105)."
+    },
+    "functions/stdwrap": {
+      "level": "tip",
+      "message": "Prefer getData over stdWrap.field for simple value access. More readable and avoids unnecessary stdWrap overhead."
+    },
+    "data-processors/menu-processor": {
+      "level": "recommended",
+      "message": "MenuProcessor is the preferred way to build navigations in Fluid-based setups in v14.",
+      "recipe": "menu-setup"
+    }
+  }
+}

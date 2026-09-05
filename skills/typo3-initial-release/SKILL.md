@@ -1,7 +1,8 @@
 ---
 name: "typo3-initial-release"
-description: "Prepare, verify, review, tag, and document the first official release of a TYPO3 14.3+ extension. Use when the user asks for an initial release, version 1.0.0, release readiness, final release review, TER/Packagist/GitHub release preparation, release tagging, PHP/TYPO3 CI matrix hardening, composer.json release metadata, or pre-release checks for a TYPO3 14.3+ extension."
+description: "Prepare the first public 1.0.0 release of a TYPO3 14.3+ extension. Use for initial TER upload or Packagist publication readiness, composer.json release metadata, PHP/TYPO3 CI matrix verification, changelog, release notes and tagging an unreleased package. Coordinates the final release review and publication checklist; an ordinary conformance audit or whole-site migration is outside this workflow. Publishing requires explicit authorization."
 metadata:
+  skill_type: preference
   version: "1.0.0"
   origin: "webconsulting"
 license: "MIT / CC-BY-SA-4.0"

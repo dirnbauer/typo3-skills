@@ -2,6 +2,7 @@
 name: "security-incident-reporting"
 description: "Builds security incident reports, DDoS post-mortems, timelines, IoC sections, CVE correlation, severity scoring, and blameless root cause analysis. Use when the user needs an incident report, post-mortem, forensics summary, security timeline, DDoS analysis, SIR, root cause analysis, or communication for a security event."
 metadata:
+  skill_type: capability
   version: "1.0.0"
   origin: "webconsulting"
 license: "MIT / CC-BY-SA-4.0"

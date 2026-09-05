@@ -51,6 +51,17 @@
       "prompt": "Bulk-tag 8000 news records by keyword.",
       "expect_skill": "typo3-news-tags",
       "note": "Tagging a corpus, not searching it."
+    },
+    {
+      "id": "stable-v14-release-before-dev-branch",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Our TYPO3 14 search upgrade notes still say the Solr extension only has a beta. Should we install dev-main from that note?",
+      "assertions": [
+        "Verifies current primary release metadata and uses a compatible stable release when available.",
+        "Does not downgrade to the TYPO3-13 line or select an unverified development container image.",
+        "Records the resolved extension and server/configset compatibility rather than relying on a stale date."
+      ]
     }
   ]
 }

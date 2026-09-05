@@ -3,6 +3,7 @@ name: "typo3-rector"
 description: "Automatically fix deprecated PHP calls in TYPO3 code by running Rector: configuration, dry run, review the diff, apply, second dry run. Covers rule sets for the v12 or v13 to v14 path, ViewFactory, Extbase responses, PSR-14 events, backend modules, TCA and the manual follow-ups the tool cannot do. Use when the user says run Rector, automatically fix the deprecated calls in this extension, automate the PHP migration, which Rector sets do I need, or asks how to review a large Rector diff. Scope: PHP source files only, and one extension at a time."
 compatibility: "TYPO3 14.x"
 metadata:
+  skill_type: preference
   version: "2.2.0"
   origin: "webconsulting"
 license: "MIT / CC-BY-SA-4.0"
@@ -112,8 +113,11 @@ ddev composer dump-autoload
 
 One applied pass is not completion. A Rector rule can generate code that another rule only sees on
 the next pass; generated list-type-to-CType upgrade wizards have required a second namespace
-migration in real v14 work. Repeat **dry run → review → apply** until a fresh dry run reports zero
-changed files, including generated migration code.
+migration in real v14 work. Use **dry run → review → apply → dry run** and inspect generated
+migration code too. Inside an upgrade graph, do one bounded repair pass and return the remaining
+diff to the parent node; do not restart a sibling-owned loop. Standalone, allow at most three apply
+passes, stopping earlier on two unchanged/non-improving results or oscillation. A nonzero residual
+diff is incomplete and needs a new decision; it is not permission to keep applying indefinitely.
 
 Do not apply a destructive semantic rule merely because it is automated. In particular, defer an
 icon-registration removal when the current provider (for example Font Awesome) has no proven SVG

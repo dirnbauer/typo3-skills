@@ -388,6 +388,65 @@ is a safe equivalent — apply it and add the import.)
 A rewrite from a lossy set (`DEAD_CODE`, `CODE_QUALITY`) is a suggestion to
 verify against intent, not an edit to apply blind.
 
+### Review the lines Rector ADDS, not only the ones it removes
+
+A removal rule can also insert. `RemoveEraseCredentialsRector` deletes
+`User::eraseCredentials()` (correct — Symfony 8 dropped it from
+`UserInterface`) *and* appends a `serialize(): void` method carrying the old
+body to the end of the class. The `--dry-run` output shows the deletion as one
+hunk and the insertion as another at the bottom of the file, so reading only
+the hunk that matches the rule's name misses it. Nothing calls the stub, the
+entity does not implement `Serializable`, and `void` does not match
+`Serializable::serialize(): ?string` — it is dead code with a misleading
+comment that static analysis will not flag.
+
+After applying any rule set, review the insertions specifically:
+
+```bash
+vendor/bin/rector process
+git diff | grep '^+' | grep -v '^+++'
+```
+
+For a cleanup set the expected diff is almost pure deletion, so every `+` line
+is an anomaly that needs a reason. Removing such a stub is stable — the rule
+only fires while the original method is present, so it is not re-added on the
+next run and needs no skip.
+
+### Rector cannot see framework facts — check the assumption behind the rule
+
+Three rules in one dependency bump produced changes that were locally plausible
+and globally wrong, each because Rector could not observe a framework contract:
+
+| Rule | Rewrite | Why it is wrong |
+|------|---------|-----------------|
+| `RenameClassRector` | `HttpKernel\Bundle\BundleInterface` → `DependencyInjection\Kernel\BundleInterface` | The parent `registerBundles()` signature is not covariant with the replacement until Symfony 9. Breaks PHPStan and orphans the `@phpstan-ignore` annotations that documented the decision. |
+| `RemoveDefaultValueFromAssignedPropertyRector` | drops `= null` from `private ?EventDispatcherInterface $eventDispatcher = null;` | The property is assigned by `#[Required]` setter injection *after* construction, not by the constructor. Without the default it stays uninitialized and the `instanceof` guard reading it raises `Typed property must not be accessed before initialization`. |
+| `RemoveEraseCredentialsRector` | see above | Leaves a stray `serialize()` stub. |
+
+Confirm the failure mode before arguing about it — a five-line repro settles it:
+
+```php
+class WithDefault    { private ?X $d = null; public function g(): string { return $this->d instanceof X ? 'set' : 'not set'; } }
+class WithoutDefault { private ?X $d;        public function g(): string { return $this->d instanceof X ? 'set' : 'not set'; } }
+// WithDefault    -> not set
+// WithoutDefault -> Error: Typed property WithoutDefault::$d must not be accessed before initialization
+```
+
+Scope the resulting `withSkip` to the rule's blind spot, not to the file that
+happened to trip it. `RemoveDefaultValueFromAssignedPropertyRector` only fires
+on classes that *have* a constructor, so a second class with the same
+setter-injected property is silently exempt today and starts failing the moment
+someone adds one — a per-file skip would have looked complete and not been:
+
+```php
+->withSkip([
+    // Fires per file, so scope per file:
+    RenameClassRector::class => [__DIR__ . '/../../src/Kernel.php'],
+    // Blind spot is structural (#[Required] setter injection): skip repo-wide.
+    RemoveDefaultValueFromAssignedPropertyRector::class,
+])
+```
+
 ## PHP-CS-Fixer (Coding Style)
 
 Enforces coding standards automatically.
@@ -608,3 +667,67 @@ controller / service / command layers rather than perform a risky extraction.
 Mark them won't-fix in the SAST UI with a short comment explaining why the
 method's structure is intentional — a deliberate "review as safe" beats a
 mechanical refactor that ships a regression.
+
+## `php:S2003` is a false positive on a value-returning include
+
+SonarCloud's `php:S2003` flags `require`/`include` and asks for the `_once`
+variant. On a config file that ends in `return [...];` and is read **for its
+return value**, that rewrite is a behavior change, not a style fix.
+
+`require` evaluates the file and yields its return value every time it runs.
+`require_once` yields that value only the **first** time the process includes
+that path; every later inclusion of the same path — from anywhere, including a
+different file — short-circuits and yields `bool(true)`:
+
+```php
+// cfg.php ends in:  return ['a' => 1];
+
+$first  = require      'cfg.php';   // array(1) { 'a' => 1 }  ← file included here
+$second = require_once 'cfg.php';   // bool(true)             ← already included
+$third  = require_once 'cfg.php';   // bool(true)
+```
+
+Order is what makes the bug intermittent. `require_once` on a path nothing has
+touched yet *does* return the array; it degrades to `true` only on the repeat.
+So `$config = require_once $path;` in a loader returns the configuration on the
+first call and `true` on the second, and a loader called exactly once passes
+every test — until a second call site, a second request in a long-running
+worker, or another file's own `require_once` of the same config gets there
+first. (Measured on PHP 8.5.10; this is documented `require_once` semantics, not
+a version quirk.)
+
+The consumer then sees `true` where it expected an array. TYPO3's tailor loads
+its packaging config exactly this way and depends on it — `$configuration =
+require $exludeConfigurationFile;` at
+[`src/Service/VersionService.php:243`](https://github.com/TYPO3/tailor/blob/7faa2d2e7e247f309eb8807a30edea1f911aaf07/src/Service/VersionService.php#L243),
+followed two lines later by an `is_array($configuration)` guard that throws.
+Under the `S2003` rewrite that guard starts throwing on the second load.
+
+**Do not apply `S2003` where the include's return value is assigned.** The
+`_once` guard exists to prevent redeclaration; a file that only returns an array
+declares nothing, so there is nothing for it to protect. Plain `require` is
+correct here, and re-reading the file is the point.
+
+Disposing of the finding has two traps of its own:
+
+- **A false-positive mark does not reliably survive a refactor.** Observed: a
+  refactor that reshaped the flagged line brought the finding back under a *new*
+  issue key, while the "won't fix" / "false positive" disposition stayed on the
+  old one — so the rule reappeared on the next analysis with nothing to show
+  that it had already been triaged. Mark the issue **after** the code has
+  reached its final shape, and re-query the project's open issues on the last
+  push instead of trusting a mark set mid-refactor.
+- **A rule that keeps recurring on the same files belongs in a project-level
+  exclusion**, not in one-by-one marks:
+
+```properties
+sonar.issue.ignore.multicriteria=e1
+sonar.issue.ignore.multicriteria.e1.ruleKey=php:S2003
+sonar.issue.ignore.multicriteria.e1.resourceKey=**/conf/*.php
+```
+
+Put it in the properties file your analysis mode actually reads: Automatic
+Analysis reads `.sonarcloud.properties`, the CI-based scanner reads
+`sonar-project.properties`, and a project carrying both must keep them in sync.
+The equivalent under **Administration → General Settings → Analysis Scope →
+Ignore Issues on Multiple Criteria** applies in either mode.

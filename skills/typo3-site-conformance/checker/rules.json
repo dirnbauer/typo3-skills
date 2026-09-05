@@ -1,0 +1,621 @@
+{
+  "version": "1.0.0",
+  "reference": "https://pages.nrdev.de/typo3/typo3-project-standard",
+  "catalogue_snapshot": "2026-08-07",
+  "catalogue_sha256": "770143fb33b2c55a4399958c3ab44678112a8520fae9b34815f1a4e162a90847",
+  "weights": {
+    "error": 10,
+    "warning": 5,
+    "info": 1
+  },
+  "rules": [
+    {
+      "code": "STRUCT-001",
+      "category": "STRUCT",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "TYPO3 config directory must be at project root as config/, not build/config/"
+    },
+    {
+      "code": "STRUCT-002",
+      "category": "STRUCT",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "config/system/settings.php must contain no plaintext secrets"
+    },
+    {
+      "code": "STRUCT-003",
+      "category": "STRUCT",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "config/system/additional.php must exist and source env values from $_SERVER"
+    },
+    {
+      "code": "STRUCT-004",
+      "category": "STRUCT",
+      "severity": "warning",
+      "weight": 5,
+      "scope": "repo",
+      "requirement": "composer.lock must be committed for project-type composer.json"
+    },
+    {
+      "code": "STRUCT-005",
+      "category": "STRUCT",
+      "severity": "warning",
+      "weight": 5,
+      "scope": "repo",
+      "requirement": "config/sites/ must contain at least one site config.yaml"
+    },
+    {
+      "code": "STRUCT-006",
+      "category": "SEC",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "No committed live-environment files (.env.production etc.)"
+    },
+    {
+      "code": "STRUCT-007",
+      "category": "STRUCT",
+      "severity": "warning",
+      "weight": 5,
+      "scope": "repo",
+      "requirement": ".gitignore must exclude vendor/, var/, public/ and live-env patterns"
+    },
+    {
+      "code": "STRUCT-008",
+      "category": "STRUCT",
+      "severity": "info",
+      "weight": 1,
+      "scope": "repo",
+      "requirement": "build/ directory must not exist after migration to config/"
+    },
+    {
+      "code": "DRO-019",
+      "category": "STRUCT",
+      "severity": "info",
+      "weight": 1,
+      "scope": "advisory",
+      "requirement": "New sites should use the three-repo layout (app / deploy / infra)"
+    },
+    {
+      "code": "CI-IMG-001",
+      "category": "CONTAINER",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "Carrier base image must not use alpine:edge"
+    },
+    {
+      "code": "CI-IMG-002",
+      "category": "CONTAINER",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "Cache service must use Valkey, not Redis"
+    },
+    {
+      "code": "CI-IMG-003",
+      "category": "CONTAINER",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "First-party app and db images must use immutable version tags, not :latest"
+    },
+    {
+      "code": "CI-IMG-004",
+      "category": "CONTAINER",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "No secrets committed to settings.php or any build artefact"
+    },
+    {
+      "code": "CI-IMG-005",
+      "category": "CONTAINER",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "Production config must not set debug-mode defaults"
+    },
+    {
+      "code": "CI-IMG-006",
+      "category": "CONTAINER",
+      "severity": "warning",
+      "weight": 5,
+      "scope": "repo",
+      "requirement": "ofelia must use a pinned version tag, not :latest"
+    },
+    {
+      "code": "CI-IMG-007",
+      "category": "CONTAINER",
+      "severity": "warning",
+      "weight": 5,
+      "scope": "repo",
+      "requirement": "All long-running services must define deploy.resources.limits"
+    },
+    {
+      "code": "CI-IMG-008",
+      "category": "CONTAINER",
+      "severity": "warning",
+      "weight": 5,
+      "scope": "repo",
+      "requirement": "Stateful services must define healthcheck blocks"
+    },
+    {
+      "code": "CI-IMG-009",
+      "category": "CONTAINER",
+      "severity": "warning",
+      "weight": 5,
+      "scope": "repo",
+      "requirement": "docker.sock must not be mounted directly; use a socket proxy"
+    },
+    {
+      "code": "CI-IMG-010",
+      "category": "CONTAINER",
+      "severity": "warning",
+      "weight": 5,
+      "scope": "repo",
+      "requirement": "Development-only images must carry pinned tags"
+    },
+    {
+      "code": "CI-IMG-011",
+      "category": "CONTAINER",
+      "severity": "warning",
+      "weight": 5,
+      "scope": "repo",
+      "requirement": "Compose file must use canonical filename compose.yaml"
+    },
+    {
+      "code": "CI-IMG-012",
+      "category": "CONTAINER",
+      "severity": "warning",
+      "weight": 5,
+      "scope": "repo",
+      "requirement": "COMPOSE_FILE env-var overlay pattern must not be used"
+    },
+    {
+      "code": "CI-IMG-013",
+      "category": "CONTAINER",
+      "severity": "info",
+      "weight": 1,
+      "scope": "repo",
+      "requirement": "Carrier Dockerfile should use SGID not SUID on writable directories"
+    },
+    {
+      "code": "CI-IMG-014",
+      "category": "CONTAINER",
+      "severity": "info",
+      "weight": 1,
+      "scope": "repo",
+      "requirement": "No PHP 8.2 (EOL Dec 2026) runtime without a documented upgrade plan"
+    },
+    {
+      "code": "CI-IMG-015",
+      "category": "CONTAINER",
+      "severity": "info",
+      "weight": 1,
+      "scope": "repo",
+      "requirement": "Production Dockerfile should embed OCI image labels"
+    },
+    {
+      "code": "DRO-001",
+      "category": "CONTAINER",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "All persistent services must define a healthcheck"
+    },
+    {
+      "code": "DRO-002",
+      "category": "CONTAINER",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "depends_on must use condition: service_healthy for persistent deps"
+    },
+    {
+      "code": "DRO-003",
+      "category": "CONTAINER",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "All persistent services must set restart: unless-stopped"
+    },
+    {
+      "code": "DRO-015",
+      "category": "CONTAINER",
+      "severity": "warning",
+      "weight": 5,
+      "scope": "repo",
+      "requirement": "ofelia scheduler failure must have webhook notification configured"
+    },
+    {
+      "code": "DRO-017",
+      "category": "CONTAINER",
+      "severity": "info",
+      "weight": 1,
+      "scope": "advisory",
+      "requirement": "PHP-FPM status endpoint should be enabled for metrics scraping"
+    },
+    {
+      "code": "DRO-020",
+      "category": "CONTAINER",
+      "severity": "info",
+      "weight": 1,
+      "scope": "repo",
+      "requirement": "Compose canonical filename should be compose.yaml"
+    },
+    {
+      "code": "CI-001",
+      "category": "CI",
+      "severity": "warning",
+      "weight": 5,
+      "scope": "repo",
+      "requirement": "ofelia scheduler image must reference a pinned version tag"
+    },
+    {
+      "code": "CI-002",
+      "category": "CI",
+      "severity": "warning",
+      "weight": 5,
+      "scope": "repo",
+      "requirement": "COMPOSER_AUTH should use BuildKit --mount=type=secret, not ARG"
+    },
+    {
+      "code": "DRO-013",
+      "category": "CI",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "A weekly restore-verification job must exist"
+    },
+    {
+      "code": "SC-001",
+      "category": "CI",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "composer audit must run before every Docker build"
+    },
+    {
+      "code": "SC-002",
+      "category": "CI",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "Vulnerability scan (Trivy CRITICAL+HIGH) must gate image push"
+    },
+    {
+      "code": "SC-003",
+      "category": "CI",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "SBOM must be declared (lockfile-derived, CycloneDX >= 1.6, lifecycles: build) for every production image build; scanner output alone does not satisfy this rule"
+    },
+    {
+      "code": "SC-007",
+      "category": "CI",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "All CI task image references must be immutably pinned"
+    },
+    {
+      "code": "SC-008",
+      "category": "CI",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "fly CLI downloaded in GitLab CI must have its checksum verified"
+    },
+    {
+      "code": "SC-009",
+      "category": "CI",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "Dependency updates must go via merge requests, not direct to main"
+    },
+    {
+      "code": "SC-010",
+      "category": "CI",
+      "severity": "warning",
+      "weight": 5,
+      "scope": "repo",
+      "requirement": "GitLab native secret detection must be enabled"
+    },
+    {
+      "code": "SC-011",
+      "category": "CI",
+      "severity": "warning",
+      "weight": 5,
+      "scope": "repo",
+      "requirement": "The test gate in the Concourse pipeline must not be disabled"
+    },
+    {
+      "code": "SC-012",
+      "category": "CI",
+      "severity": "warning",
+      "weight": 5,
+      "scope": "repo",
+      "requirement": "composer.lock must be committed in project-type repositories"
+    },
+    {
+      "code": "SC-013",
+      "category": "CI",
+      "severity": "warning",
+      "weight": 5,
+      "scope": "repo",
+      "requirement": "Compose runtime service images must be pinned to specific versions"
+    },
+    {
+      "code": "SC-014",
+      "category": "CI",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "A stack-level SBOM covering all compose-declared services must be produced per release"
+    },
+    {
+      "code": "SC-015",
+      "category": "CI",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "pecl install in Dockerfiles must pin exact extension versions"
+    },
+    {
+      "code": "SC-016",
+      "category": "CI",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "Third-party code must not be vendored undeclared"
+    },
+    {
+      "code": "DEPLOY-001",
+      "category": "DEPLOY",
+      "severity": "warning",
+      "weight": 5,
+      "scope": "advisory",
+      "requirement": "CI pipeline files should live in a separate deploy repo"
+    },
+    {
+      "code": "DEPLOY-002",
+      "category": "DEPLOY",
+      "severity": "warning",
+      "weight": 5,
+      "scope": "repo",
+      "requirement": "Ansible playbooks should live in a separate deploy repo"
+    },
+    {
+      "code": "DRO-004",
+      "category": "DEPLOY",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "Valkey/Redis must require authentication"
+    },
+    {
+      "code": "DRO-005",
+      "category": "DEPLOY",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "Cache service must disable persistence (--save '' and no AOF)"
+    },
+    {
+      "code": "DRO-006",
+      "category": "DEPLOY",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "Cache service must set maxmemory and allkeys-lru eviction"
+    },
+    {
+      "code": "DRO-008",
+      "category": "DEPLOY",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "Cache image must use Valkey, not Redis"
+    },
+    {
+      "code": "DRO-009",
+      "category": "DEPLOY",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "Cache image must be pinned to a stable version tag, not :latest"
+    },
+    {
+      "code": "DRO-010",
+      "category": "DEPLOY",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "Dockerfile final stage must not use FROM alpine:edge"
+    },
+    {
+      "code": "DRO-012",
+      "category": "DEPLOY",
+      "severity": "warning",
+      "weight": 5,
+      "scope": "repo",
+      "requirement": "Development-mode flags must not be committed in settings.php"
+    },
+    {
+      "code": "DRO-014",
+      "category": "DEPLOY",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "Scheduler standard must be ofelia; in-image dcron disabled"
+    },
+    {
+      "code": "DRO-016",
+      "category": "DEPLOY",
+      "severity": "warning",
+      "weight": 5,
+      "scope": "repo",
+      "requirement": "TYPO3 log output must go to stdout/stderr, not an on-disk FileWriter"
+    },
+    {
+      "code": "DRO-018",
+      "category": "DEPLOY",
+      "severity": "warning",
+      "weight": 5,
+      "scope": "advisory",
+      "requirement": "Each site must be registered in external uptime monitoring"
+    },
+    {
+      "code": "DEP-001",
+      "category": "DEP",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "PHP platform constraint must be declared in composer.json"
+    },
+    {
+      "code": "DEP-002",
+      "category": "DEP",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "Dev-branch constraints must not appear in composer.json"
+    },
+    {
+      "code": "DEP-003",
+      "category": "DEP",
+      "severity": "warning",
+      "weight": 5,
+      "scope": "repo",
+      "requirement": "minimum-stability must be declared as 'stable'"
+    },
+    {
+      "code": "DEP-004",
+      "category": "DEP",
+      "severity": "warning",
+      "weight": 5,
+      "scope": "repo",
+      "requirement": "composer.lock must be committed for type:project"
+    },
+    {
+      "code": "DRO-007",
+      "category": "SEC",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "ofelia must not mount docker.sock directly; use a socket proxy"
+    },
+    {
+      "code": "DRO-011",
+      "category": "SEC",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "Credentials must not be committed; .env git-ignored; .env.dist schema"
+    },
+    {
+      "code": "SC-004",
+      "category": "SEC",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "Container images must be signed with cosign after push and carry their CycloneDX SBOM as a cosign attestation on the pushed digest"
+    },
+    {
+      "code": "SC-005",
+      "category": "SEC",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "COMPOSER_AUTH must not be passed as a Docker build ARG"
+    },
+    {
+      "code": "SC-006",
+      "category": "SEC",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "Secrets must not be committed in build configuration files"
+    },
+    {
+      "code": "SEC-001",
+      "category": "SEC",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "redis service image must specify an explicit version tag"
+    },
+    {
+      "code": "SEC-002",
+      "category": "SEC",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "installToolPassword must not be hardcoded in settings.php"
+    },
+    {
+      "code": "SEC-003",
+      "category": "SEC",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "encryptionKey must be env-driven in additional.php"
+    },
+    {
+      "code": "SEC-004",
+      "category": "SEC",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "Production env files must not be committed to git"
+    },
+    {
+      "code": "SEC-005",
+      "category": "SEC",
+      "severity": "warning",
+      "weight": 5,
+      "scope": "repo",
+      "requirement": "devIPmask wildcard must not be committed"
+    },
+    {
+      "code": "SEC-006",
+      "category": "SEC",
+      "severity": "warning",
+      "weight": 5,
+      "scope": "repo",
+      "requirement": "trustedHostsPattern wildcard must not be committed"
+    },
+    {
+      "code": "DOC-001",
+      "category": "DOC",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "AGENTS.md must exist at repository root"
+    },
+    {
+      "code": "DOC-002",
+      "category": "DOC",
+      "severity": "error",
+      "weight": 10,
+      "scope": "repo",
+      "requirement": "CLAUDE.md must exist as a symlink to AGENTS.md"
+    },
+    {
+      "code": "DOC-003",
+      "category": "DOC",
+      "severity": "warning",
+      "weight": 5,
+      "scope": "repo",
+      "requirement": "README.md must document setup, env vars and make targets"
+    }
+  ]
+}

@@ -89,6 +89,18 @@ sonar.go.coverage.reportPaths=coverage.out
 sonar.qualitygate.wait=true
 ```
 
+**SonarCloud Automatic Analysis ignores `sonar-project.properties`.** That file
+is read by scanner-based analysis (CI workflows, local SonarScanner runs) —
+but repos on **Automatic Analysis** (the default when no scan workflow exists;
+the check appears as "SonarCloud Code Analysis") read
+**`.sonarcloud.properties`** instead, which supports a reduced key set (`sonar.sources`, `sonar.tests`,
+`sonar.exclusions`, `sonar.test.exclusions`, `sonar.inclusions`,
+`sonar.test.inclusions`). An exclusion added to `sonar-project.properties`
+under Automatic Analysis silently does nothing — e.g. a `fixtures/**` exclusion
+that never took effect and kept flagging synthetic test fixtures for a missing
+`composer.lock` (`text:S8567`). Keep both files in sync when a repo might
+switch modes.
+
 ### 4. GitHub Actions Workflow
 
 ```yaml
@@ -199,6 +211,36 @@ Security-sensitive code requiring manual review:
 ## Operational Patterns
 
 Day-to-day workflows for triaging issues, wiring CI, and keeping the project list clean. Token lives in env (`$SONAR_TOKEN`), passed as `Authorization: Bearer $SONAR_TOKEN` (Basic-auth `-u "$SONAR_TOKEN:"` also works, but Bearer keeps secrets out of the URL credential slot and avoids tripping secret-scanners on `-u` patterns).
+
+### Detector quirks: fix for the analyzer you have, not the rule title
+
+Two closed-source-analyzer behaviors verified in a live remediation
+(2026-08-03, 4 CI round-trips — read this before iterating blind):
+
+- **`githubactions:S8544`** ("dependencies without locking resolved versions")
+  flags **every** `uv run --with <tool>` execution of an ad-hoc tool, no matter
+  how it is pinned — plain, quoted pin (`--with 'bandit==1.9.4'`), unquoted
+  pin, and `--with-requirements <hash-locked file>` were all rejected. The form
+  it accepts is the canonical hash-checked pip install into a venv:
+
+  ```bash
+  python3 -m venv "$RUNNER_TEMP/tool-env"
+  "$RUNNER_TEMP/tool-env/bin/pip" install --require-hashes --only-binary :all: \
+    -r requirements/tool.txt   # compiled with: uv pip compile --universal --generate-hashes
+  "$RUNNER_TEMP/tool-env/bin/tool" ...
+  ```
+
+  (`--only-binary :all:` also satisfies the sibling `S8541` no-sdist-scripts
+  rule.) `uv run --with pkg python3 -c ...` where the *executed* binary is not
+  the fetched package was not flagged — but relying on that blind spot games
+  the rule instead of satisfying it.
+- **`python:S5850` vs `python:S6395` can contradict each other on one regex.**
+  S5850 demands explicit grouping for an anchored alternation inside a
+  lookahead (`(?=^key:|\Z)`); adding the group (`(?=(?:^key:)|\Z)`) then trips
+  S6395 "unwrap this unnecessarily grouped subpattern". Don't ping-pong:
+  restructure so the alternation disappears — e.g. capture greedily to end of
+  input and truncate at the boundary with a second, simple regex in code.
+  Verify byte-identical behavior against samples before shipping.
 
 ### Quality Gate vs Annotations vs Required Check
 
