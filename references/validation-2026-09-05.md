@@ -3,6 +3,10 @@
 Checked 2026-09-05. This report separates software/fixture checks from customer upgrade success.
 No customer project was upgraded, restored, deployed or closed during these trials.
 
+Client follow-up later on the same day: Cursor's seven missing additions and the local ChatGPT
+plugin installation were completed. See the [current client verification](chatgpt-cursor-installation.md).
+The original client observations below remain a historical record, not the current install status.
+
 ## Delivered
 
 - Installed the seven missing complete Codex bundles: `typo3-a11y`, `typo3-ckeditor5`,

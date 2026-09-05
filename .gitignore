@@ -9,3 +9,4 @@ skills/*/scripts/node_modules/
 __pycache__/
 *.pyc
 /.validation/
+/dist/chatgpt/

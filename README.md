@@ -71,6 +71,41 @@ Verify with `gemini skills list` or `/skills reload` in the client. See the offi
 [extension reference](https://geminicli.com/docs/extensions/reference/).
 The installer does not authenticate Gemini or publish a ChatGPT plugin.
 
+### ChatGPT desktop and Cursor
+
+```bash
+./install.sh --user-only --client cursor
+./install.sh --user-only --client chatgpt
+```
+
+Cursor receives every complete skill directory under `~/.cursor/skills/`. Restart Cursor or
+open a fresh Agent conversation after installation.
+
+ChatGPT uses a **skills-only plugin**, not an invented `.chatgpt/skills` folder. Its opt-in
+installer packages all skills, references, overlays, licences and shared guardrails into
+`~/plugins/typo3-skills`, adds the personal marketplace entry, then calls the installed
+`codex plugin add` CLI—the supported shared ChatGPT/Codex local plugin mechanism.
+It preserves other marketplace entries and refuses conflicting or locally edited bundles.
+Updates retain the previous managed bundle as a recoverable sibling backup.
+
+No CLI? Run `python3 scripts/chatgpt_plugin.py --prepare-only`, restart ChatGPT desktop,
+then open **Plugins → Personal → TYPO3 Skills** and select **Install**. Start a new
+conversation and use the plugin's starter prompt, which reads its bundled `AGENTS.md`
+before selecting a skill. DDEV, PHP, Node, browser tools and project permissions are still
+separate prerequisites; installing instructions does not give a cloud chat local-machine access.
+
+For a self-contained portable package, run `python3 scripts/chatgpt_plugin.py --package-only`.
+The output is `dist/chatgpt/typo3-skills.zip`; it is not automatically uploaded or published.
+After extraction, `python3 scripts/chatgpt_plugin.py` can install the verified bundle too.
+Only tracked, allowlisted collection files enter the package. Private upgrade evidence,
+credentials, dependencies/caches and symlinks are excluded or refused. Public/web/mobile or
+workspace distribution requires the separate publication process; local installation is not publication.
+
+ChatGPT is explicitly selected with `--client chatgpt`; the existing default folder installs
+remain unchanged. `--project-only` is not supported for this personal ChatGPT plugin.
+See the official [plugin packaging and local installation documentation](https://developers.openai.com/plugins/build/plugins)
+and the [client installation verification](references/chatgpt-cursor-installation.md).
+
 ### TYPO3 development
 
 `typo3-v14-reference` (v14 API reference) · `typo3-content-blocks` · `typo3-datahandler` ·

@@ -20,7 +20,7 @@
 #   --user-only     Only install user-level skills (skip project-level)
 #   --project-only  Only install project-level skills (skip user-level)
 #   --no-sync       Compatibility flag; installs always use pinned sources
-#   --client NAME   Install only codex, gemini, cursor, claude, or windsurf
+#   --client NAME   Install codex, gemini, cursor, claude, windsurf, or chatgpt
 #   --generate-only Regenerate catalog, cross-client files, and manifests, then exit
 #   --help          Show this help message
 #
@@ -79,7 +79,7 @@ while [[ $# -gt 0 ]]; do
         --no-sync)     NO_SYNC=true; shift ;;
         --generate-only) GENERATE_ONLY=true; shift ;;
         --client)
-            case "${2:-}" in codex|gemini|cursor|claude|windsurf) SELECTED_CLIENT="$2" ;; *) echo "--client requires codex, gemini, cursor, claude, or windsurf" >&2; exit 2 ;; esac
+            case "${2:-}" in codex|gemini|cursor|claude|windsurf|chatgpt) SELECTED_CLIENT="$2" ;; *) echo "--client requires codex, gemini, cursor, claude, windsurf, or chatgpt" >&2; exit 2 ;; esac
             shift 2 ;;
         --help|-h)     head -n 57 "$0" | tail -n 55; exit 0 ;;
         *)             echo "Unknown option: $1"; exit 1 ;;
@@ -87,6 +87,10 @@ while [[ $# -gt 0 ]]; do
 done
 if [ "$USER_ONLY" = true ] && [ "$PROJECT_ONLY" = true ]; then
     echo "Choose --user-only or --project-only, not both" >&2; exit 2
+fi
+if [ "$SELECTED_CLIENT" = chatgpt ] && [ "$PROJECT_ONLY" = true ]; then
+    echo "ChatGPT uses a personal plugin, not project skill folders. Use --user-only --client chatgpt." >&2
+    exit 2
 fi
 client_enabled() { [ "$SELECTED_CLIENT" = all ] || [ "$SELECTED_CLIENT" = "$1" ]; }
 target_exists() { [ -e "$1" ] || [ -L "$1" ]; }
@@ -247,6 +251,12 @@ if [ "$GENERATE_ONLY" = true ]; then
     echo "Generated catalog and cross-client files for $SKILL_COUNT skills."
     echo "═══════════════════════════════════════════════════════════════"
     exit 0
+fi
+
+# ChatGPT is explicit opt-in: the existing all-client folder install remains unchanged.
+if [ "$SELECTED_CLIENT" = chatgpt ]; then
+    python3 "$SCRIPT_DIR/scripts/chatgpt_plugin.py"
+    exit $?
 fi
 
 # =============================================================================

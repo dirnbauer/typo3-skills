@@ -114,6 +114,20 @@ class InstallerTests(unittest.TestCase):
             self.assertIn("Conflict preserved", result.stderr)
             self.assertEqual(rule.read_text(), "User-owned rule\n")
 
+    def test_chatgpt_rejects_project_folders_and_uses_the_native_plugin_adapter(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            bundle, project = self.fixture(Path(tmp))
+            result = self.install(bundle, project, "--client", "chatgpt")
+            self.assertEqual(result.returncode, 2)
+            self.assertIn("personal plugin", result.stderr)
+            (bundle / "scripts/chatgpt_plugin.py").write_text("print('ChatGPT adapter called')\n")
+            result = subprocess.run(["bash", str(bundle / "install.sh"), "--user-only", "--client", "chatgpt"],
+                                    cwd=project, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("ChatGPT adapter called", result.stdout)
+            for name in (".chatgpt", ".cursor", ".codex", ".gemini", ".agents"):
+                self.assertFalse((project / name).exists())
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,27 @@
+{
+  "name": "typo3-skills",
+  "version": "1.0.0",
+  "description": "TYPO3 development, upgrades and quality workflows from webconsulting.at, with credited upstream skills.",
+  "author": {
+    "name": "webconsulting.at",
+    "url": "https://webconsulting.at"
+  },
+  "homepage": "https://github.com/dirnbauer/typo3-skills#readme",
+  "repository": "https://github.com/dirnbauer/typo3-skills",
+  "license": "MIT AND CC-BY-SA-4.0",
+  "keywords": ["typo3", "php", "upgrade", "testing", "accessibility"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "TYPO3 Skills · webconsulting",
+    "shortDescription": "TYPO3 upgrades, development and quality checks",
+    "longDescription": "The complete TYPO3 skills collection with references, scripts, licences and provenance. Read the bundled AGENTS.md and applicable webconsulting overlays before using a skill. Thank you to Netresearch DTT GmbH and all upstream authors. Execution requires the appropriate local project, tools and permissions; installation alone does not provide DDEV or production access.",
+    "developerName": "webconsulting.at",
+    "category": "Productivity",
+    "capabilities": ["Read", "Write"],
+    "websiteURL": "https://webconsulting.at",
+    "defaultPrompt": [
+      "Read this plugin's AGENTS.md, then plan a TYPO3 upgrade with typo3-upgrade-run. Do not mutate the project yet.",
+      "Read this plugin's AGENTS.md, then select the skills needed to review my TYPO3 extension."
+    ]
+  }
+}
