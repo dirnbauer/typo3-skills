@@ -53,7 +53,7 @@ are explicitly recorded in the lock; safe internal symlinks are materialized as 
 | `web-design-guidelines` | Vercel | https://github.com/vercel-labs/agent-skills | `—` | 2026-07-27 |
 | `web-platform-design` | ehmo | https://github.com/ehmo/platform-design-skills | `—` | 2026-07-27 |
 
-20 vendored skills · 39 webconsulting skills · 59 total.
+20 vendored skills · 40 collection-maintained skills · 60 total.
 
 ## Attribution
 

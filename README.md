@@ -2,12 +2,12 @@
 
 **Agent Skills for TYPO3 v14 development, upgrades and operations.**
 
-59 skills, plus an always-on rules layer, for AI coding agents working on TYPO3 projects — Claude
+60 skills, plus an always-on rules layer, for AI coding agents working on TYPO3 projects — Claude
 Code, Cursor, Codex, Gemini CLI, Windsurf, and anything else that reads `SKILL.md` files.
 
 This is the active repository for TYPO3 skills. It began as a focused extraction from
 [webconsulting-skills](https://github.com/dirnbauer/webconsulting-skills) — 140 skills across many
-domains, now archived and read-only. This collection contains **48 `typo3-*` skills and 11 existing supporting skills**. The **16 explicitly selected Netresearch repositories** are pinned and
+domains, now archived and read-only. This collection contains **48 `typo3-*` skills and 12 existing supporting skills**. The **16 explicitly selected Netresearch repositories** are pinned and
 refreshable; unrelated marketplace skills are excluded. Supporting skills load on demand, not as
 additional mandatory phases in a TYPO3 upgrade.
 
@@ -187,7 +187,7 @@ A rule answers *is this change allowed?*. A skill answers *how do I build this?*
 
 ## Vendored skills
 
-20 of the 59 are not authored by webconsulting and are vendored **byte-identical** so they stay
+20 of the 60 are vendored **byte-identical** so they stay
 re-syncable and their attribution stays intact. Improvements live in separate
 `references/webconsulting-additions.md` overlays that never silently override upstream behaviour.
 
@@ -242,6 +242,7 @@ the upstream state recorded in [VENDORED.md](VENDORED.md).
 | `postgres-best-practices` | Postgres performance optimization and best practices from Supabase. Use this skill when writing, reviewing, or opti… | Supabase |
 | `security-audit` | Use when conducting security assessments — OWASP Top 10 / API / LLM, CWE Top 25, CVSS scoring — auditing PHP/TYPO3,… | Netresearch |
 | `security-incident-reporting` | Builds security incident reports, DDoS post-mortems, timelines, IoC sections, CVE correlation, severity scoring, an… | webconsulting |
+| `thermo-nuclear-code-quality-review` | Run an exceptionally strict, review-only maintainability audit of a branch diff, focused on structural simplificati… | Cursor |
 | `typo3-a11y` | Use when building accessible navigation, forms, filters, tables, skip links, disclosure widgets, or reviewing front… | Netresearch |
 | `typo3-accessibility` | Accessible markup patterns for TYPO3 v14: skip links, landmark regions, heading structure, keyboard and tab order, … | webconsulting |
 | `typo3-backend-rights` | Build and audit TYPO3 backend editor rights after an explicit choice between one user-facing main group with simple… | webconsulting |
@@ -298,6 +299,7 @@ the upstream state recorded in [VENDORED.md](VENDORED.md).
 ### Upstream repositories
 
 - https://github.com/anthropics/claude-plugins-official/tree/main/plugins/code-simplifier
+- https://github.com/cursor/plugins
 - https://github.com/ehmo/platform-design-skills
 - https://github.com/netresearch/enterprise-readiness-skill
 - https://github.com/netresearch/php-modernization-skill

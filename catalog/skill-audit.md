@@ -7,7 +7,7 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 2. Source attribution and provenance drift
 3. Repository optimization gaps
 
-- Skills audited: 59
+- Skills audited: 60
 - Total findings: 5
 - Skills with pass 1 findings: 0
 - Skills with pass 2 findings: 5
@@ -121,6 +121,22 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source URL: https://github.com/dirnbauer/webconsulting-skills
 - Frontmatter name: security-incident-reporting
 - SKILL.md lines: 377
+
+**Pass 1: Structure**
+- No pass 1 issues found.
+
+**Pass 2: Source**
+- No pass 2 issues found.
+
+**Pass 3: Optimization**
+- No pass 3 issues found.
+
+## `thermo-nuclear-code-quality-review`
+
+- Source owner: Cursor
+- Source URL: https://github.com/cursor/plugins
+- Frontmatter name: thermo-nuclear-code-quality-review
+- SKILL.md lines: 212
 
 **Pass 1: Structure**
 - No pass 1 issues found.

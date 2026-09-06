@@ -50,6 +50,10 @@ SOURCE_MAP: dict[str, dict[str, str | None]] = {
         "owner": "Netresearch",
         "url": "https://github.com/netresearch/context7-skill",
     },
+    "thermo-nuclear-code-quality-review": {
+        "owner": "Cursor",
+        "url": "https://github.com/cursor/plugins",
+    },
     "cro-funnel": {
         "owner": "AITYTech",
         "url": "https://github.com/aitytech/agentkits-marketing",

@@ -1,0 +1,70 @@
+{
+  "skill_name": "thermo-nuclear-code-quality-review",
+  "skill_type": "preference",
+  "spec": "SKILL-SPEC.md",
+  "note": "Explicit-only, unusually strict structural review. Ordinary TYPO3 cleanup belongs to typo3-simplify; security findings belong to security-audit. The lifecycle is preference because the severity bar and review protocol remain a deliberate team convention even as models improve.",
+  "evals": [
+    {
+      "id": "thermo-nuclear-code-quality-review-trigger-pos-01",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "Give this branch the thermonuclear treatment before I merge it. I want structural blockers, not cosmetic nits.",
+      "expect_skill": "thermo-nuclear-code-quality-review",
+      "note": "Explicit named review mode with the intended severity."
+    },
+    {
+      "id": "thermo-nuclear-code-quality-review-trigger-pos-02",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "Do the harshest maintainability pass you have on the current diff; challenge the design even though all tests pass.",
+      "expect_skill": "thermo-nuclear-code-quality-review",
+      "note": "Explicit request for a severe structural audit without relying on the skill name."
+    },
+    {
+      "id": "thermo-nuclear-code-quality-review-trigger-pos-03",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "Invoke thermo-nuclear-code-quality-review for this branch. I want the severe structural maintainability pass before merge.",
+      "expect_skill": "thermo-nuclear-code-quality-review",
+      "note": "Direct invocation must always select this skill."
+    },
+    {
+      "id": "thermo-nuclear-code-quality-review-trigger-neg-01",
+      "kind": "trigger-negative",
+      "status": "proposed",
+      "prompt": "Please clean up this TYPO3 extension without changing its behaviour before release.",
+      "expect_skill": "typo3-simplify",
+      "note": "Routine TYPO3 simplification belongs to the focused sibling."
+    },
+    {
+      "id": "thermo-nuclear-code-quality-review-trigger-neg-02",
+      "kind": "trigger-negative",
+      "status": "proposed",
+      "prompt": "Audit this TYPO3 extension for OWASP vulnerabilities and risky dependencies.",
+      "expect_skill": "security-audit",
+      "note": "A security audit has a separate owner."
+    },
+    {
+      "id": "thermo-nuclear-code-quality-review-trigger-neg-03",
+      "kind": "trigger-negative",
+      "status": "proposed",
+      "prompt": "Find the bug that crashes our login when the email claim is absent.",
+      "expect_no_skill": true,
+      "note": "A normal debugging request must not trigger the exceptional review mode."
+    },
+    {
+      "id": "thermo-nuclear-code-quality-review-behaviour-01",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Run the thermonuclear review on this branch. Tests are green, but the feature doubled the size of our main service.",
+      "assertions": [
+        "Establishes the review range and reads repository instructions before judging the change",
+        "Prioritizes a small number of high-confidence structural findings with file-and-line evidence",
+        "Looks for a behaviour-preserving reframing that removes concepts or branches",
+        "Does not treat file size alone as proof of a defect",
+        "Does not edit code unless implementation was separately requested",
+        "States explicitly when no maintainability blockers are found"
+      ]
+    }
+  ]
+}
