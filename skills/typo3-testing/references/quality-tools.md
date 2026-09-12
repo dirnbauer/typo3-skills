@@ -177,20 +177,19 @@ rm -rf .Build/var/phpstan
 - **Level 9**: Strict mixed types, unused parameters
 - **Level 10 (max)**: Maximum strictness - explicit mixed types, pure functions
 
-**Recommendation**:
-- **New projects**: Start with level 5, aim for level 10 (max)
-- **Existing extensions**: Level 8 is practical - levels 9/10 require extensive type annotations for `$GLOBALS`, TCA, and dynamic TYPO3 patterns
+**Recommendation (webconsulting policy since 2026-09)**:
+- **All own extensions**: level 8 is the "normal" CI step (one root `phpstan.neon`, no baseline). Reference points: TYPO3 core and WordPress core run 5, Drupal core 1, powermail/visual_editor 8, the tea best-practice extension 9, nr-llm 10.
+- **Already green at 9/10/max**: keep it — never lower an existing stricter level
+- **Why 8**: levels 9/10 require extensive type annotations for `$GLOBALS`, TCA, and dynamic TYPO3 patterns; 8 catches nullability and strict-boolean bugs without that overhead
 
 **Why Level 8 for existing extensions?**
 - Strict boolean conditions and nullability checks
 - Avoids excessive ignoreErrors for TYPO3's inherently untyped patterns
 - Good balance between strictness and maintainability
 
-**Why Level 10 for new projects?**
-- Enforces explicit type declarations (`mixed` must be declared, not implicit)
-- Catches more potential bugs at development time
-- Aligns with TYPO3 13 strict typing standards (`declare(strict_types=1)`)
-- Required for PHPStan Level 10 compliant extensions
+**When to go beyond 8?**
+- Level 9/10 enforce explicit `mixed` declarations and catch more at development time
+- Worth it for small, fully typed greenfield code; treat it as a per-extension upgrade, not the baseline
 
 ### Ignoring Errors
 

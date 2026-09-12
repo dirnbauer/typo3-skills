@@ -28,8 +28,8 @@ like a code problem rather than a configuration one — which is why it costs so
 
 | Target | Level |
 |---|---|
-| Project code | 9 minimum |
-| Local extensions in `packages/` | 10 |
+| Project code | 8 minimum (policy since 2026-09) |
+| Own extensions (`packages/`, github.com/dirnbauer) | 8 = the "normal" CI step; never lower an extension already green at 9/10 |
 
 Never lower an existing stricter level. No new suppressions or baseline entries for new or touched
 code; the baseline must **shrink** across an upgrade, and gate A5 of `typo3-upgrade-run` checks that

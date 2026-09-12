@@ -6,16 +6,16 @@ Modern PHP projects require a comprehensive static analysis toolchain. This refe
 
 | Tool | Purpose | Requirement |
 |------|---------|-------------|
-| PHPStan | Type checking, bug detection | **Level 9 minimum**, level 10 recommended |
+| PHPStan | Type checking, bug detection | **Level 8 minimum** (policy floor), 9/10 where already green |
 | PHPat | Architecture testing | **Required** for projects with defined architecture |
 | Rector | Automated refactoring | **Required** for modernization |
 | PHP-CS-Fixer | Coding style | **Required** with `@PER-CS` |
 
-## PHPStan (Level 9+)
+## PHPStan (Level 8+)
 
 PHPStan performs static analysis to find bugs without running code.
 
-> **Requirement:** Level 9 minimum, level 10 (max) recommended for production code.
+> **Requirement:** Level 8 minimum (webconsulting policy since 2026-09); keep 9/10 where an extension is already green.
 
 ### Installation
 
@@ -33,7 +33,7 @@ composer require --dev phpstan/phpstan-deprecation-rules
 ```neon
 # phpstan.neon
 parameters:
-    level: 10  # Maximum strictness (9 is minimum acceptable)
+    level: 8  # policy floor (raise to 9/10 only where already green)
     paths:
         - src
         - tests
@@ -576,7 +576,7 @@ jobs:
 
 | Tool | Minimum Threshold |
 |------|-------------------|
-| PHPStan | Level 9 (level 10 for new projects) |
+| PHPStan | Level 8 minimum (9/10 where already green) |
 | PHPat | All architecture tests pass |
 | Rector | No remaining suggestions |
 | PHP-CS-Fixer | Zero violations |
