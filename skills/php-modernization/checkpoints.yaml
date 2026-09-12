@@ -35,7 +35,7 @@ mechanical:
   - id: PM-02
     type: script
     command: |
-      LVL='^[[:space:]]*level:[[:space:]]*(8|9|1[0-9]|max)([[:space:]]|$)'
+      LVL='^[[:space:]]*level:[[:space:]]*(9|1[0-9]|max)([[:space:]]|$)'
       CFG=""
       for c in phpstan.neon phpstan.neon.dist Build/phpstan.neon Build/phpstan/phpstan.neon; do
         if [ -f "$c" ]; then CFG="$c"; break; fi
@@ -47,7 +47,7 @@ mechanical:
         grep -hE "$LVL" phpstan.neon phpstan.neon.dist Build/phpstan.neon Build/phpstan/phpstan.neon 2>/dev/null | grep -q .
       fi
     severity: error
-    desc: "PHPStan level must be 8 or higher (or max) — webconsulting policy floor is 8"
+    desc: "PHPStan level must be 9 or higher (or max)"
 
   - id: PM-03
     type: contains
@@ -276,9 +276,9 @@ mechanical:
   # added for parity with PM-01/PM-02.
   - id: PM-53
     type: command
-    pattern: "find phpstan.neon phpstan.neon.dist Build/phpstan.neon Build/phpstan/phpstan.neon -maxdepth 0 2>/dev/null | head -1 | xargs -r awk '/^[[:space:]]*level:[[:space:]]*(8|9|10|max)([[:space:]]|$)/{ok=1} END{exit !ok}'"
+    pattern: "find phpstan.neon phpstan.neon.dist Build/phpstan.neon Build/phpstan/phpstan.neon -maxdepth 0 2>/dev/null | head -1 | xargs -r awk '/^[[:space:]]*level:[[:space:]]*(10|max)([[:space:]]|$)/{ok=1} END{exit !ok}'"
     severity: warning
-    desc: "Projects should run PHPStan at level 8 or higher (policy floor 8; 9/10 optional per project)"
+    desc: "Projects should target PHPStan level 10 (max) for full strict typing (not gated on PHP version — verify applicability)"
 
   # === IMMUTABILITY BOUNDARIES (guardrail) ===
   - id: PM-39

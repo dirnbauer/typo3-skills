@@ -40,6 +40,26 @@ Scripts written for this collection use:
 Codes 3 and 5 exist because collapsing them loses the distinction that matters most: an environment
 drift is not a subject regression, and a guard refusal is not a broken tool.
 
+## PHPStan level for own extensions (policy since 2026-09-12)
+
+The vendored skill above says "PHPStan level 10". For extensions owned by webconsulting
+(github.com/dirnbauer, lab `packages/`) the **normal CI step runs level 8** — one root
+`phpstan.neon` with the `saschaegerer/phpstan-typo3` and `phpstan-phpunit` includes,
+`treatPhpDocTypesAsCertain: false`, no baseline, stubs only for optional third-party extensions.
+
+Why 8 and not 5 or 10: TYPO3 core and WordPress core run level 5 (with baselines), Drupal core 1,
+powermail and visual_editor 8, the TYPO3 best-practice `tea` extension 9, nr-llm 10. Level 8
+catches nullability and strict-boolean defects without the `mixed`-annotation overhead that
+levels 9/10 impose on `$GLOBALS`, TCA and DataHandler arrays.
+
+Rules:
+
+- New or reworked extension: `level: 8`.
+- Extension already green at 9, 10 or `max`: keep it — never lower an existing stricter level.
+- Checkpoints `TT-32`/`TT-35` (this skill) and `PM-02`/`PM-53` (`php-modernization`) still gate on
+  10/max as written upstream; read a level-8 result from them as *policy-conformant*, not as a
+  failure, until upstream makes the level configurable.
+
 ## Credits & Attribution
 
 This skill is based on the excellent work by **Netresearch DTT GmbH**.

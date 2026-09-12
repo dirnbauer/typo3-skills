@@ -15,7 +15,7 @@ includes:
     - phpat.neon
 
 parameters:
-    level: 8
+    level: 10
     paths:
         - Classes
         - Tests/Architecture

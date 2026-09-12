@@ -20,7 +20,7 @@ To configure PHPUnit, copy and customize:
 ## Code Quality Tools
 
 To set up static analysis and code style, use:
-- `assets/phpstan.neon` - PHPStan level 8 configuration (policy floor; raise per project if already green at 9/10)
+- `assets/phpstan.neon` - PHPStan level 10 configuration
 - `assets/phpstan-baseline.neon` - Baseline template for legacy code migration
 - `assets/phpat.php` - Architecture test rules for layer enforcement
 - `assets/phpat.neon` - PHPat PHPStan extension configuration

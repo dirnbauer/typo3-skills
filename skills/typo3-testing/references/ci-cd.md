@@ -925,7 +925,7 @@ The CI workflow executes these checks (projects do not need to define them):
 
 1. **Linting** -- PHP syntax validation
 2. **Code style** -- php-cs-fixer dry-run
-3. **Static analysis** -- PHPStan at level 8 (policy floor)
+3. **Static analysis** -- PHPStan at level 10
 4. **Unit tests** -- across PHP version matrix
 5. **Functional tests** -- across PHP version matrix
 6. **Mutation testing** -- Infection PHP

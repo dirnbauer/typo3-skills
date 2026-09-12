@@ -63,7 +63,7 @@ Verify tests fail before fix, pass after. Bug fixes use the strict TDD loop in `
 
 ## Scoring Requirements
 
-Unit tests required (70%+ coverage). Functional tests required for DB operations. **phpat required** for architecture points. PHPStan level 8 (webconsulting policy floor since 2026-09; do not lower an extension that already passes a higher level).
+Unit tests required (70%+ coverage). Functional tests required for DB operations. **phpat required** for architecture points. PHPStan level 10.
 
 ## References (in `references/`, `.md` implied)
 

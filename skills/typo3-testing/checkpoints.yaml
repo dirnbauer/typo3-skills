@@ -147,9 +147,9 @@ mechanical:
   - id: TT-32
     type: regex
     target: "{phpstan.neon,Build/phpstan.neon,Build/phpstan/phpstan.neon}"
-    pattern: 'level:\s*([89]|10|max)'
+    pattern: 'level:\s*(10|max)'
     severity: warning
-    desc: "PHPStan must use level 8 or higher (webconsulting policy floor is 8; keep 9/10/max where already green)"
+    desc: "PHPStan must use level 10 (max) — this is the strict check for projects using typo3-ci-workflows"
 
   - id: TT-33
     type: regex
@@ -178,7 +178,7 @@ mechanical:
   # project on every such machine.
   #
   # Every candidate configuration is inspected before the verdict. A project
-  # with Build/phpstan.neon at level 8 and phpstan.neon at level 10 satisfies
+  # with Build/phpstan.neon at level 9 and phpstan.neon at level 10 satisfies
   # the rule; exiting at the first file below 10 reported it as non-conformant.
   - id: TT-35
     type: script
@@ -189,19 +189,19 @@ mechanical:
         lvl=$(grep -m1 -oE 'level:[[:space:]]*([0-9]+|max)' "$f" 2>/dev/null)
         lvl="${lvl##*[[:space:]:]}"
         [ -z "$lvl" ] && continue
-        if [ "$lvl" = "max" ] || { [ "$lvl" -ge 8 ] 2>/dev/null; }; then
+        if [ "$lvl" = "max" ] || [ "$lvl" = "10" ]; then
           exit 0
         fi
         bad="$bad $f=$lvl"
       done
       if [ -n "$bad" ]; then
-        echo "FAIL: no PHPStan configuration declares level 8 or higher; found:$bad"
+        echo "FAIL: no PHPStan configuration declares level 10 or max; found:$bad"
         exit 1
       fi
       echo "FAIL: no PHPStan configuration declaring a level was found"
       exit 1
     severity: warning
-    desc: "PHPStan must use level 8 or higher (webconsulting policy floor is 8; keep 9/10/max where already green)"
+    desc: "PHPStan must use level 10 (max) — this is the strict check for projects using typo3-ci-workflows"
 
   # === CODE COVERAGE ===
   - id: TT-40
