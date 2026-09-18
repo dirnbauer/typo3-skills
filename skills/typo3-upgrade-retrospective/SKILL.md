@@ -32,6 +32,12 @@ credentials or customer data in the retrospective.
 
 ## Required analysis
 
+For a dated follow-up, record an explicit start/end window and inspect relevant local branches,
+not only the current branch. Deduplicate commit IDs and separate merge bookkeeping, implementation,
+redesign and later repairs. Compare with the previous retrospective: add a new control only where
+the old one was absent, ambiguous or demonstrably bypassed. A task final is a claim until matched
+to artifacts; do not translate individual repair-task duration into whole-upgrade performance.
+
 For every project/task, record:
 
 - original request and later scope/destination changes;
@@ -59,6 +65,9 @@ does not prove visual invariance, permissions, security, or closure. Stale statu
 - Avoid generic advice (“test more”). Name what is tested, where, when, and what blocks.
 - Identify worse trade-offs introduced by the proposed control: setup cost, serialization,
   graph complexity, false blocking, maintenance, or small-project overhead.
+- Do not promote an emergency workaround into policy. Flag disabled protections, broad cache/data
+  resets and unverified provider success separately from fixes worth reusing. Prefer a conditional
+  assertion in an existing graph node over another mandatory phase or independent retry programme.
 
 ## Outputs
 

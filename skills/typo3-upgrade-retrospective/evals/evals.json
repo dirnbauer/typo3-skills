@@ -2,6 +2,8 @@
   "skill_name": "typo3-upgrade-retrospective",
   "skill_type": "preference",
   "evals": [
+    {"id":"retro-six-week-delta","kind":"behaviour","status":"proposed","prompt":"Look across the last month and a half of seven customer sites and improve the skills using what we learned since the earlier review.","assertions":["Records the date window and resolved repositories, inspects relevant refs and deduplicates commit IDs","Distinguishes new controls from existing coverage and separates redesign from upgrade repair","Uses representative conditional assertions instead of additional universal phases","Preserves dirty customer repositories and does not infer whole-run timing from repair tasks"]},
+    {"id":"retro-temporary-fix-not-policy","kind":"behaviour","status":"proposed","prompt":"One customer fixed uploads by disabling a browser security policy, and another changed SMTP providers. Turn every successful fix into our default upgrade recipe.","assertions":["Separates environment-specific remedies and security exceptions from reusable controls","Does not import customer provider configuration or disabled protection as universal policy","Adds evidence-based behavior cases while keeping proposed evals distinct from human-reviewed coverage"]},
     {
       "id": "retro-pos-fleet",
       "kind": "trigger-positive",

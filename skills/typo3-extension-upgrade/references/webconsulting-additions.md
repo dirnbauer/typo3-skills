@@ -20,6 +20,15 @@ TCA, backend modules or runtime paths work. Inspect installed interfaces, run Sc
 analysis, then render/execute every used surface. Lock fork commits and Composer patches exactly,
 make patches fail on context drift, and record their removal condition.
 
+Recheck this after patch-level Core updates too: the September 2026 Saferinternet and Watchlist
+repairs exposed an inline page-controller constructor dependency on installed backend internals.
+Verify the target constructor/factory in vendor source, compile DI, then open the actual
+authenticated module with a representative record. A login-page 200 is not that test. Prefer an
+upstream-compatible release; any temporary Composer patch needs a clean-install regression and an
+exit condition, never an untracked vendor edit. Apply the
+[fleet integration contracts](../../typo3-upgrade-run/references/fleet-regression-contracts.md)
+only to surfaces the extension supplies; do not start a whole-site upgrade for one extension fix.
+
 Classify Scanner findings. Compatibility aliases can intentionally remain on the target while the
 scanner warns about their future removal; runtime tests decide whether they are still needed.
 

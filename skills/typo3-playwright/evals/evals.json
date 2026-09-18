@@ -3,6 +3,21 @@
   "skill_type": "capability",
   "spec": "SKILL-SPEC.md",
   "evals": [
+    {
+      "id": "rte-representative-effective-contracts",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Hundreds of migrated records share three editor configurations. Check that saving preserves their formatting without opening every record in a browser.",
+      "assertions": [
+        "Groups fixtures by effective preset, processing and renderer rather than testing every row",
+        "Includes an affected nested field and observed headings, code, wrappers and links where present",
+        "Tests authenticated local save/reopen with approved disposable data and frontend output",
+        "Does not multiply the global screenshot states or report standalone fixtures as real backend proof"
+      ]
+    },
+    {"id":"browser-doi-preview-not-proof","kind":"behaviour","status":"proposed","prompt":"The newsletter email preview looks correct and the contact API returns success. Write the checks for a new subscriber and someone already subscribed.","assertions":["Verifies the configured DOI template contract and distinct subscriber outcomes","Exercises the real local integration with intercepted provider responses including rejection and pending states","Does not claim inbox delivery or confirm a real subscription from local mocks"]},
+    {"id":"browser-tracking-context-csp","kind":"behaviour","status":"proposed","prompt":"Analytics vanished after deployment although consent screenshots look identical. Production uses a different TYPO3 context than the developer expected.","assertions":["Renders local fixtures using the actual context and host predicates with all external tracking intercepted","Asserts expected page-view count, transport, consent or opt-out behavior and staging exclusion","Inspects effective CSP while preserving the backend policy"]},
+    {"id":"browser-touch-desktop-cache","kind":"behaviour","status":"proposed","prompt":"The carousel fails only on a touch laptop, and the homepage list is correct only just after a cache flush. Add focused regression coverage.","assertions":["Uses a desktop-width touch-capable context on the affected component instead of adding global states","Warms a representative page and tests supported local fixture edits invalidate the correct dependent output","Preserves editorial selection rules and intercepts any external cache purge request"]},
     {"id":"browser-beh-ajax-repeat","kind":"behaviour","status":"proposed","prompt":"The TYPO3 filter changes the result list on its first click. Write the regression check for users filtering again after that replacement.","assertions":["Operates the replacement control and asserts a second visible result change","Uses a fresh role/label locator rather than a detached original element","Preserves the first failed assertion and reports executed/failed/skipped counts"]},
     {"id":"browser-beh-editor-save","kind":"behaviour","status":"proposed","prompt":"The TYPO3 editor shows a Saved notice and the backend URL returns 200. Verify that the edited content really survives.","assertions":["Uses an authorized disposable fixture with rollback and edits through the UI","Saves, reopens and asserts the persisted body/link content rather than relying on the notice","Reports loss of the edit as a failure and restores the fixture without hiding the first failure"]},
     {"id":"browser-pos-1","kind":"trigger-positive","status":"proposed","expect_skill":"typo3-playwright","prompt":"Write Playwright regression tests for the TYPO3 filter panel that stops responding after changing a facet."},

@@ -118,4 +118,12 @@ If records still use `tt_content.list_type`, migrate them transactionally before
 registration. Record pre/post counts and prove the wizard is idempotent; otherwise the registration
 switch can produce a 500 before the data migration runs.
 
+### 7. Rendering HTML Does Not Prove the Editor Preserves It
+
+For Mask/legacy rich-text fields, follow the [rich-text round-trip contract](rich-text-roundtrip.md).
+Inspect compiled type-specific TCA and preset precedence, compare stored markup, and test the
+installed editor plus server processing. A configuration-only correction must not replay imports.
+Keep intentional plain text and raw-HTML fields separate; frontend parity and authenticated backend
+save/reopen are distinct proofs.
+
 ---

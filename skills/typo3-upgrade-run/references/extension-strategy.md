@@ -7,6 +7,11 @@ through one of the five branches below.
 
 Gate A5 requires every extension to carry a resolution. `unresolved` is not an allowed end state.
 
+Apply [native tools first](native-tools-first.md) before adding a replacement or helper. Core
+capabilities win when they preserve the used contract; new optional community packages need verified
+adoption, maintenance and target compatibility. Existing local/customer features are not candidates
+for automatic removal just because they lack public download figures.
+
 ## Declare the blockers loudly, before any migration work
 
 Resolve the whole set at inventory time and **say out loud, at the top of the plan, which extensions
@@ -44,8 +49,8 @@ path repository, raise its own `composer.json` to `typo3/cms-core: ^14.3` and th
 target, and run the full pipeline inside it — Rector, Fractor, manual migration, PHPStan, tests —
 exactly as for any other extension.
 
-Local extensions are held to the stricter PHPStan level (10) because nothing external constrains
-them.
+PHPStan level 8 is the normal project step for owned extensions; preserve a higher existing level.
+Treat further tightening as scoped work, not a reason to duplicate the migration or extend its budget.
 
 Resolution: `updated`.
 
@@ -53,10 +58,12 @@ Resolution: `updated`.
 
 Look, in this order:
 
-1. An upstream development branch or pending release.
-2. A maintained fork or successor extension.
-3. **A TYPO3 v14 Core feature that replaces it.** Check this properly — v14 absorbed functionality
-   that used to need extensions, and removing a dependency is better than migrating one.
+1. **A TYPO3 v14 Core feature that preserves the used contract.** Prove equivalence before proposing
+   replacement/removal; do not redesign functioning forms/content just to remove a dependency.
+2. A compatible maintained upstream release; otherwise inspect a development branch or pending
+   release as a candidate, not automatic production approval.
+3. A maintained fork or successor extension. Apply the adoption gate to new optional replacements;
+   a necessary compatibility-fork exception needs the user's approval and an exit plan.
 
 If the feature must stay and none of the above exists, first decide whether the used surface is small
 and stable enough for branch 4. Otherwise **fork it into `packages/` and maintain it yourself** — a

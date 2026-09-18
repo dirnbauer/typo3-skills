@@ -10,6 +10,7 @@ import { sha256 } from '../run/paths.mjs';
 import { browserArgs } from '../browser/launch.mjs';
 import { verifyBaseline } from '../run/lockfile.mjs';
 import { StateStore } from '../run/state.mjs';
+import { featurePlanIssues, featureCoverageIssues } from '../run/feature-contracts.mjs';
 
 const exec = promisify(execFile);
 export const CLOSURE_CHECKS = Object.freeze([
@@ -49,7 +50,39 @@ async function currentSubject(paths) {
   if (!context.state.graph?.definition_hash || !context.state.baselines?.['A-original']?.sealed) {
     throw new PreconditionError('Closure requires the sealed graph and Baseline A.');
   }
-  return { context, subject: { ...repo, graphHash: context.state.graph.definition_hash, inputs: context.inputs } };
+  const features = await sealedFeaturePlan(paths, context.state);
+  return { context, features, subject: { ...repo, graphHash: context.state.graph.definition_hash, inputs: context.inputs,
+    ...(features ? { featureContractsHash: features.hash } : {}) } };
+}
+
+export async function readFeaturePlan(paths, reference, expectedHash, runId) {
+  const bytes = await readClosureArtifact(paths.root, reference);
+  const hash = `sha256:${sha256(bytes)}`;
+  if (hash !== expectedHash) throw new InvalidRunError('Sealed feature plan changed.');
+  let plan;
+  try { plan = JSON.parse(bytes); } catch { throw new InvalidRunError('Feature plan must be JSON.'); }
+  const issues = featurePlanIssues(plan, runId);
+  if (issues.length) throw new InvalidRunError(`Feature plan refused:\n  - ${issues.join('\n  - ')}`);
+  for (const feature of plan.features) {
+    const bytes = await readClosureArtifact(paths.root, feature.evidence.path);
+    if (`sha256:${sha256(bytes)}` !== feature.evidence.sha256) throw new InvalidRunError('Feature inventory evidence changed.');
+  }
+  return { plan, hash };
+}
+
+export async function sealedFeaturePlan(paths, state) {
+  const bytes = await readClosureArtifact(paths.root, state.graph?.definition_path);
+  if (`sha256:${sha256(bytes)}` !== state.graph.definition_hash) throw new InvalidRunError('Graph definition changed.');
+  const definition = parseYaml(bytes.toString());
+  if (definition?.schema !== 'typo3-upgrade-run/graph@1'
+    || (definition.policy?.require_feature_contracts !== undefined && typeof definition.policy.require_feature_contracts !== 'boolean')) {
+    throw new InvalidRunError('Invalid graph feature-contract policy.');
+  }
+  // Do not rewrite a legacy sealed graph or claim it passed a newer evidence contract.
+  if (definition.policy?.require_feature_contracts !== true) return null;
+  const intake = state.graph.nodes?.['intake-join'];
+  if (intake?.status !== 'passed') throw new PreconditionError('Seal feature contracts at intake-join before proof.');
+  return readFeaturePlan(paths, intake.evidence, intake.evidence_sha256, state.run_id);
 }
 
 export async function closureStart({ paths, log }) {
@@ -139,7 +172,7 @@ export async function closureCheck({ values, paths, log }) {
   const manifestBytes = await readClosureArtifact(paths.root, reference);
   const manifest = JSON.parse(manifestBytes);
   const epoch = JSON.parse(await readClosureArtifact(paths.root, manifest?.epochRef));
-  const { context, subject } = await currentSubject(paths);
+  const { context, subject, features } = await currentSubject(paths);
   const issues = closureIssues(manifest, epoch, subject, context.state);
   if (issues.length) throw new InvalidRunError(`Closure refused:\n  - ${issues.join('\n  - ')}`);
   for (const key of ['coverage', 'backup', 'restore']) {
@@ -150,6 +183,13 @@ export async function closureCheck({ values, paths, log }) {
   for (const c of manifest.checks) for (const a of c.artifacts) {
     const actual = `sha256:${sha256(await readClosureArtifact(paths.root, a.path))}`;
     if (actual !== a.sha256) throw new InvalidRunError(`Closure artifact changed: ${a.path}`);
+  }
+  if (features) {
+    let coverage;
+    try { coverage = JSON.parse(await readClosureArtifact(paths.root, manifest.coverageRef)); }
+    catch { throw new InvalidRunError('Feature coverage must be JSON.'); }
+    const findings = featureCoverageIssues(features.plan, coverage, manifest);
+    if (findings.length) throw new InvalidRunError(`Feature coverage refused:\n  - ${findings.join('\n  - ')}`);
   }
   // A passed state label with a nonexistent report must never be enough for closure.
   for (const id of PROOF_NODES) await readClosureArtifact(paths.root, context.state.graph.nodes[id].evidence);

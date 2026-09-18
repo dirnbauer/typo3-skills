@@ -256,7 +256,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-content-blocks/SKILL.md",
-    "line_count": 281,
+    "line_count": 287,
     "frontmatter_keys": [
       "name",
       "description",
@@ -473,7 +473,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-playwright/SKILL.md",
-    "line_count": 70,
+    "line_count": 83,
     "frontmatter_keys": [
       "name",
       "description",
@@ -759,7 +759,7 @@
     "source_owner": "webconsulting",
     "source_url": null,
     "file_path": "skills/typo3-upgrade-baseline/SKILL.md",
-    "line_count": 65,
+    "line_count": 68,
     "frontmatter_keys": [
       "name",
       "description",
@@ -778,7 +778,7 @@
     "source_owner": "webconsulting",
     "source_url": null,
     "file_path": "skills/typo3-upgrade-closure/SKILL.md",
-    "line_count": 81,
+    "line_count": 86,
     "frontmatter_keys": [
       "name",
       "description",
@@ -814,7 +814,7 @@
     "source_owner": "webconsulting",
     "source_url": null,
     "file_path": "skills/typo3-upgrade-intake/SKILL.md",
-    "line_count": 83,
+    "line_count": 92,
     "frontmatter_keys": [
       "name",
       "description",
@@ -833,7 +833,7 @@
     "source_owner": "webconsulting",
     "source_url": null,
     "file_path": "skills/typo3-upgrade-migration/SKILL.md",
-    "line_count": 75,
+    "line_count": 84,
     "frontmatter_keys": [
       "name",
       "description",
@@ -852,7 +852,7 @@
     "source_owner": "webconsulting",
     "source_url": null,
     "file_path": "skills/typo3-upgrade-retrospective/SKILL.md",
-    "line_count": 78,
+    "line_count": 87,
     "frontmatter_keys": [
       "name",
       "description",
@@ -871,7 +871,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-upgrade-run/SKILL.md",
-    "line_count": 281,
+    "line_count": 301,
     "frontmatter_keys": [
       "name",
       "description",

@@ -1,0 +1,14 @@
+{
+  "schema": "typo3-upgrade-run/feature-contracts@1",
+  "runId": "<actual run_id>",
+  "features": [
+    {"id": "mail", "applicable": null, "evidence": {"path": "", "sha256": ""}, "journeys": []},
+    {"id": "newsletter", "applicable": null, "evidence": {"path": "", "sha256": ""}, "journeys": []},
+    {"id": "captcha", "applicable": null, "evidence": {"path": "", "sha256": ""}, "journeys": []},
+    {"id": "tracking", "applicable": null, "evidence": {"path": "", "sha256": ""}, "journeys": []},
+    {"id": "backend", "applicable": true, "evidence": {"path": "", "sha256": ""}, "journeys": []},
+    {"id": "cache", "applicable": null, "evidence": {"path": "", "sha256": ""}, "journeys": []},
+    {"id": "routes", "applicable": true, "evidence": {"path": "", "sha256": ""}, "journeys": []},
+    {"id": "content", "applicable": null, "evidence": {"path": "", "sha256": ""}, "journeys": []}
+  ]
+}

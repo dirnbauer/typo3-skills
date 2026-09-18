@@ -36,6 +36,9 @@ One job: build a trustworthy source instrument before the first site change.
    - search: stable query order, empty result, pagination;
    - form: validation and local Mailpit success; external APIs intercepted;
    - login/reset/404/media/language and any project-specific high-value interaction.
+   Reuse the intake feature plan. Include subsite/detail/historic routes and distinct integration
+   entry points; do not replace their contracts with random homepage screenshots. Keep pointer/touch
+   variants inside the affected component journey, not a fourth global visual state.
 5. Stabilize clocks/randomness/animations, fonts, image decode, lazy content, scrollbar, consent,
    video, and two stable layout frames. Configuration is hashed evidence, not hidden test code.
 6. Run a seeded diagnostic, then one exhaustive unchanged double-capture with fresh isolated browser

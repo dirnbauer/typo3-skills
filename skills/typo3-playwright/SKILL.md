@@ -42,9 +42,22 @@ metadata:
 | AJAX search | Apply facet → replace results → operate filter again; empty/pagination/reset; multilingual query and suggest endpoint |
 | Forms | Invalid input → errors; valid local submit → persisted record and Mailpit message; restore test data |
 | Editor | Non-admin login → create/edit → save → reopen → frontend preview; original markup, links and media survive |
-| RTE | Open link browser, choose page/record/file link, save/reopen; toolbar plugins and custom presets load without errors |
+| RTE | Open real link browser, choose page/record/file link, save/reopen; toolbar, effective presets and observed stored formatting survive |
 | Backend preview | Real plugin record, raw FlexForm-backed and Record API-backed previews, category selection, media/video |
 | Hidden content | Authorized group exposes Admin Panel/Preview; editor chooses hidden-page/content visibility; public visitor still cannot see it |
+
+For affected integration, cache or patch-update work, read the
+[fleet regression contracts](../typo3-upgrade-run/references/fleet-regression-contracts.md):
+test promised mail recipients and partial failure, DOI states and CAPTCHA protocol, tracking under
+actual context/CSP, authenticated layout/image dialogs, and warm-cache edit consequences. Include
+touch-capable desktop input when code branches on pointer capability. Test only present features.
+Under the upgrade graph, emit [feature results](../typo3-upgrade-run/references/feature-evidence.md)
+against the sealed intake assertions and current final epoch. These are representative journeys,
+not more global screenshot states. Standalone browser work does not require initializing an upgrade.
+
+For migrated rich text, use the [field round-trip contract](../typo3-content-blocks/references/rich-text-roundtrip.md).
+Group fixtures by effective preset/processing/renderer. Record standalone editor, actual authenticated
+backend and frontend results separately; missing login is a coverage gap, not a pass.
 
 For save/upload/delete operations, get exact local fixture scope and a snapshot first. Teardown
 through supported APIs, verify no test records/files/users remain, including after failure.

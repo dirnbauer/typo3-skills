@@ -13,6 +13,14 @@ a non-admin editor with `typo3-playwright`. Also test actual plugin/FlexForm pre
 Admin Panel preview options belong to the authorized editor group and individual editor choices;
 never force hidden-page/content visibility globally to make a preview test pass.
 
+For migrated HTML fields or preset changes, read the collection-owned
+[rich-text round-trip contract](../../typo3-content-blocks/references/rich-text-roundtrip.md).
+Inspect effective type-specific TCA and preset precedence, not only global Page TSconfig. Preserve
+observed headings, code, classes and links through the installed editor, server transformations and
+frontend output without widening sanitization to arbitrary HTML. Distinguish an in-memory fixture
+from an authenticated save/reopen and real link dialog; missing login leaves that proof pending.
+Content Blocks owns field definitions; this companion owns the bounded preset/plugin correction.
+
 ## Credits & Attribution
 
 This skill is based on the excellent work by **Netresearch DTT GmbH**.

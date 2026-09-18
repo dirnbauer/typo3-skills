@@ -33,6 +33,11 @@ Do not start implementation in this mode. Choose the normal guarded open when th
 The shipped graph requires a real, nonempty run-relative artifact at node closure and records its
 SHA-256. `graph-validate` checks passed/skipped node artifacts against those recorded hashes.
 
+New default graphs set `require_feature_contracts`. `intake-join` validates and seals its feature
+plan as that same node artifact. Existing proof nodes supply the results; `closure-check` rejects
+missing/stale per-journey assertions. See [feature evidence](../references/feature-evidence.md).
+This adds coverage accounting, not another orchestration loop. Legacy graph definitions stay sealed.
+
 ## 10.2 Edge contract
 
 An edge is `(from, outcome) → to`. Outcome names preserve causality:

@@ -26,6 +26,9 @@ One job: decide whether Contract A is actually proven.
 
 Read `../typo3-upgrade-run/references/closure-currentness.md`. After the last migration/build,
 reconcile the target content epoch first; then use `t3u closure-start` and bind every check to it.
+Read the sealed intake feature plan and [feature evidence format](../typo3-upgrade-run/references/feature-evidence.md).
+Report each planned journey/assertion under its existing closure check. Aggregate green counts
+cannot hide an untested finisher, provider state, authenticated module or warmed-cache consequence.
 
 1. Reconcile every expected DB/file/schema/generated-asset change in the content-transition ledger;
    seal the target editorial epoch. Unledgered content drift is `INVALID`.
@@ -41,6 +44,8 @@ reconcile the target content epoch first; then use `t3u closure-start` and bind 
    Use `typo3-playwright`: non-admin save/reopen, RTE page/record/file link dialogs, actual plugin
    previews, media/video and category fields. Test mobile filters a second time after AJAX results
    replacement and UTF-8 search/suggest when present. Verify the web PHP runtime, not only CLI.
+   For migrated rich text or preset changes, require the [field round-trip proof](../typo3-content-blocks/references/rich-text-roundtrip.md).
+   Standalone editor/parser results cannot close a pending authenticated backend check.
 6. Redirects is mandatory: package/module present, intended editor group can read/create/edit only in
    authorized scope, unrelated actions remain denied, and frontend redirect response is correct.
 7. Run version-pinned Lighthouse repeated on fixed URLs and axe over representative visible states.

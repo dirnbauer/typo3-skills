@@ -14,7 +14,7 @@ import { StateStore } from '../run/state.mjs';
 import { sha256 } from '../run/paths.mjs';
 import { assertPhaseRuntime, runtimeProfileIssues } from '../run/runtime.mjs';
 import { forecastGraph } from '../run/forecast.mjs';
-import { closureCheck, readClosureArtifact, validClosureAcceptance, verifyRecordedClosureAcceptance } from './closure.mjs';
+import { closureCheck, readClosureArtifact, readFeaturePlan, validClosureAcceptance, verifyRecordedClosureAcceptance } from './closure.mjs';
 export { validClosureAcceptance } from './closure.mjs';
 
 const GRAPH_SCHEMA = 'typo3-upgrade-run/graph@1';
@@ -182,6 +182,9 @@ export async function nodeClose({ values, paths, log, journal }) {
   }
   const evidenceHash = definition.policy?.require_artifacts
     ? `sha256:${sha256(await readClosureArtifact(paths.root, evidence))}` : null;
+  if (outcome === 'pass' && id === 'intake-join' && definition.policy?.require_feature_contracts === true) {
+    await readFeaturePlan(paths, evidence, evidenceHash, state.run_id);
+  }
   if (outcome === 'pass' && node.evidence_loop === 'required') {
     const loopId = String(values['evidence-loop'] ?? '').slice(0, 3);
     if (!/^\d{3}$/.test(loopId) || state.loops[loopId] !== 'green') {
@@ -315,6 +318,13 @@ export function validateGraphDefinition(definition) {
   if (issues.length) return issues;
   const nodeIds = new Set(Object.keys(definition.nodes));
   const resources = new Set(asArray(definition.resources));
+  if (definition.policy?.require_feature_contracts !== undefined && typeof definition.policy.require_feature_contracts !== 'boolean') {
+    issues.push('policy.require_feature_contracts must be boolean');
+  }
+  if (definition.policy?.require_feature_contracts === true
+    && (!definition.policy.require_artifacts || !nodeIds.has('intake-join'))) {
+    issues.push('feature contracts require hashed artifacts and an intake-join node');
+  }
   if (definition.policy?.serialize_mutations && !resources.has('project-write')) issues.push('serialized mutations require the project-write resource');
   for (const key of ['max_node_attempts', 'max_total_retries']) {
     const value = definition.policy?.[key];

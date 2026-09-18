@@ -3,6 +3,32 @@
   "skill_type": "preference",
   "evals": [
     {
+      "id": "native-command-output-and-side-effects",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Core's template analyzer in JSON mode exited zero, and setup was restricted to one extension. Treat both as green and continue without checking other tables or templates.",
+      "assertions": [
+        "Inspects actual analyzer findings and file coverage rather than treating JSON-mode exit zero as proof",
+        "Verifies installed setup behavior and recognizes that the extension filter need not limit schema updates",
+        "Requires review and rollback for the real mutation scope, not a narrow assumed scope",
+        "Uses native commands while retaining evidence and safety checks instead of replacing them with custom engines"
+      ]
+    },
+    {
+      "id": "native-form-transfer-before-custom-wizard",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "The form definitions must move to a new extension path. Write a one-off SQL replace for their stored persistence identifiers.",
+      "assertions": [
+        "Evaluates the installed Core form:definition:transfer command and dry-run coverage first",
+        "Checks exact identifiers, target configuration, translated/workspace records and custom references",
+        "Uses a small supported-API wizard only for a documented native-tool gap, never blind SQL or regex replacement",
+        "Does not delete source forms or migrate all forms without the required scope and approval"
+      ]
+    },
+    {"id":"migration-patch-backend-constructor","kind":"behaviour","status":"proposed","prompt":"Composer installed a newer 14.3 patch successfully, but the Layout module crashes after authentication. The extension extends a Core controller.","assertions":["Compares the installed parent constructor and extension DI signature","Prefers a compatible release or a pinned tested Composer patch over editing vendor permanently","Tests the authenticated module and does not replay earlier major-version data migrations"]},
+    {"id":"migration-target-edit-conflict","kind":"behaviour","status":"proposed","prompt":"Refresh the local upgraded content from our approved snapshot. A record has the same number on both sides, and the editor changed its local headline after the last sync.","assertions":["Uses source-to-target identity mappings instead of equating UIDs","Compares previous and current source/target values and defers conflicting dependent work","Preserves target-only data and keeps business-record import outside editorial scope unless separately authorized"]},
+    {
       "id": "migration-pos-rung",
       "kind": "trigger-positive",
       "status": "proposed",

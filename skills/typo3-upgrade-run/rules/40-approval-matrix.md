@@ -44,7 +44,7 @@ Use `t3u approval --stage intent ...` and `t3u approval --stage acceptance --evi
 | 24 | Derive a new baseline `B-<n>` | no | user | per track |
 | 25 | Apply IA / content recommendations | no | user | per recommendation (default: recommend only) |
 | 26 | Create a commit | no | user | per phase batch |
-| 27 | Push, tag, publish, or open a pull request | no | user, separately from #26 | per action |
+| 27 | Push, tag, publish, or open a pull request | no | user, separately from #26; pushes also require the destination preflight | per action and exact repository/refspec |
 | 28 | Change a visual threshold or the sample after sealing | **not grantable** | — | see `20-baseline-integrity.md` |
 | 29 | Overwrite or edit `baseline/A-original/` | **not grantable** | — | see `20-baseline-integrity.md` |
 | 30 | Touch staging, live, or remote infrastructure | **not grantable** | — | see `00-scope-and-prohibitions.md` |

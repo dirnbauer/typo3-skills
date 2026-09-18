@@ -4,6 +4,14 @@ This is the mandatory correction sheet for the current fleet. Read it with the P
 records repeatable failure modes, not customer names or one-off inventories. A symptom still needs
 to be confirmed on the project in front of you.
 
+At intake, also apply the [September 16 feature contracts](fleet-regression-contracts.md). They
+cover later mail/DOI/CAPTCHA, tracking/CSP, patch-level backend, cache, route and data regressions
+without adding global states or nested workflows. Their plan/result accounting is enforced for
+new graphs through [feature evidence](feature-evidence.md); older sealed runs remain historical.
+The [September 17 delta](run-retrospective-2026-09-17.md) adds effective RTE/save-load contracts and
+the user's verified push-destination boundary. Apply [native tools first](native-tools-first.md)
+before new scripts/dependencies; this does not add phases or global browser states.
+
 ## What failed and what now prevents a repeat
 
 | Failure mode | Cost or risk | Mandatory correction |

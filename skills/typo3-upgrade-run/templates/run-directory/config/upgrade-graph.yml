@@ -3,6 +3,7 @@ id: typo3-14.3-project-upgrade
 policy:
   require_artifacts: true
   require_forecast: true
+  require_feature_contracts: true
   serialize_mutations: true
   max_node_attempts: 3
   max_total_retries: 12

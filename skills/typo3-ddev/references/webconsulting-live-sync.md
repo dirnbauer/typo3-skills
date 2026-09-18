@@ -4,6 +4,12 @@ Use only when the user separately requests preparing or executing a sync. An upg
 never authorizes production access. This reference guides a project-owned helper; it is not a
 universal script to execute blindly. All imports/migrations target the selected local DDEV project.
 
+Before building or extending a sync helper, apply
+[native tools first](../../typo3-upgrade-run/references/native-tools-first.md): prefer DDEV's own
+snapshot/export/import commands for a full disposable clone and assess Core `impexp` for a scoped
+page-tree transfer. Prove whether they cover the requested relations and conflict semantics before
+adding custom mapping/orchestration. The low-adoption `b13/content-sync` is not a default substitute.
+
 ## What the fleet actually taught
 
 - Gütezeichen's July helper still contains embedded configuration, a shared remote `/tmp` dump,
@@ -48,6 +54,36 @@ universal script to execute blindly. All imports/migrations target the selected 
 10. On failure retain evidence and recover the exact local DB/files; never clean away the only
     rollback archive. On success retain private backups per the user's retention policy. Do not
     erase arbitrary `tmp/` trees. Seal the dataset only after this preparation finishes.
+
+## Incremental refresh after source and target diverged
+
+The September Saferinternet implementation (`c41994df`, `40dfc5f1`,
+`scripts/content-sync.py` and `scripts/content_sync/`) is a newer design reference. Inspect it,
+but do not execute/copy its customer-specific host names, accounts, table allowlist or baselines.
+Use a simple verified import for a disposable initial clone; use this stronger pattern only when
+an authorized refresh must preserve target-side work and the native candidate lacks the required
+conflict/mapping contract. Reuse supported TYPO3 writers, not a home-built record engine:
+
+- Generate a read-only, consistent source snapshot and a hash-bound preview plan. Keep source and
+  target identities, schema/code version and expected target hashes as apply preconditions.
+- Persist source→target UID mappings plus previous source and target field/file values. Import
+  source changes only when target still equals its accepted base or already equals the new value.
+  Concurrent edits become explicit conflicts; never choose by newest timestamp alone.
+- Map TCA relations, translations, parents, MM/FAL references, `t3://` links and content anchors.
+  Use supported DataHandler/FAL operations with exact fixture/backup scope. Same UID does not mean
+  same identity across independently edited databases.
+- Keep customer orders, registrations, backend users and credentials outside the editorial import
+  by default. A separately approved business-record import is additive, mapped and independently
+  verified; a page/content count cannot prove that orders survived.
+- Recheck/lock target rows and mapping state immediately before writes. Defer conflicts and their
+  dependants; let independent safe changes proceed. Back up mapping state with the database.
+- Verify row/content/URL/file relations, then replay the **same snapshot** as a no-change run.
+  Preserve target-only edits/files and report source deletions without automatically deleting.
+  A changed dataset starts a new proof epoch; it does not reuse prior visual/Lighthouse claims.
+
+The source exporter in that project uses a read-only database transaction without bootstrapping
+production TYPO3. Any adaptation still needs independently verified origins and authorization;
+the upgrade graph itself grants none. Staging promotion is a separate task.
 
 ## DDEV throughput
 

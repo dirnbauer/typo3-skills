@@ -23,6 +23,7 @@ These are unconditional. There is no approval that grants them, and no phase in 
 | Overwrite, edit, or delete `baseline/A-original/` | It is the only evidence that the update was invisible; see `20-baseline-integrity.md` |
 | Raise a visual threshold, shrink the sample, or exclude a page to make a comparison pass | This converts a defect into a false green; see `20-baseline-integrity.md` |
 | Commit credentials, database dumps, or `.env` values | They leak into history permanently |
+| Push outside `gitlab.webconsulting.at` or `github.com/dirnbauer` repositories | Explicit owner/host boundary; no inherited upstream publication authority |
 | Claim a command, installation, test, or browser flow passed when it did not run or did not succeed | Tool output is the evidence; an assertion is not |
 
 ## 00.3 Requires explicit approval
@@ -38,6 +39,9 @@ scope and stage; a previous approval never generalises to the next action.
 - Using an unknown fork or an unvetted package source
 - Contacting any external origin not on the allow-list
 - Creating commits; pushing, tagging, publishing, or opening a pull request — each separately
+
+An authorized push also requires the [push destination/transport preflight](../references/push-policy.md).
+Check every effective destination, not only the fetch URL or the name `origin`.
 
 ## 00.4 Reversibility
 

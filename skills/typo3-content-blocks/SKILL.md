@@ -149,7 +149,13 @@ fields:
     useExistingField: true
   - identifier: bodytext
     useExistingField: true
+    type: Textarea
+    enableRichtext: true
 ```
+
+Reusing `bodytext` alone does not enable rich text for a new CType. For migration or preset changes,
+read the [rich-text round-trip contract](references/rich-text-roundtrip.md): verify effective
+type-specific TCA, stored markup, actual preset and both editor and frontend behavior.
 
 ### Full Content Element Example
 

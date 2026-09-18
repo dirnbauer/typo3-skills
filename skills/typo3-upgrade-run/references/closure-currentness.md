@@ -70,6 +70,11 @@ Keep detailed per-feature applicability in the coverage registry. Do not claim a
 presence proves its configured runtime behavior. Machine validation checks identity, freshness,
 coverage accounting and artifact integrity; the agent must still inspect actual assertions/logs.
 
+New graphs additionally require the [sealed feature plan and JSON coverage results](feature-evidence.md).
+The plan is the passed `intake-join` artifact. Every planned assertion must have a current result
+and evidence bound to its parent check; missing or altered inventory/plan files refuse closure.
+No extra top-level checks, global browser states or full-capture loops are introduced.
+
 ## Invalidation and recovery
 
 Changed source/index objects, branch, unstaged-code delta, graph hash, dataset/media epoch,

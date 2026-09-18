@@ -38,11 +38,18 @@ One job: prove exactly what will be upgraded and define the graph before mutatio
    ddev composer audit --locked --format=json
    ```
 
-5. Require one resolution strategy per v14 blocker; do not implement it here.
+5. Require one resolution strategy per v14 blocker; do not implement it here. Apply
+   [native tools first](../typo3-upgrade-run/references/native-tools-first.md): inventory existing Core
+   commands/wizards before proposing scripts or dependencies; new optional extensions need dated
+   adoption, maintenance and compatibility evidence. Put the choice in existing node evidence.
 6. Check `typo3/cms-redirects` and `spooner/deployer-information`. If absent, activate dependency resolution. Always activate
    the editor-rights verification branch for Redirects.
 7. Identify Mask/Content Blocks, Vite/assets, Solr/search, RTE/Visual Editor, Powermail/forms,
    scheduler, custom backend modules/rights, local extensions, and schema/data migrations.
+   Read [fleet regression contracts](../typo3-upgrade-run/references/fleet-regression-contracts.md).
+   Inventory actual mail/DOI/CAPTCHA entry points, tracking context/consent, cache dependencies,
+   historical routes and persisted business records. Record applicability once, with representative
+   journeys and named assertions in the [feature plan](../typo3-upgrade-run/references/feature-evidence.md).
 8. Record credential origins without reading/printing values. Reject committed/hard-coded secrets,
    ambiguous origins, production sessions, or cross-origin credential flows as security findings.
    Inventory the env loader, Bootstrap version, jQuery/plugin dependencies and the live-sync helper
@@ -74,6 +81,8 @@ Write node evidence under `.typo3-update/nodes/` and manifests under `.typo3-upd
 Include commands and exit codes, hashes, unresolved facts, approvals/ADRs needed, selected routes,
 explicit non-applicable branches, and the runtime-sizing evidence. Do not say “ready” when any
 identity, dataset, or sizing field is inferred.
+For a new default graph, close `intake-join` with `manifests/feature-contracts.json` as its evidence.
+This hash-sealed plan reuses inventory artifacts; it does not introduce extra browser passes.
 
 ## Boundaries
 

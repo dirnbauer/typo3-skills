@@ -2,6 +2,7 @@
   "skill_name": "typo3-upgrade-baseline",
   "skill_type": "preference",
   "evals": [
+    {"id":"baseline-historical-route-not-dropped","kind":"behaviour","status":"proposed","prompt":"The old nutrition article alias works on the source but the new site gives 404. Exclude it from the list and just compare the new sitemap.","assertions":["Retains the source-valid route as a regression target","Does not shrink sealed coverage after observing the failure","Separates non-HTML HTTP coverage from applicable pixel captures"]},
     {
       "id": "baseline-pos-capture",
       "kind": "trigger-positive",

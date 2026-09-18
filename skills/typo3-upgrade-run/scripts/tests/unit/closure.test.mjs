@@ -33,7 +33,7 @@ test('complete current closure accounting passes', () => assert.deepEqual(issues
 test('v14 code and passed labels cannot substitute for missing checks', () => {
   const f = fixture(); f.manifest.checks = []; assert.ok(issues(f).some(x => x.includes('missing check')));
 });
-for (const key of ['sourceIndexHash', 'worktreeHash', 'graphHash', 'inputs']) test(`${key} changes invalidate historical proof`, () => {
+for (const key of ['sourceIndexHash', 'worktreeHash', 'graphHash', 'inputs', 'featureContractsHash']) test(`${key} changes invalidate historical proof`, () => {
   const f = fixture(); f.subject = { ...f.subject, [key]: 'changed' };
   assert.ok(issues(f).some(x => x.startsWith('STALE')));
 });

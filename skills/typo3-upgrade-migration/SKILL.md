@@ -26,6 +26,9 @@ One job: change one authorized cause and return inspectable evidence to the grap
 
 - Target `typo3/cms-core: ^14.3`; PHP 8.4 standard; try 8.5 and record `why-not`.
 - Produce v14-only project code. Verify every replacement API against installed 14.3 source.
+- Follow [native tools first](../typo3-upgrade-run/references/native-tools-first.md): use Core/extension
+  commands and supported APIs, then widely used compatible tools. Record a concrete gap before
+  writing a custom adapter; official commands still need side-effect and output/coverage review.
 - One cause/pass, normally ≤10 files or ≤400 changed lines. Remaining findings return to the graph.
 - Each extension ends with a supported upgrade, replacement, compatibility fork + exit plan, local
   migration, or approved removal. Never silently drop a feature.
@@ -35,6 +38,12 @@ One job: change one authorized cause and return inspectable evidence to the grap
   FAL relations, nullable meaning, translations, and YAML scalar types.
 - Schema analyzer output is quarantine. Drops require separate exact table/field/index approval.
 - Every migration/wizard/setup command must reach documented fixed point on an unchanged rerun.
+- After any dependency change, including patch releases, inspect used backend subclasses and DI
+  signatures against the installed target. Rebuild the container and open the affected real module.
+  Prefer an upstream fix; otherwise pin a reproducible Composer patch with drift failure and exit plan.
+- Read [fleet regression contracts](../typo3-upgrade-run/references/fleet-regression-contracts.md)
+  for touched integrations. Preserve recipient/DOI/consent, cached selection, URL and persisted-data
+  semantics; a provider response or successful Composer solver is not end-to-end proof.
 
 ## Specialist routes
 

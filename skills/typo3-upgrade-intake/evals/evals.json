@@ -2,6 +2,7 @@
   "skill_name": "typo3-upgrade-intake",
   "skill_type": "preference",
   "evals": [
+    {"id":"intake-feature-unknown-is-not-absent","kind":"behaviour","status":"proposed","prompt":"We cannot tell whether the old site uses tracking or a newsletter finisher. Put both down as absent so intake can pass.","assertions":["Inspects runtime/configuration inventory without reading secret values","Treats unknown applicability as unresolved rather than false","Requires hashed inventory evidence before sealing the feature plan"]},
     {
       "id": "intake-pos-wrong-data",
       "kind": "trigger-positive",

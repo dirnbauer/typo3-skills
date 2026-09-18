@@ -7,6 +7,9 @@ Load `typo3-v14-reference` here as the **v14 API reference** — but constraints
 with this skill.
 
 ## Steps
+Use [native tools first](../native-tools-first.md). This phase fills demonstrated gaps after Core
+and maintained extension tools; it does not rebuild their scanners, parsers or migration engines.
+
 1. Resolve v14 changelog items and extension-scanner findings for every used API surface, including
    what the tools do not cover. Run the repository-owned audit across **every** package, not only the
    active sitepackage:
@@ -18,6 +21,9 @@ with this skill.
    It blocks on the removed three-argument `addTCAcolumns()` signature, incomplete Composer extension
    metadata and `ext_emconf.php` retained by project-local packages. Use `--publishable key,key` only
    for packages actually shipped through TER/Tailor or required by Classic mode.
+   This helper checks collection-specific residuals; use the Core Extension Scanner first for
+   supported compatibility discovery and native `fluid:analyze` for template diagnostics. Check
+   actual file coverage, including legacy `.html`; JSON-mode exit 0 can still contain findings.
 2. Remove `TYPO3_version` branches, v12/v13 constraints, compatibility helpers, deprecated hooks that
    have documented event replacements, legacy backend module registration, obsolete TypoScript,
    unused XLF keys and dead imports.
@@ -47,9 +53,12 @@ with this skill.
    language renders; an error handler pointing at a page uid passes locally and 404s after deploy.
 6. **Migrate moved Form Framework definitions as data.** When a `*.form.yaml` file moves into a new
    sitepackage, register its directory under `persistenceManager.allowedExtensionPaths` in the v14
-   form configuration. Then migrate the stored `settings.persistenceIdentifier` inside
-   `tt_content.pi_flexform` with a repeatable, structured-data-aware upgrade wizard — not a raw SQL or
-   regex replacement. Cover translated and workspace records, prove zero live references to the old
+   form configuration. Evaluate Core `form:definition:transfer` with an exact identifier and dry run
+   first; inspect source/target adapters and `tt_content` reference coverage. Where it cannot perform
+   the required path/reference transition, migrate stored `settings.persistenceIdentifier` through
+   a small repeatable, structured-data-aware wizard — not raw SQL or regex replacement. Record the
+   native-tool gap; no broad transfer or `--move` without exact approval. Cover translated and
+   workspace records, prove zero live references to the old
    identifier, render and submit every migrated form, and verify its finishers and mail in Mailpit.
 7. Make TCA and schema v14-compliant, preserve localisation and relations, and add upgrade wizards
    for persisted data changes. Test migrations with representative data.

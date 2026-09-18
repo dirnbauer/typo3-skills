@@ -5,6 +5,42 @@
   "note": "The two nearest siblings are typo3-shadcn-content-elements (styling the same elements, not modelling them) and typo3-datahandler (writing records, not defining their shape). Cases lead with modelling and config.yaml.",
   "evals": [
     {
+      "id": "migrated-html-without-editor",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Our migrated text-and-icon block shows tags in a plain backend textarea although the public page is formatted correctly. Existing rows already contain HTML. Fix the field safely.",
+      "assertions": [
+        "Checks effective type-specific TCA including columnsOverrides, legacy definitions and stored content before changing the model",
+        "Preserves the CType, existing column and useExistingField contract while enabling the intended editor",
+        "Does not replay the Mask import or rewrite content for a configuration-only correction",
+        "Requires representative rich-text save/load, authenticated backend and frontend proof"
+      ]
+    },
+    {
+      "id": "preset-precedence-and-loss-on-save",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "We set the site's editor preset, but some imported fields still strip inline code and lower-level headings when saved. The homepage screenshots pass.",
+      "assertions": [
+        "Resolves field-specific TSconfig, TCA richtextConfiguration and general preset precedence against installed source",
+        "Uses representative stored markup through the installed editor and server-side transformation pipeline",
+        "Preserves sanitization and records harmless normalization separately from lost structure",
+        "Does not equate passing frontend screenshots or a standalone editor fixture with authenticated save/reopen proof"
+      ]
+    },
+    {
+      "id": "do-not-enable-rte-everywhere",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Enable rich text on all multiline fields, the hotspot JSON descriptions and our raw embed elements. It would make the backend more consistent.",
+      "assertions": [
+        "Explains and checks the content and rendering risks before indiscriminate conversion",
+        "Keeps intentionally plain labels/captions and deliberate raw HTML separate unless a scoped change is approved",
+        "Recognizes that a custom widget editing JSON is not a TCA RTE field",
+        "Does not disable sanitization or bulk-save legacy embeds to obtain green results"
+      ]
+    },
+    {
       "id": "typo3-content-blocks-trigger-pos-01",
       "kind": "trigger-positive",
       "status": "proposed",

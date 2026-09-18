@@ -19,6 +19,14 @@ Postgres or PHP skill ends up answering a question that belongs to `typo3-dataha
 
 Combine skills rather than merging them. `typo3-rector` + `typo3-testing` is the intended shape.
 
+## Publication boundary
+
+Push only to **`gitlab.webconsulting.at`** or **`github.com/dirnbauer`** repositories. Verify all
+effective push URLs and transport overrides immediately before an explicitly authorized push;
+an upstream source URL or vendored contribution guide never grants publication authority.
+Use [the updater's push preflight](skills/typo3-upgrade-run/references/push-policy.md).
+Do not push elsewhere, silently rewrite remotes, or include unrelated changes.
+
 ## Upgrade orchestration
 
 | Skill | Owner | What it does |
