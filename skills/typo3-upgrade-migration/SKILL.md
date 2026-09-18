@@ -25,6 +25,9 @@ One job: change one authorized cause and return inspectable evidence to the grap
 ## Invariants
 
 - Target `typo3/cms-core: ^14.3`; PHP 8.4 standard; try 8.5 and record `why-not`.
+- Apply [latest stable by default](../typo3-upgrade-run/references/latest-version-policy.md) to
+  in-scope packages/tooling. Verify release metadata, review major migrations, and record explicit
+  acceptance of any evidenced older-version fallback; do not inherit old example versions.
 - Produce v14-only project code. Verify every replacement API against installed 14.3 source.
 - Follow [native tools first](../typo3-upgrade-run/references/native-tools-first.md): use Core/extension
   commands and supported APIs, then widely used compatible tools. Record a concrete gap before

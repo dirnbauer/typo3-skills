@@ -31,8 +31,9 @@ expensive in week three. See `rules/upgrade/upgrade-every-extension-resolves-on-
 
 ## 1. On Packagist
 
-Require the newest release whose constraints declare TYPO3 14.3 and the PHP target, verified against
-current Packagist metadata **at execution time** — never from memory.
+Apply [latest stable by default](latest-version-policy.md): require the newest stable compatible
+release, verified against current Packagist metadata **at execution time** — never from memory.
+An older compatible fallback still needs the newer candidate's blocker evidence and user acceptance.
 
 ```bash
 ddev composer why-not typo3/cms-core "^14.3"
@@ -142,7 +143,8 @@ documented, and the relation/reference-index checks are clean.
 ## Known blockers with a standing answer
 
 Some packages come up on nearly every v12/v13 project and already have a decided outcome. Check
-current metadata anyway — this list is a head start, not a substitute for looking:
+current metadata anyway — this list is a head start, not a substitute for looking. A newly available
+stable compatible upstream release takes precedence over these historical fork/blocker examples:
 
 | Package | Outcome | Why |
 |---|---|---|
@@ -157,7 +159,8 @@ committing to migrate or fork something.
 
 ### Approved Powermail v14 fork
 
-For a site that uses Powermail, configure the approved VCS repository and require its v14 branch:
+Only while no suitable stable upstream release exists, a site that uses Powermail may configure
+the approved VCS repository and require its v14 branch:
 
 ```bash
 ddev composer config repositories.powermail-v14 vcs https://github.com/dirnbauer/powermail.git

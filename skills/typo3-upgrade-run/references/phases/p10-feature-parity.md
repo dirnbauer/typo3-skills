@@ -2,6 +2,11 @@
 
 Track `invariance`. Redirects, Solr, Visual Editor, CKEditor RTE.
 
+The `vite-assets` frontend-modernization branch also applies whenever installed Vite, Bootstrap 5
+or used build dependencies are behind the [latest eligible stable releases](../latest-version-policy.md).
+Do not classify old-but-working assets as unaffected to skip required updates. Use the owned Vite
+overlay and record target versions or accepted blocker exceptions in this node's evidence.
+
 Full procedures in `references/feature-upgrades.md`. Run a procedure only when that feature is
 installed and its dependency, code, configuration, schema, or runtime path changed in this upgrade.
 An installed-but-unaffected feature receives a targeted smoke check, not a separate improvement

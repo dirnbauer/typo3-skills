@@ -24,7 +24,8 @@ tasks only after proving what Deployer 8 already supplies.
 
 The Composer package is `spooner/deployer-information`; the TYPO3 extension key is
 `deployer_information`. Verify current metadata at execution time rather than freezing this guide
-to a release. Checked 2.0.1 supports TYPO3 13.4/14.3 and PHP ^8.2; 2.0.0 required PHP ^8.4.
+to a release; apply [latest stable by default](latest-version-policy.md). Historical 2.0.1 metadata
+supports TYPO3 13.4/14.3 and PHP ^8.2; 2.0.0 required PHP ^8.4. Neither example caps the selected major.
 Keep the project's PHP 8.4 standard and install after reaching the compatible rung:
 
 - [TYPO3 Extension Repository](https://extensions.typo3.org/extension/deployer_information)
@@ -32,12 +33,14 @@ Keep the project's PHP 8.4 standard and install after reaching the compatible ru
 
 ```bash
 ddev composer show --all spooner/deployer-information
-ddev composer require spooner/deployer-information:^2.0
+ddev composer require spooner/deployer-information
 ddev typo3 extension:setup
 ddev composer show spooner/deployer-information
 ```
 
-Record the locked version in `manifests/extensions.json` as an operational dependency. Verify that
+Check the resolved version against the reviewed release decision; a solver-selected older fallback
+needs explicit acceptance before continuing. Record the locked version in `manifests/extensions.json`
+as an operational dependency. Verify that
 PHP `ext-intl` is available in the local and target runtime because it provides the preferred date
 formatting:
 

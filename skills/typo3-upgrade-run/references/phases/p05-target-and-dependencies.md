@@ -13,8 +13,9 @@ The deterministic baseline node passed. P03/P04 optional improvements are not pr
 3. Keep `config.platform.php` in step with the container — never ahead of it.
 4. Plan the ladder. v12 with a real database → `^13.4` first (a stateful loop 100 iteration). v13 or a code-only package →
    straight to `^14.3`.
-5. Audit every required and dev package against current release metadata and route it through
-   `references/extension-strategy.md`.
+5. Apply [latest stable by default](../latest-version-policy.md) to required/dev packages and tools.
+   Resolve official current releases, review inherited version constraints and record any accepted
+   fallback; route extension decisions through `references/extension-strategy.md`.
 6. Require `typo3/cms-redirects:^14.3` in every whole-site target. If it is absent, add it to the
    planned Core Composer transaction; do not run an unrelated broad update. Package setup and
    editor permissions follow `references/feature-upgrades.md`.
@@ -23,8 +24,9 @@ The deterministic baseline node passed. P03/P04 optional improvements are not pr
    for credentials, retaining a compatible existing loader. Verify CLI and web precedence with
    non-secret fixtures. Historical exposure still requires a rotation finding.
 9. Require compatible `spooner/deployer-information` and verify registration/toolbar at P12.
-   Keep PHPStan and the Deployer CLI major unless compatibility requires a change; neither is
-   the information extension. Require the latest stable Bootstrap 5.x when present; migrate
+   Apply the same latest-version policy to existing PHPStan and Deployer CLI dependencies; review
+   major migrations and preserve analysis quality. Neither is the information extension.
+   Require the latest stable Bootstrap 5.x and compatible Vite/build packages when present; migrate
    project jQuery to native JS with tested, explicit exceptions only for unavoidable dependencies.
 10. `ddev composer validate --strict`, update with the narrowest justified command, inspect the
    lockfile diff.

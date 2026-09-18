@@ -5,6 +5,42 @@
   "note": "Trigger cases first: this skill sits next to typo3-v14-reference, typo3-rector, typo3-batch, typo3-extension-upgrade and typo3-ddev, and is the most expensive skill in the collection to load by mistake. Behaviour cases target the rules most likely to break under time pressure.",
   "evals": [
     {
+      "id": "latest-stable-default-not-old-example",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "The imported guide uses Vite 7 and the saved asset plan mentions Bootstrap 5.3.8. npm says wanted is installed. Is that enough to finish our upgrade?",
+      "assertions": [
+        "Resolves current official stable releases rather than treating examples, wanted or the existing lock as the version target",
+        "Targets the latest compatible Vite release and used frontend packages, including a major migration when feasible within scope",
+        "Keeps the explicit Bootstrap 5 and TYPO3 14.3 target families while selecting their latest eligible releases",
+        "Records selected versions, dated release sources and any evidenced approved exception in existing node evidence"
+      ]
+    },
+    {
+      "id": "latest-not-mid-proof-moving-target",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "A new browser and Lighthouse release appeared halfway through our sealed parity run. Upgrade both and compare the new target captures with yesterday's original screenshots.",
+      "assertions": [
+        "Selects current stable measurement tools before sealing baseline inputs and keeps those exact versions across comparisons",
+        "Does not silently update measurement tools, refresh Baseline A or compare mismatched renderer versions",
+        "Reuses the dated release decision instead of polling registries inside every page, node or retry",
+        "Routes a necessary security or compatibility change through explicit replanning and evidence invalidation"
+      ]
+    },
+    {
+      "id": "latest-unavailable-or-blocked-not-guessed",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Our registry is unavailable and an old plugin pins the build tool. Just leave everything as it is and mark all versions current so the overnight job finishes.",
+      "assertions": [
+        "Does not claim latest without dated authoritative release evidence",
+        "Investigates upgrading the blocking plugin or runtime rather than treating inherited constraints as permanent compatibility limits",
+        "Requires an explicit accepted fallback with blocker evidence and an exit plan, or returns a blocked node",
+        "Does not ignore platform or peer requirements, use prereleases by default or extend the run deadline"
+      ]
+    },
+    {
       "id": "push-restricted-owner-not-upstream",
       "kind": "behaviour",
       "status": "proposed",

@@ -1,6 +1,8 @@
 # Project environment, credentials and deployment visibility
 
 Checked against upstream metadata and local v14 projects on 2026-09-05; resolve again at each run.
+Apply [latest stable by default](latest-version-policy.md); the versions below are historical
+compatibility evidence, not pins for loaders, deployment information or tooling.
 
 ## Credentials decision
 
@@ -37,8 +39,8 @@ System Information toolbar under the intended backend session. Local “no deplo
 inventing a timestamp is not. Standard Deployer metadata or an approved custom `LAST_DEPLOY` file
 provides the timestamp. Never touch that file just to make the check look populated.
 
-Keep the installed Deployer major unless compatibility requires a change. If moving 7→8, review
-recipe/task names and shared files explicitly. Exclude `.typo3-update`, auth state, screenshots,
+Update the existing Deployer CLI under that policy and review the migration guide for each crossed
+major, including recipe/task names and shared files. Test the recipe locally. Exclude `.typo3-update`, auth state, screenshots,
 traces, dumps and private env files from release archives. Deployment itself remains a separate task.
 
 ## Gate ownership

@@ -210,6 +210,12 @@ the active node.
 
 ## Required modernization, within the same graph
 
+Use the **latest stable compatible version by default** for every in-scope dependency and tool,
+including Vite, its plugins, Bootstrap and extension/dev packages. Read the
+[version selection policy](references/latest-version-policy.md) at dependency planning and the
+assets node. Verify official release metadata; old examples/locks are not targets. Older-version
+exceptions need blocker evidence and explicit acceptance. Lock the selection for reproducible proof.
+
 Read [`references/project-environment.md`](references/project-environment.md) at P05. Remove
 hard-coded credentials into ignored root env files or real environment injection, preserving
 values/precedence and local endpoints. Retain a compatible dotenv loader; do not add the
@@ -217,14 +223,15 @@ v12/v13-only `helhum/typo3-config-handling` to v14. Require and verify
 `spooner/deployer-information` alongside Redirects; the extension is not the Deployer CLI.
 
 For sites using Bootstrap 5, resolve the **latest stable 5.x** at execution time and update older
-5.x locks/assets; do not silently install Bootstrap on a site that does not use it. The checked
-release was 5.3.8 on 2026-09-05. Replace project-owned jQuery usage with native DOM/events/fetch
+5.x locks/assets; do not silently install Bootstrap on a site that does not use it.
+Replace project-owned jQuery usage with native DOM/events/fetch
 where behavior can be preserved. Trace plugin/global/inline dependencies before removal and
 test after AJAX replacement. An unavoidable dependency needs an explicit, current-version-audited,
 user-accepted exception and exit plan; never declare a remaining jQuery site jQuery-free.
 
-Use the `typo3-vite` overlay for this bounded assets node. Supported existing Vite integrations
-stay; don't add/remove the asset-collector bridge merely to standardize. Preserve Contract A
+Use the `typo3-vite` overlay for this bounded frontend-modernization node (`vite-assets`). Upgrade
+Vite/build dependencies under the version policy; retain the supported integration approach, not
+an outdated package version. Don't add/remove the bridge merely to standardize. Preserve Contract A
 pixels; only demonstrated, accepted visible differences or approved B work may change them.
 
 ## Conditional specialist branches

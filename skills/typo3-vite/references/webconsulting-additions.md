@@ -2,10 +2,20 @@
 
 Upstream Netresearch files stay byte-identical. This overlay names the project's upgrade choices.
 
+## Latest stable versions, not fixed examples
+
+For installation/update work, follow [the shared version policy](../../typo3-upgrade-run/references/latest-version-policy.md).
+Upgrade existing Vite, used plugins and frontend build dependencies to their latest stable
+compatible releases. The upstream Vite 7 examples are not a version ceiling. Check official releases,
+Node engines, peer dependencies and migration guides; update old constraints and compatible plugins
+instead of limiting discovery to the already-installed major. Record any blocker and obtain explicit
+acceptance for an older fallback. Lock the selected versions and prove the production build.
+
 ## Existing integrations and security
 
 Keep a working supported `praetorius/vite-asset-collector` integration, or a correct project-owned
-manifest loader. Neither adding nor removing the bridge is mandatory for an upgrade. Prove that
+manifest loader; preserving the integration does not exempt its package from version updates.
+Neither adding nor removing the bridge is mandatory for an upgrade. Prove that
 manifest imports, CSS, fonts and images are present in served pages, including after cache warmup.
 External bundling replaces the removed Core asset optimizers; Vite itself is not a Core requirement.
 
@@ -18,7 +28,7 @@ in the production build. Preserve CSP nonces through the actual integration.
 
 When Bootstrap 5 is used, resolve the latest stable **5.x** from official releases at the start
 of the assets node, update older 5.x dependencies and commit the lockfile/production assets.
-Checked 2026-09-05: 5.3.8. Do not add Bootstrap to unrelated frontends or jump majors implicitly.
+Do not add Bootstrap to unrelated frontends or jump majors implicitly; dated examples are not pins.
 
 Inventory imports, globals, inline snippets and plugins before removing jQuery. Convert
 project-owned selectors/events/AJAX to DOM APIs and fetch; preserve delegation, abort/error

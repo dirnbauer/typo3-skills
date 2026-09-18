@@ -170,6 +170,8 @@ signed by a person counts as coverage. Current: 40/40 collection-maintained skil
 
 ## Conventions
 
+- For update work, use the [latest stable compatible release by default](skills/typo3-upgrade-run/references/latest-version-policy.md).
+  Verify official metadata, respect explicit target families, and require evidenced approval for older fallbacks; example versions are not pins.
 - `typo3/cms-core: ^14.3`, never `^14.0`: 14.0–14.2 receive no security updates.
 - PHP **8.4** standard for project work; attempt **8.5** explicitly and record the outcome; **8.2**
   remains the Core floor for reusable packages that test that range.

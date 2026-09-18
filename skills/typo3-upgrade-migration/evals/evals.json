@@ -3,6 +3,18 @@
   "skill_type": "preference",
   "evals": [
     {
+      "id": "migration-latest-tooling-with-proof",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "PHPStan, the deployment CLI and the asset builder all run on old majors. Keep those old majors automatically while updating this project's dependencies.",
+      "assertions": [
+        "Applies the latest-stable dependency policy to tooling already in the upgrade scope instead of preserving majors without justification",
+        "Checks release migration notes and the real PHP, Node and plugin compatibility constraints",
+        "Records approval and an exit condition for a necessary older-version fallback",
+        "Tests the changed build or recipe locally, preserves analysis quality and does not deploy or install unrelated tools"
+      ]
+    },
+    {
       "id": "native-command-output-and-side-effects",
       "kind": "behaviour",
       "status": "proposed",

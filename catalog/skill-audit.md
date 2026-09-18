@@ -760,7 +760,7 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source owner: webconsulting
 - Source URL: webconsulting-original / no external upstream recorded
 - Frontmatter name: typo3-upgrade-migration
-- SKILL.md lines: 84
+- SKILL.md lines: 87
 
 **Pass 1: Structure**
 - No pass 1 issues found.
@@ -792,7 +792,7 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source owner: webconsulting
 - Source URL: https://github.com/dirnbauer/typo3-skills
 - Frontmatter name: typo3-upgrade-run
-- SKILL.md lines: 301
+- SKILL.md lines: 308
 
 **Pass 1: Structure**
 - No pass 1 issues found.
