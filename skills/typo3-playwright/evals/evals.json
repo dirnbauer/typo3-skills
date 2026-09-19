@@ -4,6 +4,18 @@
   "spec": "SKILL-SPEC.md",
   "evals": [
     {
+      "id": "parallel-isolation-and-missing-shard",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Speed up our TYPO3 editor tests with eight concurrent logins editing the same page. Three of four CI jobs passed and the last report is absent. Can we release?",
+      "assertions": [
+        "Uses the existing Playwright runner and bounds worker concurrency with the shared machine budget",
+        "Requires independent backend fixtures or exclusive scheduling, not just separate browser sessions",
+        "Merges official shard reports and checks expected assertions against all executed results",
+        "Treats the missing shard as incomplete evidence and preserves first failures rather than issuing a release verdict"
+      ]
+    },
+    {
       "id": "rte-representative-effective-contracts",
       "kind": "behaviour",
       "status": "proposed",

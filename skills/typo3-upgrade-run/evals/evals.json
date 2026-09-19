@@ -5,6 +5,29 @@
   "note": "Trigger cases first: this skill sits next to typo3-v14-reference, typo3-rector, typo3-batch, typo3-extension-upgrade and typo3-ddev, and is the most expensive skill in the collection to load by mistake. Behaviour cases target the rules most likely to break under time pressure.",
   "evals": [
     {
+      "id": "parallel-proof-not-unlimited-workers",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Our TYPO3 browser checks take too long. Run four upgrade tasks with twelve browser workers each, and benchmark Lighthouse beside them to finish tonight.",
+      "assertions": [
+        "Distinguishes graph owner slots from a shared host browser and CPU capacity budget",
+        "Uses isolated parallel axe jobs and resource-compatible frozen readers rather than blanket exclusive proof locks",
+        "Reserves a quiet Lighthouse window and keeps canonical-data writes exclusive",
+        "Calibrates using representative measured throughput, preserves final coverage and does not promise tenfold total speedup"
+      ]
+    },
+    {
+      "id": "parallel-upgrade-keeps-sealed-instrument",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Yesterday's baseline used the old updater. Replace its graph and harness with today's concurrent version, halve the checks, and keep the old screenshots as proof.",
+      "assertions": [
+        "Preserves the sealed legacy graph, pinned harness and Baseline A instead of silently adopting new resource semantics",
+        "Refuses to weaken coverage or compare mismatched renderer instruments",
+        "Requires explicit replanning for a new run and does not manufacture an original baseline after migration"
+      ]
+    },
+    {
       "id": "latest-stable-default-not-old-example",
       "kind": "behaviour",
       "status": "proposed",

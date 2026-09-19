@@ -30,6 +30,8 @@ import { sha256 } from '../run/paths.mjs';
 import { readJson } from './core.mjs';
 import { mapPool } from '../util/pool.mjs';
 import { acquireMachineLock, releaseMachineLock } from '../util/machine-lock.mjs';
+import { WorkerPool } from '../util/worker-pool.mjs';
+import { withMachineResources, machineCapacity } from '../util/machine-resources.mjs';
 import { readEvidenceContext } from '../run/evidence.mjs';
 
 const nextId = (loopId, n) => `F-${String(loopId ?? '000').padStart(3, '0')}-${String(n).padStart(3, '0')}`;
@@ -42,7 +44,12 @@ export const PIXEL_COLOR_TOLERANCE = 0;
 /** Strict-zero comparison: one changed pixel blocks determinism and comparison gates. */
 export const PIXEL_DUST_FLOOR = 0;
 
-export async function compareHttp({ values, paths, log }) {
+export async function compareHttp(ctx) {
+  const deadlineAt = (await readJson(ctx.paths.statePath))?.runtime?.deadline_at;
+  return withMachineResources({ cpu: 1, owner: 'http-comparison', log: ctx.log, deadlineAt }, () => compareHttpRecords(ctx));
+}
+
+async function compareHttpRecords({ values, paths, log }) {
   const before = values.before ?? path.join(paths.root, 'captures', 'before', 'http');
   const after = values.after ?? path.join(paths.root, 'captures', 'after', 'http');
   const reportPath = values.report ?? await stageReportPath(paths, values.loop, 'http');
@@ -116,7 +123,12 @@ async function compareRecordDirs(beforeDir, afterDir, loopId, log) {
 
 /* ------------------------------------------------------------- stage 2 */
 
-export async function compareDomAction({ values, paths, log }) {
+export async function compareDomAction(ctx) {
+  const deadlineAt = (await readJson(ctx.paths.statePath))?.runtime?.deadline_at;
+  return withMachineResources({ cpu: 1, owner: 'dom-comparison', log: ctx.log, deadlineAt }, () => compareDomRecords(ctx));
+}
+
+async function compareDomRecords({ values, paths, log }) {
   const before = values.before ?? path.join(paths.root, 'captures', 'before', 'dom');
   const after = values.after ?? path.join(paths.root, 'captures', 'after', 'dom');
   const reportPath = values.report ?? await stageReportPath(paths, values.loop, 'dom');
@@ -235,18 +247,32 @@ export async function compareVisual({ values, paths, log }) {
   // is an independent read-only comparison writing only its own diff artifact, so
   // concurrency cannot change any single verdict. Everything ORDER-SENSITIVE — finding
   // ids, counters, report arrays — is assembled afterwards in one stable pass over
-  // `pairs` in file order, so the report is byte-identical to the serial one.
+  // `pairs` in file order, so findings are identical to the serial ones. Timing metadata varies.
   const compareWorkers = intOpt(values, 'compare-workers', DEFAULT_COMPARE_WORKERS);
   if (!Number.isInteger(compareWorkers) || compareWorkers < 1 || compareWorkers > MAX_COMPARE_WORKERS) {
     throw new HarnessError(`compare-workers must be an integer from 1 to ${MAX_COMPARE_WORKERS}`);
   }
-  const pixelOutcomes = await mapPool(pairs, compareWorkers, async (p) => {
-    if (p.status !== 'pair') return null;
-    const bPath = path.join(beforeDir, p.file);
-    const aPath = path.join(afterDir, p.file);
-    if (await quickIdentical(bPath, aPath)) return { identical: true };
-    const cmp = await compareOne(bPath, aPath, path.join(diffDir, `diff_${p.file}`), log);
-    return { identical: false, cmp };
+  const effectiveWorkers = Math.min(compareWorkers, machineCapacity().cpu);
+  const fallbackWorkers = Math.min(4, effectiveWorkers);
+  const pool = new WorkerPool(new URL('../compare/pixelmatch-worker.mjs', import.meta.url), { size: fallbackWorkers });
+  let execution;
+  const deadlineAt = (await readJson(paths.statePath))?.runtime?.deadline_at;
+  const pixelOutcomes = await withMachineResources({ cpu: effectiveWorkers, owner: 'image-comparison', log, deadlineAt }, async lease => {
+    const started = Date.now();
+    try {
+      return await mapPool(pairs, effectiveWorkers, async (p) => {
+        if (p.status !== 'pair') return null;
+        const bPath = path.join(beforeDir, p.file);
+        const aPath = path.join(afterDir, p.file);
+        if (await quickIdentical(bPath, aPath)) return { identical: true };
+        const cmp = await compareOne(bPath, aPath, path.join(diffDir, `diff_${p.file}`), log, pool);
+        return { identical: false, cmp };
+      });
+    } finally {
+      await pool.close();
+      execution = { requestedWorkers: compareWorkers, workers: effectiveWorkers, fallbackWorkers,
+        durationMs: Date.now() - started, machineWaitMs: lease.waitMs };
+    }
   });
 
   for (let i = 0; i < pairs.length; i += 1) {
@@ -304,6 +330,7 @@ export async function compareVisual({ values, paths, log }) {
     kind: 'visual', ...await reportEvidence(paths, values), verdict, counts, findings,
     extra: {
       engine: { name: 'odiff|pixelmatch', threshold: PIXEL_COLOR_TOLERANCE },
+      execution,
       policy: { zeroTolerance: true, minorBucket: false },
       unmatched: { onlyInBefore, onlyInAfter },
       results: results.slice(0, 500),
@@ -365,19 +392,22 @@ export async function compareAll(ctx) {
   };
 }
 
-async function compareOne(bPath, aPath, diffPath, log) {
+async function compareOne(bPath, aPath, diffPath, log, pool = null) {
+  const pixelmatch = () => pool
+    ? pool.run({ before: bPath, after: aPath, diff: diffPath, options: { threshold: PIXEL_COLOR_TOLERANCE } })
+    : comparePairPixelmatch(bPath, aPath, diffPath, { threshold: PIXEL_COLOR_TOLERANCE });
   // odiff requires an output path and reports layout mismatches through a distinct exit
   // code. The self-test deliberately has no diff output path, so use the in-process engine
   // there; passing null to odiff can turn a layout mismatch into an apparent one-pixel diff.
   if (!diffPath) {
-    try { return await comparePairPixelmatch(bPath, aPath, null, { threshold: PIXEL_COLOR_TOLERANCE }); }
+    try { return await pixelmatch(); }
     catch (err) { return { ok: false, error: err.message }; }
   }
   const bin = resolveOdiffBin();
   const odiff = await runOdiff(bin, bPath, aPath, diffPath, { threshold: PIXEL_COLOR_TOLERANCE });
   if (odiff.ok) return odiff;
   log.debug(`odiff unavailable (${odiff.error}); falling back to pixelmatch`);
-  try { return await comparePairPixelmatch(bPath, aPath, diffPath, { threshold: PIXEL_COLOR_TOLERANCE }); }
+  try { return await pixelmatch(); }
   catch (err) { return { ok: false, error: err.message }; }
 }
 
@@ -426,11 +456,12 @@ export async function selftestDeterminism({ values, paths, log, journal }) {
   // exhaustive double-shoot seals that count into the lock, and only that count may then
   // produce final evidence elsewhere.
   const httpWorkers = intOpt(values, 'http-workers', DEFAULT_HTTP_WORKERS);
+  const deadlineAt = (await readJson(paths.statePath))?.runtime?.deadline_at;
   // Hold the machine lock across BOTH passes: another run's captures landing between
   // pass A and pass B would change machine load mid-proof, which is exactly the
   // condition the double-shoot exists to exclude. captureAll's own acquisition is
   // re-entrant under this hold.
-  await acquireMachineLock({ runId: `selftest:${paths.root}`, log });
+  await acquireMachineLock({ runId: `selftest:${paths.root}`, log, deadlineAt });
   let captureA;
   let captureB;
   try {
@@ -438,6 +469,7 @@ export async function selftestDeterminism({ values, paths, log, journal }) {
     captureA = await captureAll({
       manifest, guard, outRoot: rootA, stages, log, journal,
       warmup: true, visualWorkers, scope, provenWorkers: visualWorkers, httpWorkers,
+      deadlineAt,
     });
     log.step('self-test pass B (fresh browser)');
     // Both sides must enter capture from the same client-side lifecycle. A warm pass versus a
@@ -445,6 +477,7 @@ export async function selftestDeterminism({ values, paths, log, journal }) {
     captureB = await captureAll({
       manifest, guard, outRoot: rootB, stages, log, journal,
       warmup: true, visualWorkers, scope, provenWorkers: visualWorkers, httpWorkers,
+      deadlineAt,
     });
   } finally {
     await releaseMachineLock();
@@ -470,32 +503,34 @@ export async function selftestDeterminism({ values, paths, log, journal }) {
 
   const [aShots, bShots] = await Promise.all([listShots(path.join(rootA, 'shots')), listShots(path.join(rootB, 'shots'))]);
   const { pairs } = pairFiles(aShots, bShots);
-  for (const p of pairs) {
-    if (p.status !== 'pair') { unstable.push({ capture: p.file, reason: 'capture-set-differs' }); continue; }
-    const bp = path.join(rootA, 'shots', p.file);
-    const ap = path.join(rootB, 'shots', p.file);
-    if (await quickIdentical(bp, ap)) continue;
-    const cmp = await compareOne(bp, ap, null, log);
-    const px = cmp.diffPixels ?? 1;
-    if (!cmp.ok || px > 0) {
-      unstable.push({
-        capture: p.file, reason: 'pixels-differ',
-        diffPixels: cmp.diffPixels ?? null,
-        suggestedStabilization: suggest(cmp),
-      });
+  await withMachineResources({ cpu: 1, owner: 'selftest-comparison', log, deadlineAt }, async () => {
+    for (const p of pairs) {
+      if (p.status !== 'pair') { unstable.push({ capture: p.file, reason: 'capture-set-differs' }); continue; }
+      const bp = path.join(rootA, 'shots', p.file);
+      const ap = path.join(rootB, 'shots', p.file);
+      if (await quickIdentical(bp, ap)) continue;
+      const cmp = await compareOne(bp, ap, null, log);
+      const px = cmp.diffPixels ?? 1;
+      if (!cmp.ok || px > 0) {
+        unstable.push({
+          capture: p.file, reason: 'pixels-differ',
+          diffPixels: cmp.diffPixels ?? null,
+          suggestedStabilization: suggest(cmp),
+        });
+      }
     }
-  }
-  // DOM must be identical too: a stable screenshot with an unstable DOM is luck, not determinism.
-  const [aDom, bDom] = await Promise.all([safeList(path.join(rootA, 'dom'), '.html'), safeList(path.join(rootB, 'dom'), '.html')]);
-  for (const f of aDom.filter((x) => bDom.includes(x))) {
-    const [x, y] = await Promise.all([
-      readFile(path.join(rootA, 'dom', f), 'utf8'),
-      readFile(path.join(rootB, 'dom', f), 'utf8'),
-    ]);
-    if (sha256(x) !== sha256(y)) {
-      unstable.push({ capture: f, reason: 'dom-differs', suggestedStabilization: ['clock', 'random', 'lazy-load'] });
+    // DOM must be identical too: a stable screenshot with an unstable DOM is luck, not determinism.
+    const [aDom, bDom] = await Promise.all([safeList(path.join(rootA, 'dom'), '.html'), safeList(path.join(rootB, 'dom'), '.html')]);
+    for (const f of aDom.filter((x) => bDom.includes(x))) {
+      const [x, y] = await Promise.all([
+        readFile(path.join(rootA, 'dom', f), 'utf8'),
+        readFile(path.join(rootB, 'dom', f), 'utf8'),
+      ]);
+      if (sha256(x) !== sha256(y)) {
+        unstable.push({ capture: f, reason: 'dom-differs', suggestedStabilization: ['clock', 'random', 'lazy-load'] });
+      }
     }
-  }
+  });
 
   const captureProblems = captureErrors.map((error) => ({
     capture: `${error.captureId}.png`,
@@ -603,7 +638,7 @@ export async function selftestDeterminism({ values, paths, log, journal }) {
     captures: pairs.length,
     visualWorkers,
     maxAgeMs: 24 * 60 * 60 * 1000,
-    harnessVersion: '2.0.0',
+    harnessVersion: '2.1.0',
   };
   await writeFile(paths.selftestLock, `${JSON.stringify(lock, null, 2)}\n`, 'utf8');
 

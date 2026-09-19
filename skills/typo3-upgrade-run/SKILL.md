@@ -110,11 +110,16 @@ Read [`rules/10-graph-protocol.md`](rules/10-graph-protocol.md). The sealed defi
   structure. Existing loop artifacts remain valid for compatibility.
 
 `t3u graph-next` may expose several independent nodes. Execute them concurrently only when the
-runtime and user permit delegation and their resource sets are disjoint. State writes and locks
+runtime and user permit delegation and their resource claims are compatible. State writes and locks
 remain central; agents never merge verdicts from memory. `graph-next` excludes held resources.
 The shipped graph permits three starts per node and twelve recovery traversals in total, with
 smaller per-edge limits. A different recovery cause or sibling cannot reset those shared budgets.
 Project writes exclude other writes and frozen proof; node evidence is nonempty and hash-bound.
+Read [parallel execution](references/parallel-execution.md) at intake and before concurrent proof.
+New graphs share frozen read leases; writes remain exclusive. Axe defaults to four isolated jobs,
+Lighthouse has a quiet lane, and browser/CPU proof jobs share a machine budget. Wrap existing
+project test commands with `resource-run`; never multiply independent worker pools without limits.
+Calibrate once before sealing and keep final coverage, licensed renderer counts and reruns intact.
 
 ### Cause-specific recovery
 

@@ -15,6 +15,17 @@ async function tmpLockDir() {
 }
 
 describe('machine-wide visual-capture lock', () => {
+  test('an expired deadline and a busy lock stop after a bounded wait', async () => {
+    const lockDir = await tmpLockDir();
+    await assert.rejects(acquireMachineLock({ lockDir, deadlineAt: new Date(0).toISOString() }), /deadline/);
+    await mkdir(lockDir);
+    await writeFile(path.join(lockDir, 'meta.json'), JSON.stringify({ pid: process.pid, runId: 'busy' }));
+    try {
+      await assert.rejects(acquireMachineLock({ lockDir, waitMs: 20, pollMs: 5 }), /wait exceeded/);
+      await access(lockDir); // a timed-out waiter must not release someone else's lock
+    } finally { await rm(path.dirname(lockDir), { recursive: true, force: true }); }
+  });
+
   test('acquire creates the lock dir, release removes it', async () => {
     const lockDir = await tmpLockDir();
     await acquireMachineLock({ runId: 'test-a', lockDir });

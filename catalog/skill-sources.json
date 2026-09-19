@@ -473,7 +473,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-playwright/SKILL.md",
-    "line_count": 83,
+    "line_count": 95,
     "frontmatter_keys": [
       "name",
       "description",
@@ -871,7 +871,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-upgrade-run/SKILL.md",
-    "line_count": 308,
+    "line_count": 313,
     "frontmatter_keys": [
       "name",
       "description",

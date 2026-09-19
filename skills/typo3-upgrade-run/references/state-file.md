@@ -75,7 +75,7 @@ Each is a memory failure, and none of them is fixed by remembering harder. They 
 | `graph.definition_hash` | Binds this run to one reviewed graph. A changed definition cannot silently change the process mid-run. |
 | `graph.nodes.*` | Persisted node lifecycle, attempt count, evidence, and history. A transcript cannot promote a node. |
 | `graph.edges.*.traversals` | Enforces bounded recovery cycles and reveals repeated failure paths. |
-| `graph.locks` | Prevents concurrent Composer/DDEV/browser/Solr/backend actions from corrupting evidence or state. |
+| `graph.locks` | Exclusive claims store an owner id; shared claims store `{ "readers": ["node-id", ...] }`. Releasing one reader retains the others. Every owner must be running and declare that mode. |
 | `blocked` | Non-null means the run has stopped and is waiting on a person. A run that is blocked and does not say so is the worst state to resume into. |
 
 ## Writing

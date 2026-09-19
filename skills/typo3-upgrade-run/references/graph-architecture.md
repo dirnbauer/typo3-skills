@@ -36,13 +36,18 @@ with the explicit latest-compatible updates and urgent security fixes.
 | Parent retries multiplied by specialist retries | Shared node and graph attempt budgets; a specialist returns to its caller |
 | Second repair visit gets stuck on an old passed node | Fresh edge arrivals reactivate the bounded recovery path |
 | A visual harness problem restarts the baseline/migration | Route to closure harness recovery, preserving A |
-| “Parallel” jobs wait on the same Composer/browser/database | Runnable-versus-waiting output, project-write freeze and lock-aware forecast |
+| “Parallel” jobs wait on the same Composer/browser/database | Shared frozen readers, exclusive writers, a quiet Lighthouse lane and one conflict model for forecast/execution |
+| Serial accessibility matrices and CPU-blocking PNG fallback | Bounded axe jobs, worker-thread fallback, stable coverage merge and cross-process resource budgets |
 | Snapshot and unchanged rerun for every read | Code rollback anchors; snapshots for stateful operations; reruns only where proof needs them |
 | Repeated full-site/page × widget-state matrices | Affected + seeded intermediate coverage; at most three global final states; targeted journeys |
 | Old code/report labels treated as completed upgrades | Hashed artifacts, current-source epochs and actual acceptance |
 | Waiting for a person consumes the night or fakes acceptance | Timely `closure-verify` receipt, followed by separately recorded human acceptance |
 
 ## Remaining validation work
+
+See [parallel execution](parallel-execution.md) for the implemented concurrency contract. Real local
+browser fixtures verify serial/parallel findings and missing-job handling; they do not establish
+whole-upgrade throughput. Strict pixel render order and independent final passes are preserved.
 
 Run this version on a representative small, large and huge **authorized local clone**, preserving
 real per-node elapsed time and coverage. Compare equivalent workloads and environments, not live

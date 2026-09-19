@@ -100,7 +100,9 @@ describe('browser settling', () => {
     assert.ok(browserArgs({}).includes('--disable-gpu'));
   });
 
-  test('quiet detection tracks request identities instead of leaking duplicate events', async () => {
+  test('quiet detection tracks request identities instead of leaking duplicate events', async t => {
+    // Assert the detector contract, not whether a loaded CI host schedules us in 100ms.
+    t.mock.timers.enable({ apis: ['Date', 'setTimeout'], now: 0 });
     const page = new EventEmitter();
     const detector = createQuietDetector(page, { quietMs: 5, hardCapMs: 100 });
     const request = { url: () => 'https://example.test/asset.css' };
@@ -109,9 +111,22 @@ describe('browser settling', () => {
     page.emit('request', request);
     page.emit('requestfinished', request);
 
-    const result = await detector.wait();
+    const pending = detector.wait();
+    t.mock.timers.tick(50);
+    const result = await pending;
     detector.dispose();
     assert.deepEqual(result, { timedOut: false, stillPending: [] });
+  });
+
+  test('quiet detection still refuses unfinished requests at its hard deadline', async t => {
+    t.mock.timers.enable({ apis: ['Date', 'setTimeout'], now: 0 });
+    const page = new EventEmitter();
+    const detector = createQuietDetector(page, { quietMs: 5, hardCapMs: 100 });
+    page.emit('request', { url: () => 'https://example.test/pending.css' });
+    const pending = detector.wait();
+    t.mock.timers.tick(100);
+    assert.deepEqual(await pending, { timedOut: true, stillPending: ['https://example.test/pending.css'] });
+    detector.dispose();
   });
 
   test('navigation guards can be detached when a worker reuses its page', () => {
@@ -277,7 +292,7 @@ describe('browser settling', () => {
 
     const source = await readFile(new URL('../../lib/actions/capture.mjs', import.meta.url), 'utf8');
     assert.match(source, /const workerCount = Math\.min\(visualWorkers, caps\.length\)/);
-    assert.match(source, /browsers\.push\(browser\)/);
+    assert.match(source, /browsers\[workerIndex\] = browser/);
     assert.match(source, /const context = await newContext\(browsers\[workerIndex\], \{/);
     assert.match(source, /storageState: consent/);
     assert.match(source, /capIndex = workerIndex; capIndex < caps\.length; capIndex \+= workerCount/);

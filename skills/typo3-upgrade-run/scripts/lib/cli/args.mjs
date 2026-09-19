@@ -27,6 +27,10 @@ export const GLOBAL_OPTIONS = {
 };
 
 export const COMMANDS = {
+  'resource-run': { summary: 'Run an existing foreground command under the shared machine budget; not a closure check', options: {
+    browsers: { type: 'string', default: '0' }, cpu: { type: 'string', default: '0' },
+    exclusive: { type: 'boolean', default: false }, timeout: { type: 'string', default: '1800' },
+  }},
   init: { summary: 'Create the run directory and initial state', options: {
     'base-url': { type: 'string' }, 'project-name': { type: 'string' },
     'ddev-project': { type: 'string' },
@@ -161,6 +165,7 @@ export const COMMANDS = {
     tags: { type: 'string', default: 'wcag2a,wcag2aa,wcag21a,wcag21aa,wcag22aa' },
     'fail-impacts': { type: 'string', default: 'critical,serious' },
     label: { type: 'string', default: 'final' },
+    workers: { type: 'string', default: '4', help: 'Independent isolated axe jobs, 1..12; shares the machine browser budget' },
   }},
   gate: { summary: 'Aggregate a loop verdict from its stage reports', options: {
     group: { type: 'string' }, 'idempotence-diff': { type: 'string' },

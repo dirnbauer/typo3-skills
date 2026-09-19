@@ -29,6 +29,20 @@ test('independent read-only jobs can share the worker pool', () => {
   const f = fixture(); for (const id of ['b', 'c']) { delete f.definition.nodes[id].mutation; f.definition.nodes[id].resources = []; }
   assert.equal(forecast(f).estimated_minutes, 70);
 });
+test('forecast uses the same shared-read and quiet-window rules as node-open', () => {
+  const f = fixture();
+  f.definition.policy = { serialize_mutations: true, shared_proof_reads: true };
+  for (const id of ['b', 'c']) { f.definition.nodes[id] = { skill: 'proof', phase: 'P11', freeze: true }; }
+  assert.equal(forecast(f).estimated_minutes, 70);
+  f.definition.nodes.c.quiet = true;
+  assert.equal(forecast(f).estimated_minutes, 130);
+  delete f.definition.nodes.c.quiet;
+  f.definition.nodes.c.resources = ['project-write'];
+  assert.equal(forecast(f).estimated_minutes, 130);
+  delete f.definition.policy.shared_proof_reads;
+  f.definition.nodes.c.resources = [];
+  assert.equal(forecast(f).estimated_minutes, 130, 'legacy frozen proofs still serialize');
+});
 test('the same workload can fit a huge profile but not a small profile', () => {
   for (const profile of ['small', 'large', 'huge']) { const f = fixture(profile);
     f.plan.nodes.b.minutes = 200; f.plan.nodes.c.minutes = 200;

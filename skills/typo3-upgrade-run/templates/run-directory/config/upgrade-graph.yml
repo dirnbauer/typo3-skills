@@ -5,12 +5,14 @@ policy:
   require_forecast: true
   require_feature_contracts: true
   serialize_mutations: true
+  shared_proof_reads: true
   max_node_attempts: 3
   max_total_retries: 12
 
-# The engine may expose ready nodes to parallel agents, but resource locks remain exclusive.
+# Shared readers inspect one frozen version; writes and quiet measurements are exclusive.
 resources:
   - project-write
+  - machine-load
   - browser-proof
   - composer
   - ddev-stateful
@@ -246,7 +248,6 @@ nodes:
     freeze: true
     skill: typo3-upgrade-closure
     phase: P11
-    resources: [browser-proof]
     evidence_loop: required
     outcomes: [pass, findings, invalid, harness-error, blocked]
   visual-proof:
@@ -260,19 +261,34 @@ nodes:
     freeze: true
     skill: typo3-playwright
     phase: P11
-    resources: [browser-proof]
+    # Real form submissions may write canonical data. Only an intake-approved,
+    # isolated fixture clone may tailor this to a shared-read browser lane.
+    resources: [project-write, browser-proof]
     outcomes: [pass, findings, invalid, blocked]
   backend-operations:
     freeze: true
     skill: typo3-upgrade-closure
     phase: P12
-    resources: [backend-session]
+    resources: [project-write, backend-session]
     outcomes: [pass, findings, invalid, blocked]
-  lighthouse-axe:
+  axe-proof:
     freeze: true
     skill: typo3-upgrade-closure
     phase: P12
+    read_resources: [browser-proof]
+    outcomes: [pass, findings, invalid, harness-error, blocked]
+  lighthouse-proof:
+    freeze: true
+    quiet: true
+    skill: typo3-upgrade-closure
+    phase: P12
     resources: [browser-proof]
+    requires: [http-dom-proof, visual-proof, component-sentinels, backend-operations, axe-proof]
+    outcomes: [pass, findings, invalid, harness-error, blocked]
+  lighthouse-axe:
+    # Compatibility join: both independent quality proofs remain mandatory.
+    phase: P12
+    requires: [axe-proof, lighthouse-proof]
     outcomes: [pass, findings, invalid, harness-error, blocked]
 
   markup-recovery:
@@ -485,7 +501,7 @@ edges:
   - { id: rte-blocked, from: rte-visual-editor, outcome: blocked, to: stopped }
   - { id: migration-joined, from: migration-join, outcome: pass, to: target-content-epoch }
   - { id: migration-join-blocked, from: migration-join, outcome: blocked, to: stopped }
-  - { id: epoch-pass, from: target-content-epoch, outcome: pass, to: [http-dom-proof, visual-proof, component-sentinels, backend-operations, lighthouse-axe] }
+  - { id: epoch-pass, from: target-content-epoch, outcome: pass, to: [http-dom-proof, visual-proof, component-sentinels, backend-operations, axe-proof, lighthouse-proof] }
   - { id: epoch-invalid, from: target-content-epoch, outcome: invalid, to: content-ledger-recovery }
   - { id: epoch-blocked, from: target-content-epoch, outcome: blocked, to: stopped }
   - { id: ledger-retry, from: content-ledger-recovery, outcome: pass, to: target-content-epoch, retry: true, max_traversals: 1 }
@@ -531,17 +547,27 @@ edges:
   - { id: backend-retry, from: backend-recovery, outcome: pass, to: backend-operations, retry: true, max_traversals: 2 }
   - { id: backend-recovery-blocked, from: backend-recovery, outcome: blocked, to: stopped }
   - { id: quality-pass, from: lighthouse-axe, outcome: pass, to: closure-join }
+  - { id: axe-pass, from: axe-proof, outcome: pass, to: lighthouse-axe }
+  - { id: axe-findings, from: axe-proof, outcome: findings, to: quality-recovery }
+  - { id: axe-invalid, from: axe-proof, outcome: invalid, to: closure-harness-recovery }
+  - { id: axe-harness, from: axe-proof, outcome: harness-error, to: closure-harness-recovery }
+  - { id: axe-blocked, from: axe-proof, outcome: blocked, to: stopped }
+  - { id: lighthouse-pass, from: lighthouse-proof, outcome: pass, to: lighthouse-axe }
+  - { id: lighthouse-findings, from: lighthouse-proof, outcome: findings, to: quality-recovery }
+  - { id: lighthouse-invalid, from: lighthouse-proof, outcome: invalid, to: closure-harness-recovery }
+  - { id: lighthouse-harness, from: lighthouse-proof, outcome: harness-error, to: closure-harness-recovery }
+  - { id: lighthouse-blocked, from: lighthouse-proof, outcome: blocked, to: stopped }
   - { id: quality-findings, from: lighthouse-axe, outcome: findings, to: quality-recovery }
   - { id: quality-invalid, from: lighthouse-axe, outcome: invalid, to: closure-harness-recovery }
   - { id: quality-harness, from: lighthouse-axe, outcome: harness-error, to: closure-harness-recovery }
   - { id: quality-blocked, from: lighthouse-axe, outcome: blocked, to: stopped }
-  - { id: quality-retry, from: quality-recovery, outcome: pass, to: lighthouse-axe, retry: true, max_traversals: 2 }
+  - { id: quality-retry, from: quality-recovery, outcome: pass, to: [axe-proof, lighthouse-proof], retry: true, max_traversals: 2 }
   - { id: quality-recovery-blocked, from: quality-recovery, outcome: blocked, to: stopped }
   - { id: closure-harness-http, from: closure-harness-recovery, outcome: http, to: http-dom-proof, retry: true, max_traversals: 2 }
   - { id: closure-harness-visual, from: closure-harness-recovery, outcome: visual, to: visual-proof, retry: true, max_traversals: 2 }
   - { id: closure-harness-component, from: closure-harness-recovery, outcome: component, to: component-sentinels, retry: true, max_traversals: 2 }
   - { id: closure-harness-backend, from: closure-harness-recovery, outcome: backend, to: backend-operations, retry: true, max_traversals: 2 }
-  - { id: closure-harness-quality, from: closure-harness-recovery, outcome: quality, to: lighthouse-axe, retry: true, max_traversals: 2 }
+  - { id: closure-harness-quality, from: closure-harness-recovery, outcome: quality, to: [axe-proof, lighthouse-proof], retry: true, max_traversals: 2 }
   - { id: closure-harness-contract, from: closure-harness-recovery, outcome: contract, to: contract-a-gate, retry: true, max_traversals: 2 }
   - { id: closure-harness-reproof, from: closure-harness-recovery, outcome: reproof, to: target-content-epoch, retry: true, max_traversals: 2 }
   - { id: closure-harness-blocked, from: closure-harness-recovery, outcome: blocked, to: stopped }

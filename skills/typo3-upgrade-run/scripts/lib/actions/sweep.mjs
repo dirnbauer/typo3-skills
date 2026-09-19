@@ -17,7 +17,7 @@ import { createRequire } from 'node:module';
 import { parse as parseYaml } from 'yaml';
 import { EXIT, HarnessError, PreconditionError, PolicyError } from '../cli/exit-codes.mjs';
 import { UrlGuard } from '../net/url-guard.mjs';
-import { launchBrowser, newContext, stabilizePage } from '../browser/launch.mjs';
+import { launchBrowser, newContext, stabilizePage, VIEWPORTS } from '../browser/launch.mjs';
 import { createRoutePolicy } from '../browser/route-policy.mjs';
 import { envelope, writeReport } from '../report/write.mjs';
 import { untrusted } from '../util/redact.mjs';
@@ -28,6 +28,8 @@ import { sample as seededSample } from '../util/rng.mjs';
 import { applyState, stateByName } from '../browser/states.mjs';
 import { assertCleanFrontendSession } from '../browser/session.mjs';
 import { consentStateFor } from '../browser/stabilize.mjs';
+import { axeJobs, collectAxeJobs } from '../browser/axe-jobs.mjs';
+import { acquireMachineResources } from '../util/machine-resources.mjs';
 
 const require_ = createRequire(import.meta.url);
 
@@ -364,7 +366,13 @@ export async function lighthouse({ values, paths, log }) {
   // `--ignore-certificate-errors` is not optional here: DDEV serves the site over HTTPS
   // with a locally-generated certificate, and without this flag Lighthouse does not fail
   // — it waits, and the command hangs until something kills it.
-  const chrome = await chromeLauncher.launch({
+  const lease = await acquireMachineResources({ exclusive: true, owner: 'lighthouse', log,
+    deadlineAt: evidenceContext.state.runtime?.deadline_at });
+  let chrome;
+  const results = [];
+  const rawRuns = [];
+  try {
+  chrome = await chromeLauncher.launch({
     chromeFlags: [
       '--headless=new', '--disable-dev-shm-usage', '--disable-gpu',
       '--ignore-certificate-errors',
@@ -372,9 +380,6 @@ export async function lighthouse({ values, paths, log }) {
     ],
   });
 
-  const results = [];
-  const rawRuns = [];
-  try {
     for (const url of urls) {
       await guard.assertUrl(url, { purpose: 'lighthouse' });
       const perUrl = [];
@@ -406,7 +411,7 @@ export async function lighthouse({ values, paths, log }) {
     // chrome-launcher's kill() returns void, not a Promise. Calling .catch() on it threw
     // "Cannot read properties of undefined (reading 'catch')" from the finally block,
     // which masked whatever the real error had been.
-    try { chrome.kill(); } catch { /* already gone */ }
+    try { await chrome?.kill(); } finally { await lease.release(); }
   }
 
   // Only a budget produces findings. A local absolute score is indicative, not a verdict.
@@ -437,7 +442,7 @@ export async function lighthouse({ values, paths, log }) {
     counts: { urls: results.length, runsPerUrl: runs },
     findings,
     extra: {
-      lighthouse: { formFactor, runsPerUrl: runs, aggregate: 'median' },
+      lighthouse: { formFactor, runsPerUrl: runs, aggregate: 'median', machineWaitMs: lease.waitMs, exclusive: true },
       toolVersion: rawRuns[0]?.lighthouseVersion,
       browser: rawRuns[0]?.environment?.hostUserAgent,
       rawRuns,
@@ -488,6 +493,10 @@ export async function axeAudit({ values, paths, log }) {
   const urls = finalAxeSample(manifest, intOpt(values, 'sample', 12));
   const viewports = listOpt(values, 'viewports', ['desktop', 'tablet', 'mobile']);
   const states = listOpt(values, 'states', ['default', 'keyboard-focus', 'nav-open']);
+  const workers = intOpt(values, 'workers', 4);
+  if (!Number.isInteger(workers) || workers < 1 || workers > 12) throw new HarnessError('axe workers must be 1..12.');
+  if (viewports.some(viewport => !VIEWPORTS[viewport])) throw new HarnessError('Unknown axe viewport.');
+  const jobs = axeJobs(urls, viewports, states);
   if (states.length > 3) throw new PreconditionError('Use at most three global states; test extra widgets in targeted journeys.');
   const unknown = states.filter((state) => !stateByName(state));
   if (unknown.length) throw new HarnessError(`Unknown axe interaction state(s): ${unknown.join(', ')}`);
@@ -502,67 +511,49 @@ export async function axeAudit({ values, paths, log }) {
       })
     : undefined;
   const axeSource = await readFile(require_.resolve('axe-core/axe.min.js'), 'utf8');
-  const { browser } = await launchBrowser({ log });
-  const observations = [];
-  const coverageFailures = [];
-
+  const lease = await acquireMachineResources({ browsers: Math.min(workers, jobs.length), owner: 'axe', log,
+    deadlineAt: evidenceContext.state.runtime?.deadline_at });
+  let browser, collected;
   try {
-    for (const viewport of viewports) {
+    ({ browser } = await launchBrowser({ log }));
+    collected = await collectAxeJobs(jobs, workers, async ({ url, viewport, state }) => {
+      // A fresh context per job isolates cookies, storage and stateful navigation.
       const context = await newContext(browser, { viewport, storageState: consent, stabilize: stabilization });
-      const policy = createRoutePolicy({ allowedOrigins: manifest.allowedOrigins });
-      await policy.attach(context);
       try {
-        for (const url of urls) {
-          for (const state of states) {
-            const page = await context.newPage();
-            try {
-              await guard.assertUrl(url, { purpose: 'axe-goto' });
-              await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45_000 });
-              guard.assertSameOrigin(page.url(), new URL(url).origin, { purpose: 'axe-post-goto' });
-              await page.waitForLoadState('load', { timeout: 45_000 });
-              await assertCleanFrontendSession(page);
-              await stabilizePage(page, stabilization);
-              const stateResult = await applyState(page, state, stabilization);
-              if (stateResult.skipped) {
-                observations.push({ url, viewport, state, skipped: true, reason: stateResult.reason });
-                continue;
-              }
-              if (!stateResult.applied) {
-                coverageFailures.push({ url, viewport, state, reason: stateResult.reason });
-                continue;
-              }
-              await page.addScriptTag({ content: axeSource });
-              const result = await page.evaluate(async (runTags) => {
-                const report = await globalThis.axe.run(document, {
-                  runOnly: { type: 'tag', values: runTags },
-                  resultTypes: ['violations', 'incomplete'],
-                });
-                const slim = (item) => ({
-                  id: item.id,
-                  impact: item.impact,
-                  nodes: item.nodes.length,
-                  targets: item.nodes.slice(0, 5).map((node) => node.target.join(' ')),
-                });
-                return {
-                  violations: report.violations.map(slim),
-                  incomplete: report.incomplete.map(slim),
-                };
-              }, tags);
-              observations.push({ url, viewport, state, skipped: false, ...result });
-            } catch (error) {
-              coverageFailures.push({ url, viewport, state, reason: error.message.slice(0, 300) });
-            } finally {
-              await page.close().catch(() => {});
-            }
-          }
-        }
+        const policy = createRoutePolicy({ allowedOrigins: manifest.allowedOrigins });
+        await policy.attach(context);
+        const page = await context.newPage();
+        await guard.assertUrl(url, { purpose: 'axe-goto' });
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+        guard.assertSameOrigin(page.url(), new URL(url).origin, { purpose: 'axe-post-goto' });
+        await page.waitForLoadState('load', { timeout: 45_000 });
+        await assertCleanFrontendSession(page);
+        await stabilizePage(page, stabilization);
+        const stateResult = await applyState(page, state, stabilization);
+        if (stateResult.skipped) return { skipped: true, reason: stateResult.reason };
+        if (!stateResult.applied) throw new HarnessError(stateResult.reason ?? 'Interaction state was not applied');
+        await page.addScriptTag({ content: axeSource });
+        const result = await withDeadline(page.evaluate(async (runTags) => {
+          const report = await globalThis.axe.run(document, {
+            runOnly: { type: 'tag', values: runTags },
+            resultTypes: ['violations', 'incomplete'],
+          });
+          const slim = (item) => ({
+            id: item.id, impact: item.impact, nodes: item.nodes.length,
+            targets: item.nodes.slice(0, 5).map((node) => node.target.join(' ')),
+          });
+          return { violations: report.violations.map(slim), incomplete: report.incomplete.map(slim) };
+        }, tags), 60_000, 'axe evaluation timed out');
+        return { skipped: false, ...result };
       } finally {
         await context.close();
       }
-    }
+    });
   } finally {
-    await browser.close().catch(() => {});
+    try { await browser?.close(); } finally { await lease.release(); }
   }
+  const { observations, coverageFailures, execution } = collected;
+  execution.machineWaitMs = lease.waitMs;
 
   const clusters = aggregateAxeViolations(observations);
   const blocking = clusters.filter((cluster) => failImpacts.has(cluster.impact));
@@ -608,10 +599,12 @@ export async function axeAudit({ values, paths, log }) {
       blockingClusters: blocking.length,
       incomplete: observations.reduce((n, item) => n + (item.incomplete?.length ?? 0), 0),
       coverageFailures: coverageFailures.length,
+      expected: execution.expected, completed: execution.completed, skipped: execution.skipped,
     },
     findings,
     extra: {
       axe: { tags, failImpacts: [...failImpacts], sample: urls, viewports, states },
+      execution,
       clusters: reportClusters,
       coverageFailures: reportCoverageFailures,
       caveat: 'No automated violations is not WCAG conformance; incomplete results and manual criteria remain.',

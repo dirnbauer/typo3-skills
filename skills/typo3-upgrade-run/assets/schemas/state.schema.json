@@ -210,7 +210,17 @@
             }
           }
         },
-        "locks": { "type": "object", "additionalProperties": { "type": "string" } },
+        "locks": {
+          "type": "object",
+          "additionalProperties": {
+            "oneOf": [
+              { "type": "string", "minLength": 1 },
+              { "type": "object", "additionalProperties": false, "required": ["readers"],
+                "properties": { "readers": { "type": "array", "minItems": 1, "uniqueItems": true,
+                  "items": { "type": "string", "minLength": 1 } } } }
+            ]
+          }
+        },
         "updated_at": { "type": "string", "format": "date-time" }
       }
     },

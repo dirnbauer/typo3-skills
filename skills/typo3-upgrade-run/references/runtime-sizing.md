@@ -38,8 +38,9 @@ effective backup/import throughput, HTTP/DOM URLs per minute, captures per minut
 browser-start cost, expected migration units, editor journeys and three-run Lighthouse duration.
 Reuse the pilot as evidence; do not run a second benchmark programme.
 
-Forecast the critical path with the graph's capacity-one locks. Include both final passes and
-the 2/6/12-hour closure reserve; tests sharing a browser or database cannot be counted as parallel.
+Forecast the critical path with the sealed graph's shared/exclusive claims and the measured
+[machine capacity](parallel-execution.md). Include both final passes and the 2/6/12-hour closure
+reserve. Read-only proof may overlap; shared-content writes and quiet Lighthouse may not.
 Start only if required work fits with a buffer. If it does not fit, name the specific blocker
 before mutation and split separately authorized prerequisite work from the admitted migration.
 Do not lower proof thresholds, silently drop required coverage or promise an unmeasured 10× speedup.

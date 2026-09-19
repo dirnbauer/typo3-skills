@@ -17,7 +17,7 @@ import { redactUrl, redactHeaders, redactStack, untrusted } from '../util/redact
 import { sha256 } from '../run/paths.mjs';
 import { loopReportSchemaErrors } from '../run/schema.mjs';
 
-export const HARNESS_VERSION = '2.0.0';
+export const HARNESS_VERSION = '2.1.0';
 export const REPORT_SCHEMA_VERSION = '1.0.0';
 
 /** Keys whose string values are page/console/package text: contained, never trusted. */

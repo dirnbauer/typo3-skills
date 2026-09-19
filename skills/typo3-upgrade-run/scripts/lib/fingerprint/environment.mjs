@@ -46,7 +46,7 @@ export async function collectEnvironment({
   runner = safeRun,
   appRunner = null,
   ddevProject = null,
-  harnessVersion = '2.0.0',
+  harnessVersion = '2.1.0',
   depsLockHash = null,
   sourceHash = null,
   rendering = {},

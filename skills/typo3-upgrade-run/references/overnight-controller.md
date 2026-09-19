@@ -4,7 +4,7 @@
 
 The graph selects the next job; a worker solves that bounded job; deterministic tools judge the
 evidence. A worker can be the current agent. Extra agents require user/runtime authorization and
-disjoint resources. No queue service, new database, agent framework or always-running daemon is
+compatible resource claims. No queue service, new database, agent framework or always-running daemon is
 needed: `state.json` is the control record, `journal.jsonl` the audit trail, and reports are derived.
 
 Prepare a job packet with node id, one objective, exact input paths/hashes, authorized files/data,
@@ -50,7 +50,7 @@ t3u graph-forecast --evidence nodes/intake/runtime-plan.json --json
 ```
 
 The command follows chosen outcome edges and prerequisites, schedules resource-compatible jobs,
-serializes writes/frozen proof, and protects the profile's migration cutoff and 2/6/12-hour closure
+excludes writes from frozen readers, isolates quiet measurements, and protects the profile's migration cutoff and 2/6/12-hour closure
 reserve. It includes at least 30 minutes of uncertainty/rollback buffer. The immutable output names
 its input/source hashes, schedule, serial cost, estimated finish and reserved finish. A non-fitting
 plan exits 4 and cannot admit baseline/migration nodes. A missing pilot/route is not a zero-cost job.
@@ -61,6 +61,8 @@ changed estimate. Keep the original deadline and append a new forecast; never re
 New runs are capped at 8/24/48 elapsed hours for small/large/huge sites. A multi-day run needs durable
 checkpoints before interruption, not an always-running shell. Resumption counts elapsed downtime;
 legacy seals retain their original deadlines. The longer window does not enlarge attempt budgets.
+Use [parallel execution](parallel-execution.md) for the shared machine budget and calibrated worker
+counts. Forecast owner slots are distinct from browser workers; estimates must include contention.
 
 ## Work, recovery and safe resumption
 

@@ -21,6 +21,7 @@ import { Journal } from '../run/journal.mjs';
 import { StateStore } from '../run/state.mjs';
 import { redactStack } from '../util/redact.mjs';
 import { assertLiveInputs } from '../run/evidence.mjs';
+import { withMachineResources } from '../util/machine-resources.mjs';
 
 /** Commands that may not run without a proven-deterministic harness. */
 const REQUIRES_SELFTEST = new Set([
@@ -73,13 +74,21 @@ export async function runCommand({ command, values, positionals, argv, actions, 
     if (REQUIRES_SELFTEST.has(command) && !values['dry-run']) {
       await assertSelftestValid(paths, now);
       const { browserArgs } = await import('../browser/launch.mjs');
-      await assertLiveInputs(paths, { launchArgs: browserArgs() });
+      await withMachineResources({ browsers: 1, owner: 'live-input-preflight', log,
+        deadlineAt: runState?.runtime?.deadline_at }, () => assertLiveInputs(paths, { launchArgs: browserArgs() }));
     }
 
     const action = actions[command];
     if (!action) throw new HarnessError(`No implementation registered for command: ${command}`);
 
-    result = await action(ctx);
+    // Single-browser checks and input/fingerprint readers have no inner lease.
+    // Capture, axe, pixel comparison and Lighthouse reserve their own pools.
+    const singleSlotCommands = ['backend-sweep', 'smoke', 'doctor', 'env-fingerprint', 'content-fingerprint',
+      'discover-urls', 'gate', 'closure-start', 'closure-check', 'closure-verify', 'node-close', 'validate-run'];
+    result = singleSlotCommands.includes(command) && !values['dry-run']
+      ? await withMachineResources({ browsers: 1, owner: command, log,
+        deadlineAt: AFTER_DEADLINE_COMMANDS.has(command) ? undefined : runState?.runtime?.deadline_at }, () => action(ctx))
+      : await action(ctx);
     if (runState && !AFTER_DEADLINE_COMMANDS.has(command)) {
       assertWithinRuntimeBudget(await state.read(), now());
     }

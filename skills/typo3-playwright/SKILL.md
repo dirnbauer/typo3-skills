@@ -65,6 +65,18 @@ Never force-execute real imports, payments, newsletter sends or scheduler jobs t
 
 ## Bounded coverage
 
+For independent tests, use the installed Playwright runner's `fullyParallel`, bounded `workers`,
+and official `--shard` / blob-report merging when separate runners are authorized. Do not add
+another framework. Keep state-dependent steps inside one test; give concurrent write journeys
+separate users **and records/databases**, with verified teardown. Start with four workers and
+calibrate; more workers are not necessarily faster. Preserve every shard's failures and verify
+expected assertion IDs/counts before accepting the merged result; a missing shard is not green.
+Under the upgrade graph, read [parallel execution](../typo3-upgrade-run/references/parallel-execution.md)
+and wrap the canonical command in `t3u resource-run --browsers N -- …`, with the same N in the
+runner. Keep final pixel capture and Lighthouse's quiet window outside competing browser jobs.
+Prepare test fixtures in an isolated worktree only when that parallel work is authorized;
+never run write journeys against the frozen canonical dataset while its readers are active.
+
 Under `typo3-upgrade-run`, use at most three global visual states: default, keyboard focus and
 navigation open. Extra widget states belong only to their representative journey, never to the
 URL × viewport × every-widget Cartesian product. Intermediate checks prioritize affected pages,

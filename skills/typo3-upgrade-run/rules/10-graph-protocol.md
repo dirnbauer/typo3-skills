@@ -9,7 +9,7 @@ definition hash is sealed by `t3u graph-init`. Definition drift makes the run in
 Every node declares:
 
 - one objective and one owner skill;
-- phase, mutation class (`none`, `code`, or `stateful`), and exclusive resources;
+- phase, mutation class (`none`, `code`, or `stateful`), and shared/exclusive resource claims;
 - named prerequisites and allowed outcomes;
 - required evidence; proof nodes additionally require a green bounded loop id;
 - a rollback anchor: Git/file reference for code, DDEV snapshot for stateful work;
@@ -64,21 +64,29 @@ backend operations. It must not restart unrelated migration nodes.
 
 ## 10.4 Resource locks and parallelism
 
-Resources are capacity-one locks. The shipped graph declares:
+Exclusive resources are capacity-one locks; `read_resources` permits compatible shared readers.
+The new shipped graph sets `policy.shared_proof_reads: true` and declares:
 
-- `project-write` — every code/stateful node and frozen final proof; keeps rendering away from writes;
+- `project-write` — exclusive for writes, shared for frozen readers; explicit exclusive claims win;
+- `machine-load` — shared normally, exclusive for `quiet: true` Lighthouse measurements;
 - `composer` — dependency resolution and lockfile mutation;
 - `ddev-stateful` — database/file state and TYPO3 setup operations;
-- `browser-proof` — authoritative rendering/capture environment;
+- `browser-proof` — exclusive for strict pixels; shareable for independent axe/isolated journeys;
 - `solr-core` — destructive or state-changing Solr operations;
 - `backend-session` — role-bound backend checks and writes.
 
 `t3u graph-next` lists ready nodes and compatible parallel sets. Parallel execution is optional; it
-requires user/runtime authorization and disjoint resources. Agents do not bypass locks, edit graph
+requires user/runtime authorization and compatible claims. Agents do not bypass locks, edit graph
 state directly, or infer that two stateful actions are safe because they touch different tables.
 Jobs waiting on an existing lock are reported separately, not advertised as runnable. Before the
 baseline/migration, `graph-forecast` must admit the selected route against pilot estimates and the
 sealed size profile. This predicts throughput; it does not grant parallel-execution authority.
+
+Legacy definitions without the shared-read policy keep their exclusive freezes. Never edit a sealed
+definition to change that. New quality proofs split into `axe-proof` and `lighthouse-proof`, with
+the mandatory `lighthouse-axe` join. Canonical-data form/editor tests remain exclusive by default.
+The forecast and scheduler share one conflict model. For worker budgets, quiet measurement,
+fixture isolation and command wrapping, read [parallel execution](../references/parallel-execution.md).
 
 ## 10.5 Cycles are bounded recovery edges
 

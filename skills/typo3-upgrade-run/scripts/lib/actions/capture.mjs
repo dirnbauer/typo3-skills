@@ -24,6 +24,7 @@ import { readJson } from './core.mjs';
 import { consentStateFor } from '../browser/stabilize.mjs';
 import { mapPool } from '../util/pool.mjs';
 import { acquireMachineLock, releaseMachineLock } from '../util/machine-lock.mjs';
+import { acquireMachineResources, withMachineResources, machineCapacity } from '../util/machine-resources.mjs';
 import { assertCleanFrontendSession } from '../browser/session.mjs';
 
 export async function capture({ values, paths, log, journal }) {
@@ -64,6 +65,7 @@ export async function capture({ values, paths, log, journal }) {
 
   const result = await captureAll({
     manifest, guard, outRoot, stages, log, journal,
+    deadlineAt: (await readJson(paths.statePath))?.runtime?.deadline_at,
     resume: values.resume, warmup: values.warmup !== false,
     scope,
     affected,
@@ -286,6 +288,7 @@ export async function captureAll({
   visualWorkers = DEFAULT_VISUAL_WORKERS,
   provenWorkers = null,
   httpWorkers = DEFAULT_HTTP_WORKERS,
+  deadlineAt,
 }) {
   if (!Number.isInteger(httpWorkers) || httpWorkers < 1 || httpWorkers > MAX_HTTP_WORKERS) {
     throw new HarnessError(`httpWorkers must be an integer from 1 to ${MAX_HTTP_WORKERS}`);
@@ -387,7 +390,12 @@ export async function captureAll({
       return { warmed, html, modalTrigger, wroteHttp, dom };
     };
 
-    const outcomes = await mapPool(urls, httpWorkers, fetchOne);
+    const outcomes = await withMachineResources({ owner: 'http-dom', log, deadlineAt }, async lease => {
+      const started = Date.now();
+      const result = await mapPool(urls, httpWorkers, fetchOne);
+      index.httpTiming = { durationMs: Date.now() - started, machineWaitMs: lease.waitMs };
+      return result;
+    });
 
     // Stable application pass — the ONLY writer of order-sensitive state.
     for (let i = 0; i < urls.length; i += 1) {
@@ -451,10 +459,18 @@ export async function captureAll({
     const routeReports = [];
     // Screenshots from concurrent runs on one machine contend for cores and can flake
     // each other's zero-pixel proofs. The machine-wide lock queues visual stages across
-    // runs (re-entrant in-process; a dead holder is stolen), while fetches, comparisons
-    // and application work still overlap freely.
-    await acquireMachineLock({ runId: outRoot, log });
+    // runs (re-entrant in-process; a dead holder is stolen). Other managed jobs
+    // still obey the shared capacity budget and Lighthouse's quiet window.
+    await acquireMachineLock({ runId: outRoot, log, deadlineAt });
+    let machineLease;
     try {
+    const capacity = machineCapacity();
+    if (visualWorkers > capacity.browsers) throw new PreconditionError('Visual workers exceed T3U_BROWSER_SLOTS; calibrate and seal the worker count before proof.');
+    // Authoritative pixels retain a dedicated browser lane. Do not silently alter
+    // the licensed renderer count, assignment or viewport order to fit other jobs.
+    machineLease = await acquireMachineResources({ browsers: capacity.browsers, owner: 'visual-capture', log, deadlineAt });
+    index.machineWaitMs = machineLease.waitMs;
+    index.browserStartup = [];
     for (const [viewport, caps] of byViewport) {
       if (!VIEWPORTS[viewport]) { log.warn(`unknown viewport ${viewport}, skipped`); continue; }
       const workerCount = Math.min(visualWorkers, caps.length);
@@ -465,10 +481,13 @@ export async function captureAll({
         // same process. Each worker therefore owns a distinct Chromium process. Restart the
         // process at every viewport so a final proof never accumulates target allocation
         // across the complete matrix.
-        for (let workerIndex = 0; workerIndex < workerCount; workerIndex += 1) {
+        const startupAt = Date.now();
+        const startups = await mapPool(Array.from({ length: workerCount }, (_, i) => i), Math.min(4, workerCount), async workerIndex => {
           const { browser } = await launchBrowser({ log });
-          browsers.push(browser);
-        }
+          browsers[workerIndex] = browser;
+        });
+        for (const result of startups) if (!result.ok) throw result.error;
+        index.browserStartup.push({ viewport, workers: workerCount, durationMs: Date.now() - startupAt });
         const workerReports = await Promise.all(
           Array.from({ length: workerCount }, async (_, workerIndex) => {
             const context = await newContext(browsers[workerIndex], {
@@ -604,7 +623,7 @@ export async function captureAll({
       }
     }
     } finally {
-      await releaseMachineLock();
+      try { await machineLease?.release(); } finally { await releaseMachineLock(); }
     }
     index.routePolicy = mergeRoutePolicyReports(routeReports);
     index.errors.sort(byCaptureId);

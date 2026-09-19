@@ -14,6 +14,7 @@ import { StateStore } from '../run/state.mjs';
 import { sha256 } from '../run/paths.mjs';
 import { assertPhaseRuntime, runtimeProfileIssues } from '../run/runtime.mjs';
 import { forecastGraph } from '../run/forecast.mjs';
+import { nodeClaims, claimsConflict, lockOwners, blockedClaims, acquireClaims, releaseClaims } from '../run/resources.mjs';
 import { closureCheck, readClosureArtifact, readFeaturePlan, validClosureAcceptance, verifyRecordedClosureAcceptance } from './closure.mjs';
 export { validClosureAcceptance } from './closure.mjs';
 
@@ -70,11 +71,12 @@ export async function graphNext({ paths, log }) {
   await writeGraphState(store, state, stateRevision);
   const candidates = Object.entries(state.graph.nodes)
     .filter(([, node]) => node.status === 'ready')
-    .map(([id]) => ({ id, skill: definition.nodes[id].skill ?? null, resources: nodeResources(definition.nodes[id], definition) }));
+    .map(([id]) => ({ id, skill: definition.nodes[id].skill ?? null,
+      resources: nodeResources(definition.nodes[id], definition), claims: nodeClaims(definition.nodes[id], definition) }));
   const ready = [], waiting = [];
   for (const node of candidates) {
-    const held = node.resources.filter(resource => state.graph.locks[resource]);
-    if (held.length) waiting.push({ ...node, reason: held.map(r => `${r} held by ${state.graph.locks[r]}`).join(', ') });
+    const held = blockedClaims(node.claims, state.graph.locks);
+    if (held.length) waiting.push({ ...node, reason: held.map(({ resource }) => `${resource} held by ${lockOwners(state.graph.locks[resource]).join(', ')}`).join('; ') });
     else if (state.graph.nodes[node.id].attempts >= (definition.policy?.max_node_attempts ?? Infinity)) {
       waiting.push({ ...node, reason: 'Shared node attempt budget exhausted; re-plan or stop.' });
     } else {
@@ -143,12 +145,12 @@ export async function nodeOpen({ values, paths, log, journal }) {
     throw new PreconditionError(`Node ${id} requires --approval naming a granted approval.`);
   }
   const resources = nodeResources(node, definition);
-  for (const resource of resources) {
-    const owner = state.graph.locks[resource];
-    if (owner && owner !== id) throw new PreconditionError(`Resource ${resource} is locked by ${owner}.`);
+  const claims = nodeClaims(node, definition);
+  for (const { resource } of blockedClaims(claims, state.graph.locks)) {
+    throw new PreconditionError(`Resource ${resource} is locked by ${lockOwners(state.graph.locks[resource]).join(', ')}.`);
   }
   const now = new Date().toISOString();
-  for (const resource of resources) state.graph.locks[resource] = id;
+  acquireClaims(state.graph.locks, claims, id);
   nodeState.status = 'running';
   nodeState.applicability_only = applicabilityOnly;
   nodeState.attempts += 1;
@@ -157,8 +159,8 @@ export async function nodeOpen({ values, paths, log, journal }) {
   state.graph.updated_at = now;
   await mkdir(paths.node(id), { recursive: true });
   await writeGraphState(store, state, stateRevision);
-  await journal?.append('node', { action: 'open', node_id: id, attempt: nodeState.attempts, resources, applicability_only: applicabilityOnly });
-  for (const resource of resources) await journal?.append('lock', { action: 'acquire', resource, node_id: id });
+  await journal?.append('node', { action: 'open', node_id: id, attempt: nodeState.attempts, resources, claims, applicability_only: applicabilityOnly });
+  for (const claim of claims) await journal?.append('lock', { action: 'acquire', ...claim, node_id: id });
   log.success(`Node ${id} opened (attempt ${nodeState.attempts}).`);
   return { exitCode: EXIT.PASS, verdict: 'pass', node: id, attempt: nodeState.attempts, skill: node.skill ?? null, message: `${id} running` };
 }
@@ -240,13 +242,7 @@ export async function nodeClose({ values, paths, log, journal }) {
   nodeState.evidence_loop = evidenceLoop;
   nodeState.completed_at = now;
   nodeState.active_since = null;
-  const releasedResources = [];
-  for (const [resource, owner] of Object.entries(state.graph.locks)) {
-    if (owner === id) {
-      delete state.graph.locks[resource];
-      releasedResources.push(resource);
-    }
-  }
+  const releasedResources = releaseClaims(state.graph.locks, id);
   const edgeEvents = [];
   for (const edge of matching) {
     const edgeState = state.graph.edges[edge.id];
@@ -326,6 +322,12 @@ export function validateGraphDefinition(definition) {
     issues.push('feature contracts require hashed artifacts and an intake-join node');
   }
   if (definition.policy?.serialize_mutations && !resources.has('project-write')) issues.push('serialized mutations require the project-write resource');
+  if (definition.policy?.shared_proof_reads !== undefined && typeof definition.policy.shared_proof_reads !== 'boolean') {
+    issues.push('policy.shared_proof_reads must be boolean');
+  }
+  if (definition.policy?.shared_proof_reads === true && (!definition.policy.serialize_mutations || !resources.has('machine-load'))) {
+    issues.push('shared proof reads require serialized mutations and the machine-load resource');
+  }
   for (const key of ['max_node_attempts', 'max_total_retries']) {
     const value = definition.policy?.[key];
     if (value !== undefined && (!Number.isInteger(value) || value < 1 || value > 100)) issues.push(`policy.${key} must be an integer between 1 and 100`);
@@ -348,6 +350,15 @@ export function validateGraphDefinition(definition) {
   for (const [id, node] of Object.entries(definition.nodes)) {
     if (!/^[a-z0-9][a-z0-9-]*$/.test(id)) issues.push(`unsafe node id ${id}`);
     if (!node || typeof node !== 'object' || Array.isArray(node)) { issues.push(`node ${id} must be an object`); continue; }
+    if (node.quiet !== undefined && (typeof node.quiet !== 'boolean' || definition.policy?.shared_proof_reads !== true)) {
+      issues.push(`node ${id} quiet mode requires the shared proof resource policy`);
+    }
+    if (node.read_resources !== undefined && (!Array.isArray(node.read_resources)
+      || node.read_resources.some(r => typeof r !== 'string') || definition.policy?.shared_proof_reads !== true)) {
+      issues.push(`node ${id} read_resources requires an array and the shared proof resource policy`);
+      continue;
+    }
+    if (node.mutation !== undefined && !['none', 'code', 'stateful'].includes(node.mutation)) issues.push(`node ${id} has invalid mutation class`);
     for (const required of node.requires ?? []) if (!nodeIds.has(required)) issues.push(`node ${id} requires unknown node ${required}`);
     for (const resource of nodeResources(node, definition)) if (!resources.has(resource)) issues.push(`node ${id} uses undeclared resource ${resource}`);
     const outgoing = definition.edges.filter((edge) => edge.from === id);
@@ -380,8 +391,11 @@ export function validateGraphState(graph, definition, hash, runState = null) {
     const nodeState = graph.nodes[id];
     if (nodeState?.attempts > (definition.policy?.max_node_attempts ?? Infinity)) issues.push(`node ${id} exceeded its shared attempt budget`);
     if (nodeState?.status === 'running') {
-      for (const resource of nodeResources(node, definition)) {
-        if (graph.locks[resource] !== id) issues.push(`running node ${id} does not own lock ${resource}`);
+      for (const { resource, mode } of nodeClaims(node, definition)) {
+        const lock = graph.locks[resource];
+        if (!lockOwners(lock).includes(id) || (mode === 'exclusive') !== (typeof lock === 'string')) {
+          issues.push(`running node ${id} does not own ${mode} lock ${resource}`);
+        }
       }
     }
     if (definition.policy?.require_artifacts && ['passed', 'skipped'].includes(nodeState?.status)
@@ -393,9 +407,14 @@ export function validateGraphState(graph, definition, hash, runState = null) {
       }
     }
   }
-  for (const [resource, owner] of Object.entries(graph.locks)) {
-    if (graph.nodes[owner]?.status !== 'running') issues.push(`lock ${resource} belongs to non-running node ${owner}`);
-    if (!nodeResources(definition.nodes[owner] ?? {}, definition).includes(resource)) issues.push(`lock ${resource} is not declared by ${owner}`);
+  for (const [resource, lock] of Object.entries(graph.locks)) {
+    const owners = lockOwners(lock);
+    if (!owners.length || new Set(owners).size !== owners.length || owners.some(id => typeof id !== 'string')) issues.push(`lock ${resource} has invalid owners`);
+    for (const owner of owners) {
+      if (graph.nodes[owner]?.status !== 'running') issues.push(`lock ${resource} belongs to non-running node ${owner}`);
+      const declared = nodeClaims(definition.nodes[owner] ?? {}, definition).find(c => c.resource === resource);
+      if (!declared || (declared.mode === 'exclusive') !== (typeof lock === 'string')) issues.push(`lock ${resource} is not declared by ${owner} with this mode`);
+    }
   }
   for (const edge of definition.edges) {
     const traversals = graph.edges[edge.id]?.traversals;
@@ -519,7 +538,7 @@ function renderGraphStatus(summary) {
     `Definition: \`${summary.definitionHash}\``,
     `Ready: ${summary.ready.join(', ') || '—'}`,
     `Running: ${summary.running.join(', ') || '—'}`,
-    `Locks: ${Object.entries(summary.locks).map(([key, value]) => `${key}=${value}`).join(', ') || '—'}`,
+    `Locks: ${Object.entries(summary.locks).map(([key, value]) => `${key}=${lockOwners(value).join('+')} (${typeof value === 'string' ? 'exclusive' : 'shared'})`).join(', ') || '—'}`,
     '',
     ...Object.entries(summary.counts).sort().map(([status, count]) => `- ${status}: ${count}`),
   ].join('\n');
@@ -530,8 +549,8 @@ function compatibleSets(nodes) {
   for (const node of nodes) {
     let placed = false;
     for (const set of sets) {
-      const used = new Set(set.flatMap((candidate) => candidate.resources));
-      if (node.resources.every((resource) => !used.has(resource))) { set.push(node); placed = true; break; }
+      const used = set.flatMap(candidate => candidate.claims);
+      if (!claimsConflict(node.claims, used)) { set.push(node); placed = true; break; }
     }
     if (!placed) sets.push([node]);
   }
@@ -539,8 +558,7 @@ function compatibleSets(nodes) {
 }
 
 function nodeResources(node, definition) {
-  return [...new Set([...(node.resources ?? []),
-    ...(definition.policy?.serialize_mutations && (['code', 'stateful'].includes(node.mutation) || node.freeze) ? ['project-write'] : [])])];
+  return nodeClaims(node, definition).map(claim => claim.resource);
 }
 
 function hasCycle(adjacency) {

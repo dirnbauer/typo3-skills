@@ -191,3 +191,40 @@ test('forecast admission binds the measured plan and source bytes, not just its 
     await assert.rejects(open('baseline'), /forecast.*source|source.*forecast/i);
   });
 });
+
+test('shared frozen proofs really open together, release independently, and exclude writers and Lighthouse', async () => {
+  const definition = { resources: ['project-write', 'machine-load'],
+    policy: { serialize_mutations: true, shared_proof_reads: true },
+    start: ['http', 'axe', 'change', 'lighthouse'], terminal: ['http', 'axe', 'change', 'lighthouse'],
+    nodes: { http: { freeze: true, outcomes: ['pass'] }, axe: { freeze: true, outcomes: ['pass'] },
+      change: { mutation: 'code', outcomes: ['pass'] }, lighthouse: { freeze: true, quiet: true, outcomes: ['pass'] } }, edges: [] };
+  await scenario(definition, async ({ paths, open, close }) => {
+    await open('http');
+    assert.deepEqual((await graphNext({ paths, log })).ready.map(n => n.id), ['axe']);
+    await open('axe');
+    const store = new StateStore(paths);
+    let state = await store.read();
+    assert.deepEqual(state.graph.locks['project-write'], { readers: ['axe', 'http'] });
+    assert.deepEqual(validateGraphState(state.graph, { schema: 'typo3-upgrade-run/graph@1', ...definition }, state.graph.definition_hash), []);
+    await close('http', 'pass');
+    assert.deepEqual((await store.read()).graph.locks['project-write'], { readers: ['axe'] });
+    await assert.rejects(nodeOpen({ paths, values: { node: 'change', 'rollback-ref': 'commit' }, log }), /locked by axe/);
+    await assert.rejects(open('lighthouse'), /locked by axe/);
+    await close('axe', 'pass');
+    await open('lighthouse');
+    assert.deepEqual((await graphNext({ paths, log })).ready, []);
+    await close('lighthouse', 'pass');
+    await nodeOpen({ paths, values: { node: 'change', 'rollback-ref': 'commit' }, log });
+  });
+});
+
+test('orphaned shared readers and shared locks falsely held by writers are invalid', () => {
+  const definition = { schema: 'typo3-upgrade-run/graph@1', resources: ['project-write', 'machine-load'],
+    policy: { serialize_mutations: true, shared_proof_reads: true }, start: ['a'], terminal: ['a'],
+    nodes: { a: { mutation: 'code', outcomes: ['pass'] } }, edges: [] };
+  const graph = { definition_hash: 'hash', nodes: { a: { status: 'running', attempts: 1 } }, edges: {},
+    locks: { 'project-write': { readers: ['a', 'ghost'] }, 'machine-load': { readers: ['a'] } } };
+  const issues = validateGraphState(graph, definition, 'hash').join('\n');
+  assert.match(issues, /exclusive lock project-write/);
+  assert.match(issues, /non-running node ghost/);
+});

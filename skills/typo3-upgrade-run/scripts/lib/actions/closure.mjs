@@ -19,6 +19,8 @@ export const CLOSURE_CHECKS = Object.freeze([
 ]);
 const PROOF_NODES = ['migration-join', 'target-content-epoch', 'http-dom-proof', 'visual-proof',
   'component-sentinels', 'backend-operations', 'lighthouse-axe', 'closure-join'];
+const proofNodes = state => [...PROOF_NODES,
+  ...(state.graph?.nodes?.['axe-proof'] || state.graph?.nodes?.['lighthouse-proof'] ? ['axe-proof', 'lighthouse-proof'] : [])];
 
 export async function repositorySubject(cwd, runRoot) {
   const git = async (...args) => (await exec('git', args, { cwd, maxBuffer: 64 * 1024 * 1024 })).stdout;
@@ -142,7 +144,7 @@ export function closureIssues(manifest, epoch, subject, state, now = Date.now())
   const { head: currentHead, ...currentSource } = subject;
   if (JSON.stringify(recordedSource) !== JSON.stringify(currentSource)) issues.push('STALE: code, branch, graph or live evidence inputs changed; start a new proof epoch');
   if (state.open_findings !== 0) issues.push('unresolved run findings');
-  for (const id of PROOF_NODES) if (state.graph?.nodes?.[id]?.status !== 'passed') issues.push(`required node is not passed: ${id}`);
+  for (const id of proofNodes(state)) if (state.graph?.nodes?.[id]?.status !== 'passed') issues.push(`required node is not passed: ${id}`);
   if (Object.entries(state.graph?.nodes ?? {}).some(([id, n]) => n?.status === 'running' && !['contract-a-gate', 'handover'].includes(id))) issues.push('another node is still running');
   const checks = manifest.checks ?? [];
   if (!Array.isArray(checks)) return [...issues, 'checks must be an array'];
@@ -192,7 +194,7 @@ export async function closureCheck({ values, paths, log }) {
     if (findings.length) throw new InvalidRunError(`Feature coverage refused:\n  - ${findings.join('\n  - ')}`);
   }
   // A passed state label with a nonexistent report must never be enough for closure.
-  for (const id of PROOF_NODES) await readClosureArtifact(paths.root, context.state.graph.nodes[id].evidence);
+  for (const id of proofNodes(context.state)) await readClosureArtifact(paths.root, context.state.graph.nodes[id].evidence);
   log.success('Current-code closure evidence verified; this is not a deployment certificate.');
   return { exitCode: EXIT.PASS, verdict: 'pass', evidence: reference, epoch: epoch.hash,
     stateRevision: sha256(JSON.stringify(context.state)),

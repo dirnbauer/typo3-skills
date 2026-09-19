@@ -1,5 +1,6 @@
 /** Pure, conservative admission scheduling. Estimates are not measured completion claims. */
 import { PreconditionError } from '../cli/exit-codes.mjs';
+import { nodeClaims, claimsConflict } from './resources.mjs';
 
 const terminal = status => ['passed', 'skipped'].includes(status);
 const array = value => Array.isArray(value) ? value : value ? [value] : [];
@@ -52,7 +53,8 @@ export function forecastGraph(definition, state, plan, now = Date.now()) {
       if (typeof estimate?.source !== 'string' || !estimate.source.trim()) refuse(`${id} has no measured pilot/estimate source.`);
       sources.add(estimate.source);
     }
-    jobs.set(id, { id, minutes, resources: [...(node.resources ?? []), ...(['code', 'stateful'].includes(node.mutation) || node.freeze ? ['project-write'] : [])],
+    const claims = nodeClaims(node, definition);
+    jobs.set(id, { id, minutes, resources: claims.map(c => c.resource), claims,
       parents: [...(parents.get(id) ?? [])], phase: Number(node.phase?.slice(1)) });
   }
   const finish = new Map(), running = [], schedule = [];
@@ -64,8 +66,8 @@ export function forecastGraph(definition, state, plan, now = Date.now()) {
     let started = false;
     for (const job of jobs.values()) {
       if (finish.has(job.id) || running.some(r => r.id === job.id) || !job.parents.every(p => finish.has(p))) continue;
-      const occupied = new Set(running.flatMap(r => r.resources));
-      if (job.minutes && (running.length >= workers || job.resources.some(r => occupied.has(r)))) continue;
+      const occupied = running.flatMap(r => r.claims);
+      if (job.minutes && (running.length >= workers || claimsConflict(job.claims, occupied))) continue;
       const task = { ...job, start: time, end: time + job.minutes };
       schedule.push(task); started = true;
       if (job.minutes === 0) finish.set(job.id, time); else running.push(task);

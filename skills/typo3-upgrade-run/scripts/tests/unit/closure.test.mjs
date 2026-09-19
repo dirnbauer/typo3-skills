@@ -30,6 +30,15 @@ function fixture() {
 }
 const issues = f => closureIssues(f.manifest, f.epoch, f.subject, f.state, NOW);
 test('complete current closure accounting passes', () => assert.deepEqual(issues(fixture()), []));
+test('split quality proofs cannot close via a green compatibility join with a missing or unfinished child', () => {
+  const f = fixture();
+  f.state.graph.nodes['axe-proof'] = { status: 'passed' };
+  assert.ok(issues(f).some(issue => issue.includes('lighthouse-proof')));
+  f.state.graph.nodes['lighthouse-proof'] = { status: 'running' };
+  assert.ok(issues(f).some(issue => issue.includes('lighthouse-proof')));
+  f.state.graph.nodes['lighthouse-proof'].status = 'passed';
+  assert.deepEqual(issues(f), []);
+});
 test('v14 code and passed labels cannot substitute for missing checks', () => {
   const f = fixture(); f.manifest.checks = []; assert.ok(issues(f).some(x => x.includes('missing check')));
 });

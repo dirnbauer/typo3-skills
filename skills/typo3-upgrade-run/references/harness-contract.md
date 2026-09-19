@@ -145,7 +145,8 @@ repeat the whole browser measurement unchanged; missing final evidence is never 
 
 ## Tests
 
-`npm test` runs `node --test` over `tests/unit/`. The security modules — URL guard, safe-fetch,
+`npm test` runs `node --test` over unit and non-browser end-to-end fixtures. `npm run test:browser`
+separately runs real local Chromium regression fixtures. The security modules — URL guard, safe-fetch,
 sitemap walker, DOM normaliser, classifier, RNG, redactor, lockfile — carry the strictest coverage
 requirement, because being wrong there means handing someone a false green on their site.
 
@@ -209,10 +210,12 @@ and the self-test lock.
 
 Stage 1/2 fetches and pixel comparisons parallelise without a licence, because no renderer is
 involved: `--http-workers` (default 6, max 16) pools the guarded HTTP fetches, and
-`--compare-workers` (default 8, max 16) pools odiff/pixelmatch pairs. Both apply every
+`--compare-workers` (requested default 8, max 16, bounded by the machine CPU budget) pools pairs;
+odiff remains preferred and Pixelmatch uses at most four worker threads. Both apply every
 order-sensitive effect — counters, signatures, finding ids, journal entries — in one stable
-pass in item order, so their reports are byte-identical to a serial run's, and the HTTP pool
-size is recorded in the capture index.
+pass in item order, so their findings match serial execution. Elapsed/queue metadata varies.
+HTTP worker count and stage timings are recorded in the capture index. Read
+[parallel execution](parallel-execution.md) for axe workers and shared capacity.
 
 **The harness is pinned per run.** Every run copies this skill at one committed revision into
 `<run-dir>/harness/` (P01 step 2b) and executes only that copy. The skill checkout itself is a
@@ -223,8 +226,8 @@ environment fingerprint's harness hash stable, and a fingerprint that moves beca
 **Several runs, one machine.** Visual stages across concurrent runs (different projects on the
 same host) are serialised by a machine-wide lock (`$TMPDIR/t3u-visual-capture.lock`): a second
 run's Chromium fleet competing for cores during a double-shoot turns real determinism into
-apparent flake, so screenshots queue while fetches, comparisons and application work still
-overlap freely. A self-test holds the lock across both passes. The wait is announced with the
+apparent flake, so screenshots queue while the shared capacity budget bounds other managed
+work. A self-test holds the lock across both passes. The wait is announced with the
 holder's run id, and a holder whose process is gone is stolen automatically.
 
 Before starting an exhaustive proof, inspect the lock owner and schedule the slot. Do not launch a

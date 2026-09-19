@@ -52,7 +52,7 @@ export async function sealBaseline(dir, {
   manifestHash = null,
   environmentFingerprintHash = null,
   contentFingerprintHash = null,
-  harnessVersion = '2.0.0',
+  harnessVersion = '2.1.0',
   sealedBy = 't3u',
   now = () => new Date().toISOString(),
 } = {}) {

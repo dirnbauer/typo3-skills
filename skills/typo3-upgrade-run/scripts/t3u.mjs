@@ -22,6 +22,7 @@ import {
 import { backendSweep, smoke, lighthouse, axeAudit } from './lib/actions/sweep.mjs';
 import { report } from './lib/actions/report.mjs';
 import { closureStart, closureCheck, closureVerify } from './lib/actions/closure.mjs';
+import { resourceRun } from './lib/actions/resource-run.mjs';
 import {
   approvalRecord,
   loopOpen,
@@ -34,6 +35,7 @@ import {
 } from './lib/actions/graph.mjs';
 
 const ACTIONS = {
+  'resource-run': resourceRun,
   init,
   'runtime-seal': runtimeSeal,
   doctor,
