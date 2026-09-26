@@ -39,6 +39,18 @@ def git(directory, *args):
     return subprocess.check_output(["git", "-C", str(directory), *args], text=True).strip()
 
 
+def selected_skill_paths(repository, files):
+    """A repository approval is not permission to import future sibling skills."""
+    if not in_scope(repository):
+        raise ValueError(f"Unapproved repository: {repository}")
+    name = repository.split("/", 1)[1].removesuffix("-skill")
+    expected = [f"skills/{name}/SKILL.md"]
+    found = sorted(f for f in files if re.fullmatch(r"skills/[a-z0-9-]+/SKILL.md", f))
+    if found != expected:
+        raise ValueError(f"Skill inventory changed in {repository}; explicit review required: {found}")
+    return found
+
+
 def inventory(cache):
     marketplace = cache / "marketplace"
     if git(marketplace, "status", "--porcelain"):
@@ -59,9 +71,7 @@ def inventory(cache):
         licenses = [f for f in files if re.match(r"^(LICENSE|LICENCE|NOTICE|COPYING)([.-]|$)", f)]
         if not licenses:
             raise ValueError(f"No root licence in {repo}; review before import")
-        skills = [f for f in files if re.fullmatch(r"skills/[a-z0-9-]+/SKILL.md", f)]
-        if not skills:
-            raise ValueError(f"No distributable skills in {repo}")
+        skills = selected_skill_paths(repo, files)
         for skill in skills:
             source_dir = str(Path(skill).parent)
             name = Path(source_dir).name
@@ -157,7 +167,10 @@ def sync(data):
         credits = (f"\n## Credits & Attribution\n\n"
                    f"This skill is based on the excellent work by **Netresearch DTT GmbH**.\n"
                    f"Original repository: {item['repository']}\n\n"
-                   "Special thanks to Netresearch for publishing and maintaining these skills.\n"
+                   "Special thanks to the Netresearch team for generously sharing the practical TYPO3 "
+                   "and PHP expertise behind these skills, and for the continuing care they put into "
+                   "their documentation, examples and maintenance. Their work gives this collection "
+                   "a foundation we are genuinely grateful to build on.\n"
                    "Copyright (c) Netresearch DTT GmbH; original licence files are preserved.\n"
                    "Adapted by webconsulting.at for this skill collection through this overlay only; "
                    "the upstream skill is unmodified.\n")

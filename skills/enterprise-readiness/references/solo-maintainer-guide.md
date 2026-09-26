@@ -5,8 +5,8 @@
 ## Overview
 
 Many OpenSSF Best Practices Badge criteria assume multi-person teams. This guide helps solo
-maintainers understand which criteria apply, which can be marked N/A with justification, and
-how to implement compensating controls.
+maintainers understand which criteria apply, which have to be answered Unmet with a justification
+(several of them do not accept N/A), and how to implement compensating controls.
 
 ## Criteria Assessment Matrix
 
@@ -23,8 +23,8 @@ how to implement compensating controls.
 |-----------|------------------|----------------|
 | `dco` | ✅ Easy | Sign your own commits |
 | `governance` | ✅ Easy | Document decision-making process |
-| `bus_factor` | ⚠️ N/A | Justify with succession plan |
-| `access_continuity` | ⚠️ N/A | Document backup access |
+| `bus_factor` | ⚠️ SHOULD | Met needs a second active author; otherwise Unmet with a justification (N/A is not accepted) |
+| `access_continuity` | ⚠️ MUST | A second person with access, or keys in a lockbox plus a will (N/A is not accepted) |
 | `signed_releases` | ✅ Easy | Use Cosign keyless signing |
 | `version_tags_signed` | ✅ Easy | Use GPG or SSH signing |
 | `test_statement_coverage80` | ✅ Achievable | Invest in comprehensive tests |
@@ -34,10 +34,10 @@ how to implement compensating controls.
 
 | Criterion | Solo Feasibility | Recommendation |
 |-----------|------------------|----------------|
-| `two_person_review` | ❌ Structural blocker | Requires organizational change; compensating controls may not suffice |
+| `two_person_review` | ❌ Structural blocker | Needs a second human reviewer; compensating controls never make it Met — answer Unmet |
 | `security_review` | ❌ Structural blocker | Requires formal external audit within last 5 years |
-| `contributors_unassociated` | ⚠️ N/A | Open contribution policy |
-| `bus_factor` | ⚠️ N/A | Enhanced succession planning |
+| `contributors_unassociated` | ⚠️ MUST | Met needs contributors from unassociated organisations; otherwise Unmet (N/A is not accepted) |
+| `bus_factor` | ⚠️ MUST | Needs a second active author; N/A is not accepted |
 | `require_2FA` | ⚠️ Depends | Enable on personal account |
 | `test_statement_coverage90` | ⚠️ Hard | Significant test investment |
 | `test_branch_coverage80` | ⚠️ Hard | Advanced coverage analysis |
@@ -75,7 +75,7 @@ jobs:
   quality:
     runs-on: ubuntu-latest
     steps:
-      # Comprehensive testing replaces human review
+      # Testing lowers the risk; it does not replace human review, and the answer stays Unmet
       - uses: actions/checkout@v4
       - name: Run full test suite
         run: go test -race -coverprofile=coverage.out ./...
@@ -255,14 +255,14 @@ func TestProcess(t *testing.T) {
 
 ---
 
-## N/A Justification Template
+## Unmet and N/A Justification Template
 
-When marking criteria as N/A, use this format:
+`two_person_review`, `contributors_unassociated`, `bus_factor` and `access_continuity` do not accept N/A; answer them Unmet when they are not met. N/A is only for criteria that allow it and genuinely do not apply. Compensating controls belong in the justification, but they do not change the status. Format:
 
 ```markdown
 ## Criterion: [criterion_name]
 
-**Status:** N/A
+**Status:** Unmet (or N/A where the criterion allows it)
 
 **Reason:** [One sentence explanation]
 
@@ -290,7 +290,7 @@ When marking criteria as N/A, use this format:
 ### Gold Level
 - Solo maintainer: 3-6 months (or longer)
 - May require community building
-- Some criteria may remain N/A with justification
+- Some criteria may remain Unmet with a justification
 - Consider if Gold is necessary for your project
 
 ---

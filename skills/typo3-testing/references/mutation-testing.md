@@ -64,7 +64,7 @@ equivalent is `vendor/bin/phpunit -c Build/phpunit/UnitTests.xml --filter=theGua
 the single-class case that [`test-runners.md`](test-runners.md) reserves plain `phpunit --filter`
 for; do not generalise it to running whole suites outside the entry point.
 
-Two traps make this check lie:
+Four traps make this check lie:
 
 - **Verify the mutation applied.** A `sed` pattern that silently matches nothing leaves the
   file untouched, and the suite then "fails" for some unrelated reason — or passes, and you
@@ -74,9 +74,74 @@ Two traps make this check lie:
   (a missing `gd`/`imagick` extension makes unrelated tests error), a non-zero exit proves
   nothing on its own. Scope the run with `--filter`, or compare the failing-test set against
   the baseline.
+- **A mutation that does not compile is not a caught defect.** The trap above assumes the
+  mutated file still parses. When the edit breaks syntax — a dropped semicolon, an unmatched
+  brace, a wrong indent in a Python or YAML fixture — the runner exits non-zero at *load*
+  time, before any assertion runs. The exit code looks like a kill, and comparing against the
+  baseline makes it look like a large one: every test in the file fails, not just the guard.
+  Assert the file parses before you run anything, and read the log for a parse diagnostic
+  rather than trusting the status alone:
+
+  ```bash
+  php -l Classes/Service/Thing.php
+  python3 -c 'import ast, sys; ast.parse(open(sys.argv[1]).read())' tests/test_thing.py
+  node --check src/thing.js
+  ```
+
+  In a language that rejects unused imports, deleting a call breaks the build without touching
+  syntax — `go build ./...` catches that, and `php -l` deliberately does not: an orphaned
+  `use` is valid PHP.
+- **If a test other than the intended one goes red, suspect the mutation.** The guard you
+  wrote should be the thing that catches the defect you built for it. When a different test
+  fails instead — or fails *as well* — the usual cause is that the injected defect is not the
+  one you meant: it fires earlier, or on a broader path, so a coarser test reaches it first
+  and the intended guard is never exercised. That leaves the guard unproven while the run
+  reads like a success. Name which test you expect to fail before running, and if the answer
+  differs, fix the mutation rather than accepting the tally.
 
 Re-run this after any refactor of the test itself — consolidating duplicated test setup can
 quietly detach the assertion from the behaviour it was guarding.
+
+### Running a batch: two ways the tally lies
+
+Injecting several defects in a loop and counting kills is the natural next step, and the
+count is the whole output — so an error in the counting reads as a statement about the tests.
+
+- **PHPUnit names a failing test with its full namespace.** The failure line is
+  `1) Vendor\Ext\Tests\Unit\Service\ThingTest::theCase`, so a harness matching on the
+  short class name at the start of the line matches nothing and reports every mutation as
+  survived. Measured: a batch of six defects reported "0 caught" against a suite that in fact
+  caught all six, and the number was two minutes away from being written up as "these tests
+  assert nothing". Match on `::`, or on the whole line, and print one captured name per
+  mutation while developing the harness.
+- **Accept a run on its case count *and* its outcome fields.** `Tests: 1` where the file holds
+  four is an aborted run — a collection error, a missing bootstrap, a filter that matched one
+  case — and its exit code is indistinguishable from a kill. Parse the `Tests: N` line and
+  compare against the file's case count. That is necessary and not sufficient: PHPUnit can
+  report the full count with every case skipped and exit 0. Count a mutant killed only on an
+  assertion failure — exit 1 with `Failures: N` and no `Errors:` — and treat an error, a
+  skipped-only run or any other status as an invalid run rather than a kill.
+
+A tally that comes out at 0 or at 100 % is the moment to verify the harness against a known
+answer: mutate one line you are sure a named test covers, and check the harness reports that
+test.
+
+### When a mutation survives, ask what level the assertion sits at
+
+A surviving mutation has two readings — the code is untested, or the test looks at the wrong
+thing — and they need different fixes. Two shapes from one review round on a credential
+derivation:
+
+- The test compared a **fingerprint** built from several fields, and the mutation changed only
+  one of them. Dropping the username from the id derivation left every account with the same
+  id, while length and transports still differed per account, so the fingerprints differed and
+  the test passed. The assertion had to move onto the id alone.
+- The test then compared ids for **inequality**, and the mutation still survived: with a shared
+  derivation the ids differ only by the length they are cut to, so one is a prefix of the other.
+  Inequality holds and the disclosure remains. The assertion had to reject a shared prefix.
+
+Both were found by building a mutation for a property rather than for a line. Before accepting
+a test as coverage, name the defect it exists to catch and mutate exactly that.
 
 ## Tools
 
@@ -101,8 +166,11 @@ Infection runs the configured PHPUnit suite **once, unmutated**, before applying
 
 1. **Flaky fuzz tests.** `random_int(0, $n)` legitimately returns `0`, and `random_bytes(0)` then throws `\ValueError("random_bytes(): Argument #1 ($length) must be greater than 0")` (PHP 8.0+ — was `\Error` before). The fuzz suite passes most of the time and randomly fails inside Infection's preflight. **Fix:** use `random_int(1, $n)` (or `max(1, $n)`) anywhere a randomly-chosen length feeds into `random_bytes()` / `openssl_random_pseudo_bytes()` / similar zero-rejecting APIs.
 2. **Functional tests included in the unit suite.** If `phpunit.xml` mixes unit and functional suites, Infection tries to boot a database it cannot reach during local mutation runs.
+3. **A test case that asserts nothing.** PHPUnit marks it *risky*, which most project configs tolerate -- but Infection does not run your `phpunit.xml`. It writes its own, under the configured `tmpDir` (`phpunitConfiguration.initial.infection.xml` -- with the `infection.json5` in `assets/` that is `.Build/infection/tmp/`), and that config is strict, so PHPUnit exits 1 and Infection aborts with `Project tests must be in a passing state before running Infection` while the same suite is green in CI. The usual source is a data provider whose expectation is an empty array over which the test loops: `'valid key' => ['ext1', []]` iterates zero times and asserts nothing. **Fix:** compare the whole result (`assertSame($expected, $actual)`) instead of searching it for expected entries -- that closes the real gap, since the "valid" cases were the ones testing nothing.
 
-**Rule of thumb:** before running `infection`, run the exact same command Infection will run (`testFrameworkOptions` from `infection.json5`) and confirm it is green. Fix flakes there, not in Infection's CI logs.
+**Rule of thumb:** before running `infection`, run the exact same command Infection will run (`testFrameworkOptions` from `infection.json5`) and confirm it is green. Fix flakes there, not in Infection's CI logs. Add `--fail-on-risky` to that rehearsal: without it the run passes locally and Infection still aborts, because its generated config is stricter than the project's.
+
+**If your PHPUnit config points at a remote schema, Infection needs the network.** It validates the configuration it generates and keeps the `xsi:noNamespaceSchemaLocation` of the config it started from. With `https://schema.phpunit.de/<version>/phpunit.xsd` there, an offline machine dies in `XmlConfigurationManipulator` with `failed to load external entity` before the first mutant, and a green CI job says nothing about the local failure. The `UnitTests.xml` in `assets/` points at the vendored `../../vendor/phpunit/phpunit/phpunit.xsd` and is unaffected -- pointing the schema at the vendored copy is the fix, not a workaround.
 
 ## Suite Layout: Split Unit/Fuzz From Functional
 
@@ -290,10 +358,82 @@ Covered MSI: 86%              ← MSI for covered code only
 |--------|---------|--------|
 | **Killed** | Test failed when mutant introduced | Good - test is effective |
 | **Escaped** | Test passed with mutant | **Bad - add/improve tests** |
-| **Errors** | Mutant caused fatal error | Usually OK (type errors) |
+| **Errors** | Mutant caused fatal error | Counted as killed — read them before trusting the score (below) |
 | **Uncovered** | No test coverage | Add coverage first |
 | **Timeout** | Test took too long with mutant | Usually OK |
 | **Skipped** | Mutant not tested | Check config |
+
+### Errored Mutants Inflate the Score
+
+Infection counts an errored mutant as killed, so errors raise the MSI. A
+few type errors that a mutation provokes are fine. A cluster of errors with
+the **same message** is not: it is a defect of the test setup, and the
+score built on it is too high. Group the messages before reading the number:
+
+```bash
+jq -r '.errored[].processOutput' build/infection-log.json \
+  | grep -E 'Message:|Error:' | sort | uniq -c | sort -rn | head
+```
+
+The typical cluster is `Class "Vendor\Ext\Tests\...\AbstractFooTest" not
+found`. Infection runs PHPUnit once per mutant, filtered to the test files
+that cover it. A test base class that only ever loaded because the
+directory suite happened to read its file first is then missing, while the
+full suite stays green. Reproduce it with one file on its own:
+
+```bash
+vendor/bin/phpunit -c <config> path/to/FooSubclassTest.php   # Class "..." not found
+```
+
+The fix is an autoload mapping for the test namespaces, and it belongs in
+the **root** `composer.json`. In a site project whose extensions come in
+through a `path` repository, an extension's own `autoload-dev` is ignored —
+Composer reads `autoload-dev` from the root package only:
+
+```json
+"autoload-dev": {
+  "psr-4": {
+    "Vendor\\Ext\\Tests\\": "extensions/ext/Tests/"
+  }
+}
+```
+
+Then check that every test class matches the mapping: for each file under
+`Tests/`, `class_exists()` on its declared namespace and class name through
+`vendor/autoload.php` must be true. A namespace missing its `Unit\`
+segment, or a test declared in the production namespace, stays unloadable.
+
+Declare a shared base class `abstract` and give it the suffix `TestCase`.
+A concrete base needs a placeholder test that every subclass inherits, and
+PHPUnit 12 warns about an abstract class in a file that matches the suite's
+`Test.php` suffix.
+
+After the fix the score drops to its honest value — the former errors now
+count as escaped or killed. Derive thresholds such as `minCoveredMsi` from
+that run, not from the inflated one.
+
+### Equivalent Mutants Escape by Design
+
+An equivalent mutant changes the code without changing any observable
+result, so no test can kill it. Recognize the shape before writing tests
+for it. A common one in Extbase validators is the `return` directly after
+`$this->addError(...)`:
+
+```php
+if ($value === '') {
+    $this->addError('Value must not be empty.', 1700000001);
+    return;   // mutant: this return removed
+}
+```
+
+Removing the `return` leaves the error recorded, so the value is still
+invalid; the checks after it now run as well. The mutant is equivalent only
+if those checks can do nothing but add further errors (no exception, no
+state change, no call on a collaborator) and no caller depends on the exact
+error list. Read the checks after the `return` before classifying the
+mutant. Only if stopping at the first error is a contract does a test
+asserting the complete error list (count and codes) belong here. Otherwise
+leave these escapes in the report instead of chasing the score.
 
 ### Target Scores
 
@@ -325,6 +465,13 @@ public function testAgeExactly18IsAllowed(): void
     self::assertTrue($this->validator->isAdult(18));
 }
 ```
+
+Time-based checks hide the same gap. An expiry test whose fixtures sit an
+hour away from "now" (`exp = now - 3600` and `now + 3600`) passes for both
+`$expiresAt < $now` and `$expiresAt <= $now`, so the `<` → `<=` mutant
+escapes and nothing pins what happens at the exact second. Decide what the
+boundary must do, freeze the clock, and add a fixture **exactly on the
+boundary** (`exp == now`) that asserts that decision.
 
 ### 3. Add Negative Tests
 

@@ -22,7 +22,30 @@ in GitHub's attestation store rather than uploading files to the release.
   not uploaded to the release. This avoids the immutable release problem entirely.
 - **Simpler workflow**: Single action call, no base64-subjects format to get wrong.
 - **GitHub-native verification**: `gh attestation verify` works out of the box.
-- **SLSA Level 3 compliant**: Meets the same SLSA v1.0 Build Level 3 requirements.
+
+### Which build level you get depends on WHERE the build runs
+
+GitHub ([Artifact attestations](https://docs.github.com/en/actions/concepts/security/artifact-attestations)): "Artifact attestations by itself provides SLSA v1.0 Build Level 2. Reusable workflows can provide isolation between the build process and the calling workflow, to meet SLSA v1.0 Build Level 3."
+
+| Where the artefact is built | Where it is attested | Level |
+|---|---|---|
+| a job in the project's own workflow | the same job (the example below) | **2** |
+| a job in the project's own workflow | a reusable in another repository (e.g. `netresearch/.github`'s `attest-release-files.yml`) | **2** — the signer is isolated, the build is not |
+| a job in a reusable workflow the project cannot edit | the same reusable | **3** |
+
+Moving only the signing step into a reusable does not raise the level: the project can still change what gets built. For Level 3 the checkout, the build and the attestation all run inside the reusable, and the caller passes no command.
+
+At Netresearch these reusables exist, one per kind of artefact. Use them rather than writing a release workflow:
+
+| Artefact | Reusable | Caller trigger |
+|---|---|---|
+| Source archive (applications, anything shipped as its tree) | `netresearch/.github/.github/workflows/release-source-archive.yml` | `push: tags: ['v*']` |
+| Go binaries and images | `netresearch/.github/.github/workflows/release-go-app.yml` | tag push |
+| TYPO3 extensions | `netresearch/typo3-ci-workflows/.github/workflows/release-typo3-extension.yml` | tag push |
+
+Each builds, generates SPDX and CycloneDX SBOMs, signs with Cosign, attests provenance, and creates the GitHub Release **last**, from the same run. That ordering is what removes two traps: a release created with `GITHUB_TOKEN` fires no `release: published` event, so "attest after publishing" never runs for it; and a release created by hand has to be completed by uploads afterwards, which an immutable release refuses. Check the result with `netresearch/.github`'s `verify-release.yml`, passing the reusable as `signer-workflow` and in `identity-regexp`.
+
+The in-repository example below is the Level 2 pattern. Use it only where no reusable fits, and do not claim Level 3 for it.
 
 ### Basic Workflow Setup
 

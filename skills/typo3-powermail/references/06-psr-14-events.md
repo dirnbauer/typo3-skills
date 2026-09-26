@@ -1,152 +1,39 @@
-# 6. PSR-14 Events
+# PSR-14 event selection
 
-Continues `typo3-powermail` from [full guide](full-guide.md).
+Inspect the installed event class **and its dispatch site** before coding. A class name alone
+does not prove available getters, mutability, ordering or whether the event fires once per
+mail type/recipient. List available events with:
 
-## 6. PSR-14 Events
-
-### Form Lifecycle Events
-
-```php
-// Before form is rendered
-FormControllerFormActionEvent
-
-// Before confirmation page
-FormControllerConfirmationActionEvent
-
-// After mail is saved to database
-FormControllerCreateActionAfterMailDbSavedEvent
-
-// After submit view is built
-FormControllerCreateActionAfterSubmitViewEvent
-
-// Before final view is rendered
-FormControllerCreateActionBeforeRenderViewEvent
-
-// Controller initialization
-FormControllerInitializeObjectEvent
+```bash
+rg --files vendor/in2code/powermail/Classes/Events
+rg -n 'dispatch\(|new .*Event' vendor/in2code/powermail/Classes
 ```
 
-### Mail Events
+| Need | Verified entry point | Constraint |
+|---|---|---|
+| Cross-field validation | `CustomValidatorEvent` | Mail plus custom validator |
+| Storage decision | `CheckIfMailIsAllowedToSaveEvent` | `setSavingOfMailAllowed(false)`; not a global privacy solution |
+| Receiver address array | `ReceiverMailReceiverPropertiesServiceSetReceiverEmailsEvent` | Inspect exposed service; do not invent `getMail()` |
+| Message before send | `SendMailServicePrepareAndSendEvent` | Message is already prepared; inspect which event changes are read afterward |
 
-```php
-// Modify receiver email addresses
-ReceiverMailReceiverPropertiesServiceSetReceiverEmailsEvent
+For simple recipient routing prefer a bounded TypoScript CASE, not a submitted email address:
 
-// Modify receiver name
-ReceiverMailReceiverPropertiesServiceGetReceiverNameEvent
-
-// Modify sender email (receiver mail)
-ReceiverMailSenderPropertiesGetSenderEmailEvent
-
-// Modify sender name (receiver mail)
-ReceiverMailSenderPropertiesGetSenderNameEvent
-
-// Modify sender email (confirmation mail)
-SenderMailPropertiesGetSenderEmailEvent
-
-// Modify sender name (confirmation mail)
-SenderMailPropertiesGetSenderNameEvent
-
-// Modify email body before sending
-SendMailServiceCreateEmailBodyEvent
-
-// Before email is sent (last chance to modify)
-SendMailServicePrepareAndSendEvent
-```
-
-### Other Events
-
-```php
-// Control if mail should be saved to DB
-CheckIfMailIsAllowedToSaveEvent
-
-// Custom validation logic
-CustomValidatorEvent
-
-// Prefill field values
-PrefillFieldViewHelperEvent
-PrefillMultiFieldViewHelperEvent
-
-// File upload processing
-UploadServicePreflightEvent
-UploadServiceGetFilesEvent
-GetNewPathAndFilenameEvent
-
-// Before password is hashed
-MailFactoryBeforePasswordIsHashedEvent
-
-// Modify mail variables/markers
-MailRepositoryGetVariablesWithMarkersFromMailEvent
-
-// Validation data attributes
-ValidationDataAttributeViewHelperEvent
-
-// Double opt-in confirmation
-FormControllerOptinConfirmActionAfterPersistEvent
-FormControllerOptinConfirmActionBeforeRenderViewEvent
-
-// Disclaimer/unsubscribe
-FormControllerDisclaimerActionBeforeRenderViewEvent
-```
-
-### Example: Modify Receiver Email (from form answers)
-
-`ReceiverMailReceiverPropertiesServiceSetReceiverEmailsEvent` only exposes `getEmailArray()` / `setEmailArray()` and `getService()` — the service does **not** publish the `Mail` model, so you cannot read field markers from that event alone. For routing based on answers, listen when the mail is available, e.g. **`SendMailServicePrepareAndSendEvent`**:
-
-```php
-<?php
-
-declare(strict_types=1);
-
-namespace Vendor\MyExt\EventListener;
-
-use In2code\Powermail\Events\SendMailServicePrepareAndSendEvent;
-use TYPO3\CMS\Core\Attribute\AsEventListener;
-
-#[AsEventListener('vendor-myext/dynamic-receiver')]
-final class DynamicReceiverListener
-{
-    public function __invoke(SendMailServicePrepareAndSendEvent $event): void
-    {
-        $mail = $event->getSendMailService()->getMail();
-        $answers = $mail->getAnswersByFieldMarker();
-        $department = $answers['department'] ?? null;
-        if ($department === null) {
-            return;
-        }
-
-        $value = (string)$department->getValue();
-        $emailConfig = $event->getEmail();
-        // Adjust the receiver list inside $emailConfig for your Powermail / Symfony Mailer setup, then:
-        // $event->setEmail($emailConfig);
-    }
+```typoscript
+plugin.tx_powermail.settings.setup.receiver.overwrite.email = CASE
+plugin.tx_powermail.settings.setup.receiver.overwrite.email {
+    key.data = GP:tx_powermail_pi1|field|department
+    support = TEXT
+    support.value = support@example.org
+    sales = TEXT
+    sales.value = sales@example.org
+    default = TEXT
+    default.value = forms@example.org
 }
 ```
 
-To tweak the raw address list earlier in the pipeline, use **`ReceiverMailReceiverPropertiesServiceSetReceiverEmailsEvent`** with `getEmailArray()` / `setEmailArray()` when you do not need access to individual answers.
+Adapt to the installed marker/cObject context and prove each allowlisted route in a mail sink.
+Never use a visitor-provided URL/address as an unconstrained forwarding destination.
 
-### Example: Prevent DB Save
-
-```php
-<?php
-
-declare(strict_types=1);
-
-namespace Vendor\MyExt\EventListener;
-
-use In2code\Powermail\Events\CheckIfMailIsAllowedToSaveEvent;
-use TYPO3\CMS\Core\Attribute\AsEventListener;
-
-#[AsEventListener('vendor-myext/skip-db-save')]
-final class SkipDbSaveListener
-{
-    public function __invoke(CheckIfMailIsAllowedToSaveEvent $event): void
-    {
-        // Skip DB save for specific forms
-        $form = $event->getMail()->getForm();
-        if ($form !== null && $form->getTitle() === 'Contact (no storage)') {
-            $event->setSavingOfMailAllowed(false);
-        }
-    }
-}
-```
+Sources: [event classes](https://github.com/dirnbauer/powermail/blob/f58c5ff2b927f471985c19e6e366216df68cf54d/Classes/Events),
+[receiver configuration](https://github.com/dirnbauer/powermail/blob/f58c5ff2b927f471985c19e6e366216df68cf54d/Configuration/TypoScript/Main/Configuration/03_MailReceiver.typoscript),
+[send pipeline](https://github.com/dirnbauer/powermail/blob/f58c5ff2b927f471985c19e6e366216df68cf54d/Classes/Domain/Service/Mail/SendMailService.php).

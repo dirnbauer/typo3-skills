@@ -2,6 +2,14 @@
 
 This overlay narrows `ext-emconf-validation.md`; it does not modify the vendored upstream skill.
 
+## Assessment versus migration
+
+Use this skill to assess current extension metadata and quality. A request to make an extension
+work on a newer Core version belongs to `typo3-extension-upgrade`; return the bounded assessment
+to that owner instead of reporting a conformance scan as a completed migration. Upstream now
+names this boundary explicitly; the collection's collision record preserves it without editing
+either vendored description.
+
 ## Project-local Composer packages
 
 For packages owned by the site under `packages/`, TYPO3 14 upgrade work removes `ext_emconf.php`.
@@ -37,6 +45,9 @@ publishable/Classic exception explicitly and pass its package directory to the a
 This skill is based on the excellent work by **Netresearch DTT GmbH**.
 Original repository: https://github.com/netresearch/typo3-conformance-skill
 
-Special thanks to Netresearch for publishing and maintaining these skills.
+Special thanks to the Netresearch team for generously sharing the practical TYPO3 and PHP
+expertise behind these skills, and for the continuing care they put into their documentation,
+examples and maintenance. Their work gives this collection a foundation we are genuinely
+grateful to build on.
 Copyright (c) Netresearch DTT GmbH; original licence files are preserved.
 Adapted by webconsulting.at for this skill collection through this overlay only; the upstream skill is unmodified.

@@ -281,6 +281,40 @@ Consequences:
 - To verify the new argument, pin it explicitly: `->with($context, 42)` (or
   `self::anything()` for positions you intentionally leave open).
 
+### Gotcha: a String in `->with()` Accepts Any `Stringable`
+
+`->with('gpt-image-2')` wraps the literal in `IsEqual`, which compares loosely:
+an object whose `__toString()` returns `'gpt-image-2'` satisfies it — measured on
+PHPUnit 12.5.6 / PHP 8.5.10, including an object of an unrelated class that
+renders the same text. The value-object form rejects it: the failure reads
+`Other Object … is not instance of expected class "Name"`. When a
+parameter changes from `string` to a value object, the old expectation keeps
+passing. That is convenient during the migration, but afterwards it pins only
+the string form: any `Stringable` rendering the same text passes, including an
+object of the wrong type. Pin the value object once the parameter is typed:
+
+```php
+// Passes for new ProviderModelName('gpt-image-2') AND for any other
+// Stringable whose __toString() returns 'gpt-image-2':
+$repository->expects(self::once())->method('findOneByModelId')
+    ->with('gpt-image-2');
+
+// Pins type and value:
+$repository->expects(self::once())->method('findOneByModelId')
+    ->with(new ProviderModelName('gpt-image-2'));
+```
+
+### Gotcha: an Expectation Copied From the Implementation Pins Its Defect
+
+A mock that expects the call the code under test *currently makes* passes by
+construction, whether or not that call is right. In one extension a cost
+calculator passed an API model name to `findOneByIdentifier()`, which matches a
+different column; its unit test stubbed exactly `findOneByIdentifier()`, and
+the suite stayed green over a lookup that could never match a real row. Derive
+the expected call from the contract — which column, what the argument actually
+identifies — rather than from reading the implementation, and back it with one
+functional test against real rows.
+
 ## Adapter Pattern Testing
 
 When your extension wraps a version-specific third-party API behind an adapter interface, test through the adapter interface rather than creating complex version-specific mock setups.

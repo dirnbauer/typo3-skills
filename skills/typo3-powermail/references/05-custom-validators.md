@@ -1,69 +1,49 @@
-# 5. Custom Validators
+# Server-side custom validation
 
-Continues `typo3-powermail` from [full guide](full-guide.md).
-
-## 5. Custom Validators
-
-### Creating a Custom Validator (PSR-14 Event)
+Use `CustomValidatorEvent` when validating cross-field rules. Do not use condition
+operators 8/9 to prove equality. The event exposes `getMail()` and `getCustomValidator()`.
+Scope a listener to its intended form and handle missing/array answers explicitly.
 
 ```php
 <?php
-
 declare(strict_types=1);
-
-namespace Vendor\MyExt\EventListener;
+namespace Vendor\SitePackage\EventListener;
 
 use In2code\Powermail\Events\CustomValidatorEvent;
-use TYPO3\CMS\Core\Attribute\AsEventListener;
 
-#[AsEventListener('vendor-myext/custom-validator')]
-final class CustomValidatorListener
+final class RepeatEmailListener
 {
     public function __invoke(CustomValidatorEvent $event): void
     {
         $mail = $event->getMail();
-        $validator = $event->getCustomValidator();
-
-        foreach ($mail->getAnswers() as $answer) {
-            $field = $answer->getField();
-            if ($field === null || $field->getMarker() !== 'company_vat') {
-                continue;
-            }
-            if (!$this->isValidVat((string)$answer->getValue())) {
-                $validator->setErrorAndMessage($field, 'Invalid VAT number');
-            }
+        if ($mail->getForm()->getUid() !== 12) { // Replace with project configuration.
+            return;
         }
-    }
-
-    private function isValidVat(string $vat): bool
-    {
-        return (bool)preg_match('/^[A-Z]{2}\d{8,12}$/', $vat);
+        $answers = $mail->getAnswersByFieldMarker();
+        $first = $answers['email'] ?? null;
+        $repeat = $answers['email_repeat'] ?? null;
+        // Provision both fields; mandatory validation owns a missing answer.
+        if ($first === null || $repeat === null || $repeat->getField() === null) {
+            return;
+        }
+        if (!is_string($first->getValue()) || !is_string($repeat->getValue())
+            || $first->getValue() !== $repeat->getValue()) {
+            $event->getCustomValidator()->setErrorAndMessage($repeat->getField(), 'email_repeat');
+        }
     }
 }
 ```
 
-### Built-in Validators
+Register the listener through `event.listener` in Services.yaml, and provide the language key:
 
-| Validator | Purpose |
-|-----------|---------|
-| `InputValidator` | Email, URL, phone, number, letters, min/max length, regex |
-| `UploadValidator` | File size, extension whitelist |
-| `PasswordValidator` | Password match and strength |
-| `CaptchaValidator` | Built-in CAPTCHA |
-| *(Spam shield)* | Spam checking is distributed across multiple `Domain\Validator\SpamShield\AbstractMethod` subclasses (`HoneyPodMethod`, `LinkMethod`, …), orchestrated by `SpamShieldValidator` |
-| `UniqueValidator` | Unique field values |
-| `ForeignValidator` | Validate against foreign table |
-| `CustomValidator` | TypoScript-based custom rules |
+```typoscript
+plugin.tx_powermail._LOCAL_LANG.default.validationerror_email_repeat = Email addresses must match.
+```
 
-### Spam Shield Methods
+Verify the installed error partial/ViewHelper consumes this key. Test missing, empty, equal,
+substring-only, case and array payloads with server validation enabled. This is an illustrative
+field-equality rule, not email deliverability or ownership verification.
 
-| Method | Weight | Description |
-|--------|--------|-------------|
-| `HoneyPodMethod` | 5 | Hidden honeypot field |
-| `LinkMethod` | 3 | Excessive links detection |
-| `NameMethod` | 3 | Suspicious name patterns |
-| `SessionMethod` | 5 | Session/cookie check (shipping TypoScript: **`_enable = 0`** — opt-in because it sets a cookie) |
-| `UniqueMethod` | 2 | Duplicate submission check |
-| `ValueBlacklistMethod` | 7 | Blacklisted content |
-| `IpBlacklistMethod` | 7 | Blacklisted IP addresses |
-| `RateLimitMethod` | 100 | Request rate limiting |
+Sources: [CustomValidatorEvent](https://github.com/dirnbauer/powermail/blob/f58c5ff2b927f471985c19e6e366216df68cf54d/Classes/Events/CustomValidatorEvent.php),
+[CustomValidator](https://github.com/dirnbauer/powermail/blob/f58c5ff2b927f471985c19e6e366216df68cf54d/Classes/Domain/Validator/CustomValidator.php),
+[AbstractValidator](https://github.com/dirnbauer/powermail/blob/f58c5ff2b927f471985c19e6e366216df68cf54d/Classes/Domain/Validator/AbstractValidator.php).

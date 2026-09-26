@@ -66,6 +66,72 @@
         "Exercises form submission, finishers and mail delivery"
       ],
       "files": []
+    },
+    {
+      "id": "typo3-powermail-behaviour-condition-direction",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Selecting Other makes the extra details input disappear; switching away shows it. Correct the condition.",
+      "assertions": [
+        "Uses unhide action 1 when exact comparison operator 4 matches other",
+        "Explains that a nonmatching condition applies the opposite action",
+        "Tests empty, matching and nonmatching selections"
+      ],
+      "expected_output": "Uses unhide action 1 when exact comparison operator 4 matches other; Explains that a nonmatching condition applies the opposite action; Tests empty, matching and nonmatching selections",
+      "files": []
+    },
+    {
+      "id": "typo3-powermail-behaviour-comparison-semantics",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Our repeated email field accepts a longer address containing the first one. Can operator 8 prove equality?",
+      "assertions": [
+        "Explains substring or membership behavior, not equality",
+        "Uses exact server-side validation for email equality",
+        "Identifies the direction of contains: equal field contains start-field value"
+      ],
+      "expected_output": "Explains substring or membership behavior, not equality; Uses exact server-side validation for email equality; Identifies the direction of contains: equal field contains start-field value",
+      "files": []
+    },
+    {
+      "id": "typo3-powermail-behaviour-workspace-claim",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Can we publish the conditional enquiry form and its rules together from a workspace?",
+      "assertions": [
+        "Inspects both installed packages' TCA versioningWS",
+        "Identifies powermail_cond versioningWS false in the reviewed fork",
+        "Does not fabricate workspace SQL or promise atomic publication"
+      ],
+      "expected_output": "Inspects both installed packages' TCA versioningWS; Identifies powermail_cond versioningWS false in the reviewed fork; Does not fabricate workspace SQL or promise atomic publication",
+      "files": []
+    },
+    {
+      "id": "typo3-powermail-behaviour-version-forks",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Install our conditions addon with the current tagged Powermail release on TYPO3 14.3.",
+      "assertions": [
+        "Checks official public upstream separately from dirnbauer forks",
+        "Configures both VCS repositories at root because dependency repository entries are ignored",
+        "Uses a compatible released Powermail tag and locks the condition development branch",
+        "Reports source checks separately from runtime compatibility"
+      ],
+      "expected_output": "Checks official public upstream separately from dirnbauer forks; Configures both VCS repositories at root because dependency repository entries are ignored; Uses a compatible released Powermail tag and locks the condition development branch; Reports source checks separately from runtime compatibility",
+      "files": []
+    },
+    {
+      "id": "typo3-powermail-behaviour-multistep-conflict",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Give me a production-ready four-step shopping form using the conditions extension.",
+      "assertions": [
+        "Identifies shared upstream and fork multistep handling and the stale blanket README warning",
+        "Checks consecutive hidden-step navigation and distinguishes unit probes from project runtime proof",
+        "Avoids raw SQL fixture inserts and generic legal compliance claims"
+      ],
+      "expected_output": "Explains shared multistep capability, tests the actual hidden-step edge cases, and avoids raw SQL fixture inserts or generic legal compliance claims",
+      "files": []
     }
   ]
 }

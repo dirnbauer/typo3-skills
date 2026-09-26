@@ -31,7 +31,56 @@ composer require --dev netresearch/typo3-ci-workflows
 Because `phpunit/phpunit` is transitive, **do not add a direct `phpunit/phpunit`
 entry to `require-dev`** — it pins a phpunit version that may conflict with the
 PHP version constraint of the extension (phpunit 12.5.8+ requires PHP >= 8.3, which
-breaks the PHP-8.2 matrix cell).
+breaks the PHP-8.2 matrix cell). This holds for an extension that supports TYPO3
+13.4 and 14.3 only. An extension that still supports 12.4 is the documented
+exception below.
+
+## The meta package is TYPO3 13/14 only
+
+It cannot be installed alongside `typo3/cms-core: ^12.4`, and the reason is a
+single member. `saschaegerer/phpstan-typo3` 2.x requires `typo3/cms-core
+^13.4.3`, 3.x requires `^14.0`, and the last release that still supports TYPO3
+12, 1.10.2, requires `phpstan/phpstan ^1.10.9` — which this package's
+`phpstan/phpstan: ^2.0` excludes. Upstream dropped TYPO3 12 when it moved to
+PHPStan 2, so no combination satisfies both. Composer says so directly:
+
+```
+- netresearch/typo3-ci-workflows v1.12.0 requires saschaegerer/phpstan-typo3 ^2.0 || ^3.0
+- saschaegerer/phpstan-typo3[2.0.0, ..., 3.0.0] require typo3/cms-core ^13.4.3
+  -> but it conflicts with your root composer.json require (^12.4).
+```
+
+Every other member is TYPO3-version-agnostic: with `saschaegerer/phpstan-typo3`
+removed, the remaining 18 requirements resolve against `typo3/cms-core` 12.4.45
+with `phpstan/phpstan` 2.2.14 and `phpunit/phpunit` 11.5.56 via
+`typo3/testing-framework` 8.3.3.
+
+**An extension that still supports 12.4 therefore does two things**, and both
+are deliberate rather than leftovers:
+
+1. Its CI caller removes the meta package on the legs that cannot resolve it:
+
+   ```yaml
+   remove-dev-deps: '[{"dep":"netresearch/typo3-ci-workflows","only-for":"^13.4|^14.3"}]'
+   ```
+
+   `only-for` means *keep* on these TYPO3 versions; every other matrix cell runs
+   `composer remove --dev netresearch/typo3-ci-workflows` before installing.
+
+2. It declares its dev tools directly in `require-dev` — `phpunit/phpunit`
+   included — because on those legs the meta package is gone and nothing else
+   brings a test runner. The constraint must not cap the version below what
+   `typo3/testing-framework` already allows, or the 13.4 and 14.3 legs are held
+   back by it; see the PHPUnit 13 section in
+   [unit-testing.md](unit-testing.md).
+
+Widening `saschaegerer/phpstan-typo3` to `^1.10 || ^2.0 || ^3.0` does not fix
+this. It resolves only if `phpstan/phpstan`, `phpstan-strict-rules`,
+`phpstan-deprecation-rules`, `phpstan-phpunit` and `ergebnis/phpstan-rules` are
+opened to major 1 as well, and the ^12.4 legs then fall back to PHPStan 1.12.34,
+where `level: 10` does not exist at all (`Level config file …
+config.level10.neon was not found`). Those legs analyse with PHPStan 2 at level
+10 today, so that is a downgrade, not a fix. Measured 2026-09-18.
 
 ## Adoption
 

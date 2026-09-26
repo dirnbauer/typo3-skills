@@ -359,6 +359,31 @@ strategy:
         latest: true  # Upload coverage only from latest
 ```
 
+### Lowest-Dependency Cell: Composer Library Token Validation
+
+A `--prefer-lowest` cell resolves every dev dependency to its constraint floor. In a Composer plugin whose tests instantiate `Composer\Console\Application` from the `composer/composer` **library**, a floor below 2.2.28 fails on that cell alone:
+
+```
+UnexpectedValueException: Your github oauth token for github.com contains invalid characters: "ghs_..."
+```
+
+Composer 1.x before 1.10.28, 2.0 through 2.2.27 and 2.3 through 2.9.7 validate the GitHub token against a pattern without `-` (`[.A-Za-z0-9_]`, stricter in early 2.0 releases), which rejects the current installation-token format with a `-` that `setup-php` configures from `GITHUB_TOKEN`. The message quotes the full token, so the failing cell also prints the job's `GITHUB_TOKEN` into the log (GHSA-f9f8-rm49-7jv2). 2.2.28 and 2.9.8 add `-` to the pattern and drop the token from the message; 1.10.28 and 2.2.29 drop the check. The binary `setup-php` installs is recent enough to pass; the library the tests load is pinned by the constraint floor, and `prefer-lowest` puts it below the fix. Tell: the single `prefer-lowest` cell fails while every other cell, including cells running a current 2.2 binary, passes.
+
+Two fixes, both keeping minimum-version coverage on the 2.2 line:
+
+- Raise the dev floor to `^2.2.29`.
+- When the failing tests only clone public repositories, clear the auth on that step:
+
+```yaml
+- name: Integration tests
+  env:
+    COMPOSER_AUTH: "{}"
+    GITHUB_TOKEN: ""
+  run: |
+    composer config --global --unset github-oauth.github.com 2>/dev/null || true
+    vendor/bin/phpunit --testdox
+```
+
 ## 6. Flaky Test Prevention
 
 ### CI-Specific Test Configuration

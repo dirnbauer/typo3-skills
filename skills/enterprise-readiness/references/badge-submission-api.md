@@ -327,27 +327,60 @@ for name, config in PROJECTS.items():
 
 ## Solo Maintainer Justification Patterns
 
-For projects with a single maintainer, use these justification templates:
+None of these three criteria allows `N/A`, so a solo-maintained project answers each with `Met` or `Unmet`. Measure first, and answer `Met` only where the measurement shows it. For a MUST criterion an honest `Unmet` costs that level; for a SHOULD criterion (`bus_factor` at Silver) an `Unmet` with a justification still passes it (`get_unmet_result` in the BadgeApp's `app/models/project.rb` returns `criterion_barely`). A false `Met` costs the badge its credibility either way.
 
-**`two_person_review`** (set to Met, N/A not allowed):
-```
-The project uses automated multi-reviewer workflow: GitHub Copilot code review + auto-approve
-bot for solo maintainer. Branch protection requires passing CI + review approval.
-See: https://github.com/org/repo/blob/main/.github/workflows/pr-quality-gates.yml
+**`two_person_review`** (Gold, MUST) — "at least 50% of all proposed modifications reviewed before release by a person other than the author". A bot is not a person: a Copilot, CodeRabbit or Gemini review and an auto-approve workflow do not count, however strict the branch protection around them. Count merged pull requests with an approving review from an account of type `User` other than the author, given on the pull request's last commit — an approval of an earlier commit did not see the final changes, and GitHub keeps it unless stale approvals are dismissed. Read the type from GraphQL: `gh pr list --json reviews` returns GitHub App logins without the `[bot]` suffix, so a login filter lets App approvals through.
+
+```bash
+gh api graphql -F owner=ORG -F repo=REPO -f query='
+query($owner:String!,$repo:String!){repository(owner:$owner,name:$repo){
+  pullRequests(states:MERGED,last:100){nodes{author{login}
+    commits(last:1){nodes{commit{oid}}}
+    reviews(first:100,states:APPROVED){nodes{author{__typename login} commit{oid}}}}}}}' \
+  | jq '.data.repository.pullRequests.nodes
+        | [.[] | (.author.login // "") as $a | (.commits.nodes[0].commit.oid // "") as $head
+           | any(.reviews.nodes[]; .author.__typename == "User" and .author.login != $a
+                                   and .commit.oid == $head)]
+        | {human_reviewed: (map(select(.)) | length), total: length}'
 ```
 
-**`bus_factor`** (set to Met, N/A not allowed):
+The count covers the last 100 merged pull requests, counts only approvals (a commenting human review is not counted), and does not see changes pushed without a pull request. A machine account is type `User` too: if an auto-approve workflow approves with such an account's token, exclude that login by name before trusting the figure. Below 50% the answer is `Unmet`:
 ```
-Bus factor managed through comprehensive documentation, CI automation, and organizational access.
-Organization maintains access to all repositories. Backup maintainers have repository access
-via GitHub organization membership: https://github.com/orgs/ORG/people
+Unmet. Fewer than half of the merged pull requests carry an approving review from a person other
+than the author (N of the last M merged pull requests). Automated review is not a second person.
 ```
 
-**`access_continuity`** (set to Met, N/A not allowed):
+**`bus_factor`** (Silver SHOULD, Gold MUST) — at least two people who know the project well enough to keep it going. Organisation membership shows access, not knowledge. Count the commit authors of the last twelve months by GitHub account; names and e-mail addresses split one person into several:
+
+```bash
+since=$(date -u -d '12 months ago' +%Y-%m-%dT%H:%M:%SZ)
+gh api --paginate "repos/ORG/REPO/commits?since=$since&per_page=100" \
+  --jq '.[] | if .author == null then "(no GitHub account)" elif .author.type == "User" then .author.login else empty end' \
+  | sort | uniq -c | sort -rn
 ```
-Access continuity ensured via GitHub organization. Multiple organization members have admin
-access. Repository settings and credentials managed at organization level:
-https://github.com/orgs/ORG/people
+
+Commits whose e-mail maps to no GitHub account appear as `(no GitHub account)`; check them by hand before counting a person. With one active author, answer `Unmet`:
+```
+Unmet. One person authored the changes of the last twelve months (N commits); nobody else currently
+knows the project well enough to continue it.
+```
+
+With a second active author, answer `Met`, name both, and cite the measurement (for example the contributors page, https://github.com/ORG/REPO/graphs/contributors, which covers all time, not only the last year).
+
+**`access_continuity`** (Silver, MUST) — the project can "create and close issues, accept proposed changes, and release versions of software, within a week" after losing any one person. The criterion names two routes: someone else already holds the necessary access, or, for an individual maintainer, "keys in a lockbox and a will providing any needed legal rights". Check the repository side (write access is enough for issues and pull requests; admin for settings and secrets), then the release path — each package registry's maintainers, signing keys, release secrets. A registry maintainer that is an organisation account names no person; follow it to the people who can act for it:
+
+```bash
+gh api --paginate "repos/ORG/REPO/collaborators?per_page=100" \
+  --jq '.[] | "\(.login) \(.role_name)"'               # needs push access to call
+curl -s https://packagist.org/packages/VENDOR/NAME.json | jq '[.package.maintainers[].name]'
+```
+
+`access_continuity` requires a URL in a Met justification (`met_url_required`); without one the BadgeApp does not count the answer. Answer `Met`, name the route and link the evidence — for the lockbox route, a document in the repository that says where the keys are deposited and who can obtain them; otherwise answer `Unmet` and name the part of the release path that depends on the maintainer alone:
+```
+Met. Besides the maintainer, NAME has admin access to the repository and is a maintainer of the
+package on REGISTRY: REGISTRY-URL. [Or: keys and credentials for the repository, REGISTRY and
+signing are deposited as documented in https://github.com/ORG/REPO/blob/main/CONTINUITY.md, and a
+will grants the needed rights.]
 ```
 
 See also: `references/solo-maintainer-guide.md`
@@ -406,7 +439,7 @@ that silently prevent the entire save (form re-renders with 200 status).
 
 **Silver criteria that DON'T allow N/A:**
 - `access_continuity` (MUST)
-- `bus_factor` (MUST)
+- `bus_factor` (SHOULD at Silver, MUST at Gold)
 
 **Gold criteria that DON'T allow N/A:**
 - `contributors_unassociated` (MUST)

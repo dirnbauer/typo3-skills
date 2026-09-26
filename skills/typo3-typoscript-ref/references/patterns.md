@@ -293,3 +293,5 @@ page.10.wrap >
 ```
 
 Use `=<` (reference) for `lib.*` objects to ensure a single source of truth. Use `<` (copy) when you need an independent variant that you will modify separately.
+
+Both fail silently when the target does not exist, in different ways. `<` is resolved while the TypoScript is parsed: a missing source node ends that line and the target keeps whatever it had. `=<` is resolved when the object is rendered, by `ContentObjectRenderer::mergeTSRef()`, which walks the path segment by segment and keeps the value of the **deepest segment that exists** — so a reference into a removed path renders that ancestor instead of erroring. See `references/review/common-mistakes.md` → "Reference Into a Path That No Longer Exists".

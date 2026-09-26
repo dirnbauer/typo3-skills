@@ -91,6 +91,16 @@ Project description here...
 [![License](https://img.shields.io/github/license/ORG/REPO)](LICENSE)
 ```
 
+### Workflow badges read the default branch
+
+A GitHub Actions workflow badge (`actions/workflows/<file>.yml/badge.svg`) without parameters shows the latest run on the default branch. That fits CI, which runs on every push to `main`. It does not fit a workflow that runs only on tag pushes or on dispatch, such as `release.yml`: its latest run on `main` is left over from an earlier trigger, and no later run can replace it. `netresearch/raybeam` showed "failing" from a run on 2026-04-20 through four successful releases, until the badge was removed in September 2026.
+
+The obvious fixes do not help. `?event=push` still reads the default branch, and the shields.io workflow badge (`img.shields.io/github/actions/workflow/status/ORG/REPO/release.yml`) reads the same branch. Only `?branch=<tag>` shows a release run, and a fixed tag is stale after the next release. For a tag-triggered workflow, show the release instead:
+
+```markdown
+[![Latest Release](https://img.shields.io/github/v/release/ORG/REPO)](https://github.com/ORG/REPO/releases)
+```
+
 ## Additional Security Badges
 
 ### OpenSSF Scorecard
@@ -200,8 +210,8 @@ For projects working toward a badge level:
 - [ ] Silver Level (85%)
   - [x] DCO enforcement
   - [x] 80% test coverage
-  - [ ] Two-person review (solo maintainer)
 - [ ] Gold Level (40%)
+  - [ ] Two-person review (solo maintainer)
   - [ ] 90% test coverage
   - [ ] Security audit
 ```

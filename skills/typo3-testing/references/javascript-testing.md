@@ -540,10 +540,10 @@ Add JavaScript tests to your CI pipeline:
 
 ## Example: Complete Test Suite
 
-See `t3x-rte_ckeditor_image` for a real-world example:
+A TYPO3 extension shipping a CKEditor plugin lays its two suites out like this:
 
 ```
-t3x-rte_ckeditor_image/
+<extension>/
 ├── Resources/Public/JavaScript/
 │   └── Plugins/
 │       ├── typo3image.js              # Main plugin
@@ -622,9 +622,9 @@ enclosing function and **shared** across all iterations.
 This silently breaks closures that capture loop variables (event handlers, callbacks,
 `setTimeout`, etc.).
 
-**Real-world bug (t3x-rte_ckeditor_image [#633](https://github.com/netresearch/t3x-rte_ckeditor_image/issues/633), [PR #641](https://github.com/netresearch/t3x-rte_ckeditor_image/pull/641)):**
+**A bug this produced in practice:**
 
-The image dialog's aspect ratio handler iterated over `{width, height}` with `$.each`.
+A dialog's aspect-ratio handler iterated over `{width, height}` with `$.each`.
 Inside the callback, `var el` and `var max` were captured by a `constrainDimensions`
 closure attached as an event handler. After converting `$.each` to `for...of` without
 also converting `var` to `let`/`const`, `el` and `max` were shared across width/height
@@ -757,7 +757,6 @@ test('changing width auto-adjusts height to maintain aspect ratio', async ({ pag
 
 - [CKEditor 5 Testing](https://ckeditor.com/docs/ckeditor5/latest/framework/guides/contributing/testing-environment.html)
 - [Jest Documentation](https://jestjs.io/docs/getting-started)
-- [TYPO3 RTE CKEditor Image](https://github.com/netresearch/t3x-rte_ckeditor_image)
 - [MDN: var hoisting](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/var#hoisting)
 - [MDN: let block scope](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/let)
 - [CodeQL js/xss-through-dom](https://codeql.github.com/codeql-query-help/javascript/js-xss-through-dom/)

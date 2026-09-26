@@ -5,6 +5,28 @@
   "note": "Trigger cases first: this skill is jurisdiction-specific (Austria) and sits in a TYPO3 collection, so its failure modes are firing on German or Swiss imprint work it does not cover, and firing on the TYPO3 implementation of a legal page rather than its content.",
   "evals": [
     {
+      "id": "german-capital-and-economic-id",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "For our German UG legal notice, should I copy EUR1000 capital from a template? We already received a Wirtschafts-ID but the guide says it is not introduced yet.",
+      "assertions": [
+        "Checks DDG section5 against the German entity and treats voluntary capital disclosure as conditional, not a mandate to copy fictional figures.",
+        "Identifies the Wirtschafts-Identifikationsnummer disclosure condition when the number is possessed.",
+        "Does not substitute Austrian UGB requirements for German DDG requirements."
+      ]
+    },
+    {
+      "id": "austrian-capital-disclosure-is-conditional",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Our Austrian GmbH imprint omits the paid-in capital. Is that alone unlawful, and should we just insert the statutory formation minimum?",
+      "assertions": [
+        "Checks current UGB section14 paragraph2 in RIS and distinguishes conditional capital disclosure from company formation requirements.",
+        "Does not invent registered capital or paid-in amounts and does not call their omission alone universally unlawful.",
+        "Flags entity-specific legal uncertainty for professional review."
+      ]
+    },
+    {
       "status": "draft",
       "id": "legal-impressum-pos-01",
       "kind": "trigger-positive",

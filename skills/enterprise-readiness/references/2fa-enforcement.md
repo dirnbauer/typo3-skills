@@ -191,7 +191,7 @@ gh api repos/$ORG/REPO/collaborators --jq '.[] | select(.permissions.admin == tr
 |-----------|-------------|----------------|
 | `require_2FA` | 2FA required for privileged access | Organization 2FA requirement |
 | `secure_2FA` | Encourage non-SMS 2FA | Document recommended methods |
-| `access_continuity` | Maintain access if contributor unavailable | Multiple admins with 2FA |
+| `access_continuity` | Maintain access if contributor unavailable | A second person with 2FA who can also release (registry, signing keys), or keys in a lockbox plus a will |
 
 ## Solo Maintainer Considerations
 

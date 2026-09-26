@@ -35,6 +35,7 @@ mechanical:
     desc: "A security workflow must exist — either as .github/workflows/security.yml or as a reusable-workflow job"
 
   - id: ER-02
+    requires: composer.json
     type: command
     pattern: "grep -RqE '(composer[[:space:]]+audit|uses:[[:space:]]+\"?netresearch/(typo3-ci-workflows|[.]github)/[.]github/workflows/security[.]yml)' .github/workflows/ 2>/dev/null"
     severity: error
@@ -350,6 +351,7 @@ mechanical:
   # Paths are enumerated explicitly rather than searched, so no tree walk can
   # reach vendor/, node_modules/ or .Build/.
   - id: ER-70
+    requires: composer.json
     type: command
     pattern: "find infection.json5 infection.json infection.json5.dist infection.json.dist Build/infection.json5 Build/infection.json Build/infection.json5.dist Build/infection.json.dist -maxdepth 0 -type f 2>/dev/null | grep -q ."
     severity: warning
@@ -392,6 +394,7 @@ mechanical:
   # Note: the previous `expected:` field was silently ignored by the runner
   # for type=command checkpoints; the threshold is enforced inline.
   - id: ER-71
+    requires: composer.json
     type: script
     command: |
       cfg=""
@@ -445,6 +448,7 @@ mechanical:
   # cannot share it: a checkpoint runs from the repository under assessment,
   # where this skill's scripts/ does not exist, so every body is inlined.
   - id: ER-72
+    requires: composer.json
     type: script
     command: |
       cfg=""

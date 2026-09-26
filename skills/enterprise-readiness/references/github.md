@@ -218,15 +218,15 @@ on:
 |----------|--------|--------------|
 | SLSA Level 1 (provenance exists) | 1 | Check for `.intoto.jsonl` in releases |
 | SLSA Level 2 (hosted build, signed provenance) | 1 | Check for signed attestations |
-| SLSA Level 3 (isolated builder, unforgeable) | 2 | Check for slsa-github-generator usage |
+| SLSA Level 3 (isolated builder, unforgeable) | 2 | One reusable workflow the project cannot edit checks out, builds AND attests the artefact (attesting there what the project built is Level 2) — e.g. `release-source-archive.yml`, `release-go-app.yml`, `release-typo3-extension.yml`; see `slsa-provenance.md`. slsa-github-generator is unreachable where `sha_pinning_required` is on, see below |
 
 ### Provenance Verification (2 points)
 | Criteria | Points | How to Check |
 |----------|--------|--------------|
 | Verification instructions documented | 1 | Check README or release notes |
-| `slsa-verifier` compatible | 1 | Test with `slsa-verifier verify-artifact` |
+| Verifiable with the tool that matches the attestation | 1 | Generator-produced provenance: `slsa-verifier verify-artifact`. Native attestations from `actions/attest-build-provenance`: `gh attestation verify <artifact> --repo <owner>/<repo>` — `slsa-verifier` does not read those |
 
-**Using slsa-github-generator (Go example)**:
+**Using slsa-github-generator (Go example)** — only where no SHA-pinning ruleset applies. The generator's own workflow calls four nested actions by tag, so `sha_pinning_required` rejects the run at the first of them ([#4440](https://github.com/slsa-framework/slsa-github-generator/issues/4440), open); pinning the line below to a SHA does not help, and the generator refuses to run from one. Use `actions/attest-build-provenance` there and claim the level you reach:
 ```yaml
 uses: slsa-framework/slsa-github-generator/.github/workflows/builder_go_slsa3.yml@v2.1.0
 with:
@@ -294,7 +294,7 @@ Based on real-world data from 6 Netresearch TYPO3 extensions (scores 6.3–7.3),
 |-------|-----|-----------------|
 | **Fuzzing** | Scorecard only recognizes OSS-Fuzz or ClusterFuzzLite, not PHPUnit fuzz suites | 0 (even with fuzz tests) |
 | **Packaging** | Requires publishing to GitHub Packages (not Packagist/TER) | -1 for PHP projects |
-| **Signed-Releases** | Requires SLSA provenance with `slsa-github-generator` + signed tags | 2-5 (achievable) |
+| **Signed-Releases** | Requires SLSA provenance (`actions/attest-build-provenance`, or the generator where no SHA-pinning ruleset applies) + signed tags | 2-5 (achievable) |
 | **Contributors** | Based on number of distinct contributors — cannot be forced | Varies |
 | **Maintained** | Based on recent commit activity — penalizes stable projects | Varies |
 

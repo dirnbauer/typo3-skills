@@ -1,9 +1,9 @@
 {
   "description": "Offline, pinned Netresearch sync. Preserve byte-identical upstream files, licences and local attribution overlays. No plugin hooks are installed.",
-  "lastSync": "2026-09-05T13:36:25.574966+00:00",
+  "lastSync": "2026-09-26T06:35:10.771415+00:00",
   "marketplace": {
     "repository": "https://github.com/netresearch/claude-code-marketplace",
-    "commit": "20ff67009ad884a302a2009a995408073a4643dc",
+    "commit": "def063ed9623c6e0ba1f8c5554b27e636383d4f8",
     "catalog_plugins": 40,
     "selected_repositories": 16,
     "scope": "TYPO3 skills and three existing supporting skills"
@@ -12,112 +12,112 @@
     {
       "name": "enterprise-readiness",
       "source": "https://github.com/netresearch/enterprise-readiness-skill.git",
-      "commit": "ff433c30a50653bef2c8e890069669e9819229d8",
+      "commit": "3b3086ca1e0194b9e24a0ada43badd879f98591b",
       "enabled": true,
       "path": "skills/enterprise-readiness"
     },
     {
       "name": "php-modernization",
       "source": "https://github.com/netresearch/php-modernization-skill.git",
-      "commit": "beb2366ed0ea40a161074599b0b357a6c8200994",
+      "commit": "b7255b8e1f078c30d30ba2ed12b55e24e3bed28c",
       "enabled": true,
       "path": "skills/php-modernization"
     },
     {
       "name": "security-audit",
       "source": "https://github.com/netresearch/security-audit-skill.git",
-      "commit": "f6999ffc802b41d2d9d8e3ffb4f45faa21c27a1f",
+      "commit": "8e53e88029d6303024da0a5cb4f14bcb9965e3b4",
       "enabled": true,
       "path": "skills/security-audit"
     },
     {
       "name": "typo3-a11y",
       "source": "https://github.com/netresearch/typo3-a11y-skill.git",
-      "commit": "fc11392320bcae97df9e38d72c1c8c5fd2e65ff9",
+      "commit": "9c87aa66c88c2a80ee81d592a13c77b02c10cd70",
       "enabled": true,
       "path": "skills/typo3-a11y"
     },
     {
       "name": "typo3-ckeditor5",
       "source": "https://github.com/netresearch/typo3-ckeditor5-skill.git",
-      "commit": "c1c6861dac096ed514cfa63d3be4764c728ae58a",
+      "commit": "8a3822d99b1c632078374b27200aa1834366f502",
       "enabled": true,
       "path": "skills/typo3-ckeditor5"
     },
     {
       "name": "typo3-conformance",
       "source": "https://github.com/netresearch/typo3-conformance-skill.git",
-      "commit": "ee170961b292bfbc8f6745064d7576d360625e49",
+      "commit": "4013a3536ef522df335ea28701d2b3815346c58f",
       "enabled": true,
       "path": "skills/typo3-conformance"
     },
     {
       "name": "typo3-core-contributions",
       "source": "https://github.com/netresearch/typo3-core-contributions-skill.git",
-      "commit": "f011f757e0c0a201a3904869b2752264c559e03c",
+      "commit": "b0709667e0834ba862a08d3eb985088d006f78d5",
       "enabled": true,
       "path": "skills/typo3-core-contributions"
     },
     {
       "name": "typo3-ddev",
       "source": "https://github.com/netresearch/typo3-ddev-skill.git",
-      "commit": "8664eff816eb01fc2aba65c532c0d2a7b1824347",
+      "commit": "286f01ec06ab609cca8f72c90b47e489d8eaf765",
       "enabled": true,
       "path": "skills/typo3-ddev"
     },
     {
       "name": "typo3-docs",
       "source": "https://github.com/netresearch/typo3-docs-skill.git",
-      "commit": "44ef44a0e3af3f5677443ddb297c0a21d17ee7d2",
+      "commit": "0b33870f6a29ee1158b928ba11bea33e25eaddd3",
       "enabled": true,
       "path": "skills/typo3-docs"
     },
     {
       "name": "typo3-extension-upgrade",
       "source": "https://github.com/netresearch/typo3-extension-upgrade-skill.git",
-      "commit": "58141271b9196a88d0b576f8d8ffd1c7274c748b",
+      "commit": "f6172ce4226a5f8e730fe864b5441f13f758f862",
       "enabled": true,
       "path": "skills/typo3-extension-upgrade"
     },
     {
       "name": "typo3-project-upgrade",
       "source": "https://github.com/netresearch/typo3-project-upgrade-skill.git",
-      "commit": "4fc5a9536380efaa8215e133624200d7f0cb2d63",
+      "commit": "90e66c0585fbc8061c7e9c71ef005e1e85e02ec0",
       "enabled": true,
       "path": "skills/typo3-project-upgrade"
     },
     {
       "name": "typo3-site-conformance",
       "source": "https://github.com/netresearch/typo3-site-conformance-skill.git",
-      "commit": "2d81070eb0a99487e5bbeac47746da559e4a8fa5",
+      "commit": "1f5a464ed2a05ac809457f6b492e1fb0a8aabedf",
       "enabled": true,
       "path": "skills/typo3-site-conformance"
     },
     {
       "name": "typo3-testing",
       "source": "https://github.com/netresearch/typo3-testing-skill.git",
-      "commit": "9e977b10c5e8f3166727ad342ae0687a70ef07ce",
+      "commit": "dd344935feaf1261f56c6d4660b765d8adcba549",
       "enabled": true,
       "path": "skills/typo3-testing"
     },
     {
       "name": "typo3-typoscript-ref",
       "source": "https://github.com/netresearch/typo3-typoscript-ref-skill.git",
-      "commit": "669b471b872df793de6fb9d075c49460dfdeb90c",
+      "commit": "9956a36ad8e1b51b29696ed57f9737e6db787a9d",
       "enabled": true,
       "path": "skills/typo3-typoscript-ref"
     },
     {
       "name": "typo3-upgrade-effort-model",
       "source": "https://github.com/netresearch/typo3-upgrade-effort-model-skill.git",
-      "commit": "9b019fff9bd7cd3395f447811bfd72dee09a97ae",
+      "commit": "df64cdd53cb35949e89dbe24aa852f3ef52e61cc",
       "enabled": true,
       "path": "skills/typo3-upgrade-effort-model"
     },
     {
       "name": "typo3-vite",
       "source": "https://github.com/netresearch/typo3-vite-skill.git",
-      "commit": "4f20d09313d27fbf773bd85112aa93f58c428805",
+      "commit": "047754d9abae6b6cb69f31a36549e6b880d44208",
       "enabled": true,
       "path": "skills/typo3-vite"
     }

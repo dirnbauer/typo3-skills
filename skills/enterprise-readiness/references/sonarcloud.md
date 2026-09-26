@@ -247,6 +247,7 @@ Two closed-source-analyzer behaviors verified in a live remediation
 These three concepts are independent — confusing them leads to wrong merge decisions:
 
 - **Quality Gate** (e.g. *0% Coverage on New Code*) — contributes to the `SonarCloud Code Analysis` check status (pass/fail)
+- **Two check contexts, and the names invite the wrong reading** — `SonarCloud Code Analysis` is the quality gate; the plain `SonarCloud` context is the code-scanning feed and its title counts alerts ("1 new alert including 1 medium severity security vulnerability"). A green `SonarCloud` beside a red `SonarCloud Code Analysis` means the gate failed, not the scan. Read `.output.title` of each check-run rather than the context name: `gh api repos/OWNER/REPO/commits/$SHA/check-runs --jq '.check_runs[] | "\(.name) | \(.conclusion) | \(.output.title)"'`
 - **Annotations** — individual issues flagged on PR-touched lines, shown inline; do **not** affect the QG by themselves
 - **Required check** — repository ruleset entry (`gh api repos/OWNER/REPO/rulesets/$ID`); only required checks block merge
 
@@ -264,14 +265,30 @@ Refactor-PR gotcha: *0% Coverage on New Code* is **structurally unfixable** when
 
 ### Bulk Issue Transitions via API
 
+**An issue raised on a pull request is invisible without `pullRequest=<n>`.** Every call below — `search`, `do_transition`, `add_comment` — answers for the main branch by default, so a PR finding comes back as "no such issue" and the analysis looks clean while the gate is red. Same trap one layer up on the GitHub side: `repos/OWNER/REPO/code-scanning/alerts` without `ref=refs/pull/<n>/head` lists only the alerts on `main`.
+
+```bash
+# the issues Sonar raised on PR 106, not the ones on main
+curl -s -H "Authorization: Bearer $SONAR_TOKEN" \
+  "https://sonarcloud.io/api/issues/search?componentKeys=$PROJECT&pullRequest=106&statuses=OPEN,CONFIRMED"
+gh api "repos/OWNER/REPO/code-scanning/alerts?ref=refs/pull/106/head&state=open"
+```
+
+**Marking re-opens the gate without a new analysis, and the mark survives the next one.** SonarCloud re-evaluates the quality gate on the transition, so the `SonarCloud Code Analysis` check flips to pass within a minute — no push, no re-run. Pushing afterwards re-analyses the PR and the issue stays resolved as long as the code at that location is unchanged. Do not push an empty commit to "refresh" the gate.
+
+**A refactor can mint new issue keys, and the mark does not follow them.** The mark binds to the issue key. Tracking across analyses survives shifted lines, but a refactor that moves flagged lines into a new function can make the next analysis raise the same finding under new keys: the accepted status stays with the old keys, and the gate goes red again. On a PR that both refactors and carries intentional findings, land the final code shape first, then mark whatever the fresh analysis reports. Re-query `api/issues/search?...&pullRequest=<n>&resolved=false` after every push that touches the flagged files — a gate that passed can re-redden without any new finding.
+
 Single transition (issues):
 
 ```bash
 curl -s -H "Authorization: Bearer $SONAR_TOKEN" -X POST \
   "https://sonarcloud.io/api/issues/do_transition" \
   --data-urlencode "issue=$KEY" \
-  --data-urlencode "transition=wontfix"   # or: falsepositive
+  --data-urlencode "transition=wontfix" \
+  --data-urlencode "pullRequest=106"      # omit for a main-branch issue
 ```
+
+The response carries the new state — read it back rather than trusting the 200: `.issue.issueStatus` answers `FALSE_POSITIVE` or `ACCEPTED`.
 
 Add a comment (separate call — `do_transition` does not accept `comment`):
 
@@ -279,7 +296,8 @@ Add a comment (separate call — `do_transition` does not accept `comment`):
 curl -s -H "Authorization: Bearer $SONAR_TOKEN" -X POST \
   "https://sonarcloud.io/api/issues/add_comment" \
   --data-urlencode "issue=$KEY" \
-  --data-urlencode "text=Reason: ..."
+  --data-urlencode "text=Reason: ..." \
+  --data-urlencode "pullRequest=106"      # omit for a main-branch issue
 ```
 
 Available issue transitions: `falsepositive`, `wontfix`, `confirm`, `unconfirm`, `resolve`, `reopen`. Hotspots use a different endpoint:
@@ -289,10 +307,11 @@ curl -s -H "Authorization: Bearer $SONAR_TOKEN" -X POST \
   "https://sonarcloud.io/api/hotspots/change_status" \
   --data-urlencode "hotspot=$KEY" \
   --data-urlencode "status=REVIEWED" \
-  --data-urlencode "resolution=SAFE"      # or: FIXED, ACKNOWLEDGED
+  --data-urlencode "resolution=SAFE" \
+  --data-urlencode "pullRequest=106"      # omit for a main-branch hotspot
 ```
 
-Bulk fetch issue keys for a rule:
+Bulk fetch issue keys for a rule (append `&pullRequest=106` on a pull request, or this lists the main-branch issues):
 
 ```bash
 curl -s "https://sonarcloud.io/api/issues/search?componentKeys=$PROJECT&rules=$RULE&issueStatuses=OPEN,CONFIRMED&ps=500" \

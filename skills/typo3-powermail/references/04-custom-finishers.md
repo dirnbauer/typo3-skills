@@ -1,97 +1,50 @@
-# 4. Custom Finishers
+# Custom finishers
 
-Continues `typo3-powermail` from [full guide](full-guide.md).
-
-## 4. Custom Finishers
-
-Finishers run after successful form submission, sorted by TypoScript key.
-
-### Registration
+Keep the shipped finishers. Add one unused numeric key; do not replace the entire list.
 
 ```typoscript
 plugin.tx_powermail.settings.setup.finishers {
-    # Lower number = runs first
-    0.class = In2code\Powermail\Finisher\RateLimitFinisher
-    10.class = In2code\Powermail\Finisher\SaveToAnyTableFinisher
-    20.class = In2code\Powermail\Finisher\SendParametersFinisher
-    finally.class = In2code\Powermail\Finisher\RedirectFinisher
-
-    # Custom finisher
-    50.class = Vendor\MyExt\Finisher\CrmFinisher
-    50.config {
-        apiUrl = https://crm.example.com/api
-        apiKey = secret123
-    }
+    50.class = Vendor\SitePackage\Finisher\EnquiryFinisher
+    50.config.formUid = 12
 }
 ```
 
-### Creating a Custom Finisher
+Extend Powermail's own AbstractFinisher. Check final-submission status **before** side effects;
+opt-in changes when that flag is true. Scope the operation to a configured form UID.
 
 ```php
 <?php
-
 declare(strict_types=1);
-
-namespace Vendor\MyExt\Finisher;
+namespace Vendor\SitePackage\Finisher;
 
 use In2code\Powermail\Finisher\AbstractFinisher;
-use In2code\Powermail\Domain\Model\Mail;
 
-final class CrmFinisher extends AbstractFinisher
+final class EnquiryFinisher extends AbstractFinisher
 {
-    /**
-     * Method name MUST end with "Finisher"
-     * Can have initialize*Finisher() called before
-     */
-    public function myCustomFinisher(): void
+    public function prepareEnquiryFinisher(): void
     {
-        /** @var Mail $mail */
-        $mail = $this->getMail();
-        $settings = $this->getSettings();
-        $configuration = $this->getConfiguration(); // TS config.*
-
-        // Access form answers
-        foreach ($mail->getAnswers() as $answer) {
-            $fieldMarker = $answer->getField()->getMarker();
-            $value = $answer->getValue();
-            // Process...
-        }
-
-        // Access by marker
-        $answers = $mail->getAnswersByFieldMarker();
-        $email = $answers['email'] ?? null;
-
-        // Check if form was actually submitted (not just displayed)
         if (!$this->isFormSubmitted()) {
             return;
         }
+        $formUid = (int)($this->getConfiguration()['formUid'] ?? 0);
+        if ($formUid < 1 || $this->getMail()->getForm()->getUid() !== $formUid) {
+            return;
+        }
+        $answers = $this->getMail()->getAnswersByFieldMarker();
+        $answer = $answers['email'] ?? null;
+        if ($answer === null || !is_string($answer->getValue())) {
+            return;
+        }
+        // Hand a validated, minimal payload to your separately tested application service.
+        // No network request is implemented by this example.
     }
 }
 ```
 
-### Built-in Finishers
+The runner invokes public methods ending in `Finisher`, excluding `initialize*`.
+It passes constructor arguments itself; do not assume an arbitrary injected constructor works.
+Use one side-effect method, idempotency, bounded timeouts and explicit failure reporting for
+CRM integration. Never embed API credentials in TypoScript or permit submitted destination URLs.
 
-| Class | Key | Purpose |
-|-------|-----|---------|
-| `RateLimitFinisher` | 0 | Consumes rate limiter tokens |
-| `SaveToAnyTableFinisher` | 10 | Save answers to custom DB tables |
-| `SendParametersFinisher` | 20 | POST form data to external URL |
-| `RedirectFinisher` | `finally` | Runs last — special TypoScript key, not a numeric sort key |
-
-### SaveToAnyTable Configuration
-
-```typoscript
-plugin.tx_powermail.settings.setup.dbEntry {
-    1 {
-        _enable = TEXT
-        _enable.value = 1
-        _table = fe_users
-        _ifUnique.email = update  # update|skip|none
-        username.value = {email}
-        email.value = {email}
-        first_name.value = {firstname}
-        last_name.value = {lastname}
-        pid.value = 123
-    }
-}
-```
+Source: [FinisherRunner](https://github.com/dirnbauer/powermail/blob/f58c5ff2b927f471985c19e6e366216df68cf54d/Classes/Finisher/FinisherRunner.php) and
+[AbstractFinisher](https://github.com/dirnbauer/powermail/blob/f58c5ff2b927f471985c19e6e366216df68cf54d/Classes/Finisher/AbstractFinisher.php).

@@ -45,11 +45,11 @@ This skill provides comprehensive guidance on Austrian Impressum (legal notice) 
 | Einzelunternehmen e.U. | Yes | Firm name, FB-Nr, court, address | § 14 UGB applies |
 | OG (Offene Gesellschaft) | Yes | Firm, FB-Nr, court, all partners | Partners' names required |
 | KG (Kommanditgesellschaft) | Yes | Firm, FB-Nr, court, Komplementäre | Kommanditisten optional |
-| GmbH | Yes | Firm, FB-Nr, court, capital, directors | Stammkapital required (min. EUR 10.000 since 2024) |
-| FlexCo (FlexKapG) | Yes | Firm, FB-Nr, court, capital, directors | Flexible Kapitalgesellschaft (since 2024), Stammkapital min. EUR 10.000 |
+| GmbH | Yes | Firm, FB-Nr, court, seat; check other applicable disclosures | Capital disclosure is conditional under § 14(2) UGB, not universally mandatory |
+| FlexCo (FlexKapG) | Yes | Firm, FB-Nr, court, seat; check other applicable disclosures | Distinguish formation capital rules from website disclosure duties |
 | GmbH & Co KG | Yes | Both entities' details | Dual disclosure |
-| AG (Aktiengesellschaft) | Yes | Firm, FB-Nr, court, capital, Vorstand | Grundkapital required |
-| SE (Europäische Gesellschaft) | Yes | Firm, FB-Nr, court, capital, board | EU company form |
+| AG (Aktiengesellschaft) | Yes | Firm, FB-Nr, court, seat; check other applicable disclosures | Apply § 14(2) UGB if capital is stated |
+| SE (Europäische Gesellschaft) | Yes | Firm, FB-Nr, court, seat; check other applicable disclosures | Check the applicable SE and Austrian provisions for this entity |
 | GesBR | No | All partners' names, addresses | Civil law partnership |
 | Genossenschaft | Yes | Firm, FB-Nr, court, Vorstand | Cooperative |
 | Verein | ZVR | Name, ZVR-Zahl, address, Vorstand | Association register |
@@ -86,8 +86,14 @@ Additional requirements for **Firmenbuch-registered companies** on all business 
 | Sitz | Registered seat (city) |
 | Firmenbuchnummer | FN number with registration court |
 | Firmenbuchgericht | Court where registered (e.g., "LG Wien") |
-| Kapital | Share capital for GmbH/AG (optional but common) |
+| Kapital | If voluntarily stated, disclose the relevant capital and any outstanding contributions required by § 14(2) UGB |
 | Liquidation | "in Liquidation" if applicable |
+
+Verify [§ 14 UGB in RIS](https://ris.bka.gv.at/eli/drgbl/1897/219/P14/NOR40263725)
+against the actual entity. Paragraph 2 is conditional: mentioning capital triggers its
+completeness requirements; the formation minimum is not itself a mandatory website field.
+The templates below omit optional capital statements. Do not invent paid-in amounts, and
+have uncertain entity-specific duties reviewed by a qualified Austrian legal professional.
 
 ### 3.3 Gewerbeordnung (§ 63 GewO)
 
@@ -221,7 +227,6 @@ E-Mail: office@muster-gmbh.at
 Firmenbuchnummer: FN 123456z
 Firmenbuchgericht: Handelsgericht Wien
 Sitz: Wien
-Stammkapital: EUR 10.000,–
 
 Geschäftsführer: Max Mustermann
 
@@ -275,7 +280,6 @@ E-Mail: office@muster-ag.at
 Firmenbuchnummer: FN 123456m
 Firmenbuchgericht: Handelsgericht Wien
 Sitz: Wien
-Grundkapital: EUR 70.000,–
 
 Vorstand: Mag. Max Mustermann (Vorsitzender)
 Aufsichtsratsvorsitzender: Dr. Klaus Beispiel
@@ -302,7 +306,6 @@ E-Mail: office@muster-se.eu
 Firmenbuchnummer: FN 123456s
 Firmenbuchgericht: Handelsgericht Wien
 Sitz: Wien
-Grundkapital: EUR 120.000,–
 
 Vorstand: Max Mustermann (CEO)
 

@@ -191,6 +191,33 @@ $duration = (\microtime(true) - $startTime) * 1000; // milliseconds
 self::assertLessThan(50, $duration, 'Operation should complete in < 50ms');
 ```
 
+### A shared minimum delay is asserted as a lower bound — and proves only itself
+
+An endpoint that must not disclose whether an account exists is often given a floor: every
+branch leaves after at least N milliseconds. Test the floor as a lower bound, per branch:
+
+```php
+private const BUDGET_MS = 150.0;
+
+self::assertGreaterThanOrEqual(self::BUDGET_MS, $this->timeOptionsAction('unknown@example.com'));
+```
+
+A sleep guarantees the lower bound on any machine, so the test is stable in CI, and one case
+per branch is what fails when the floor is removed from one of them. Verify that by removing
+it from each branch in turn: each removal must redden that branch's case and no other.
+
+**What this does not prove.** Both a 150 ms answer and a 500 ms answer pass, so the assertion
+says nothing about whether the branches are *indistinguishable* — only that each reaches the
+floor. A floor is a mitigation: it hides a difference smaller than itself and hides nothing
+above it. Do not call such a test proof of constant time, in the test name or in a release
+note.
+
+If the invariant really is indistinguishability, the test is a different one: sample each
+branch many times and compare the distributions with a stated tolerance, and expect it to be
+noisy in CI. The cheaper alternative is to make the code report the case the floor cannot
+cover — log when a branch runs past the budget — and treat the log as the signal that the
+mitigation has stopped mitigating.
+
 ### Memory Measurements
 
 ```php

@@ -1,22 +1,21 @@
-# 10. Double Opt-In
+# Double opt-in
 
-Continues `typo3-powermail` from [full guide](full-guide.md).
-
-## 10. Double Opt-In
+Enable only when requested, with a configured sender-email field and authorized test mailbox.
 
 ```typoscript
 plugin.tx_powermail.settings.setup.main.optin = 1
-
 plugin.tx_powermail.settings.setup.optin {
-    subject = Please confirm your submission
-    senderName = My Website
-    senderEmail = noreply@example.com
+    subject = TEXT
+    subject.value = Please confirm your enquiry
+    overwrite.senderEmail = TEXT
+    overwrite.senderEmail.value = website@example.org
 }
 ```
 
-Flow:
-1. User submits form
-2. Mail is saved with `hidden=1`
-3. Opt-in email sent with confirmation link (HMAC-secured)
-4. User clicks link -> `optinConfirmAction` unhides the mail
-5. Receiver email sent after confirmation
+Inspect effective FlexForm/TypoScript settings and test initial submission, email link,
+invalid/reused link behavior and final recipient delivery. The controller gates normal send
+and persistence through opt-in/hash logic; finishers must check `isFormSubmitted()` instead
+of assuming initial submission is final. Opt-in is not a blanket legal-compliance guarantee.
+
+Sources: [opt-in settings](https://github.com/dirnbauer/powermail/blob/f58c5ff2b927f471985c19e6e366216df68cf54d/Configuration/TypoScript/Main/Configuration/07_DoubleOptin.typoscript),
+[FormController](https://github.com/dirnbauer/powermail/blob/f58c5ff2b927f471985c19e6e366216df68cf54d/Classes/Controller/FormController.php).

@@ -5,7 +5,7 @@ license: "(MIT AND CC-BY-SA-4.0). See LICENSE-MIT and LICENSE-CC-BY-SA-4.0"
 compatibility: "Requires gh CLI, python3, cosign, docker."
 metadata:
   author: Netresearch DTT GmbH
-  version: "4.17.3"
+  version: "4.18.2"
   repository: https://github.com/netresearch/enterprise-readiness-skill
 allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/*) Bash(bash ${CLAUDE_SKILL_DIR}/scripts/*) Bash(gh:*) Bash(cosign:*) Read Write Glob Grep
 ---
@@ -43,7 +43,7 @@ Required coverage: CI, CodeQL, Scorecard, dependency review, composer audit, SBO
 - **Dependabot**: Configure `dependabot.yml` with all ecosystems (`composer`, `npm`, `github-actions`, `docker`); set up auto-merge workflow for dependency PRs using `pull_request_target`
 - **Coverage**: Upload via `codecov-action`; configure `codecov.yml` with patch coverage threshold
 - **Duplicate CI prevention**: Scope `push:` trigger to `branches: [main]` when `pull_request:` is also present
-- **SLSA provenance**: Use `actions/attest-build-provenance` with `id-token: write` and `attestations: write` permissions; verify with `gh attestation verify`
+- **SLSA provenance**: Use `actions/attest-build-provenance` with `id-token: write` and `attestations: write` permissions; verify with `gh attestation verify`. That is Level 2 in the project's own workflow; Level 3 needs checkout, build and attestation all inside one org reusable the project cannot edit — see `references/slsa-provenance.md`
 - **Security policy**: Create `SECURITY.md` with vulnerability disclosure process and response SLA (Critical: 7 days, High: 30 days)
 
 ## Critical Rules
@@ -68,8 +68,9 @@ Required coverage: CI, CodeQL, Scorecard, dependency review, composer audit, SBO
 | `references/openssf-badge-silver.md` | Silver |
 | `references/openssf-badge-gold.md` | Gold |
 | `references/openssf-badge-baseline.md` | OSPS Baseline |
+| `references/bestpractices-json.md` | `.bestpractices.json`: pre-fill badge answers from the repo |
 | `references/harden-runner-guide.md` | Harden-Runner |
-| `references/solo-maintainer-guide.md` | N/A criteria |
+| `references/solo-maintainer-guide.md` | Solo-maintainer criteria |
 | `references/npm-pnpm-supply-chain.md` | pnpm |
 | `references/python-pip-supply-chain.md` | pip |
 
