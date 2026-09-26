@@ -78,6 +78,7 @@ while read -r count author; do
             echo "1. Recruit additional maintainers"
             echo "2. Document critical code paths for knowledge transfer"
             echo "3. Pair programming to spread knowledge"
+            echo "4. For the badge, measure bus_factor as in badge-submission-api.md (active authors by GitHub account): Met with a second active author, otherwise Unmet with a justification (N/A is not accepted)"
             exit 1
         fi
     fi
@@ -92,6 +93,6 @@ if [ -z "$RESULT" ]; then
     echo "1. Document architecture and decision rationale"
     echo "2. Create comprehensive onboarding documentation"
     echo "3. Consider recruiting co-maintainers"
-    echo "4. Mark bus_factor as N/A with justification in badge application"
+    echo "4. For the badge, measure bus_factor as in badge-submission-api.md (active authors by GitHub account): Met with a second active author, otherwise Unmet with a justification (N/A is not accepted)"
     exit 1
 fi

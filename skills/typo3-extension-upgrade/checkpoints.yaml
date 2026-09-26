@@ -8,6 +8,14 @@
 version: 1
 skill_id: typo3-extension-upgrade
 
+# Only run for TYPO3 extensions (SKILL.md: "Extension code only, not
+# project/core upgrades"). Without this gate /assess ran every check against a
+# Python repository and reported failures that were not about that repository.
+preconditions:
+  - type: json_path
+    target: composer.json
+    pattern: '.type == "typo3-cms-extension"'
+
 mechanical:
   # === RECTOR CONFIGURATION ===
   # Accept both root and Build/ subdirectory layouts (common in extensions that
@@ -434,6 +442,37 @@ mechanical:
       exit 0
     severity: warning
     desc: "SingletonInterface is deprecated in TYPO3 v14. Migrate to proper DI scoping (Services.yaml shared: true) unless the class must be used with GeneralUtility::setSingletonInstance in tests."
+
+  # A type v14 removed, referenced by its short name in a file that no longer
+  # imports it. PHP resolves the bare name through the file's own namespace,
+  # `Foo::class` does not fail, and the error surfaces later — on the line
+  # that still has to support the old version — naming a class nobody wrote.
+  # Measured on 14 September 2026, on a real extension sliding its window
+  # from ^12.4 || ^13.4 to ^13.4 || ^14.3: the agent deleted the `use` line,
+  # left five createMock calls behind, and the v13.4 leg died with five
+  # errors — with the rule against exactly this edit sitting in a reference
+  # the trial never opened. One occurrence in forty-two trials on that case
+  # (five rounds, 14 to 18 September); a second one first reported for 18
+  # September was a loose count matching a compat stub's class name, not
+  # this edit. That figure is how often the edit happens. How often the
+  # check runs is a different count and lives in SKILL.md step 9: as a
+  # fenced block there it was pasted and run in five of six trials.
+  - id: TU-58
+    type: script
+    command: |
+      types='TypoScriptFrontendController|StandaloneView|TemplateView|HashService|LocalPreviewHelper|LocalCropScaleMaskHelper|FreezableBackendInterface'
+      bad=0
+      for f in $(grep -rlE "\b($types)::class|\b($types)\b" Classes Tests 2>/dev/null); do
+        for t in $(grep -oE "\b($types)\b" "$f" | sort -u); do
+          if ! grep -qE "^use .*\\\\$t;" "$f" && ! grep -qE "\\\\$t\b" "$f"; then
+            printf '%s: %s used without import\n' "$f" "$t"
+            bad=1
+          fi
+        done
+      done
+      test "$bad" = 0
+    severity: error
+    desc: "A type v14 removed is referenced by short name in a file that no longer imports it"
 
 llm_reviews:
   # === COMPREHENSIVE RECTOR REVIEW ===

@@ -18,19 +18,25 @@ the DOM domain, then ask the accessibility domain about them.
 def ax(cdp, selector, index=0):
     """role / name / description of the nth match, from Chrome's own tree."""
     root = cdp.send("DOM.getDocument", {"depth": -1})["root"]["nodeId"]
-    ids = cdp.send("DOM.querySelectorAll", {"nodeId": root, "selector": selector})["nodeIds"]
+    ids = cdp.send("DOM.querySelectorAll", {"nodeId": root, "selector": selector})[
+        "nodeIds"
+    ]
     if index >= len(ids):
         return None
-    n = cdp.send("Accessibility.getPartialAXTree",
-                 {"nodeId": ids[index], "fetchRelatives": False})["nodes"][0]
+    n = cdp.send(
+        "Accessibility.getPartialAXTree",
+        {"nodeId": ids[index], "fetchRelatives": False},
+    )["nodes"][0]
     return {
         "ignored": n.get("ignored"),
         "role": (n.get("role") or {}).get("value"),
         "name": (n.get("name") or {}).get("value"),
         "description": (n.get("description") or {}).get("value"),
-        "nameSources": [s.get("type")
-                        for s in (n.get("name") or {}).get("sources", [])],
+        "nameSources": [
+            s.get("type") for s in (n.get("name") or {}).get("sources", [])
+        ],
     }
+
 
 cdp = context.new_cdp_session(page)
 cdp.send("Accessibility.enable")
@@ -45,7 +51,7 @@ an element hidden at the current breakpoint — measure at both widths before
 counting how many controls a user meets. A `d-md-none` duplicate and its
 `d-none d-md-block` sibling are two DOM nodes and one user-visible control.
 
-## Four rules that surprise people
+## Five rules that surprise people
 
 **1. `title` is not always the name.** On a non-focusable element with role
 `generic`, Chrome routes `title` to the *description* and leaves the accessible
@@ -81,13 +87,54 @@ navigation. If a trigger sits inside a heading or a `<dt>`, pin the container's
 own name (`aria-label`, wired to the same translation key as the visible text)
 or move the trigger out.
 
-**3. Icon fonts leak private-use glyphs into names.** An `<i>` from FontAwesome
-renders its glyph through `::before`. Without `aria-hidden="true"` that
-character becomes part of the ancestor's name-from-contents — `"Downloads by
-month "`. It is invisible in a terminal, and `jq` output swallows it, so
-it survives review. Grep your measured names for `\uf0`–`\uf2` ranges.
+**3. Icon fonts leak private-use glyphs into names — before FontAwesome 7.**
+An `<i>` renders its glyph through `::before`. Up to and including FA 6,
+without `aria-hidden="true"` that character becomes part of the ancestor's
+name-from-contents — `"Downloads by month "`. It is invisible in a terminal,
+and `jq` output swallows it, so it survives review.
 
-**4. Focus rings are theme-dependent.** Do not assume a focusable control shows
+Scan measured names for the **whole Private Use Area**, `U+E000`-`U+F8FF`, not a
+narrower slice. FontAwesome spreads its glyphs across it and does not stay in
+one band: of the 1939 icons in 7.3.1, 516 sit below `U+F000` (the `\e0xx` range
+its newer icons use) and 808 above `U+F2FF` - a `\uf0`-`\uf2` grep finds barely
+a third of them.
+
+```python
+import re
+
+assert not re.search(r"[\ue000-\uf8ff]", name), f"glyph leaked into {name!r}"
+```
+
+**FA 7 changed the default**, so check the resolved version before reporting this
+as a defect. Its CSS gives every style class an empty *CSS alternative text*,
+which is an empty accessible name:
+
+```css
+:is(.fas, .far, .fab, .fa-solid, .fa-regular, .fa-brands, .fa-classic, .fa)::before {
+  content: var(--fa)/"";
+}
+@supports not (content: ""/"") {
+  :is(...)::before { content: var(--fa); }   /* no alt text - the glyph leaks */
+}
+```
+
+Two consequences. Reporting "these icons are announced as noise" against an FA 7
+project is wrong, and saying so costs a correction. And `aria-hidden="true"` is
+still worth adding, because the `@supports not` branch carries no alternative
+text - it is the guard that holds in both branches, not a fix for something
+currently broken. Read `package-lock.json` for the resolved version and grep the
+shipped stylesheet for `content: var(--fa)`; the manifest range and your memory
+of how FontAwesome used to behave are not evidence.
+
+**4. `text-decoration: dotted` draws nothing.** The shorthand is
+`<'text-decoration-line'> || <'text-decoration-thickness'> || <'text-decoration-style'> || <'text-decoration-color'>`,
+and an omitted longhand resets to its initial value - `text-decoration-line: none`.
+A declaration meant to mark something with a dotted underline therefore renders
+no line at all, and whatever colour cue remains carries the meaning alone, which
+is WCAG 1.4.1. It is a valid declaration, so no linter complains. Measure it:
+`getComputedStyle(el).textDecorationLine` must not be `none`.
+
+**5. Focus rings are theme-dependent.** Do not assume a focusable control shows
 one. On a Bootstrap theme that sets `--bs-btn-focus-box-shadow`, `.btn:focus-visible`
 can resolve to `outline: none` with only an elevation shadow — a keyboard user
 sees nothing. Read the computed value:
@@ -124,14 +171,24 @@ width:
 * `aria-hidden` on the icon removes the glyph from every ancestor name.
 * Bootstrap's default trigger is `hover focus`, so the tooltip opens on focus —
   but verify it, and verify that it closes on blur (`.tooltip` node count 1 → 0).
+* The visually hidden label is **real DOM text**, not an assistive-technology
+  channel. Anything that reads the element's text rather than its rendering sees
+  it: a template filter that strips tags, a length check that decides truncation,
+  `textContent`, clipboard copy, a plain-text extractor, a search crawler. Before
+  adding one inside a component whose text other code consumes, find that
+  consumer. (Burned: a hidden sentence added to a marker surfaced as visible
+  table text through a `striptags` call two templates away, and added 39
+  characters to the length that decided whether the cell was truncated.)
 
 Prove the rendering did not move rather than eyeballing it: element screenshots
 before and after, compared pixel by pixel.
 
 ```python
 from PIL import Image, ImageChops
-d = ImageChops.difference(Image.open("before.png").convert("RGB"),
-                          Image.open("after.png").convert("RGB"))
+
+d = ImageChops.difference(
+    Image.open("before.png").convert("RGB"), Image.open("after.png").convert("RGB")
+)
 assert d.getbbox() is None, "rendering changed"
 ```
 

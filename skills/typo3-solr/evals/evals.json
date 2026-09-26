@@ -5,6 +5,17 @@
   "note": "Near typo3-seo (search engines, not site search) and typo3-news-tags. Cases lead with on-site search failing.",
   "evals": [
     {
+      "id": "server-and-file-indexing-compatibility",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Our new TYPO314 search stack pairs ext_solr_14_0_0 with the DDEV add-on's old Solr9 image. Can we index uploaded PDFs, and should I publish port8983 on the production host?",
+      "assertions": [
+        "Verifies the extension, Tika, server and configset together against current primary metadata rather than assuming add-on defaults match.",
+        "Does not repeat the obsolete claim that no Tika14 release exists.",
+        "Keeps the Solr administrative endpoint off public interfaces and calls for explicit authentication and network controls."
+      ]
+    },
+    {
       "id": "typo3-solr-trigger-pos-01",
       "kind": "trigger-positive",
       "status": "proposed",

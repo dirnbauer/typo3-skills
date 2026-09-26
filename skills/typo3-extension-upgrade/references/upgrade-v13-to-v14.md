@@ -152,6 +152,27 @@ argument and some public methods — so a match on either is a question rather
 than a defect, and they are deliberately absent from the search above. Work the
 table for those and for everything else, one row at a time rather than merged.
 
+#### Removing the import is not removing the usage
+
+Deleting `use TYPO3\CMS\Frontend\Controller\TypoScriptFrontendController;`
+and leaving `TypoScriptFrontendController::class` in a method body does not
+remove the reference. PHP resolves the unqualified name through the current
+namespace instead, so the code now names a class nobody ever wrote:
+
+```
+Class or interface "Netresearch\Contexts\Tests\Unit\Context\TypoScriptFrontendController"
+does not exist
+```
+
+Measured, and it is worse than it looks: on the target line the class is gone
+either way, so this edit changes nothing there — but on the line the extension
+still has to support, the class *does* exist, and the import was what reached
+it. Removing the import breaks the leg that was working while leaving the
+broken one broken. One trial passed v14.3 and lost v13.4 to exactly this, five
+errors, all of them a mock on a name that resolves nowhere.
+
+Search for the class name, not the import line, and change the usage.
+
 #### When the hit is a mock target
 
 `createMock(RemovedClass::class)` cannot be repaired by replacing a type. There
@@ -234,6 +255,8 @@ private $context = null;
 | TCA `eval=year` removed | #98070 | `grep -rn "'eval'.*year" Configuration/TCA/` | integer field |
 | TCA `pages.url` field removed | #17406 | `grep -rn "pages\\.url" Configuration/TCA/` | typolink page type |
 | `tt_content.list_type` removed | #105538, #105377 | `grep -rn "list_type\|addPlugin" Configuration/` | CType-only plugins; drop 2nd/3rd args of `addPlugin()` |
+| TypoScript referencing a `list_type` plugin | consequence of #105538 | `grep -rn "tt_content\.list\.20\." Configuration/ ../*/Configuration/` | Point at `tt_content.<signature>`; a stale reference does **not** error (see below) |
+| `ErrorController` is `readonly` | v14 core | `grep -rn "extends ErrorController" Classes/` | A non-readonly subclass cannot extend it — fatal at container build |
 | EXT:form hooks removed (10 hooks) | many | `grep -rn "'afterBuildingFinished'\|beforeFormCreate\|beforeFormSave\|beforeFormDelete\|beforeFormDuplicate\|initializeFormElement\|beforeRemoveFromParentRenderable\|afterInitializeCurrentPage\|afterSubmit\|beforeRendering" ext_localconf.php Classes/` | PSR-14 events |
 | `TypolinkBuilder` signature changed | #106405 | `grep -rn "extends AbstractTypolinkBuilder\|TypolinkBuilder" Classes/ Tests/` | Implement `TypolinkBuilderInterface` |
 | Bootstrap Modal → native `<dialog>` | #107443 | `grep -rn "Modal.advanced\|bootstrap.*modal" Resources/Public/JavaScript/` | Native `<dialog>` API |
@@ -244,6 +267,25 @@ private $context = null;
 | CSS/JS concat & compression removed | #108055 | `grep -rn "concatenateCss\|concatenateJs\|compressCss\|compressJs" Configuration/TypoScript/` | Use build tools (webpack/vite) |
 | Frontend HTTP compression removed | #107943 | check TypoScript `config.compressionLevel` | Delegate to web server (nginx/Apache) |
 | Extbase `ActionController->view` typed | #105377 | — | Type-check any custom controller overrides |
+
+### A CType migration orphans TypoScript references, silently
+
+`ExtensionUtility::configurePlugin()` with `PLUGIN_TYPE_CONTENT_ELEMENT`
+registers the plugin under `tt_content.<extension>_<plugin>`. Anything that
+still says `tt_content.list.20.<extension>_<plugin>` — a JSON or RSS page type,
+a custom `PAGE` object, another extension's override — now points at a path
+that does not exist.
+
+That is not an error. `ContentObjectRenderer::mergeTSRef()` keeps the value of
+the deepest segment that *does* exist, so the reference resolves to
+`tt_content.list`, which fluid_styled_content defines as `=< lib.contentElement`
+— a `FLUIDTEMPLATE`. The page type then renders the site's default template
+instead of the plugin, with no log entry.
+
+Search beyond the extension being upgraded: the reference is often in a
+sitepackage or a sibling extension, not next to the registration. On
+extensions.typo3.org a page type did this for five months, from the CType
+migration on 2026-04-01 until someone read the response on 2026-09-14.
 
 ### v14.x deprecations (still callable, removed in v15.0)
 

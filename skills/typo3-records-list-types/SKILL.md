@@ -11,7 +11,7 @@ license: "MIT / CC-BY-SA-4.0"
 
 > Source: https://github.com/dirnbauer/webconsulting-skills
 
-> **Compatibility:** TYPO3 v14.0+ / PHP 8.3+
+> **Compatibility:** Check the selected release's Composer constraints. The [reviewed source](https://github.com/dirnbauer/typo3-records-list-types/blob/9a07a5ceca3b5c8ab3166debb762d96d1d03adcf/composer.json) requires TYPO3 **^14.3.7** and PHP **^8.4** (2026-09-26); this is not a claim of v14.0 / PHP 8.3 compatibility.
 > Extension key: `records_list_types` / Composer package name: `webconsulting/records-list-types`
 > GitHub: https://github.com/dirnbauer/typo3-records-list-types
 >
@@ -33,7 +33,9 @@ Transforms the TYPO3 backend **Records** module with multiple view modes:
 | **Teaser** | Minimal cards with title, date, excerpt | Blog posts, events, press releases |
 | **Custom** | Your own views via TSconfig + Fluid | Timeline, kanban, catalog, gallery |
 
-All views include: pagination, sorting, search, record actions, workspace indicators, dark mode, WCAG 2.1 accessibility.
+Check pagination, sorting, search, record actions, workspace indicators and dark mode in every
+enabled view. Keyboard and ARIA features are not a WCAG conformance certificate; verify the
+installed release with automated and manual accessibility checks.
 
 ### Features
 
@@ -41,7 +43,7 @@ All views include: pagination, sorting, search, record actions, workspace indica
 - **Compact View** -- Dense single-line rows with fixed columns and horizontal scrolling
 - **Teaser View** -- News-style cards with title, date, and description excerpt
 - **Custom Views** -- Register your own view types via PSR-14 events or TSconfig
-- **Drag & Drop** -- Mouse and keyboard reordering with full WCAG 2.1 accessibility
+- **Drag & Drop** -- Mouse and keyboard reordering; verify keyboard, focus and announcements
 - **Language Flags** -- Language flag icons displayed per record in grid cards
 - **Workspace Support** -- Color-coded indicators for new, modified, moved, and deleted records
 - **Dark Mode** -- Full compatibility with TYPO3's dark mode (light/dark themes)
@@ -52,7 +54,7 @@ All views include: pagination, sorting, search, record actions, workspace indica
 - **Image Preview Hint** -- Subtle notice below thumbnails reminding editors that the image may not appear on the frontend for certain record types
 - **Zero-PHP Extensibility** -- Add new view types with just TSconfig + Fluid template + CSS, no PHP classes needed
 - **Search** -- Client-side search filtering across all view modes
-- **Accessibility** -- WCAG 2.1 compliant keyboard navigation, ARIA labels, and screen reader support
+- **Accessibility** -- Keyboard navigation and ARIA patterns; test the actual editor journeys and assistive-technology behavior
 
 ## 2. Installation
 

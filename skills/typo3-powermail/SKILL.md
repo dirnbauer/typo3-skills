@@ -6,295 +6,93 @@ metadata:
   origin: "webconsulting"
 license: "MIT / CC-BY-SA-4.0"
 ---
-# TYPO3 Powermail Development
+# TYPO3 Powermail and Powermail Conditions
 
-> Source: https://github.com/dirnbauer/webconsulting-skills
+Build only the requested form change. Obtain the installed Core/PHP versions, both package
+sources and lock references, form UID, field markers, language, mail transport and expected
+visibility rules before choosing examples. Preserve existing forms, recipient routing and data.
 
-> **Compatibility:** Upstream Powermail **13.x** targets **TYPO3 13.4** and has no v14 release. For a 14.3 project install the maintained fork — see [Powermail on TYPO3 v14](#powermail-on-typo3-v14). Examples use modern TYPO3 APIs where possible; adjust for your Core version.
-> All examples use PHP 8.2+.
+Thank **in2code and the Powermail contributors** for the editor-friendly form system and
+conditional-field engine that make this workflow possible. This independently maintained guide
+documents their work and the separate webconsulting forks; it does not transfer their
+GPL-2.0-or-later source code into this guide's licence.
 
-> **TYPO3 API First:** Always use TYPO3's built-in APIs, core features, and established conventions before creating custom implementations. Do not reinvent what TYPO3 already provides. Always verify that the APIs and methods you use exist and are not deprecated in TYPO3 v14 by checking the official TYPO3 documentation.
+## 1. Resolve the correct version line
 
-> **Supplements:**
-> - [SKILL-CONDITIONS.md](SKILL-CONDITIONS.md) - Conditional field/page visibility (powermail_cond)
-> - PHP 8.4 patterns for finishers, validators, and conditions are covered directly in this skill
-> - [SKILL-EXAMPLES.md](SKILL-EXAMPLES.md) - Multi-step shop form with Austrian legal types, DDEV SQL + DataHandler CLI
+Treat this as a **2026-09-26 source snapshot**, not an eternal compatibility guarantee:
 
-## Powermail vs Core EXT:form
+| Source | Reviewed version/reference | Declared requirements |
+|---|---|---|
+| Public upstream Powermail | 13.3.0 | PHP `^8.2`; Core `^13.4` |
+| Public upstream powermail_cond | 13.1.2 | PHP `^8.2`; Core `^13.4`; Powermail `^13.0 \|\| @dev` |
+| dirnbauer Powermail fork | tag 14.0.3.4 | PHP `>=8.3 <8.6`; Core `^14.3.6` |
+| dirnbauer powermail_cond fork | `typo3-v14` at `fc5324f9` | PHP `^8.4`; Core `^14.3`; Powermail `^14.0` |
 
-These are **different systems**. Do not mix migration advice between them.
+Read [version evidence and installation](references/v14-only-changes.md) before modifying
+Composer. Public upstream advertises a vendor Early Access Programme for v14; do not confuse
+that with a public Packagist release or the dirnbauer forks. Check for a newer compatible
+release, prefer its tag, and commit the reviewed lockfile. A resolved dependency graph does
+not prove rendering, validation or mail delivery.
 
-| | **Powermail (`in2code/powermail`)** | **TYPO3 Core EXT:form** |
-|---|-------------------------------------|-------------------------|
-| **Purpose** | Mail forms built in the Powermail backend module; stored in `tx_powermail_*` tables | Declarative forms (often YAML), `form` framework, finishers defined in YAML/PHP |
-| **Rendering** | Powermail plugins / ViewHelpers / TypoScript | Fluid templates + Core form runtime |
-| **This skill** | Documents Powermail APIs, finishers, validators, events **as shipped by in2code** | Only where **your** code also touches EXT:form (bridges, shared sites, dual form stacks) |
+## 2. Select the smallest workflow
 
-Sections labeled **EXT:form** under [v14-Only Changes](#v14-only-changes) describe **Core** form-framework removals (hooks → PSR-14, storage adapters). They apply to custom code that hooks into **EXT:form**, not to ordinary Powermail-only projects—unless you explicitly integrate both.
+- **Conditional fields/pages:** read [conditions](SKILL-CONDITIONS.md), then the matching
+  [recipe](SKILL-EXAMPLES.md). Keep rule sources outside targets they can hide.
+- **Mail delivery/templates:** inspect plugin recipient configuration, validation/spam results,
+  mail transport and logs; read [templates](references/07-email-templates.md) and
+  [events](references/06-psr-14-events.md). Never diagnose delivery from an HTTP 200 alone.
+- **Custom validation:** read [validators](references/05-custom-validators.md). Treat UI visibility
+  as presentation, not authorization or a substitute for server-side business validation.
+- **External integration:** read [finishers](references/04-custom-finishers.md). Authorize the
+  destination separately; keep secrets out of TypoScript, browser output and logs.
+- **Record provisioning/localization:** use the backend or `typo3-datahandler`; inspect actual TCA.
+  Read [records](references/14-database-structure.md), [localization](references/16-translations-localization.md)
+  and [workspace limits](references/15-workspace-support.md). Do not seed records with raw SQL.
+- **Whole-site upgrade:** return findings to `typo3-upgrade-run`; do not start another retry loop.
 
-## Powermail on TYPO3 v14
+Powermail stores Form → Page → Field and Mail → Answer records. A Powermail page is a fieldset,
+not necessarily a wizard step. Do not apply Core EXT:form YAML finishers or its removed APIs to
+`In2code\Powermail\Finisher\AbstractFinisher`; these are different form systems.
 
-Upstream `in2code/powermail` has **no v14 release yet** — its newest line still requires
-`typo3/cms-core: ^13.4`, so a plain `composer require in2code/powermail` will not resolve in a
-14.3 project. Until upstream ships v14, install the maintained fork:
+## 3. Configure from the installed extension
 
-```json
-{
-    "repositories": [
-        { "type": "vcs", "url": "https://github.com/dirnbauer/powermail" }
-    ],
-    "require": {
-        "in2code/powermail": "dev-typo3-v14"
-    }
-}
-```
+Include the matching shipped TypoScript/site sets before adding overrides. On the reviewed v14
+forks the set names are `in2code/powermail-main` and `in2code/powermail-cond`.
+Do not include both static templates and equivalent site sets without checking duplicate output.
 
-```bash
-ddev composer config repositories.powermail vcs https://github.com/dirnbauer/powermail
-ddev composer require in2code/powermail:dev-typo3-v14
-```
-
-The fork keeps the package name `in2code/powermail`, so it is a drop-in replacement — the VCS
-repository entry simply wins over Packagist for that package. Its `typo3-v14` branch declares
-`typo3/cms-core: ^14.3`; a `typo3-v13` branch also exists for sites still on v13.
-
-Two things to carry into any handover, because a `dev-` requirement is not a released version:
-
-- **It pins to a branch, not a tag.** `composer update` follows the branch, so a deploy can pick up
-  changes that were never reviewed. Commit `composer.lock` and treat an update of this package as a
-  change that needs re-testing, not a routine bump.
-- **Revisit it.** When upstream publishes a v14 release, drop the `repositories` entry and require
-  the released version instead. Record the fork in the deployment handover as technical debt with
-  that exit condition, so it is not still there in two years.
-
-## 1. Architecture Overview
-
-### Domain Model Hierarchy
-
-```
-Form (tx_powermail_domain_model_form)
- └── Page (tx_powermail_domain_model_page)
-      └── Field (tx_powermail_domain_model_field)
-
-Mail (tx_powermail_domain_model_mail)
- └── Answer (tx_powermail_domain_model_answer)
-      └── references Field
-```
-
-### Plugin Registration
-
-- **Pi1** (cached/uncached): `form`, `create`, `confirmation`, `optinConfirm`, `disclaimer`
-- **Pi5** (uncached): `marketing` (AJAX tracking)
-
-### Composer
-
-```bash
-composer require in2code/powermail
-```
-
-Typical requirements (always confirm the **current** release on [Packagist](https://packagist.org/packages/in2code/powermail)): PHP **^8.2**, **`typo3/cms-core: ^13.4`** — the newest *upstream* powermail line still targets v13.4 and has no v14 release, so this is a genuine blocker for a v14 project, not an oversight. See "Powermail on TYPO3 v14" below for what to install meanwhile. Plus ext-json, ext-gd, ext-fileinfo, ext-curl. **Do not assume TYPO3 v14** until the package constraint is updated upstream.
-
-## 2. Field Types
-
-| Type | Key | Value Type | Notes |
-|------|-----|------------|-------|
-| Text | `input` | TEXT (0) | Standard input |
-| Textarea | `textarea` | TEXT (0) | Multi-line |
-| Select | `select` | TEXT/ARRAY (0/1) | Multiselect possible |
-| Checkbox | `check` | ARRAY (1) | Multiple values |
-| Radio | `radio` | TEXT (0) | Single selection |
-| Submit | `submit` | — | Form submit button |
-| Captcha | `captcha` | TEXT (0) | Built-in CAPTCHA |
-| Reset | `reset` | — | Form reset button |
-| Static text | `text` | — | Display only |
-| Content element | `content` | — | CE reference |
-| HTML | `html` | TEXT (0) | Raw HTML |
-| Password | `password` | PASSWORD (4) | Hashed storage |
-| File upload | `file` | UPLOAD (3) | File attachments |
-| Hidden | `hidden` | TEXT (0) | Hidden input |
-| Date | `date` | DATE (2) | Datepicker |
-| Country | `country` | TEXT (0) | Country selector |
-| Location | `location` | TEXT (0) | Geolocation |
-| TypoScript | `typoscript` | TEXT (0) | TS-generated content |
-
-### Answer Value Types
-
-```php
-Answer::VALUE_TYPE_TEXT     = 0;  // String values
-Answer::VALUE_TYPE_ARRAY    = 1;  // JSON-encoded arrays (checkboxes, multiselect)
-Answer::VALUE_TYPE_DATE     = 2;  // Timestamps
-Answer::VALUE_TYPE_UPLOAD   = 3;  // File references
-Answer::VALUE_TYPE_PASSWORD = 4;  // Hashed passwords
-```
-
-## 3. TypoScript Configuration
-
-### Essential Settings
+Example **setup** override (adapt addresses to an authorized test mailbox):
 
 ```typoscript
-plugin.tx_powermail {
-    settings {
-        setup {
-            # Form settings
-            main {
-                pid = {$plugin.tx_powermail.settings.main.pid}
-                form = {$plugin.tx_powermail.settings.main.form}
-                confirmation = 0
-                optin = 0
-                morestep = 0
-            }
-
-            # Receiver mail
-            receiver {
-                enable = 1
-                subject = Mail from {firstname} {lastname}
-                body = A new mail from your website
-                senderNameField = firstname
-                senderEmailField = email
-                # Override receiver: receiver.overwrite.email = admin@example.com
-                # Attach uploads: receiver.attachment = 1
-                # Add CC: receiver.overwrite.cc = copy@example.com
-            }
-
-            # Sender confirmation mail
-            sender {
-                enable = 1
-                subject = Thank you for your message
-                body = We received your submission
-                senderName = Website
-                senderEmail = noreply@example.com
-            }
-
-            # Double Opt-In
-            optin {
-                subject = Please confirm your submission
-                senderName = Website
-                senderEmail = noreply@example.com
-            }
-
-            # Thank you page
-            thx {
-                redirect = # Page UID for redirect after submit
-            }
-
-            # Spam protection — numeric `methods` keys (matches EXT:powermail `12_Spamshield.typoscript`)
-            spamshield {
-                _enable = 1
-                factor = 75
-                methods {
-                    1 {
-                        _enable = 1
-                        class = In2code\Powermail\Domain\Validator\SpamShield\HoneyPodMethod
-                        indication = 5
-                        configuration { }
-                    }
-                    2 {
-                        _enable = 1
-                        class = In2code\Powermail\Domain\Validator\SpamShield\LinkMethod
-                        indication = 3
-                        configuration {
-                            linkLimit = 2
-                        }
-                    }
-                    3 {
-                        _enable = 1
-                        class = In2code\Powermail\Domain\Validator\SpamShield\NameMethod
-                        indication = 3
-                        configuration { }
-                    }
-                    # SessionMethod sets a cookie when enabled — shipping TypoScript uses _enable = 0
-                    4 {
-                        _enable = 0
-                        class = In2code\Powermail\Domain\Validator\SpamShield\SessionMethod
-                        indication = 5
-                        configuration { }
-                    }
-                    5 {
-                        _enable = 1
-                        class = In2code\Powermail\Domain\Validator\SpamShield\UniqueMethod
-                        indication = 2
-                        configuration { }
-                    }
-                    6 {
-                        _enable = 1
-                        class = In2code\Powermail\Domain\Validator\SpamShield\ValueBlacklistMethod
-                        indication = 7
-                        configuration {
-                            values = TEXT
-                            values.value = viagra,sex,porn
-                        }
-                    }
-                    7 {
-                        _enable = 1
-                        class = In2code\Powermail\Domain\Validator\SpamShield\IpBlacklistMethod
-                        indication = 7
-                        configuration {
-                            values = TEXT
-                            values.value = 203.0.113.1
-                        }
-                    }
-                    8 {
-                        _enable = 1
-                        class = In2code\Powermail\Domain\Validator\SpamShield\RateLimitMethod
-                        indication = 100
-                        configuration {
-                            interval = 5 minutes
-                            limit = 10
-                            restrictions {
-                                10 = __ipAddress
-                                20 = __formIdentifier
-                            }
-                        }
-                    }
-                }
-            }
-
-            # Validation
-            misc {
-                htmlForLabels = 1
-                showOnlyFilledValues = 1
-                ajaxSubmit = 0
-                file {
-                    folder = uploads/tx_powermail/
-                    size = 25000000
-                    extension = jpg,jpeg,gif,png,tif,txt,doc,docx,xls,xlsx,ppt,pptx,pdf,zip,csv,svg
-                }
-            }
-        }
-    }
+plugin.tx_powermail.settings.setup {
+    receiver.overwrite.email = TEXT
+    receiver.overwrite.email.value = forms@example.org
+    receiver.overwrite.senderEmail = TEXT
+    receiver.overwrite.senderEmail.value = website@example.org
+    sender.overwrite.senderEmail = TEXT
+    sender.overwrite.senderEmail.value = website@example.org
+    misc.ajaxSubmit = 0
 }
 ```
 
-### Prefill Fields via TypoScript
+Keep a verified site-domain sender; select the visitor email/name fields in the form editor.
+Use the installed `03_MailReceiver.typoscript` and `04_MailSender.typoscript` for additional
+overrides. Many values are cObjects: a bare `overwrite.email = address` is not equivalent to
+`TEXT` plus `.value`. Leave spam shield defaults intact until the actual false positive is
+identified; do not paste a complete outdated replacement configuration.
 
-```typoscript
-plugin.tx_powermail.settings.setup.prefill {
-    # By field marker
-    email = TEXT
-    email.data = TSFE:fe_user|user|email
+## 4. Prove the requested behavior
 
-    firstname = TEXT
-    firstname.data = TSFE:fe_user|user|first_name
+For every changed form, record version/commit, URL, form UID, language, expected inputs and
+actual outcomes. Test initial state, both directions of each condition, invalid/valid submission,
+required hidden fields, fast change-then-submit, failed condition requests and back navigation.
+Inspect the condition JSON and final request payload, not only screenshots.
 
-    # Prefill from GET/POST
-    subject = TEXT
-    subject.data = GP:subject
-}
-```
+Use an authorized local mail sink. Verify recipient/sender, content, storage and each finisher;
+test confirmation and opt-in only if enabled. Check keyboard operation, focus and errors when a
+field disappears. For uploads verify both condition-request exclusion and final submission.
+Never send real customer data to a test service.
 
-### Marketing Information
-
-```typoscript
-plugin.tx_powermail.settings.setup.marketing {
-    enable = 1
-    # Tracked: refererDomain, referer, country, mobileDevice, frontendLanguage, browserLanguage, pageFunnel
-}
-```
-
-
-## Detailed Reference
-
-Read [the full guide](references/full-guide.md) when the task needs detailed examples, long templates, troubleshooting matrices, appendices, or sections not included above. Keep this file unloaded for narrow tasks so the skill follows progressive disclosure.
-
-For a TYPO3 v14 migration or fork audit, also read
-[v14-only changes](references/v14-only-changes.md).
+Report source inspection, syntax/unit checks and actual TYPO3/browser/mail tests separately.
+Stop with an explicit gap if no runnable project fixture exists. Do not call unexecuted examples
+production-ready. See [test recipe](SKILL-EXAMPLES.md#browser-acceptance-test) and the
+[reference index](references/full-guide.md) for bounded follow-up.

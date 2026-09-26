@@ -58,6 +58,9 @@ comparison or specific accepted visible changes. Broad SCSS redesign remains Con
 This skill is based on the excellent work by **Netresearch DTT GmbH**.
 Original repository: https://github.com/netresearch/typo3-vite-skill
 
-Special thanks to Netresearch for publishing and maintaining these skills.
+Special thanks to the Netresearch team for generously sharing the practical TYPO3 and PHP
+expertise behind these skills, and for the continuing care they put into their documentation,
+examples and maintenance. Their work gives this collection a foundation we are genuinely
+grateful to build on.
 Copyright (c) Netresearch DTT GmbH; original licence files are preserved.
 Adapted by webconsulting.at for this skill collection through this overlay only; the upstream skill is unmodified.

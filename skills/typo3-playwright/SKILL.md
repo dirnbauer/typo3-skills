@@ -33,6 +33,10 @@ metadata:
 7. Emit command, exit code, expected/executed/failed/skipped counts, tool/browser versions,
    role/URL coverage, artifact hashes and proof epoch. Missing assertions or unexpected skips fail.
 
+For a reported regression or a review of an existing journey suite, read
+[QA review patterns](references/qa-review-patterns.md): minimize the reproduction, distinguish
+missing requirements from weak assertions, and prioritize checks without waiving planned coverage.
+
 ## Required journeys when the feature exists
 
 | Surface | Assertions |

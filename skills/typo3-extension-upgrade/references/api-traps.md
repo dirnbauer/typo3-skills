@@ -4,6 +4,52 @@ Architectural rules and silent footguns that bite across TYPO3 v12, v13, and v14
 
 ---
 
+## Establish an API Fact Before You Write It Down
+
+Every entry below is a claim about a class that ships in a specific branch of
+`TYPO3/typo3`. Recalling one is how three of them get stated at once and one of
+them is wrong — the wrong one reads exactly like the other two, and it survives
+review because the diff shows the sentence, not the source.
+
+Two calls settle it, and they need no checkout:
+
+```bash
+# 1. Does it exist, and on WHICH branches? Run it per supported LTS.
+#    Judge on the EXIT STATUS: a 404 body still prints, and --jq emits `null`
+#    for it, so an emptiness test reports the opposite of the truth.
+P=typo3/sysext/core/Classes/Attribute/AsEventListener.php
+for r in 12.4 13.4 14.3; do
+  if gh api "repos/TYPO3/typo3/contents/$P?ref=$r" >/dev/null 2>&1
+  then echo "$r: present"
+  else echo "$r: ABSENT"
+  fi
+done
+
+# 2. Who dispatches or consumes it? The dispatch SITES bound the scope claim.
+gh api "search/code?q=EntityAddedToPersistenceEvent+repo:TYPO3/typo3" --jq '.items[].path'
+```
+
+Call 1 dates the API. An attribute or class absent from `12.4` and present on
+`13.4` means the dual-compatibility note is mandatory, not optional — this is
+how `#[AsEventListener]` is v13+ while the `Services.yaml` `event.listener` tag
+covers v12 (`upgrade-v12-to-v13.md`).
+
+Call 2 is what licenses a *scope* claim, and it is the one that gets skipped.
+"Fires for every entity being persisted" is a statement about the call sites: if
+`search/code` returns exactly one dispatch site, open it and read the
+surrounding method, because that method's name is the real scope. For
+`EntityAddedToPersistenceEvent` the single site is
+`Extbase/Classes/Persistence/Generic/Backend.php::insertObject`, immediately
+after `_setProperty(PROPERTY_UID, $uid)` — which yields three facts no summary
+carries: the UID is available to the listener, the event fires on *insert* only,
+and a record written through DataHandler produces no Extbase event at all.
+
+Write the branch you checked into the sentence you publish. A claim that names
+`13.4` can be re-checked in one call; one that names "v13" cannot be
+distinguished from a memory.
+
+---
+
 ## `Connection::select()` Applies TCA Restrictions Silently
 
 `TYPO3\CMS\Core\Database\Connection::select()` (the convenience wrapper, not the QueryBuilder fluent API) applies the **default `RestrictionContainer`**, which includes `DeletedRestriction`, `HiddenRestriction`, and `StartTimeRestriction` per TCA. Code reaching for "I just want to read the row" misses every soft-deleted / hidden / time-restricted record.
@@ -209,6 +255,44 @@ new AjaxRequest(actionUrl).withQueryArguments({ target: identifier }).get();
 ```
 
 **Verification caveat**: do not assume a version-spanning "pre-existing bug" claim from extension-code similarity alone. The extension's own JS file can be byte-identical across v12/v13/v14 checkouts while TYPO3 core's own `ajax-request.js`/`input-transformer.js`/`url-factory.js` differ per version — read the actual vendored core JS for **each** version under test (`vendor/typo3/cms-core/Resources/Public/JavaScript/ajax/*.js`) rather than diffing only the extension's own file, and reproduce the exact call path in Node (or a real browser) per version before generalizing a fix across a v12/v13/v14 maintenance-branch set. See `verification.md`.
+
+---
+
+## An `ErrorController` Response Must Be Thrown, Not Returned
+
+An Extbase action that asks `ErrorController` for a 404 and then returns or
+discards the response answers **HTTP 200 with the normal page**. The status
+only reaches the client when the response is thrown:
+
+```php
+$response = GeneralUtility::makeInstance(ErrorController::class)
+    ->pageNotFoundAction($request, 'Not found', ['code' => PageAccessFailureReasons::INVALID_PAGE_ARGUMENTS]);
+throw new PropagateResponseException($response, 1234567890);
+```
+
+`PropagateResponseException` extends `ImmediateResponseException`, which the
+content object exception handler rethrows before it renders anything
+(`ProductionExceptionHandler::handle()`), and which the `ResponsePropagation`
+middleware turns back into the response. Returning it instead hands a response
+object to a caller that discards it; discarding it outright means the action
+carries on and renders its template.
+
+### Search Pattern
+
+```bash
+# every ErrorController use in an Extbase action
+grep -rn "ErrorController::class" Classes/
+# then read each enclosing action: the response must reach
+# `throw new PropagateResponseException(...)`, which need not be the next line
+```
+
+### Affected
+
+Any Extbase controller action that asks `ErrorController` for a response, in
+all versions since v10. On extensions.typo3.org one controller had the throwing
+form and another the discarding form in the same class, so `/extension/`
+without a key answered 200 with "No public version of this extension
+available." while `/package/` correctly answered 404.
 
 ---
 

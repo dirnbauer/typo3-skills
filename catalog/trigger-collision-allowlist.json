@@ -2,6 +2,7 @@
   "schema": 1,
   "note": "Explicit September import overlaps, not a fungible collision budget. Native descriptions retain useful domain terms; upstream files remain immutable. New pairs or larger overlaps fail. These are recorded maintainer policies, not human-signed eval coverage.",
   "pairs": [
+    {"a": "typo3-conformance", "b": "typo3-extension-upgrade", "max_overlap": 0.155, "reason": "Immutable September upstream wording explicitly routes a requested version raise to extension-upgrade; conformance owns assessment of current metadata/quality only. Both local overlays repeat that boundary; a conformance audit cannot satisfy a requested migration."},
     {"a": "web-design-guidelines", "b": "web-platform-design", "max_overlap": 0.32, "reason": "Immutable Vercel/ehmo guidance; select UI review versus platform implementation by the request."},
     {"a": "postgres-best-practices", "b": "web-design-guidelines", "max_overlap": 0.16, "reason": "Immutable sources share generic design/review terms; database work is distinct from UI review."},
     {"a": "typo3-project-upgrade", "b": "typo3-typoscript-ref", "max_overlap": 0.15, "reason": "Project-upgrade is a companion through the local graph; TypoScript reference remains standalone."},

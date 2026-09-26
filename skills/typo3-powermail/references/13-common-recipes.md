@@ -1,68 +1,15 @@
-# 13. Common Recipes
+# Common recipe routing
 
-Continues `typo3-powermail` from [full guide](full-guide.md).
+- Conditional recipients: [PSR-14/routing guide](06-psr-14-events.md).
+- Conditional fields, checkbox groups, thresholds and wizard pages:
+  [condition recipes](../SKILL-EXAMPLES.md).
+- Upload optimization: [condition AJAX integration](../SKILL-CONDITIONS.md#exclude-uploads-from-condition-ajax).
+- Templates: [root-path overrides](07-email-templates.md).
+- Cross-field equality: [server validation](05-custom-validators.md).
+- CRM: [finisher boundary](04-custom-finishers.md).
 
-## 13. Common Recipes
+Do not use `manipulateVariablesInPowermailAllMarker` to pretend to create persistent fields.
+That configuration modifies output variables. Provision real fields through the backend or
+DataHandler, then validate their values separately.
 
-### Route Enhancer for SEO-Friendly URLs
-
-```yaml
-routeEnhancers:
-  PowermailOptIn:
-    type: Plugin
-    routePath: '/optin/{mail}/{hash}'
-    namespace: 'tx_powermail_pi1'
-    requirements:
-      mail: '\d+'
-      hash: '[a-zA-Z0-9]+'
-```
-
-### Conditional Receiver Based on Form Field
-
-Use `ReceiverMailReceiverPropertiesServiceSetReceiverEmailsEvent` (see Section 6).
-
-### Custom Spam Shield Method
-
-```php
-<?php
-
-declare(strict_types=1);
-
-namespace Vendor\MyExt\SpamShield;
-
-use In2code\Powermail\Domain\Validator\SpamShield\AbstractMethod;
-
-final class ApiCheckMethod extends AbstractMethod
-{
-    public function spamCheck(): bool
-    {
-        $mail = $this->mail;
-        // Return true if spam detected
-        return $this->callExternalApi($mail);
-    }
-}
-```
-
-Register in TypoScript:
-
-```typoscript
-plugin.tx_powermail.settings.setup.spamshield.methods {
-    100 {
-        class = Vendor\MyExt\SpamShield\ApiCheckMethod
-        _enable = 1
-        configuration {
-            apiUrl = https://spam-api.example.com
-        }
-    }
-}
-```
-
-### Extend Form with TypoScript-Generated Fields
-
-```typoscript
-plugin.tx_powermail.settings.setup.manipulateVariablesInPowermailAllMarker {
-    timestamp = TEXT
-    # Avoid `strftime` (removed in PHP 8.4); use TEXT `date:` data instead
-    timestamp.data = date:Y-m-d H:i:s
-}
-```
+Source: [output marker configuration](https://github.com/dirnbauer/powermail/blob/f58c5ff2b927f471985c19e6e366216df68cf54d/Configuration/TypoScript/Main/Configuration/22_ManipulateVariablesInPowermailAllMarker.typoscript).

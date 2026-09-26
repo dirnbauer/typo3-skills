@@ -1,49 +1,19 @@
-# 12. Extension Best Practices
+# Extension boundaries
 
-Continues `typo3-powermail` from [full guide](full-guide.md).
-
-## 12. Extension Best Practices
-
-### Register Services (Services.yaml)
-
-```yaml
-services:
-  Vendor\MyExt\EventListener\CrmSyncListener:
-    tags:
-      - name: event.listener
-        identifier: 'vendor-myext/crm-sync'
-```
-
-Or use the `#[AsEventListener]` attribute (preferred on TYPO3 v14).
-
-### Access Mail Answers Efficiently
+Read installed signatures before calling methods. Guard a missing answer before dereferencing it:
 
 ```php
-// By field marker (most common)
 $answers = $mail->getAnswersByFieldMarker();
-$email = $answers['email']?->getValue();
-
-// By field UID
-$answers = $mail->getAnswersByFieldUid();
-
-// Filter by value type
-$uploads = $mail->getAnswersByValueType(Answer::VALUE_TYPE_UPLOAD);
+$email = ($answers['email'] ?? null)?->getValue();
 ```
 
-### Custom Data on Mail Object
+The nullsafe operator alone does not suppress an undefined array key.
+Treat `getValue()` as potentially non-string. `getAdditionalData()`/`addAdditionalData()`
+carry in-memory data; do not assume automatic database persistence.
 
-```php
-// Add custom data (available in all finishers/events)
-$mail->addAdditionalData('crm_id', $crmResponse['id']);
+Configure rate-limit methods in the installed spamshield TypoScript. Inspect Scheduler
+registration/retention settings rather than claiming all stored mail is automatically deleted.
+Keep credentials in the approved secret mechanism; log identifiers and outcomes, not answers.
 
-// Retrieve in another finisher/event
-$crmId = $mail->getAdditionalData()['crm_id'] ?? null;
-```
-
-### Rate Limiting
-
-Powermail uses Symfony RateLimiter. Configure in `ext_conf_template.txt` or extension settings.
-
-### Garbage Collection
-
-Powermail auto-registers garbage collection for mails and answers (default: 30 days). Configure via Scheduler task `TableGarbageCollectionTask`.
+Source: [Mail model](https://github.com/dirnbauer/powermail/blob/f58c5ff2b927f471985c19e6e366216df68cf54d/Classes/Domain/Model/Mail.php),
+[spamshield configuration](https://github.com/dirnbauer/powermail/blob/f58c5ff2b927f471985c19e6e366216df68cf54d/Configuration/TypoScript/Main/Configuration/12_Spamshield.typoscript).

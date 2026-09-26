@@ -137,6 +137,41 @@ composer test
 
 Reserve plain `phpunit --filter=SomeClass` for a single class. (This is the concrete reason behind Best Practice "Single Entry Point — all tests via `runTests.sh`, not direct PHPUnit".)
 
+## Gotcha: A `--filter` That Matches Nothing Exits 0
+
+PHPUnit treats "no test matched your filter" as a successful run. The output is
+
+```
+PHPUnit 10.5.63 by Sebastian Bergmann and contributors.
+...
+No tests executed!
+```
+
+and the exit code is **0**. Read only the status and a filter typo is
+indistinguishable from a green suite — which is worse than a red one, because
+the change it was meant to cover is now believed to be tested.
+
+The filter matches the **test name**, which for a data-provider case is
+`TestClass::testMethod with data set "<key>"` — the key the provider returned,
+not a file path. A provider that keys its sets by a directory name gives keys
+like `table`, not `markdown-rendering/table`, so the longer, more specific
+string matches nothing:
+
+```bash
+vendor/bin/phpunit --testsuite=integration --filter 'markdown-rendering/table'
+# No tests executed!   exit 0
+vendor/bin/phpunit --testsuite=integration --filter 'table'
+# 7 / 7 (100%)          exit 0
+```
+
+**Accept a filtered run on its test count, never on its exit code.** The
+summary line (`Tests: 7, Assertions: 66`) or the progress line (`....... 7 / 7`)
+is the evidence; `OK (7 tests)` and `No tests executed!` both exit 0. This is
+the same failure shape as the OOM above — a run that produced no verdict
+reporting success — and it bites hardest in the red-green loop, where a
+mistyped filter makes the red step look green and the fix gets written against
+a test that never ran.
+
 ## Database Support
 
 ### SQLite (Default)

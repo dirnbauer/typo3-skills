@@ -86,6 +86,7 @@ In Development context, exceptions include a stack trace in the browser. Set `TY
 3. **Clear all caches** — Backend > Flush all caches (lightning bolt). TypoScript is cached; changes require a cache flush.
 4. **Check template hierarchy** — Sys_template records inherit from parent pages. Verify the root template has the "Root" flag set.
 5. **Check context** — `[context("..")]` conditions depend on application context (Production, Development).
+6. **Check that every `=<` target still exists** — a reference into a path that was removed or renamed does not fail. TYPO3 keeps the value of the deepest existing segment, so `=< tt_content.list.20.myext_pi1` falls back to `tt_content.list` and renders whatever that is. Nothing appears in the log; the page simply shows the wrong thing.
 
 ```typoscript
 # Verify a value is set by outputting it directly

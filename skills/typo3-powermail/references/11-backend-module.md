@@ -1,19 +1,8 @@
-# 11. Backend Module
+# Backend inspection
 
-Continues `typo3-powermail` from [full guide](full-guide.md).
+Inspect the installed module registration and the actual editor's permissions. Do not assume
+navigation labels or available exports stayed unchanged across Core/package versions.
+Trace a submission by form UID, storage PID and timestamp; redact personal data from reports.
+Verify CSV/spreadsheet export permissions and formula handling with a synthetic fixture.
 
-## 11. Backend Module
-
-Powermail provides a backend module under **Web > Powermail**:
-
-- **List**: Browse/filter/search submitted mails
-- **Export**: CSV and Excel (PhpSpreadsheet) export
-- **Reporting**: Form analytics and marketing charts
-- **System Check**: Verify configuration (admin only)
-
-### Live Search
-
-Search mails and forms directly from TYPO3 search bar:
-
-- `#mail:searchterm` - Search in mails
-- `#form:searchterm` - Search in forms
+Source: [backend registration](https://github.com/dirnbauer/powermail/blob/f58c5ff2b927f471985c19e6e366216df68cf54d/Configuration/Backend/Modules.php).

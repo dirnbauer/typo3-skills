@@ -5,6 +5,18 @@
   "note": "Near the vendored security-audit (general OWASP assessment and scoring) - this one hardens a TYPO3 installation specifically. Cases lead with the TYPO3 artefact being hardened.",
   "evals": [
     {
+      "id": "hardening-examples-respect-runtime-boundaries",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Review our deployment checklist: Apache LocationMatch in .htaccess, recursively give www-data the application tree, and rely on Extbase trustedProperties to stop cross-site requests to an anonymous contact endpoint.",
+      "assertions": [
+        "Places LocationMatch only in Apache server or virtual-host configuration and requires config validation before reload.",
+        "Keeps application code owned by deployment identity and limits runtime write permissions to inspected writable paths.",
+        "Distinguishes property-mapping integrity from CSRF protection, does not manually inject the reserved field, and checks anonymous-session token behavior.",
+        "Supplies the request explicitly to a standalone FormProtectionFactory example and requires server-side rejection of invalid tokens."
+      ]
+    },
+    {
       "id": "typo3-security-trigger-pos-01",
       "kind": "trigger-positive",
       "status": "proposed",

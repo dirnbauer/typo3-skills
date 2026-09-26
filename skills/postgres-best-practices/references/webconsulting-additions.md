@@ -37,8 +37,8 @@ partitioning, connection limits and pooling, `EXPLAIN ANALYZE`, vacuum and bloat
 
 ## Why this skill ships no eval suite
 
-Vendored skills are exempt from the eval requirement (`SKILL-SPEC.md` S4), and the eval runner and
-collision analyser both skip them. A suite here would be a file no tool reads — which S13 ("a rule
-enforced by nothing is not a rule") specifically warns against. The routing risk this skill carries
-is real, so it is handled where an agent will actually encounter it: the boundary table above. If
-this skill is ever un-vendored and maintained here, it needs a real suite at that point.
+Vendored skills are exempt from the eval-suite requirement (`SKILL-SPEC.md` S4); the suite runner
+skips their upstream cases. Their descriptions still participate in the routing corpus and
+collision analyser. Keep the boundary table above explicit and exercise ambiguous requests in
+the owning collection-maintained skills' negative cases. If this skill is ever un-vendored and
+maintained here, it needs its own collection-format suite at that point.

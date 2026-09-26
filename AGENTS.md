@@ -64,9 +64,9 @@ Do not push elsewhere, silently rewrite remotes, or include unrelated changes.
 
 | Skill | Owner | What it does |
 |---|---|---|
-| `typo3-conformance` | **Netresearch** (vendored) | Use when checking which TYPO3 versions an extension says it supports, when composer.json and ext_emconf.php disagree, when a version bump must re… |
+| `typo3-conformance` | **Netresearch** (vendored) | Use when checking which TYPO3 versions an extension says it supports, when composer.json and ext_emconf.php disagree, when a version bump has lef… |
 | `typo3-simplify` | **Anthropic** (vendored) | Simplify and refine TYPO3 extension code for clarity, consistency, and maintainability while preserving functionality. Reviews PHP classes, Fluid temp… |
-| `typo3-testing` | **Netresearch** (vendored) | Use when setting up TYPO3 extension test infrastructure, writing unit/functional/E2E tests, configuring PHPUnit 11/12/13, mutation testing, mocki… |
+| `typo3-testing` | **Netresearch** (vendored) | Use when a reported defect has to be reproduced as a failing test before it is fixed, when a change to a template or to any rendered output has t… |
 | `php-modernization` | **Netresearch** (vendored) | Use when modernizing PHP code: PHP 8.1-8.5 features, PSR/PHP-FIG/PER-CS compliance, PHPStan/Rector/PHP-CS-Fixer/PHPat tooling, DTOs/enums/readonl… |
 | `enterprise-readiness` | **Netresearch** (vendored) | Use when evaluating projects for production or enterprise readiness, implementing supply chain security (SLSA, cosign, SBOMs, pnpm), hardening CI… |
 
@@ -85,7 +85,7 @@ Do not push elsewhere, silently rewrite remotes, or include unrelated changes.
 | `security-audit` | **Netresearch** (vendored) | Use when conducting security assessments — OWASP Top 10 / API / LLM, CWE Top 25, CVSS scoring — auditing PHP/TYPO3, APIs, frontend, Terraform/K8s… |
 | `typo3-accessibility` | webconsulting | Audits and implements TYPO3 accessibility patterns for WCAG 2.2 AA, including Fluid templates, PHP helpers, JavaScript widgets, forms, focus states, A… |
 | `typo3-wcag22-aa-agentic` | webconsulting | Use this skill to audit, fix, and document accessibility for TYPO3 websites and Fluid sitepackages. It orchestrates Playwright, axe-core, optional Deq… |
-| `typo3-docs` | **Netresearch** (vendored) | Use when creating, editing, or reviewing TYPO3 extension documentation (Documentation/*.rst, guides.xml, README.md, XLF translations), rendering … |
+| `typo3-docs` | **Netresearch** (vendored) | Use when TYPO3 extension documentation has to render on docs.typo3.org, which builds a manual from Documentation/guides.xml and reads no Settings… |
 | `typo3-core-contributions` | **Netresearch** (vendored) | Use when contributing to TYPO3 Core — Forge issues, Gerrit patches, cherry-picks, CI debugging — or when working on **git.typo3.org**, the t3o si… |
 
 ## Supporting
@@ -166,7 +166,7 @@ and keeps `SKILL.md` under 500 lines with detail in `references/`.
 ```
 
 A generated eval is a **draft**, a hand-written one **proposed**, and only a **reviewed** case
-signed by a person counts as coverage. Current: 40/40 collection-maintained skills have suites, 5/40 have human-reviewed coverage, and 38 suites include proposed cases awaiting signature.
+signed by a person counts as coverage. Current: 40/40 collection-maintained skills have suites, 5/40 have human-reviewed coverage, and 39 suites include proposed cases awaiting signature.
 
 ## Conventions
 

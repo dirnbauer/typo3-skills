@@ -4,7 +4,7 @@ description: "Use when modernizing PHP code: PHP 8.1-8.5 features, PSR/PHP-FIG/P
 license: "(MIT AND CC-BY-SA-4.0)"
 compatibility: "Requires php 8.1+, composer."
 metadata:
-  version: "1.23.0"
+  version: "1.23.5"
   repository: "https://github.com/netresearch/php-modernization-skill"
   author: "Netresearch DTT GmbH"
 allowed-tools:
@@ -49,7 +49,9 @@ allowed-tools:
 | Immutability | `references/immutability-boundaries.md` |
 | Contracts & invariants | `references/contracts-and-invariants.md` |
 | Mutation testing | `references/mutation-testing.md` |
+| Lexing PHP as tokens, across versions | `references/lexing-php-across-versions.md` |
 | Migration planning | `references/migration-strategies.md` |
+| Public API inventory vs consumers | `references/public-api-inventory.md` |
 | PHPUnit 12→13, mock vs stub | `references/phpunit-modernization.md` |
 | Multi-agent dispatch hazards | `references/multi-agent-pitfalls.md` |
 | Reading a PHP config file without running it | `references/reading-php-config-safely.md` |

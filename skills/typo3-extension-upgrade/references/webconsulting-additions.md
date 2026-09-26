@@ -3,6 +3,30 @@
 > **Overlay.** The vendored `SKILL.md` and references remain upstream-owned. These additions record
 > project-tested TYPO3 v14 workflow constraints.
 
+## Migration versus assessment
+
+A requested extension version raise stays here until target installation and runtime checks are
+accounted for. Use `typo3-conformance` for a bounded metadata/quality assessment; its scan is not
+the migration's completion proof. A whole-site upgrade remains owned by `typo3-upgrade-run`.
+
+## Class references and clean installs: corrections to upstream shorthand
+
+Scan production code and tests for removed APIs, but classify each result. A PHP `use`
+alias does not load its target. An unresolved property/parameter/return type declaration
+also does not invariably fail when the file is loaded. Inheritance, interface/trait
+resolution, reflection/autoloading, instantiation and PHPUnit mock creation can require
+the class at different times. Do not delete imports or skip tests just to silence a scan;
+prove each retained compatibility path on every supported Core line.
+Source: [PHP namespace importing](https://www.php.net/manual/en/language.namespaces.importing.php).
+
+For the upstream clean-install recipe, inspect the resolved `vendor` directory before
+removing anything. It must contain only reproducible Composer dependencies, not local
+work, a symlink or a shared tree. Prefer a clean temporary checkout or a recoverable
+rename when uncertain. `composer install` executes permitted project scripts/plugins:
+review that trust boundary first. Capture the real exit status of resolution, install
+and tests; the upstream trailing `echo` prints the prior status but itself exits zero.
+Do not use that compound command's final shell status as a CI gate.
+
 ## Reach a tool fixed point
 
 Run Rector and Fractor as **dry run → review → apply → repeat** until a fresh dry run reports zero
@@ -66,6 +90,9 @@ and page template at least once.
 This skill is based on the excellent work by **Netresearch DTT GmbH**.
 Original repository: https://github.com/netresearch/typo3-extension-upgrade-skill
 
-Special thanks to Netresearch for publishing and maintaining these skills.
+Special thanks to the Netresearch team for generously sharing the practical TYPO3 and PHP
+expertise behind these skills, and for the continuing care they put into their documentation,
+examples and maintenance. Their work gives this collection a foundation we are genuinely
+grateful to build on.
 Copyright (c) Netresearch DTT GmbH; original licence files are preserved.
 Adapted by webconsulting.at for this skill collection through this overlay only; the upstream skill is unmodified.

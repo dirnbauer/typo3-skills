@@ -133,27 +133,17 @@ $GLOBALS['TYPO3_CONF_VARS']['BE']['fileDenyPattern'] = '\\.(php[3-8]?|phpsh|phtm
 
 ### Directory Permissions
 
-```bash
-# Set correct ownership (adjust www-data to your web user)
-chown -R www-data:www-data /var/www/html
+Keep application code and Composer dependencies owned by the deployment identity, readable
+but not writable by PHP. Give the runtime write access only to inspected cache/log/upload
+paths such as `var/`, `public/fileadmin/` and `public/typo3temp/`. Account for the deployment's
+shared directories, ACLs and symlinks before changing ownership or modes.
 
-# Directories: 2775 (group sticky)
-find /var/www/html -type d -exec chmod 2775 {} \;
-
-# Files: 664
-find /var/www/html -type f -exec chmod 664 {} \;
-
-# Configuration files: more restrictive
-chmod 660 config/system/settings.php
-chmod 660 config/system/additional.php
-
-# var directory (writable)
-chmod -R 2775 var/
-
-# public/fileadmin (writable for uploads)
-chmod -R 2775 public/fileadmin/
-chmod -R 2775 public/typo3temp/
-```
+Choose separate modes for directories and files: for a private shared runtime group,
+`2770` directories and `0660` files are possible choices, not universal defaults. `2` is
+the setgid bit, not the sticky bit. Do not recursively mark ordinary files executable or
+make the whole application writable by the web user. Configuration containing secrets
+needs runtime read access but only the intended configuration-management process may write it.
+Verify as the actual runtime user and test upload, cache rebuild and deployment afterward.
 
 ### Critical Files to Protect
 
@@ -203,12 +193,15 @@ Set the hashed password via the Install Tool or an environment-specific `config/
 Restrict the Install Tool entry point (`/typo3/install.php` on Composer-based v14) to trusted IPs at the web-server level:
 
 ```apacheconf
-# Apache: in the vhost or .htaccess
+# Apache: server / virtual-host configuration ONLY, not .htaccess
 <LocationMatch "^/typo3/install\.php">
     Require ip 203.0.113.0/24
     Require ip 198.51.100.42
 </LocationMatch>
 ```
+
+Apache's [LocationMatch context](https://httpd.apache.org/docs/2.4/mod/core.html#locationmatch)
+excludes `.htaccess`. Run the server's configuration test before an authorized reload.
 
 ```nginx
 # Nginx
@@ -406,6 +399,7 @@ TYPO3 backend automatically includes CSRF tokens. For custom AJAX:
 declare(strict_types=1);
 
 use TYPO3\CMS\Core\FormProtection\FormProtectionFactory;
+use Psr\Http\Message\ServerRequestInterface;
 
 final class MyController
 {
@@ -413,15 +407,15 @@ final class MyController
         private readonly FormProtectionFactory $formProtectionFactory,
     ) {}
 
-    public function generateToken(): string
+    public function generateToken(ServerRequestInterface $request): string
     {
-        $formProtection = $this->formProtectionFactory->createFromRequest($this->request);
+        $formProtection = $this->formProtectionFactory->createFromRequest($request);
         return $formProtection->generateToken('myFormIdentifier');
     }
 
-    public function validateToken(string $token): bool
+    public function validateToken(ServerRequestInterface $request, string $token): bool
     {
-        $formProtection = $this->formProtectionFactory->createFromRequest($this->request);
+        $formProtection = $this->formProtectionFactory->createFromRequest($request);
         return $formProtection->validateToken($token, 'myFormIdentifier');
     }
 }
@@ -430,12 +424,19 @@ final class MyController
 ### Frontend Forms (Extbase)
 
 ```html
-<!-- Extbase forms: use <f:form> so the framework injects CSRF / form protection as configured -->
+<!-- Fluid generates its own reserved property-mapping fields. -->
 <f:form action="submit" controller="Contact" method="post">
-    <!-- `__trustedProperties` is for Extbase property-mapping allow-lists, not a substitute for CSRF -->
-    <f:form.hidden name="__trustedProperties" value="{trustedProperties}" />
+    <f:form.textfield name="message" />
 </f:form>
 ```
+
+`__trustedProperties` protects Extbase property mapping; it is not a session-bound CSRF
+token. Do not inject that reserved field manually or claim `<f:form>` alone protects an
+anonymous endpoint. The handler must reject missing/invalid CSRF tokens before side effects.
+Core's [FormProtectionFactory](https://docs.typo3.org/m/typo3/reference-coreapi/14.3/en-us/ApiOverview/FormProtection/Index.html)
+uses a dummy implementation without an authenticated frontend/backend user. For anonymous
+forms, use the application's supported session-bound protection and prove rejection with
+a forged cross-origin submission; do not present `dummyToken` as protection.
 
 ## Appendix
 

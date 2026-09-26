@@ -4,6 +4,18 @@
   "spec": "SKILL-SPEC.md",
   "evals": [
     {
+      "id": "browser-review-requirement-versus-evidence",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Review our TYPO3 article editing test. The ticket promises the text stays after reload, but the test only checks a green notification. We have not run a reload yet. Tell me what is wrong without changing the application.",
+      "assertions": [
+        "Separates the missing persistence requirement coverage from the weak notification-only assertion",
+        "Does not claim that content is actually lost without observing the round trip",
+        "Proposes an authorized disposable save/reload fixture and preserves actual command results",
+        "Does not change application code, commit, deploy or issue an upgrade closure verdict"
+      ]
+    },
+    {
       "id": "parallel-isolation-and-missing-shard",
       "kind": "behaviour",
       "status": "proposed",

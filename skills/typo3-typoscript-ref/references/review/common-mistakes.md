@@ -40,6 +40,13 @@ Wrong: lib.footer < lib.header (independent copy — changes to lib.header won't
 When you want: lib.footer =< lib.header (reference — follows changes)
 When to use copy: When you want to modify the copy without affecting original
 
+### Reference Into a Path That No Longer Exists
+
+Wrong: `10 =< tt_content.list.20.myext_pi1` after the plugin moved to a CType
+Symptom: no error, no log entry — something entirely different renders
+Why: `ContentObjectRenderer::mergeTSRef()` walks the path segment by segment and keeps the value of the **deepest segment that exists**, with the configuration of the full path (empty here). `tt_content.list` is `=< lib.contentElement`, so the reference silently becomes a FLUIDTEMPLATE and renders the site's default template
+Solution: verify the **full** path resolves, not just its prefix — in the TypoScript Object Browser, or by grepping the registration that creates it
+
 ### Override Order Pitfall
 
 Problem: TypoScript from Site Set may be overridden by sys_template records

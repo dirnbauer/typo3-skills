@@ -4,6 +4,14 @@
 
 Testing that a **non-admin** backend user is correctly *confined* (to pages, languages, file mounts) is a common security requirement — and the framework setup is unobvious. These recipes let a functional test drive a real non-admin who genuinely passes or fails the core access checks, instead of a check that passes for the wrong reason.
 
+## Contents
+
+- `groupData` overrides apply live after `setUpBackendUser()`
+- A non-admin reading a page: `readPageAccess` needs a web mount over the rootline
+- `doesUserHaveAccess()` already enforces the web mount
+- A non-admin confined to a file mount (real FAL enforcement)
+- FAL permission API: `getFile()` does NOT assert — the mock-validity trap
+
 ## `groupData` overrides apply live after `setUpBackendUser()`
 
 `setUpBackendUser($uid)` authenticates the user (so `fetchGroupData()` has run). You can then override the resolved permission data directly on `$GLOBALS['BE_USER']->groupData` and the core access methods honour it immediately — no re-auth needed:
@@ -37,6 +45,30 @@ $GLOBALS['BE_USER']->groupData['webmounts'] = '5'; // rootline of page 5 is [5]
 ```
 
 **Why it matters for a security test:** if the non-admin cannot reach *any* page, a "denied" assertion passes trivially (denied by page access, not by the thing you meant to test — e.g. a language gate). Make the user genuinely able to read the page, so the gate under test is the only variable.
+
+## `doesUserHaveAccess()` already enforces the web mount
+
+`BackendUserAuthentication::doesUserHaveAccess($row, $perms)` returns `(calcPerms($row) & $perms) == $perms`: every bit in `$perms` must be granted, and a zero mask returns `true` whatever `calcPerms()` says. `calcPerms()` returns `Permission::NOTHING` for a non-admin when `isInWebMount($row)` fails — before `perms_user`/`perms_group`/`perms_everybody` are read and before the `calcPerms` hook runs (cms-core 14.3.7: `doesUserHaveAccess()` lines 333-337, `calcPerms()` lines 544-553).
+
+This holds for the core class, not for every object in `$GLOBALS['BE_USER']`. A subclass can override `calcPerms()` or `doesUserHaveAccess()`: EXT:workspaces' `PreviewUserAuthentication` (the `ADMCMD_prev` preview-link user) returns `Permission::PAGE_SHOW` for every row without consulting the web mount (cms-workspaces 14.3.7, lines 106-109). An edit check (`PAGE_EDIT`, `CONTENT_EDIT`) is still refused for it, but a `PAGE_SHOW` check passes outside any mount. Before relying on the guarantee, check which class the active user is and read its override.
+
+So code that authorises a page with `doesUserHaveAccess()` and a non-zero `$perms` on a plain `BackendUserAuthentication` needs no extra `isInWebMount()` call. A review finding "the web-mount check is missing" is wrong unless the code authorises through something else — `getPagePermsClause()` alone, a raw `perms_*` comparison, or no page check at all. Settle it with a test, not a code change:
+
+- the editor is a member of **at least one group** — `calcPerms()` ORs the `perms_*` bits only when `userGroupsUID` is non-empty (line 557), so a groupless editor is refused *inside* the mount too and the test proves nothing;
+- the target page grants the permission through `perms_everybody` (e.g. `Permission::ALL`);
+- `groupData['webmounts']` (overridden live, see above) points at a **different** root page → the call is refused;
+- control: the same editor with `groupData['webmounts']` covering the target page → the call succeeds.
+
+```php
+// setUp: page 1 closed (perms_everybody = 0), page 2 open (perms_everybody = Permission::ALL),
+// editor uid 2 in be_groups uid 7 (usergroup = '7')
+$this->setUpBackendUser(2);
+$GLOBALS['BE_USER']->groupData['webmounts'] = '1'; // page 2 is outside the mount
+self::assertFalse($GLOBALS['BE_USER']->doesUserHaveAccess($openPageRow, Permission::CONTENT_EDIT));
+// control, same editor: groupData['webmounts'] = '2' → assertTrue
+```
+
+> Source: netresearch/t3x-nr-llm [PR 958](https://github.com/netresearch/t3x-nr-llm/pull/958) — `anEditorOutsideTheirWebMountsIsRefusedWithTheNeutralWords` passed without a code change, and the issue claiming the writers skipped the web mount ([#960](https://github.com/netresearch/t3x-nr-llm/issues/960)) was closed as not planned.
 
 ## A non-admin confined to a file mount (real FAL enforcement)
 

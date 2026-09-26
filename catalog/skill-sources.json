@@ -23,7 +23,7 @@
     "source_owner": "Netresearch",
     "source_url": "https://github.com/netresearch/enterprise-readiness-skill",
     "file_path": "skills/enterprise-readiness/SKILL.md",
-    "line_count": 77,
+    "line_count": 78,
     "frontmatter_keys": [
       "name",
       "description",
@@ -43,7 +43,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/legal-impressum/SKILL.md",
-    "line_count": 392,
+    "line_count": 395,
     "frontmatter_keys": [
       "name",
       "description",
@@ -61,7 +61,7 @@
     "source_owner": "Netresearch",
     "source_url": "https://github.com/netresearch/php-modernization-skill",
     "file_path": "skills/php-modernization/SKILL.md",
-    "line_count": 82,
+    "line_count": 84,
     "frontmatter_keys": [
       "name",
       "description",
@@ -153,7 +153,7 @@
     "source_owner": "Netresearch",
     "source_url": "https://github.com/netresearch/typo3-a11y-skill",
     "file_path": "skills/typo3-a11y/SKILL.md",
-    "line_count": 67,
+    "line_count": 68,
     "frontmatter_keys": [
       "name",
       "description"
@@ -235,11 +235,11 @@
   {
     "directory": "typo3-conformance",
     "skill_name": "typo3-conformance",
-    "description": "Use when checking which TYPO3 versions an extension says it supports, when composer.json and ext_emconf.php disagree, when a version bump must reach every file that states it, when reviewing a TYPO3 extension for what needs attention, or when auditing coding standards, TER readiness, deprecations and modernization to v12/v13/v14 (v14.3 LTS is the default).",
+    "description": "Use when checking which TYPO3 versions an extension says it supports, when composer.json and ext_emconf.php disagree, when a version bump has left some of the files that state it behind, when reviewing a TYPO3 extension for what needs attention, or when auditing coding standards, TER readiness, deprecations and modernization to v12/v13/v14 (v14.3 LTS is the default). Raising an extension to a newer TYPO3 version is not this skill: that belongs to typo3-extension-upgrade.",
     "source_owner": "Netresearch",
     "source_url": "https://github.com/netresearch/typo3-conformance-skill",
     "file_path": "skills/typo3-conformance/SKILL.md",
-    "line_count": 87,
+    "line_count": 89,
     "frontmatter_keys": [
       "name",
       "description",
@@ -339,11 +339,11 @@
   {
     "directory": "typo3-docs",
     "skill_name": "typo3-docs",
-    "description": "Use when creating, editing, or reviewing TYPO3 extension documentation (Documentation/*.rst, guides.xml, README.md, XLF translations), rendering docs with Docker, using TYPO3 RST directives, adding screenshots, deploying to docs.typo3.org, improve docs, fix documentation, or XLIFF 2-space indentation (TYPO3 v14+).",
+    "description": "Use when TYPO3 extension documentation has to render on docs.typo3.org, which builds a manual from Documentation/guides.xml and reads no Settings.cfg (a single README.rst serves an extension too small for one): when an extension has no documentation yet, or when creating, editing or reviewing Documentation/*.rst, guides.xml, README.md or XLF translations, rendering docs with Docker, TYPO3 RST directives, screenshots, or XLIFF 2-space indentation (TYPO3 v14+).",
     "source_owner": "Netresearch",
     "source_url": "https://github.com/netresearch/typo3-docs-skill",
     "file_path": "skills/typo3-docs/SKILL.md",
-    "line_count": 100,
+    "line_count": 124,
     "frontmatter_keys": [
       "name",
       "description",
@@ -363,7 +363,7 @@
     "source_owner": "Netresearch",
     "source_url": "https://github.com/netresearch/typo3-extension-upgrade-skill",
     "file_path": "skills/typo3-extension-upgrade/SKILL.md",
-    "line_count": 122,
+    "line_count": 231,
     "frontmatter_keys": [
       "name",
       "description"
@@ -473,7 +473,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-playwright/SKILL.md",
-    "line_count": 95,
+    "line_count": 99,
     "frontmatter_keys": [
       "name",
       "description",
@@ -488,9 +488,9 @@
     "skill_name": "typo3-powermail",
     "description": "Builds and debugs Powermail 13+ contact and enquiry forms in TYPO3: form setup and validation, conditional fields that appear only when another answer has a particular value, finishers that pass a submission on to another system, spam protection, and email templates and delivery. Use when a confirmation or notification mail never arrives, when part of a form must show or hide depending on an earlier answer, when adding a custom finisher or validator, when spam still gets through, or when working with powermail_cond, ViewHelpers, TypoScript, PSR-14 events or tx_powermail data.",
     "source_owner": "webconsulting",
-    "source_url": "https://github.com/dirnbauer/webconsulting-skills",
+    "source_url": null,
     "file_path": "skills/typo3-powermail/SKILL.md",
-    "line_count": 301,
+    "line_count": 99,
     "frontmatter_keys": [
       "name",
       "description",
@@ -498,7 +498,9 @@
       "license"
     ],
     "pass_1": [],
-    "pass_2": [],
+    "pass_2": [
+      "no explicit source note; current assumption is webconsulting-original"
+    ],
     "pass_3": []
   },
   {
@@ -524,7 +526,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-records-list-types/SKILL.md",
-    "line_count": 331,
+    "line_count": 333,
     "frontmatter_keys": [
       "name",
       "description",
@@ -578,7 +580,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-security/SKILL.md",
-    "line_count": 450,
+    "line_count": 451,
     "frontmatter_keys": [
       "name",
       "description",
@@ -671,7 +673,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-solr/SKILL.md",
-    "line_count": 337,
+    "line_count": 339,
     "frontmatter_keys": [
       "name",
       "description",
@@ -704,11 +706,11 @@
   {
     "directory": "typo3-testing",
     "skill_name": "typo3-testing",
-    "description": "Use when setting up TYPO3 extension test infrastructure, writing unit/functional/E2E tests, configuring PHPUnit 11/12/13, mutation testing, mocking final classes (v14), CI/CD matrix across TYPO3 12/13/14.3 LTS, dev-dependency consolidation via typo3-ci-workflows meta-package, or debugging CI failures. Also triggers on: testing-framework setup, ensure proper testing, test matrix, integration testing, e2e testing, coverage, test generation.",
+    "description": "Use when a reported defect has to be reproduced as a failing test before it is fixed, when a change to a template or to any rendered output has to be proved, or when setting up TYPO3 extension test infrastructure, writing unit/functional/E2E tests, configuring PHPUnit 11/12/13, mutation testing, mocking final classes (v14), CI/CD matrix across TYPO3 12/13/14.3 LTS, dev-dependency consolidation via typo3-ci-workflows meta-package, or debugging CI failures. Also triggers on: testing-framework setup, ensure proper testing, test matrix, integration testing, e2e testing, coverage, test generation.",
     "source_owner": "Netresearch",
     "source_url": "https://github.com/netresearch/typo3-testing-skill",
     "file_path": "skills/typo3-testing/SKILL.md",
-    "line_count": 92,
+    "line_count": 113,
     "frontmatter_keys": [
       "name",
       "description"

@@ -15,6 +15,34 @@ Two real failure modes that no static gate catches:
 |------|---------|-------|
 | Wrong ViewHelper namespace | **Whole module 500s** (parse-time, before any output) | e.g. `<be:infobox>` instead of `<f:be.infobox>` — an unregistered namespace prefix is a template **parse** error, not a runtime one, so it takes down the entire view |
 | Unbounded chart/canvas | Page balloons (a `<canvas>` grew to 6543px tall) | Chart.js (or similar) with `maintainAspectRatio: false` inside a container that has no fixed height — the canvas keeps growing every reflow |
+| Argument typed differently per version | **Module 500s on one TYPO3 version only** | `f:be.infobox` types `state` as `int` on v13 and `mixed` on v14: a string passes on 14 and raises a TypeError on 13, so a v14-only render says nothing about v13 |
+
+## Render every template, not only the one the module opens
+
+A module smoke test opens the default route and proves that template. The other
+templates are unproven, and the argument that breaks one breaks them all: in
+`nr_passkeys_fe` the same wrong `state` sat in the dashboard and in the help
+page, the e2e suite opened the dashboard, and the help page went unrendered on
+both versions until a test asked for it.
+
+Two things follow:
+
+- **Enumerate the module's routes** from `Configuration/Backend/Modules.php` and
+  open each one. A non-default route's URL is the module path plus that route's
+  own `path`, and where the route sets none, its identifier serves as the path:
+  module `nr_passkeys_fe` with a route `help` answers at
+  `/typo3/module/nr/passkeys/fe/help`, because `ModuleFactory` turns `_` into
+  `/` for the module part unless the registration sets an explicit `path`. Read
+  both levels out of the registration rather than composing the URL from the
+  module identifier alone.
+- **A branch that only renders under a data condition is not covered by opening
+  the page.** An infobox shown when every user has completed something renders
+  in no ordinary fixture; either seed that state or assert the template through
+  a render test.
+
+Asserting the rendered severity, not just the status, pins the mapping as well:
+`f:be.infobox` emits `callout callout-<severity>`, so `.callout-info`,
+`.callout-warning` and `.callout-notice` are what an e2e case checks.
 
 ## Verify the render — three complementary layers
 

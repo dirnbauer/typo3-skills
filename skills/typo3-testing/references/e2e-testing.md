@@ -620,6 +620,52 @@ apache_ip=$(${CONTAINER_BIN} inspect "apache-${SUFFIX}" \
 Measured both ways: without it `page.goto` returns 200 while `page.request` and
 `request.newContext` both fail; with it all three answer 200.
 
+**Do not start before the instance answers — and ask for every half you drive**
+
+The provisioner hands over once it has seen one page: the shared runner asserts
+that `/` returns 200 and starts the suite. That is the frontend. A suite that
+also drives the backend meets the instance again at `/typo3/login`, and that
+request can fail on its own — observed once in `t3x-nr-passkeys-fe` as Apache's
+`DNS lookup failure for: phpfpm` on two attempts and a TYPO3 503 on the third,
+after the `/` check had passed, while the fourteen tests that ran later all
+passed. The failure lands on whichever specification runs first and reads as a
+defect in the module it happened to open.
+
+A `globalSetup` closes that window: poll the pages the suite needs until each
+answers 200, with a deadline, and abort with what you last saw.
+
+```typescript
+// playwright.config.ts
+export default defineConfig({
+    globalSetup: './Tests/E2E/global-setup.ts',
+    // …
+});
+```
+
+Two things decide whether it works:
+
+- **Poll the address the runner published, not the alias the browser uses.**
+  `globalSetup` runs in Node, where `--host-resolver-rules` does not apply — the
+  same split as `page.request` above. Take `TYPO3_BASE_URL`, and resolve the
+  **same fallback the config uses** when it is unset, or a local run polls
+  nothing while Playwright drives the DDEV URL. Export both from one module and
+  import it in the config and in the setup, rather than repeating the expression:
+
+  ```typescript
+  // Tests/E2E/instance-address.ts
+  export const target = process.env.TYPO3_BASE_URL ?? 'https://my-extension.ddev.site';
+  export const browserBaseUrl = /* the alias, where the runner asks for one */;
+  ```
+- **Fail loudly, with the last observation.** `did not answer 200 within 120s —
+  last seen: connect ECONNREFUSED` names the environment; a silent timeout sends
+  the reader into the test.
+
+Seen to fail before it is trusted: point the suite at a dead address and the run
+must stop in `globalSetup` with exit 1, before the first test.
+
+What it does not cover: a fault that starts after the suite has begun. Say that
+in the file, so the next reader does not take the gate for more than it is.
+
 **`config/system/additional.php` must assign, not return**
 
 TYPO3 `require`s that file for its side effects and discards its return value
@@ -640,6 +686,53 @@ $GLOBALS['TYPO3_CONF_VARS']['SYS']['displayErrors'] = 1;
 
 Worth an executed check rather than a review comment: cut the generated file
 out, `require` it, and assert the keys arrive in `TYPO3_CONF_VARS`.
+
+**A router script for `php -S` is a tainted-filename sink**
+
+Some E2E setups start the PHP built-in server with a router script
+(`php -S 0.0.0.0:8080 -t .Build/Web Build/Scripts/router.php`). The usual
+router appends the request path to the document root and returns `false`
+when `is_file()` finds it, so the server delivers the static file itself.
+That path comes straight from `REQUEST_URI`, so SAST flags it
+(Semgrep/Opengrep `php.lang.security.injection.tainted-filename.tainted-filename`).
+With `return false` the built-in server still serves only files inside its
+document root, so a request such as `/../secret.txt` falls through to
+TYPO3. A router that reads or includes the file itself (`readfile($file)`)
+does serve it, and there the traversal is real.
+
+Confine the resolved path to the document root with `realpath()`:
+
+```php
+<?php
+// Build/Scripts/router.php
+declare(strict_types=1);
+
+$path    = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$path    = is_string($path) ? $path : '';
+$docRoot = realpath(__DIR__ . '/../../.Build/Web');
+$file    = $docRoot === false ? false : realpath($docRoot . $path);
+
+// Serve a static file only when its real path stays inside the document root
+if (
+    $file !== false
+    && $docRoot !== false
+    && str_starts_with($file, $docRoot . DIRECTORY_SEPARATOR)
+    && is_file($file)
+) {
+    return false;
+}
+
+// Everything else goes through TYPO3
+$_SERVER['SCRIPT_NAME'] = '/index.php';
+$_SERVER['SCRIPT_FILENAME'] = __DIR__ . '/../../.Build/Web/index.php';
+require __DIR__ . '/../../.Build/Web/index.php';
+```
+
+This clears the finding at its source. Do not suppress it with
+`// nosemgrep` instead: the suppression is not reliable, and GitHub code
+scanning can mark the existing alert "fixed" while a new alert opens on the
+suppressed line. Verify the fix with the scanner version CI pins: one
+finding on the unguarded router, zero after the change.
 
 **A server-side file cache usually cannot be reset from the test side**
 

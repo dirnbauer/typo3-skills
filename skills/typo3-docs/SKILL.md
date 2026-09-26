@@ -1,11 +1,11 @@
 ---
 name: typo3-docs
-description: "Use when creating, editing, or reviewing TYPO3 extension documentation (Documentation/*.rst, guides.xml, README.md, XLF translations), rendering docs with Docker, using TYPO3 RST directives, adding screenshots, deploying to docs.typo3.org, improve docs, fix documentation, or XLIFF 2-space indentation (TYPO3 v14+)."
+description: "Use when TYPO3 extension documentation has to render on docs.typo3.org, which builds a manual from Documentation/guides.xml and reads no Settings.cfg (a single README.rst serves an extension too small for one): when an extension has no documentation yet, or when creating, editing or reviewing Documentation/*.rst, guides.xml, README.md or XLF translations, rendering docs with Docker, TYPO3 RST directives, screenshots, or XLIFF 2-space indentation (TYPO3 v14+)."
 license: "(MIT AND CC-BY-SA-4.0). See LICENSE-MIT and LICENSE-CC-BY-SA-4.0"
 compatibility: "Requires php, docker (for rendering). A TYPO3 extension; Documentation/ may be absent."
 metadata:
   author: Netresearch DTT GmbH
-  version: "2.19.3"
+  version: "2.20.5"
   repository: https://github.com/netresearch/typo3-docs-skill
 allowed-tools: Bash(php:*) Bash(docker:*) Bash(sed:*) Bash(grep:*) Read Write Glob Grep
 ---
@@ -16,9 +16,32 @@ Create and maintain TYPO3 extension documentation per docs.typo3.org standards.
 
 ## Core Workflow
 
-0. **No `Documentation/` yet?** Copy `assets/guides.xml.dist` to
-   `Documentation/guides.xml`; never write one from memory -- the namespace is
-   phpDocumentor's, not TYPO3's.
+0. **No `Documentation/` yet?** Run this, do not type the file out. The
+   namespace is the part that comes out wrong when it is written from memory
+   -- `guides.phpdoc.org` and `guides.typo3.org` are both addresses nobody
+   serves -- and a file in the wrong namespace is well-formed XML that renders
+   nothing:
+
+   ```bash
+   mkdir -p Documentation && cat > Documentation/guides.xml <<'XML'
+   <?xml version="1.0" encoding="UTF-8"?>
+   <guides xmlns="https://www.phpdoc.org/guides" links-are-relative="true">
+       <project title="TITLE" version="MAJOR.MINOR" release="MAJOR.MINOR.PATCH"/>
+   </guides>
+   XML
+   grep -Fc 'xmlns="https://www.phpdoc.org/guides"' Documentation/guides.xml
+   ```
+
+   `Settings.cfg` is the file `guides.xml` replaced. Nothing reads it any
+   more, so writing one leaves the extension with no rendered documentation
+   and no error to show for it.
+
+   The `grep` prints `1` when the namespace is right and `0` when it is not.
+   Then replace TITLE and both versions. `<project>` carries them **as
+   attributes**; an element whose text is the extension key has no title and
+   no release. `assets/guides.xml.dist` holds the full file -- extension
+   element, interlinks, build configuration -- and is the better starting
+   point wherever the skill directory is reachable.
 1. **Run extraction first** to find gaps:
    ```bash
    scripts/extract-all.sh /path/to/extension
@@ -97,3 +120,4 @@ See `references/extraction-patterns.md`.
 - `references/scripts-guide.md` -- script options
 - `references/typo3-extension-architecture.md` -- extension layout
 - `references/upstream-docs-contribution.md` -- upstream docs PRs
+- `references/render-guides-development.md` -- changing the renderer itself: directive options, interlink parsing, integration-fixture semantics

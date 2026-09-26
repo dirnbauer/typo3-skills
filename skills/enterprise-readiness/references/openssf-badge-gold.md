@@ -78,20 +78,13 @@ Settings → Organization → Security → Require 2FA for everyone
 | Criterion | Form Question | How to Verify | Implementation |
 |-----------|---------------|---------------|----------------|
 | code_review_standards | "Are there code review standards?" | Check CONTRIBUTING.md | Document review expectations |
-| two_person_review | "Do changes require 2-person review?" | Check branch protection | Require 2 reviewers for main branch |
+| two_person_review | "Do changes require 2-person review?" | Count merged PRs approved by a human other than the author (`badge-submission-api.md` § *Solo Maintainer Justification Patterns*); a required review count alone is also satisfied by bot approvals | A second human reviewer |
 
-**Two-Person Review:**
-```bash
-# Set via GitHub API
-gh api repos/{owner}/{repo}/branches/main/protection \
-  -X PUT \
-  -f required_approving_review_count=2
-```
+**Two-Person Review:** the criterion counts reviews by a person other than the author, so the evidence is who approved, not what branch protection requires — a required review count is also satisfied by bot approvals. Requiring one approving review makes the review step mandatory; it is the reviewers that decide the answer.
 
 **Note:** This is challenging for solo maintainers. Options:
-- Partner with another project for cross-review
-- Use bot reviewers (limited effectiveness)
-- Mark as N/A with justification
+- Partner with another project, or a colleague, for cross-review
+- Without a second human reviewer, answer Unmet with a justification — N/A is not accepted, and bot reviewers do not count
 
 ### Build (1 criterion)
 
@@ -217,7 +210,7 @@ sha256sum binary  # Should be identical across builds
 
 | Requirement | Challenge | Mitigation |
 |-------------|-----------|------------|
-| 2-person review | Can't self-approve | Partner projects, bot reviewers |
+| 2-person review | Can't self-approve | Partner projects or a colleague as reviewer; otherwise Unmet (bot reviews do not count) |
 | Bus factor >= 2 | Single maintainer | Recruit co-maintainers |
 | Unassociated contributors | Small team | Encourage external contributions |
 | 2FA enforcement | Org setting | Document 2FA usage |
@@ -251,7 +244,7 @@ sha256sum binary  # Should be identical across builds
 ### Phase 3: Organizational Growth
 1. [ ] Recruit second maintainer
 2. [ ] Attract external contributors
-3. [ ] Establish two-person review (or document exception)
+3. [ ] Establish two-person review by a human other than the author (without one, the answer is Unmet)
 4. [ ] Complete Gold certification
 
 ---
@@ -270,23 +263,7 @@ sha256sum binary  # Should be identical across builds
 
 ## Exceptions and Justifications
 
-Some Gold criteria may not apply to all projects. Document exceptions clearly:
-
-```markdown
-## OpenSSF Best Practices Badge - Gold Exceptions
-
-### two_person_review (N/A)
-Justification: Solo maintainer project. Compensating controls:
-- All changes go through CI with comprehensive testing
-- CodeQL and security scanning on all PRs
-- Regular self-review of security-critical changes
-
-### contributors_unassociated (N/A)
-Justification: Specialized project with limited contributor pool.
-Compensating controls:
-- Open to contributions from any organization
-- No organizational restrictions on contribution
-```
+`two_person_review` and `contributors_unassociated` do not accept `N/A` (see `badge-submission-api.md` § *N/A Not Allowed on Certain Criteria*). Where a project cannot meet them, answer `Unmet` and say why; compensating controls such as CI and code scanning are worth describing, but they are not a second person or an unassociated contributor, and they do not turn the answer into `Met`. Measurements and templates for solo-maintained projects: `badge-submission-api.md` § *Solo Maintainer Justification Patterns*.
 
 ---
 

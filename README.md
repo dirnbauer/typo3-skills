@@ -254,7 +254,7 @@ the upstream state recorded in [VENDORED.md](VENDORED.md).
 | `typo3-datahandler` | Creates, updates, moves, localizes and deletes TYPO3 records programmatically from PHP - import scripts, CLI comman… | webconsulting |
 | `typo3-ddev` | Use whenever a running TYPO3 instance is wanted, started or reached: ddev commands, backend URLs, DDEV setup, multi… | Netresearch |
 | `typo3-design-system-page` | Build and maintain an accessible design-system overview inside a chosen TYPO3 installation: audit the rendered site… | webconsulting |
-| `typo3-docs` | Use when creating, editing, or reviewing TYPO3 extension documentation (Documentation/*.rst, guides.xml, README.md,… | Netresearch |
+| `typo3-docs` | Use when TYPO3 extension documentation has to render on docs.typo3.org, which builds a manual from Documentation/gu… | Netresearch |
 | `typo3-extension-upgrade` | Use when an extension has to work with a newer or the current TYPO3 LTS, when a version bump breaks compatibility o… | Netresearch |
 | `typo3-fractor` | Automatically rewrite TYPO3 non-PHP files with Fractor: outdated TypoScript condition syntax, FlexForm XML migratio… | webconsulting |
 | `typo3-icon14` | Designs and migrates TYPO3 extension icons to the v14 line-art style, including source SVG cleanup, light/dark beha… | webconsulting |
@@ -274,7 +274,7 @@ the upstream state recorded in [VENDORED.md](VENDORED.md).
 | `typo3-site-conformance` | Use when assessing or hardening a deployable TYPO3 SITE/PROJECT repo (composer type:project + Docker/Compose) — not… | Netresearch |
 | `typo3-solr` | Runs and debugs the site's own search with Apache Solr in TYPO3 (EXT:solr): what gets indexed and why results come … | webconsulting |
 | `typo3-structured-data` | Audits, preserves, implements, and verifies schema.org structured data and server-rendered JSON-LD in TYPO3 14.3 pr… | webconsulting |
-| `typo3-testing` | Use when setting up TYPO3 extension test infrastructure, writing unit/functional/E2E tests, configuring PHPUnit 11/… | Netresearch |
+| `typo3-testing` | Use when a reported defect has to be reproduced as a failing test before it is fixed, when a change to a template o… | Netresearch |
 | `typo3-translations` | Fixes TYPO3 labels and localization: label files (locallang.xlf, labels.xlf) in XLIFF 1.2 and 2.0, singular and plu… | webconsulting |
 | `typo3-typoscript-ref` | Use when writing, editing, reviewing or debugging TypoScript, TSconfig or Fluid templates in TYPO3 projects (v14.3 … | Netresearch |
 | `typo3-upgrade-baseline` | Build and seal the deterministic pre-change Baseline A for a whole-site TYPO3 14.3 upgrade graph. Use when prefligh… | webconsulting |
@@ -322,9 +322,13 @@ the upstream state recorded in [VENDORED.md](VENDORED.md).
 
 ## Credits
 
-**Thank you, Netresearch DTT GmbH**, for openly publishing and maintaining the 16 skills selected
-from your marketplace: 13 TYPO3 skills and three existing supporting skills. Original licences, source revisions and per-file hashes are
-preserved; our integration guidance and thanks remain separate overlays.
+**A heartfelt thank-you to the team at [Netresearch DTT GmbH](https://www.netresearch.de/).**
+Your generosity in sharing practical TYPO3 and PHP expertise, and the continuing care you put
+into the documentation, examples and maintenance, make this collection possible in its current
+form. We are genuinely grateful to build on that work—and want its authors to remain visible.
+The 16 selected repositories supply 13 TYPO3 skills and three supporting skills. We preserve
+their original licences, source revisions and per-file hashes; our integration guidance,
+corrections and thanks remain separate, clearly attributed overlays.
 Anthropic for `typo3-simplify` and the skill-authoring conventions this collection follows.
 
 Thank you to **Matt Pocock** for the [writing-for-agents](https://github.com/mattpocock/skills/blob/main/skills/productivity/writing-for-agents/SKILL.md)

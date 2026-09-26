@@ -422,6 +422,34 @@ Build/Scripts/runTests.sh -s unit
 4. **Use realistic responses**: Copy actual API responses
 5. **Keep tests fast**: No database, no network
 6. **Document API contracts**: Response helpers serve as documentation
+7. **Pick an assertion that can fail on what you care about**: see below
+
+## A Containment Assertion Cannot Catch Something Extra
+
+Fixture harnesses commonly compare an expected log or output file by asking
+whether each expected line is *contained* in the actual one — a custom
+`assertFileContainsLines()`, `assertStringContainsString()` in a loop, or
+`assertArraySubset()`-style helpers. That assertion is one-directional by
+construction: it fails on a missing line and cannot fail on a surplus one.
+
+So a fixture whose `expected/logs/warning.log` lists the one warning a case
+should produce still passes when the code emits two — including the case where
+the second warning is wrong, or is the same warning fired twice. The suite is
+green and the defect is invisible to it.
+
+Before relying on such a fixture, ask what property is being pinned:
+
+| Property | Assertion that can fail on it |
+|---|---|
+| "this line appears" | containment |
+| "these lines and no others" | equality on the whole file |
+| "exactly N of these" | count, asserted explicitly |
+
+When the harness is shared across every fixture in a repository, changing it is
+its own change with its own blast radius — but say so in the pull request
+rather than reporting the behaviour as covered. A one-directional assertion
+documents half a rule, and the half it drops is usually the one a regression
+reintroduces.
 
 ## Dependency Injection Pattern
 

@@ -1,81 +1,24 @@
-# 7. Email Templates
+# Email and form templates
 
-Continues `typo3-powermail` from [full guide](full-guide.md).
-
-## 7. Email Templates
-
-### Template Paths (TypoScript)
+Copy only the needed installed template/partial into the sitepackage; leave vendor files intact.
+Use additional root paths and preserve inherited defaults:
 
 ```typoscript
-plugin.tx_powermail {
-    view {
-        templateRootPaths {
-            0 = EXT:powermail/Resources/Private/Templates/
-            10 = EXT:my_ext/Resources/Private/Templates/Powermail/
-        }
-        partialRootPaths {
-            0 = EXT:powermail/Resources/Private/Partials/
-            10 = EXT:my_ext/Resources/Private/Partials/Powermail/
-        }
-        layoutRootPaths {
-            0 = EXT:powermail/Resources/Private/Layouts/
-            10 = EXT:my_ext/Resources/Private/Layouts/Powermail/
-        }
-    }
+plugin.tx_powermail.view {
+    templateRootPaths.10 = EXT:sitepackage/Resources/Private/Templates/Powermail/
+    partialRootPaths.10 = EXT:sitepackage/Resources/Private/Partials/Powermail/
+    layoutRootPaths.10 = EXT:sitepackage/Resources/Private/Layouts/Powermail/
 }
 ```
 
-### Key Templates
+Mail templates include `Mail/ReceiverMail.html`, `Mail/SenderMail.html` and
+`Mail/OptinMail.html`; form templates include `Form/Form.html`, `Form/Create.html`
+and `Form/Confirmation.html`. Inspect the exact installed file and assigned variables.
+Do not print every answer with a generic string loop: arrays/uploads/passwords require the
+shipped formatting and exclusion rules. Never output user values with `f:format.raw`.
 
-| Template | Purpose |
-|----------|---------|
-| `Form/Form.html` | Main form rendering |
-| `Form/Confirmation.html` | Confirmation page |
-| `Form/Create.html` | Thank you page |
-| `Mail/ReceiverMail.html` | Admin notification email |
-| `Mail/SenderMail.html` | User confirmation email |
-| `Mail/OptinMail.html` | Double opt-in email |
-| `Form/PowermailAll.html` | All-fields summary |
+For conditions, preserve field names, wrapper marker classes, form UID, AJAX attributes and
+multistep controls. Test overrides against the installed frontend JS, not just rendered HTML.
 
-### Field Partials
-
-Override individual field types by copying partials:
-
-```
-Partials/Form/Field/Input.html
-Partials/Form/Field/Textarea.html
-Partials/Form/Field/Select.html
-Partials/Form/Field/Check.html
-Partials/Form/Field/Radio.html
-Partials/Form/Field/File.html
-Partials/Form/Field/Date.html
-Partials/Form/Field/Captcha.html
-Partials/Form/Field/Hidden.html
-Partials/Form/Field/Password.html
-Partials/Form/Field/Country.html
-Partials/Form/Field/Location.html
-Partials/Form/Field/Html.html
-Partials/Form/Field/Content.html
-Partials/Form/Field/Typoscript.html
-Partials/Form/Field/Submit.html
-Partials/Form/Field/Reset.html
-```
-
-### Available Variables in Mail Templates
-
-```html
-<!-- In ReceiverMail.html / SenderMail.html -->
-{mail}                          <!-- Mail domain object -->
-{mail.senderName}               <!-- Sender name -->
-{mail.senderMail}               <!-- Sender email -->
-{mail.form.title}               <!-- Form title -->
-{mail.answers}                  <!-- All answers (ObjectStorage) -->
-
-<!-- Iterate answers -->
-<f:for each="{mail.answers}" as="answer">
-    {answer.field.title}: {answer.value}
-</f:for>
-
-<!-- PowermailAll marker (all fields formatted) -->
-{powermail_all}
-```
+Sources: [templates](https://github.com/dirnbauer/powermail/blob/f58c5ff2b927f471985c19e6e366216df68cf54d/Resources/Private/Templates),
+[partials](https://github.com/dirnbauer/powermail/blob/f58c5ff2b927f471985c19e6e366216df68cf54d/Resources/Private/Partials).

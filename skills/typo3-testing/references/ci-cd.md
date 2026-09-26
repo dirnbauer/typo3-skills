@@ -156,6 +156,107 @@ steps:
       composer update --no-progress
 ```
 
+### Adding PHP 8.4/8.5 breaks a `php -l` lint step that greps stdout
+
+Where a project lints by grepping `php -l` output instead of using a linter with
+its own exit codes, the step fails the moment the matrix reaches PHP 8.4 — for a
+reason that has nothing to do with the project's code. The scaffolding in this
+skill uses `phplint` (`ci:test:php:lint`) and is unaffected; this is about a
+hand-rolled step of the following shape, seen in
+`TYPO3-Documentation/guides-php-domain`:
+
+```yaml
+# Breaks on PHP >= 8.4 once dependencies are installed
+run: find . -type f -name '*.php' ! -path "./.Build/*" -print0
+     | xargs -0 -n1 -P4 php -l -n
+     | (! grep -v "No syntax errors detected" )
+```
+
+PHP 8.4 deprecated implicitly nullable parameter types, and `php -l` writes that
+deprecation to **stdout**, not stderr. The `grep -v` therefore sees a line that
+is not `No syntax errors detected` and the step fails — reporting a syntax error
+in a file whose syntax is fine. Because the notice comes from installed
+dependencies, the failure appears only after `composer install` and only on the
+new matrix legs, which makes it read like a genuine incompatibility in the
+dependency tree.
+
+`php -l` is not the thing that disagrees. On one such file at PHP 8.5.6:
+
+```console
+$ php -l -n vendor/…/FilesystemInterface.php 2>/dev/null     # stdout alone
+Deprecated: League\Flysystem\FilesystemInterface::get(): Implicitly marking parameter $handler as nullable is deprecated, … on line 286
+No syntax errors detected in vendor/…/FilesystemInterface.php
+
+$ php -l -n vendor/…/FilesystemInterface.php 2>&1 1>/dev/null # stderr alone
+                                                              # (empty)
+$ php -l -n vendor/…/FilesystemInterface.php >/dev/null 2>&1; echo $?
+0
+```
+
+Both lines are on stdout, stderr is empty, and the linter's own exit code is 0 —
+the failure is manufactured entirely by the `grep` wrapper. Redirecting stderr
+therefore changes nothing.
+
+Measured on `TYPO3-Documentation/guides-php-domain` at PHP 8.5.6: the command
+above emits **478** such lines and exits 1, from `phpdocumentor/filesystem`,
+`localheinz/diff` and `rector/rector`, among others.
+
+Scope the lint to your own sources — third-party code is not yours to
+syntax-check:
+
+```yaml
+run: find . -type f -name '*.php' ! -path "./.Build/*" ! -path "./vendor/*" -print0
+     | xargs -0 -n1 -P4 php -l -n
+     | (! grep -v "No syntax errors detected" )
+```
+
+Two tempting non-fixes. **Dropping `-n`** does make the message go away — `-n`
+suppresses `php.ini`, so without it an ini carrying
+`error_reporting = E_ALL & ~E_DEPRECATED` or `display_errors = Off` hides the
+notice and the step goes green (measured: both leave only
+`No syntax errors detected`). That is worse than the bug, because the lint's
+result now depends on ambient ini configuration that differs between the runner
+and every developer machine, and the same suppression hides deprecations in
+*your* code. **Filtering the deprecation text** out of the `grep` hides real
+diagnostics that arrive on the same channel. Scoping the path is the fix that
+narrows *what* is linted rather than *what is reported*.
+
+### Reproducing one matrix leg locally before pushing
+
+A matrix change is worth verifying per leg, and the official images make that a
+single command — no local PHP juggling, no DDEV:
+
+```bash
+mkdir -p /tmp/leg85     # tar -x -C exits 2 if the destination does not exist
+tar -c --exclude=vendor --exclude=.Build --exclude=.git . | tar -x -C /tmp/leg85
+docker run --rm -v /tmp/leg85:/app -w /app php:8.5-cli sh -c '
+  curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer --quiet
+  composer install --no-interaction --no-progress
+  composer show symfony/console        # WHICH dependency set did this leg resolve?
+  vendor/bin/phpunit --testsuite=unit'
+```
+
+Copy the working tree with `tar`; `git archive` drops every `export-ignore`d
+path, which is typically `tests/` and the analyser configs.
+
+**`composer show <dep>` is the step that earns the run.** Where no
+`composer.lock` is committed, each leg resolves fresh and different PHP versions
+get different major versions of the same dependency — so "does the suite pass on
+8.5?" and "what does 8.5 install?" are two questions, and only the second
+explains a failure. Same repo, same branch, one command apart:
+
+| | PHP 8.2.30 | PHP 8.5.6 |
+|---|---|---|
+| `symfony/console` resolved | v7.4.19 | v8.1.7 |
+
+That split is what decides whether a static-analysis job is affected. On the 8.5
+leg, PHPStan 1.12.34 against `symfony/console` v8.1.7 exits 1 with two false
+`Call to an undefined method …Command\Run::getDefinition()` errors — it cannot
+resolve the Symfony 8 base class, so it invents findings in code that is fine.
+The analysis job pins a single PHP version, though, and on 8.2 the resolve
+yields Symfony 7, where the same run is clean. Without the two numbers that is
+an argument; with them it is a measurement, and no dependency cap is needed.
+
 ### Caching Dependencies
 
 ```yaml
@@ -199,7 +300,7 @@ steps:
 | **Memory** | Higher (full debugger loaded) | Lower footprint |
 
 **Why Xdebug is the better default:**
-- **Strict coverage metadata**: PHPUnit's `beStrictAboutCoverageMetadata="true"` marks tests as "risky" when they execute code outside their declared `#[CoversClass]` / `#[UsesClass]` attributes. The check only runs under active coverage. Mixing local Xdebug with CI PCOV produced "green locally, red in CI" surprises — switching both to Xdebug eliminates that drift. Observed concretely in [t3x-nr-image-optimize#93](https://github.com/netresearch/t3x-nr-image-optimize/pull/93).
+- **Strict coverage metadata**: PHPUnit's `beStrictAboutCoverageMetadata="true"` marks tests as "risky" when they execute code outside their declared `#[CoversClass]` / `#[UsesClass]` attributes. The check only runs under active coverage. Mixing local Xdebug with CI PCOV produced "green locally, red in CI" surprises — switching both to Xdebug eliminates that drift.
 - **Branch + path coverage**: Xdebug sees `if/else` branches and early returns. PCOV reports only which lines executed, losing the "did we actually test the else-branch?" signal. Matters for Codecov trend reports and mutation testing preparation.
 - **Cost**: ~2-3 min extra CI runtime across a typical 8-job matrix. Acceptable for the diagnostic gain.
 

@@ -1,398 +1,140 @@
----
-name: typo3-powermail-conditions
-description: Conditional field and page visibility for TYPO3 Powermail forms using powermail_cond. AJAX-based dynamic show/hide of fields and fieldsets based on user input with 10 comparison operators.
-version: 1.0.0
-typo3_compatibility: "13.4"
-triggers:
-  - powermail_cond
-  - powermail condition
-  - conditional fields
-  - show hide fields
-  - form conditions
-  - in2code/powermail_cond
----
+# Powermail Conditions: configure, inspect, verify
 
-# Powermail Conditions (powermail_cond)
+Use `in2code/powermail_cond`, extension key `powermail_cond` (not `powermail_condition`).
+Resolve the [version line](references/v14-only-changes.md) before installation.
 
-> **Compatibility:** TYPO3 **13.4** with Powermail 13.x and powermail_cond 13.x (verify both on Packagist before assuming TYPO3 v14 support)
-> **Requires:** `in2code/powermail: ^13.0` (adjust when upgrading majors)
+## Rule meaning: action on match, opposite action otherwise
 
-## 1. Overview
+Create one condition container for the form, add a condition targeting a field or fieldset,
+and add at least one rule. Set `AND` or `OR` explicitly. Avoid duplicate containers and
+competing conditions on the same target.
 
-`powermail_cond` adds dynamic conditional visibility to powermail forms. Fields or entire pages (fieldsets) can be shown/hidden based on user input, evaluated via AJAX in real-time.
+| Configuration | Rule true | Rule false |
+|---|---|---|
+| `actions = 0` (hide) | Hide target | Show target |
+| `actions = 1` (unhide) | Show target | Hide target |
 
-### Installation
+For **show Other details only when category = other**, use **unhide (1)** + **is (4)** +
+`other`. A hide action with the same rule does the reverse. Compare stored option values,
+not translated labels. Use separate conditions for separate targets.
 
-```bash
-composer require in2code/powermail_cond
-```
+Source: [Condition apply/negate](https://github.com/dirnbauer/powermail_cond/blob/fc5324f9d22ee1bcd3515d3d2ca51793b5545ec1/Classes/Domain/Model/Condition.php).
 
-Include the static TypoScript template from `powermail_cond`.
+## Operators and edge cases
 
-### Architecture
+| `ops` | Meaning in reviewed source | Pitfall |
+|---|---|---|
+| 0 / 1 | PHP nonempty / empty | String `"0"` is empty |
+| 2 / 3 | Contains / does not contain static value | String substring; array membership; not strict equality |
+| 4 / 5 | Strict equality / inequality with static string | Array-valued checkbox cannot equal a string |
+| 6 / 7 | Greater / less after integer casts | Not decimal-safe; not input validation |
+| 8 / 9 | Equal-field value contains / does not contain start-field value | Not an email/password equality check |
 
-```
-ConditionContainer (tx_powermailcond_domain_model_conditioncontainer)
- └── Condition (tx_powermailcond_domain_model_condition)
-      └── Rule (tx_powermailcond_domain_model_rule)
-```
+Operators 2–7 use `cond_string`; 8–9 use `equal_field`; 0–1 ignore the comparison string.
+Use operator 2 for a checkbox option `shipping` in an array. For thresholds use validated
+integers only. Test empty/zero/malformed values. The built-in contains implementation has
+array/multiline edge cases; do not generalize string examples to arbitrary nested data.
+For exact equality between two fields, use server-side validation or the fork-specific
+[custom operator recipe](SKILL-EXAMPLES.md#custom-rule-operator-v14-fork-only).
 
-- **ConditionContainer**: Links to one powermail Form (1:1)
-- **Condition**: Defines a target (field or page) and action (hide/unhide), contains rules with AND/OR conjunction
-- **Rule**: Single comparison against a field value
+Source: [Comparison](https://github.com/dirnbauer/powermail_cond/blob/fc5324f9d22ee1bcd3515d3d2ca51793b5545ec1/Classes/Domain/Comparator/Comparison.php).
 
-## 2. Operators
+## Targets, relations and loops
 
-| # | Operator | Description |
-|---|----------|-------------|
-| 0 | `is set` | Field has any value |
-| 1 | `is not set` | Field is empty |
-| 2 | `contains value` | Field value contains string |
-| 3 | `contains value not` | Field value does not contain string |
-| 4 | `is` | Field value equals string exactly |
-| 5 | `is not` | Field value does not equal string |
-| 6 | `is greater than` | Numeric comparison (numbers only) |
-| 7 | `is less than` | Numeric comparison (numbers only) |
-| 8 | `contains value from field` | Field value matches another field's value |
-| 9 | `contains not value from field` | Field value differs from another field's value |
+Resolve real persisted UIDs before writing conditions:
 
-Operators **2–7** compare against a static string (`cond_string`). Operators **0–1** test field presence (“is set” / “is not set”) and ignore `cond_string`.
-Operators 8-9 compare against another form field (`equal_field`).
+- `target_field = "42"`: field UID 42.
+- `target_field = "fieldset:5"`: page/fieldset UID 5.
+- Container → `conditions` uses child foreign key `conditioncontainer`.
+- Condition → `rules` uses child foreign key `conditions`.
+- A rule references field UIDs through `start_field` and optionally `equal_field`.
 
-## 3. Backend Configuration
+Keep one owner per target. A hidden input's in-memory value can be cleared during evaluation;
+that can change later rules. The engine iterates until the argument state stabilizes or
+`conditionLoopCount` (default 100) is reached. Do not raise the limit to hide a cyclic rule
+graph. Inspect `loops` and `loopLimit`; reaching the limit is a diagnostic warning, not proof
+of convergence. The reviewed JS warning checks `loops > loopLimit`, so absence of its console
+warning does not prove safety.
 
-### Step 1: Create Condition Container
+Source: [ConditionContainer](https://github.com/dirnbauer/powermail_cond/blob/fc5324f9d22ee1bcd3515d3d2ca51793b5545ec1/Classes/Domain/Model/ConditionContainer.php),
+[JavaScript](https://github.com/dirnbauer/powermail_cond/blob/fc5324f9d22ee1bcd3515d3d2ca51793b5545ec1/Resources/Public/JavaScript/PowermailCondition.js).
 
-1. Go to a sysfolder (or the page with the form)
-2. Create new record: **Condition Container**
-3. Set **Title** and select the **Form**
-4. Add **Conditions**
+## Frontend and endpoint integration
 
-### Step 2: Configure Conditions
+Include the shipped configuration. It supplies `PowermailCondition.js`, the
+`data-condition-uri` element and a JSON endpoint with typeNum **3132**.
+The reviewed v14 fork uses **USER_INT**; upstream v13 uses **USER**. Do not replace the
+whole endpoint with an old copied snippet.
 
-Each condition defines:
-
-| Field | Description |
-|-------|-------------|
-| **Title** | Descriptive name |
-| **Target Field** | Which field or page to affect |
-| **Action** | `hide` (0) or `unhide` (1) |
-| **Conjunction** | `OR` (any rule matches) or `AND` (all rules must match) |
-| **Rules** | One or more comparison rules |
-
-### Step 3: Configure Rules
-
-Each rule defines:
-
-| Field | Description |
-|-------|-------------|
-| **Title** | Descriptive name |
-| **Start Field** | The field whose value is checked |
-| **Operator** | One of the 10 operators above |
-| **Condition String** | Static comparison value (operators 2-7) |
-| **Equal Field** | Other field for comparison (operators 8-9) |
-
-### Targeting Pages (Fieldsets)
-
-To show/hide an entire page (fieldset), set the target field to the page. Pages appear in the target dropdown with a `fieldset:` prefix. When a page is hidden, all its fields are excluded from validation.
-
-## 4. AJAX Endpoint
-
-Conditions are evaluated server-side via TypeNum `3132`.
-
-### TypoScript Setup (auto-included)
-
-```typoscript
-# TypeNum for AJAX condition evaluation
-powermailCondition = PAGE
-powermailCondition {
-    typeNum = 3132
-    config {
-        disableAllHeaderCode = 1
-        no_cache = 1
-        additionalHeaders.10.header = Content-type: application/json
-    }
-    10 = USER
-    10 {
-        userFunc = TYPO3\CMS\Extbase\Core\Bootstrap->run
-        extensionName = PowermailCond
-        vendorName = In2code
-        controller = Condition
-        pluginName = Pi1
-    }
-}
-```
-
-### Route Enhancer for Clean URLs
+If the site already uses a PageType enhancer, merge this entry into its map:
 
 ```yaml
 routeEnhancers:
   PageTypeSuffix:
     type: PageType
-    default: /
-    index: ''
-    suffix: /
     map:
       condition.json: 3132
 ```
 
-### JSON Response Format
+Preserve the site's existing default/index/suffix and mappings. Inspect the actual generated
+URI; a JSON parser error often means a redirect, HTML error page or missing TypoScript.
+Check the response shape `todo[formUid][pageUid][marker]["#action"]`, with `hide` or
+`un_hide`; page-level actions omit the marker segment.
 
-```json
-{
-    "todo": {
-        "42": {
-            "1": {
-                "email": {
-                    "#action": "hide",
-                    "matching_condition": { "5": "5" }
-                },
-                "#action": "un_hide"
-            }
-        }
-    },
-    "loops": 3,
-    "loopLimit": 100
-}
-```
+Keep the stock form classes/wrappers, hidden `powermail_form_uid`, field names and fieldset
+classes when overriding Fluid. The script listens to eligible field `change` events,
+initializes on `pageshow`, sets disabled/required attributes and toggles wrapper visibility.
+Do not replace these mechanisms with CSS-only hiding.
 
-Structure: `todo[formUid][pageUid][fieldMarker]` or `todo[formUid][pageUid]` for page-level actions.
+### Exclude uploads from condition AJAX
 
-## 5. Reducing Flickering (Server-Side Prerendering)
-
-By default, conditions are loaded via AJAX after page load, causing visible flickering. Prerender conditions server-side to avoid this.
-
-### ViewHelper for Prerendering
-
-Add to your copy of `EXT:powermail/Resources/Private/Templates/Form/Form.html`:
+Only when rules do **not** inspect upload fields, add this attribute to the existing
+`f:form` attributes passed through the Powermail validation ViewHelper:
 
 ```html
-{namespace pc=In2code\PowermailCond\ViewHelpers}
-
-<!-- Prerender conditions as inline JSON -->
-<script type="application/json" id="form-{form.uid}-actions">
-    {pc:conditions(form:form) -> f:format.raw()}
-</script>
-
-<!-- Hide fieldsets until conditions are applied -->
-<style type="text/css">
-    .powermail_fieldset {
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.5s, visibility 0.5s;
-    }
-</style>
+additionalAttributes="{vh:validation.enableJavascriptValidationAndAjax(
+    form: form,
+    additionalAttributes: {'data-powermail-cond-excluded-fields': '.powermail_file'}
+)}"
 ```
 
-The JavaScript detects the prerendered JSON and skips the initial AJAX call.
+Preserve any other existing attributes. The implemented attribute is
+`data-powermail-cond-excluded-fields`, **without** a `-selector` suffix (the README prose
+disagrees with its own working example). This removes files from condition requests only;
+verify the final multipart submission still includes the selected files.
 
-## 6. File Upload Optimization
+### Optional prerendering
 
-File upload fields send all selected files with every AJAX condition request. If you don't need conditions based on file uploads, exclude them:
+The fork provides `In2code\PowermailCond\ViewHelpers\ConditionsViewHelper` and reads
+`#form-{form.uid}-actions` JSON to skip the first AJAX request. Do not blindly copy the
+README's global hidden-fieldset CSS: failed JavaScript can leave the form inaccessible.
+Before using raw JSON in a script element, inspect escaping, personalized/cache behavior,
+duplicate form instances, CSP and the no-JavaScript fallback. Retain AJAX initialization
+until those requirements are proved in the actual template.
 
-```html
-<f:form
-    action="{action}"
-    name="field"
-    enctype="multipart/form-data"
-    additionalAttributes="{vh:validation.enableJavascriptValidationAndAjax(
-        form:form,
-        additionalAttributes:{
-            data-powermail-cond-excluded-fields: '.powermail_file'
-        }
-    )}"
->
-```
+## Validation and support boundaries
 
-## 7. Validator Integration (XCLASS)
+The extension XCLASSes `InputValidator` with `ConditionAwareValidator`. It overrides
+**mandatory-field validation**, reading `tx_powermail_cond` session state; it does not
+guarantee that every validator or custom business rule ignores a hidden field.
+Check conflicting XCLASS registrations and test submission without a successful condition
+request. Never trust hidden/disabled browser inputs for access control, prices or routing.
 
-powermail_cond XCLASSes powermail's `InputValidator` with `ConditionAwareValidator` to skip validation on hidden fields.
+**Multistep forms and conditions do work together in the inspected implementation.**
+Both upstream and fork have byte-identical `MoreStepForm.js` and `PowermailCondition.js`:
+navigation skips a condition-hidden step, and the condition script toggles step controls
+and field required/disabled state. This is shared upstream behavior, not a fork-added feature.
+The blanket README incompatibility line is stale against this source and the executable
+unit probe. Use the [wizard recipe](SKILL-EXAMPLES.md#multistep-with-conditional-fields-and-pages).
 
-```php
-// Registered in ext_localconf.php
-$GLOBALS['TYPO3_CONF_VARS']['SYS']['Objects'][
-    \In2code\Powermail\Domain\Validator\InputValidator::class
-] = [
-    'className' => \In2code\PowermailCond\Domain\Validator\ConditionAwareValidator::class,
-];
-```
+Respect the demonstrated limit: navigation skips **one** hidden neighbor, not a sequence of
+hidden steps. Test consecutive/first/last hidden steps and conditions that hide the currently
+active step. The unit probe demonstrates source behavior with DOM doubles; it does not certify
+browser timing, validation, AJAX submission or mail delivery.
 
-Hidden field state is stored in the frontend user session under key `tx_powermail_cond`. The validator checks this session data before validating each field.
+The reviewed condition TCA sets **versioningWS = false**. Do not promise workspace-aware
+publication or add version columns by hand. See [workspace limits](references/15-workspace-support.md).
 
-## 8. Extension Configuration
-
-### Loop Count Safety
-
-The condition container iterates until no changes occur. A safety limit prevents infinite loops.
-
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `conditionLoopCount` | 100 | Maximum iteration loops per evaluation |
-
-Configure via Extension Manager or `ext_conf_template.txt`.
-
-## 9. JavaScript Behavior
-
-The frontend JavaScript (`PowermailCondition.js`) is auto-included via TypoScript:
-
-```typoscript
-page.includeJSFooter.powermailCond = EXT:powermail_cond/Resources/Public/JavaScript/PowermailCondition.js
-page.includeJSFooter.powermailCond.defer = 1
-```
-
-### Behavior
-
-- Listens to `change` events on all form fields (input, textarea, select)
-- Sends form data to the condition endpoint via `fetch()`
-- Applies hide/show actions via CSS classes (`powermail-cond-hidden`)
-- Manages `required` attribute (removes on hidden fields, restores on show)
-- Handles multi-step forms (`powermail_morestep`)
-- Supports `pageshow` event (back/forward cache)
-
-### CSS for Hidden Fields
-
-```css
-/* Applied by JavaScript */
-.powermail-cond-hidden {
-    display: none !important;
-}
-```
-
-## 10. Known Limitations
-
-- **Multi-step + conditions**: `powermail_cond` ships JavaScript that listens on multi-step (`powermail_morestep`) forms. If you combine both, use **matching majors** of Powermail and powermail_cond and test the full wizard (see [SKILL-EXAMPLES.md](./SKILL-EXAMPLES.md)). Report edge cases to the extension vendors rather than assuming an old “never combine” blanket rule.
-- **One container per form**: Each form can have exactly one condition container
-- **XCLASS approach**: Only one extension can XCLASS `InputValidator` -- conflicts possible with other extensions modifying the same class
-- **jQuery not required**: Since powermail_cond 10.0.0, vanilla JS is used (no jQuery dependency)
-
-## 11. Common Patterns
-
-### Show Field Based on Select Value
-
-**Scenario**: Show "Other" text input when user selects "Other" in a dropdown.
-
-1. Create Condition Container for the form
-2. Add Condition:
-   - Target: `other_details` field
-   - Action: **hide** (hidden by default)
-3. Add Rule:
-   - Start field: `category` (the select field)
-   - Operator: **is** (4)
-   - Condition string: `Other`
-
-The "other_details" field is hidden by default and only shown when "Other" is selected.
-
-### Hide Page Based on Checkbox
-
-**Scenario**: Hide an entire page/fieldset unless a checkbox is checked.
-
-1. Add Condition:
-   - Target: Page (fieldset) containing the additional fields
-   - Action: **hide**
-2. Add Rule:
-   - Start field: `accept_terms` (checkbox)
-   - Operator: **is not set** (1)
-
-### Field-to-Field Comparison
-
-**Scenario**: Show a warning field when two email fields don't match.
-
-1. Add Condition:
-   - Target: `email_mismatch_warning` field
-   - Action: **unhide** (show when rule matches)
-2. Add Rule:
-   - Start field: `email`
-   - Operator: **contains not value from field** (9)
-   - Equal field: `email_repeat`
-
-## 12. Database Structure
-
-> **Note:** powermail_cond uses `l18n_parent` (not `l10n_parent`) for its translation pointer.
-> Powermail core uses `l10n_parent`. Be careful with the naming difference.
-
-### TYPO3 Standard Columns
-
-All powermail_cond tables include these TYPO3-managed columns (not listed per table below):
-
-| Column | Type | Purpose |
-|--------|------|---------|
-| `uid` | int AUTO_INCREMENT | Primary key |
-| `pid` | int | Storage page UID |
-| `tstamp` | int | Last modification timestamp |
-| `crdate` | int | Creation timestamp |
-| `deleted` | tinyint | Soft-delete flag |
-| `hidden` | tinyint | Visibility flag |
-| `sys_language_uid` | int | Language UID (0 = default) |
-| `l18n_parent` | int | UID of the default language record |
-| `l18n_diffsource` | mediumblob | Diff source for translation |
-| `starttime` | int | Publish start |
-| `endtime` | int | Publish end |
-
-### tx_powermailcond_domain_model_conditioncontainer
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `title` | tinytext | Container title |
-| `form` | int | Related powermail form UID (1:1) |
-| `conditions` | int | IRRE children count |
-| `note` | tinyint | Backend warning flag (>30 fields) |
-
-**Relations:** `form` -> `tx_powermail_domain_model_form.uid`
-
-### tx_powermailcond_domain_model_condition
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `conditioncontainer` | int | Parent container UID |
-| `title` | tinytext | Condition title |
-| `target_field` | tinytext | Target: field UID or `fieldset:PAGE_UID` |
-| `actions` | tinytext | `0` = hide, `1` = unhide |
-| `conjunction` | tinytext | `OR` or `AND` |
-| `rules` | int | IRRE children count |
-
-**Indexes:** `conditioncontainer`, `target_field(20)`
-**Hidden table:** Yes (`hideTable => 1`) -- only editable inline inside container
-
-### tx_powermailcond_domain_model_rule
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `conditions` | int | Parent condition UID |
-| `title` | tinytext | Rule title |
-| `start_field` | int | Source field UID (the field whose value is checked) |
-| `ops` | int | Operator (0-9, see Section 2) |
-| `cond_string` | text | Comparison value (operators 2-7) |
-| `equal_field` | int | Comparison field UID (operators 8-9) |
-
-**Indexes:** `conditions`, `start_field`, `equal_field`
-**Hidden table:** Yes (`hideTable => 1`) -- only editable inline inside condition
-
-### ER Diagram (Condition Relations)
-
-```
-tx_powermail_domain_model_form
-  │ 1
-  └──── 1 tx_powermailcond_domain_model_conditioncontainer (via form)
-           │ 1
-           └──── * tx_powermailcond_domain_model_condition (IRRE via conditioncontainer)
-                    │ 1
-                    └──── * tx_powermailcond_domain_model_rule (IRRE via conditions)
-                              │
-                              ├── start_field -> tx_powermail_domain_model_field.uid
-                              └── equal_field -> tx_powermail_domain_model_field.uid (ops 8-9)
-```
-
-### target_field Format
-
-The `target_field` column uses two formats:
-
-| Format | Example | Meaning |
-|--------|---------|---------|
-| `{fieldUid}` | `42` | Target is a single field (UID 42) |
-| `fieldset:{pageUid}` | `fieldset:5` | Target is an entire page/fieldset (page UID 5) |
-
-## 13. Full Example: Multi-Step Shop with Conditions
-
-> For a comprehensive example with Austrian legal types (Gesellschaftsformen),
-> conditional fields per legal type, and two implementation approaches
-> (DDEV SQL + DataHandler CLI command), see [SKILL-EXAMPLES.md](SKILL-EXAMPLES.md).
+Sources: [mandatory validator](https://github.com/dirnbauer/powermail_cond/blob/fc5324f9d22ee1bcd3515d3d2ca51793b5545ec1/Classes/Domain/Validator/ConditionAwareValidator.php),
+[README conflicts](https://github.com/dirnbauer/powermail_cond/blob/fc5324f9d22ee1bcd3515d3d2ca51793b5545ec1/readme.md),
+[condition TCA](https://github.com/dirnbauer/powermail_cond/tree/fc5324f9d22ee1bcd3515d3d2ca51793b5545ec1/Configuration/TCA).

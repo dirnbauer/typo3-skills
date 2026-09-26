@@ -10,6 +10,7 @@ For every bug fix, follow this sequence. Do not deviate. Do not ask the user for
 2. **Confirm the test fails for the expected reason** — not a setup error, not a bootstrapping error, not a missing fixture. The failure message must describe the actual bug.
 3. **Implement the minimal fix.** Scope it narrowly to the smallest diff that turns the failing test green.
 4. **Run the specific test** via `Build/Scripts/runTests.sh -s unit -- --filter <TestName>` (or functional, as appropriate). Must pass.
+   Check the test **count**, not the exit code: a `--filter` that matches nothing prints `No tests executed!` and exits 0, so a typo turns the red step green (see [test-runners.md](test-runners.md) § A `--filter` That Matches Nothing Exits 0).
 5. **Run the full suite** (`-s unit`, `-s functional`) and linters (`-s phpstan`, `-s cgl`). Must all pass.
 6. **If anything fails, iterate.** Do not report the fix as done. Try up to 5 distinct approaches before escalating.
 7. **Only then open the PR.** The PR description must include the name of the reproduction test and the one-line verification command.

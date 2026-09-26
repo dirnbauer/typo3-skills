@@ -18,6 +18,16 @@ import sync_netresearch as sync
 
 
 class RoutingTests(unittest.TestCase):
+    def test_sync_does_not_import_new_skills_from_an_approved_repository(self):
+        repo = 'netresearch/typo3-testing-skill'
+        approved = 'skills/typo3-testing/SKILL.md'
+        self.assertEqual(sync.selected_skill_paths(repo, [approved, 'LICENSE-MIT']), [approved])
+        for files in ([], [approved, 'skills/new-companion/SKILL.md'], ['skills/renamed/SKILL.md']):
+            with self.assertRaisesRegex(ValueError, 'Skill inventory changed'):
+                sync.selected_skill_paths(repo, files)
+        with self.assertRaisesRegex(ValueError, 'Unapproved repository'):
+            sync.selected_skill_paths('netresearch/unapproved-skill', ['skills/unapproved/SKILL.md'])
+
     def test_sync_scope_cannot_expand_with_the_marketplace(self):
         self.assertEqual(len(sync.UPSTREAM_REPOSITORIES), 16)
         self.assertTrue(sync.in_scope('netresearch/typo3-testing-skill'))

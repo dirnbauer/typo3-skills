@@ -53,10 +53,10 @@ On 14 May 2024, the **Telemediengesetz (TMG)** was largely replaced by the **Dig
 | Phone or contact form | Telefon oder Kontaktformular | ✓ |
 | Trade register | Handelsregister + HRB/HRA-Nr | ✓ if registered |
 | VAT ID | Umsatzsteuer-ID (USt-IdNr.) | ✓ if applicable |
-| Economic ID | Wirtschafts-ID | When introduced |
+| Economic ID | Wirtschafts-Identifikationsnummer | If assigned/possessed, per § 5(1) Nr. 6 DDG |
 | Supervisory authority | Zuständige Aufsichtsbehörde | ✓ if regulated |
 | Professional regulations | Berufsrechtliche Regelungen | ✓ if regulated profession |
-| Share capital | Stammkapital/Grundkapital | ✓ for GmbH/AG |
+| Share capital | Stammkapital/Grundkapital | Conditional when capital is stated; include required outstanding contributions |
 | Liquidation status | "in Liquidation/Abwicklung" | ✓ if applicable |
 
 ### 2.2 Journalistic Content (§ 18 MStV)
@@ -73,17 +73,17 @@ Additional requirement for websites with journalistic-editorial content:
 
 ### 3.1 Quick Reference
 
-| Company Type | Register | Capital Requirement | Special Notes |
+| Company Type | Register | Formation Capital (not an imprint duty) | Special Notes |
 |--------------|----------|---------------------|---------------|
 | Einzelunternehmen | Optional (HR) | None | Owner name required |
 | GbR | None | None | All partners listed |
 | OHG | HR | None | All partners listed |
 | KG | HR | None | Komplementäre listed |
 | PartG / PartG mbB | PR | None | Professionals only |
-| GmbH | HR | €25,000 | Stammkapital required |
-| UG (haftungsbeschränkt) | HR | €1+ | Stammkapital required |
+| GmbH | HR | €25,000 | Capital statement in imprint is conditional |
+| UG (haftungsbeschränkt) | HR | €1+ | Capital statement in imprint is conditional |
 | GmbH & Co. KG | HR | Varies | Both entities listed |
-| AG | HR | €50,000 | Grundkapital, Vorstand |
+| AG | HR | €50,000 | Verify representative details; capital statement is conditional |
 | SE | HR | €120,000 | European company |
 | KGaA | HR | €50,000 | Hybrid form |
 | eG (Genossenschaft) | GR | None | Vorstand listed |
@@ -93,6 +93,12 @@ Additional requirement for websites with journalistic-editorial content:
 - HR = Handelsregister (commercial register)
 - PR = Partnerschaftsregister
 - GR = Genossenschaftsregister
+
+Under [§ 5(1) Nr. 1 DDG](https://www.gesetze-im-internet.de/ddg/__5.html), capital
+disclosure is conditional: if capital is mentioned, state the relevant capital and, where
+cash contributions remain unpaid, their total outstanding amount. Do not use formation
+minimums as invented company data. Templates below omit optional capital statements;
+verify actual register data and other applicable disclosure duties before publication.
 - VR = Vereinsregister
 
 ---
@@ -167,7 +173,6 @@ Eingetragen im Handelsregister
 Registergericht: Amtsgericht Berlin-Charlottenburg
 Registernummer: HRB 123456
 
-Stammkapital: 25.000 EUR
 
 Umsatzsteuer-ID:
 DE123456789
@@ -196,7 +201,6 @@ Eingetragen im Handelsregister
 Registergericht: Amtsgericht Berlin-Charlottenburg
 Registernummer: HRB 123456
 
-Stammkapital: 1.000 EUR
 
 Umsatzsteuer-ID:
 DE123456789
@@ -258,7 +262,6 @@ Eingetragen im Handelsregister
 Registergericht: Amtsgericht Berlin-Charlottenburg
 Registernummer: HRB 123456
 
-Grundkapital: 50.000 EUR
 
 Umsatzsteuer-ID:
 DE123456789

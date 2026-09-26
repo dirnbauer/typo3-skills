@@ -40,6 +40,7 @@ When creating or reviewing content elements, verify:
 
 ### Core
 - `references/accessibility.md` -- WCAG 2.2 AA guide, contrast policy
+- `references/verifying-accessible-names.md` -- Measure accessible names in a real browser; icon-font and Bootstrap-tooltip traps
 
 ### Patterns
 - `references/patterns-skiplinks.md` -- Mandatory skip link navigation

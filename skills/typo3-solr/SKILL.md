@@ -38,7 +38,9 @@ This skill is based on the following authoritative sources:
 
 ## 1. Architecture Overview
 
-EXT:solr connects TYPO3 CMS to an Apache Solr search server, providing full-text search, faceted navigation, autocomplete, and (on supported **Solr 9.x** builds) dense-vector / semantic features where enabled.
+EXT:solr connects TYPO3 CMS to an Apache Solr search server for full-text search, facets and
+autocomplete. Treat vector/semantic features as a separate version- and configuration-specific
+integration; server support alone does not mean the TYPO3 plugin enables them.
 
 ```mermaid
 graph LR
@@ -147,7 +149,12 @@ ddev add-on get ddev/ddev-typo3-solr
 ddev restart
 ```
 
-> **Solr image version:** the DDEV Solr add-on defaults `SOLR_BASE_IMAGE` to `solr:9.10`, and the generated compose file is `.ddev/docker-compose.typo3-solr.yaml`. For explicit control, override via `.ddev/.env.typo3-solr` (for example: `ddev dotenv set .ddev/.env.typo3-solr --solr-base-image="solr:9.10.1"`) and rebuild the Solr service.
+> **Solr image version:** inspect the installed add-on's `SOLR_BASE_IMAGE`; its default is not
+> proof of compatibility. The matrix checked on 2026-09-26 pairs EXT:solr 14.0 and
+> `ext_solr_14_0_0` with Apache Solr 10.0.0. Check the selected EXT:solr release's
+> `composer.json` / `info:solr-versions` script for its full supported range. Set the matching
+> image via `.ddev/.env.typo3-solr`, then rebuild and verify the running version. Do not retain
+> a Solr 9 image just because it was the old add-on default.
 
 Configure `.ddev/typo3-solr/config.yaml`:
 
@@ -191,8 +198,9 @@ services:
   solr:
     # Resolve the matching stable server/configset image and record its digest first.
     image: ${SOLR_IMAGE:?Set a reviewed compatible image tag or digest}
-    ports:
-      - "8983:8983"
+    # Reach from the application over a private Docker network; no public host port.
+    expose:
+      - "8983"
     volumes:
       - solr-data:/var/solr
     restart: unless-stopped
@@ -202,15 +210,16 @@ volumes:
     driver: local
 ```
 
-The image ships default cores for all languages. Persistent data is stored at `/var/solr` (owned by UID 8983).
+`expose` does not implement authentication or a firewall. Restrict network membership and
+configure the selected server's authentication/authorization and TLS where needed. Never
+publish the administrative API to the internet. Confirm UID, storage path and core provisioning
+against the selected image; generic Solr images do not supply TYPO3 language cores automatically.
 
 ### Standalone Solr
 
-Deploy the configset from EXT:solr into your Solr installation:
-
-```bash
-cp -r vendor/apache-solr-for-typo3/solr/Resources/Private/Solr/* $SOLR_INSTALL_DIR/server/solr/
-```
+Deploy the matching configset and TYPO3 plugin using the installed EXT:solr release's server
+instructions. Do not recursively copy the entire resource tree over an existing installation:
+Solr majors differ in plugin loading and directory layout. Back up configuration and indexes first.
 
 Create cores via `core.properties` files, `solrctl`, or the Solr Admin API. **Payload shape differs by Solr major** (v8 vs v9 “v2” APIs) — treat any one-liner `curl` as illustrative and follow the Solr version you run.
 
@@ -221,26 +230,15 @@ curl -sS -X POST "http://localhost:8983/solr/admin/cores?action=CREATE&name=core
 
 ### Managed Hosting: Mittwald
 
-Mittwald provides a managed Solr service via their container platform. Use the Terraform module:
-
-```hcl
-module "solr" {
-  source         = "mittwald/solr/mittwald"
-  solr_version   = "9"
-  solr_core_name = "typo3"
-  solr_heap      = "2g"
-}
-```
-
-Access Solr at `http://typo3-solr:8983` inside the container. For local debugging:
-
-```bash
-mw container port-forward --port 8983
-```
+Check [Mittwald's current Solr service documentation](https://developer.mittwald.de/docs/v2/platform/databases/solr/)
+and verify server/configset support before provisioning. An old Solr 9 deployment example is
+not a validated EXT:solr 14 stack. Keep administrative access on a restricted management path.
 
 ### Managed Hosting: hosted-solr.com
 
-[hosted-solr.com](https://hosted-solr.com/en/) by dkd provides pre-configured Solr cores optimized for EXT:solr. As of the live pricing page, the **Small** plan is **10,00 EUR/month** (2 Solr indexes, 4.000 documents; VAT note on site). After creating a core, configure it in your TYPO3 site config using the provided host, port, and path.
+[hosted-solr.com](https://hosted-solr.com/en/) provides hosted Solr services for EXT:solr.
+Verify current supported versions, capacity, pricing and access restrictions directly with the
+provider before ordering. Configure TYPO3 with the actual provisioned host, port and core path.
 
 ### TYPO3 Site Configuration
 
@@ -326,7 +324,11 @@ graph TD
 - Only indexing pages and structured records (news, events, products) via Index Queue
 - EXT:solr handles page content and record fields natively without Tika
 
-**Version:** EXT:tika **13.1** (the current v13 release) requires Apache Tika Server/App **3.2.3+**. A v14-compatible EXT:tika release is not yet available on the official Version Matrix — track Packagist and GitHub for updates. For Apache Tika and Solr security advisories, verify on [Apache Solr security](https://solr.apache.org/security.html) / vendor advisories.
+**Version:** The official matrix checked on 2026-09-26 lists **EXT:tika 14.0** and
+**EXT:solrfal 14.0** for TYPO3 14.3 / EXT:solr 14.0. The previous “not yet available” statement
+is obsolete. Resolve the actual packages and Tika server requirements together; an old
+13.1 example is not a target pin. Check [Apache Solr security](https://solr.apache.org/security.html)
+and Apache Tika advisories before deploying the server images.
 
 See [SKILL-SOLRFAL.md](SKILL-SOLRFAL.md) for complete file indexing setup.
 
