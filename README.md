@@ -2,12 +2,12 @@
 
 **Agent Skills for TYPO3 v14 development, upgrades and operations.**
 
-60 skills, plus an always-on rules layer, for AI coding agents working on TYPO3 projects — Claude
+61 skills, plus an always-on rules layer, for AI coding agents working on TYPO3 projects — Claude
 Code, Cursor, Codex, Gemini CLI, Windsurf, and anything else that reads `SKILL.md` files.
 
 This is the active repository for TYPO3 skills. It began as a focused extraction from
 [webconsulting-skills](https://github.com/dirnbauer/webconsulting-skills) — 140 skills across many
-domains, now archived and read-only. This collection contains **48 `typo3-*` skills and 12 existing supporting skills**. The **16 explicitly selected Netresearch repositories** are pinned and
+domains, now archived and read-only. This collection contains **49 `typo3-*` skills and 12 existing supporting skills**. The **16 explicitly selected Netresearch repositories** are pinned and
 refreshable; unrelated marketplace skills are excluded. Supporting skills load on demand, not as
 additional mandatory phases in a TYPO3 upgrade.
 
@@ -260,6 +260,7 @@ the upstream state recorded in [VENDORED.md](VENDORED.md).
 | `typo3-icon14` | Designs and migrates TYPO3 extension icons to the v14 line-art style, including source SVG cleanup, light/dark beha… | webconsulting |
 | `typo3-idea-extension-blog` | Evaluates whether an outside idea is worth building as a TYPO3 extension, checks whether someone has already done i… | webconsulting |
 | `typo3-initial-release` | Prepare the first public 1.0.0 release of a TYPO3 14.3+ extension. Use for initial TER upload or Packagist publicat… | webconsulting |
+| `typo3-jev` | Configure and integrate TypeSafe Jev decisions through EXT:webcon_jev (webconsulting/webcon-jev, also called typo3_… | webconsulting |
 | `typo3-news-tags` | Bulk-generates thematic tags for georgringer/news (EXT:news) and assigns them to existing news records via keyword … | webconsulting |
 | `typo3-playwright` | Use when building or repairing Playwright browser tests for TYPO3 visitor journeys, AJAX widgets, CKEditor dialogs,… | webconsulting |
 | `typo3-powermail` | Builds and debugs Powermail 13+ contact and enquiry forms in TYPO3: form setup and validation, conditional fields t… | webconsulting |

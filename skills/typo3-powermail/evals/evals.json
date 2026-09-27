@@ -68,6 +68,14 @@
       "files": []
     },
     {
+      "id": "typo3-powermail-trigger-negative-jev",
+      "kind": "trigger-negative",
+      "status": "proposed",
+      "prompt": "Use typo3_jev to judge what this request means and offer a callback when appropriate.",
+      "expect_skill": "typo3-jev",
+      "note": "Semantic Jev decision and probability gate; underlying form setup remains here."
+    },
+    {
       "id": "typo3-powermail-behaviour-condition-direction",
       "kind": "behaviour",
       "status": "proposed",

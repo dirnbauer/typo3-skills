@@ -38,6 +38,9 @@ not prove rendering, validation or mail delivery.
 
 - **Conditional fields/pages:** read [conditions](SKILL-CONDITIONS.md), then the matching
   [recipe](SKILL-EXAMPLES.md). Keep rule sources outside targets they can hide.
+- **Jev semantic rules or recipient decisions:** use [typo3-jev](../typo3-jev/SKILL.md)
+  for the shipped AI operators, probability/confidence gates and explicit routing fallbacks.
+  Keep exact comparisons and normal form behavior in this skill.
 - **Mail delivery/templates:** inspect plugin recipient configuration, validation/spam results,
   mail transport and logs; read [templates](references/07-email-templates.md) and
   [events](references/06-psr-14-events.md). Never diagnose delivery from an HTTP 200 alone.

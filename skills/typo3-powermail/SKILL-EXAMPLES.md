@@ -94,6 +94,9 @@ operator values >= 100. Inspect installed code before using this API; public ups
 Reserve an unused project operator number, for example **120**, and avoid collisions with
 other integrations. For exact equality between two scalar fields, use the listener in
 [ExactFieldMatchListener.php](examples/ExactFieldMatchListener.php).
+`webcon_jev` already uses **100–105**. For semantic classification, callback offers,
+advisory detail scores and recipient routing, use its
+[existing operators and examples](../typo3-jev/references/powermail.md) instead of inventing a listener.
 
 Register operator 120 in your sitepackage's
 `Configuration/TCA/Overrides/tx_powermailcond_domain_model_rule.php`:

@@ -2,7 +2,7 @@
 
 Single source of truth for this collection: what each skill is for, when it triggers, and how they compose.
 
-**60 skills** · TYPO3 **14.3 LTS** target · PHP **8.4** standard (8.5 where it resolves)
+**61 skills** · TYPO3 **14.3 LTS** target · PHP **8.4** standard (8.5 where it resolves)
 
 ## Using a skill
 
@@ -127,6 +127,7 @@ can request them by name. Both eval graders use these same boundaries.
 | `thermo-nuclear-code-quality-review` | Cursor | Run an exceptionally strict, review-only maintainability audit of a branch diff, focused on structural simplification, abstraction… |
 | `typo3-backend-rights` | webconsulting | Build and audit TYPO3 backend editor rights after an explicit choice between one user-facing main group with simple internal leave… |
 | `typo3-design-system-page` | webconsulting | Build and maintain an accessible design-system overview inside a chosen TYPO3 installation: audit the rendered site and brand asse… |
+| `typo3-jev` | webconsulting | Configure and integrate TypeSafe Jev decisions through EXT:webcon_jev (webconsulting/webcon-jev, also called typo3_jev). Use for J… |
 | `typo3-playwright` | webconsulting | Use when building or repairing Playwright browser tests for TYPO3 visitor journeys, AJAX widgets, CKEditor dialogs, backend previe… |
 | `web-design-guidelines` | Vercel | Review UI code for Web Interface Guidelines compliance. Use when asked to \"review my UI\", \"check accessibility\", \"audit desig… |
 | `web-platform-design` | ehmo | Web platform design and accessibility guidelines. Use when building web interfaces, auditing accessibility, implementing responsiv… |
@@ -166,7 +167,7 @@ and keeps `SKILL.md` under 500 lines with detail in `references/`.
 ```
 
 A generated eval is a **draft**, a hand-written one **proposed**, and only a **reviewed** case
-signed by a person counts as coverage. Current: 40/40 collection-maintained skills have suites, 5/40 have human-reviewed coverage, and 39 suites include proposed cases awaiting signature.
+signed by a person counts as coverage. Current: 41/41 collection-maintained skills have suites, 5/41 have human-reviewed coverage, and 40 suites include proposed cases awaiting signature.
 
 ## Conventions
 
