@@ -89,7 +89,7 @@ Automated and manual results are reported **separately** and never merged into o
 | PHPStan | level 9 project, 10 for `packages/`; 0 new baseline entries; baseline strictly below the pre-update count; `phpVersion` set to the target | Fully local by nature — no caveat. |
 | Deprecations | **0** entries after flush + warmup + a full sample walk + module sweep + scheduler run | Only paths exercised locally are covered. State which were walked. |
 | PHP notices | 0 at `error_reporting=E_ALL` during the same sequence | Same coverage caveat. |
-| Extension scanner | 0 strong matches | — |
+| Extension scanner | 0 strong matches | `scripts/extension-scanner.php` report or System → Upgrade |
 | Test coverage | no decrease against the pre-update measurement; new code covered | — |
 
 ## Loop 560 — Information architecture and content

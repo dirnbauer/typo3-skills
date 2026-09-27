@@ -55,6 +55,9 @@ only to surfaces the extension supplies; do not start a whole-site upgrade for o
 
 Classify Scanner findings. Compatibility aliases can intentionally remain on the target while the
 scanner warns about their future removal; runtime tests decide whether they are still needed.
+Without backend access, run the Core matchers headlessly with
+[`typo3-upgrade-run/scripts/extension-scanner.php`](../../typo3-upgrade-run/scripts/extension-scanner.php)
+(`--path=` the extension; exit 1 on a strong match or parse error).
 
 ## Migrate persisted identities before registrations
 

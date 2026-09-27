@@ -39,7 +39,7 @@ is discovery guidance; installed source determines availability and side effects
 | Inventory | `extension:list`, `site:list`, `site:show`, `site:sets:list` | Sanitize site/config output; no ad-hoc bootstrap just to enumerate packages/sites |
 | Core/extension data upgrade | `upgrade:list`, `upgrade:run <reviewed-id>` | Review actual wizard and prerequisites; snapshot before mutation; unqualified run executes all available wizards |
 | Schema and package setup | Core Database Analyzer, `extension:setup` | Setup writes schema/config/static data; it is not a dry run or a blanket-safe schema diff |
-| Compatibility discovery | Core Extension Scanner in System → Upgrade | Inspect strong/weak findings, then use maintained Rector/Fractor rules; not a self-written replacement scanner |
+| Compatibility discovery | Core Extension Scanner in System → Upgrade, or `scripts/extension-scanner.php`, which runs the same installed Core matchers headlessly (no TYPO3 boot, no data access) | Inspect strong/weak findings, then use maintained Rector/Fractor rules; never a self-written replacement rule set |
 | Template diagnostics | `fluid:analyze`, `fluid:namespaces`, `fluid:cache:warmup` | Verify discovery includes affected templates and interpret findings; actual rendered paths still need proof |
 | References | `referenceindex:update --check`, then authorized `referenceindex:update` | Check output, not exit alone; do not rebuild `sys_refindex` with custom SQL |
 | Cache / local assets | `cache:flush`, `cache:flushtags`, `cache:warmup`, `asset:publish` | Use the smallest relevant operation; recheck actual DI/runtime effect and published assets |
