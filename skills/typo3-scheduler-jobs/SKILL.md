@@ -16,7 +16,9 @@ parameters, groups, and cadence from its TYPO3 14 runtime; never copy another si
 
 Require TYPO3 **14.3.x**. Stop on v13, pre-14.3 development releases, or v15 and re-evaluate the
 APIs. TYPO3 v14 stores task type, parameters, and execution details as structured fields; an empty
-`tx_scheduler_task.tasktype` means the v14 migration failed or remains incomplete.
+`tx_scheduler_task.tasktype` means the v14 migration failed or remains incomplete — often a legacy
+payload whose property types no longer fit its class, which also fails `upgrade:run`. Diagnose it
+read-only and recreate the task; see [legacy payloads](references/discovery-and-operations.md#migrate-into-v14-safely).
 
 ## Contract
 
