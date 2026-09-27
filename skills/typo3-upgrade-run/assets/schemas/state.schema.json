@@ -194,6 +194,33 @@
               "evidence_sha256": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
               "evidence_loop": { "type": ["string", "null"], "pattern": "^[0-9]{3}$" },
               "applicability_only": { "type": "boolean" },
+              "anchor": {
+                "type": ["object", "null"],
+                "additionalProperties": false,
+                "properties": {
+                  "rollback_ref": { "type": ["string", "null"] },
+                  "snapshot": { "type": ["string", "null"] },
+                  "approval": { "type": ["string", "null"] },
+                  "measurement": {
+                    "type": "object",
+                    "additionalProperties": { "type": "string", "pattern": "^(sha256:[a-f0-9]{64}|absent)$" }
+                  }
+                }
+              },
+              "review": { "type": ["string", "null"] },
+              "review_sha256": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
+              "change": {
+                "type": ["object", "null"],
+                "additionalProperties": false,
+                "properties": {
+                  "base": { "type": "string" },
+                  "files": { "type": "integer", "minimum": 0 },
+                  "added": { "type": "integer", "minimum": 0 },
+                  "deleted": { "type": "integer", "minimum": 0 },
+                  "over_budget": { "type": "boolean" },
+                  "approval": { "type": ["string", "null"] }
+                }
+              },
               "history": { "type": "array", "items": { "type": "object" } }
             }
           }

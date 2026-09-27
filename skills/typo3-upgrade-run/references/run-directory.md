@@ -72,6 +72,10 @@ the edges matching its observed outcome.
 The `nodes/` result is a convenient last-result view, not the full history. Attempt history and
 edge traversal counts live in `state.json`; the append-only `journal.jsonl` is the audit trail.
 
+Each node directory holds the worker's `evidence.md` (or the path its contract names), an optional
+`review.md` from the independent verifier, and `result.json`. `t3u graph-report --write` adds
+`report/graph-report.{json,md}` with measured minutes per node.
+
 A scaffolded loop is optional bounded evidence within one proof/migration node. It still contains
 seven fixed documents so old runs and existing report tooling remain readable.
 
@@ -149,6 +153,9 @@ Ids are never reused. A superseded loop keeps its directory with `verdict: super
 The reasoning: the documents, reports, manifests and checksums are the audit trail and are small; the PNGs are large, numerous, and reproducible from a sealed baseline plus a recorded command. `MANIFEST.sha256` still proves what the images were, so the evidence chain survives even where the images themselves are not committed.
 
 Whether the run directory is committed at all is the user's call — ask once, at phase P00, and record the answer.
+If it is not committed, the handover names an archive of the run directory with its SHA-256, so the
+state, journal and evidence survive the local clone. `graph-report` states which of the two applies;
+a run whose audit trail exists only on one laptop cannot be reviewed later.
 
 ## Resuming
 

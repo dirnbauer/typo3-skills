@@ -74,6 +74,9 @@ Each is a memory failure, and none of them is fixed by remembering harder. They 
 | `selftest.lock_hash` | Every `compare-*` command refuses without a valid lock. This is the mechanical form of "only a harness that proves zero against itself may judge an update". |
 | `graph.definition_hash` | Binds this run to one reviewed graph. A changed definition cannot silently change the process mid-run. |
 | `graph.nodes.*` | Persisted node lifecycle, attempt count, evidence, and history. A transcript cannot promote a node. |
+| `graph.nodes.*.anchor` | Rollback reference, snapshot and approval given at `node-open`, plus the measurement-input fingerprint the change guard compares at close. |
+| `graph.nodes.*.review` / `review_sha256` | The independent review a judgement or `not-applicable` outcome closed with, bound to the evidence bytes. |
+| `graph.nodes.*.change` | Files and lines changed since the Git anchor, the recovery budget verdict and any approval that allowed an overrun. |
 | `graph.edges.*.traversals` | Enforces bounded recovery cycles and reveals repeated failure paths. |
 | `graph.locks` | Exclusive claims store an owner id; shared claims store `{ "readers": ["node-id", ...] }`. Releasing one reader retains the others. Every owner must be running and declare that mode. |
 | `blocked` | Non-null means the run has stopped and is waiting on a person. A run that is blocked and does not say so is the worst state to resume into. |

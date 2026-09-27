@@ -50,13 +50,17 @@ export const COMMANDS = {
   'graph-next': { summary: 'List ready nodes and safe parallel sets', options: {} },
   'graph-forecast': { summary: 'Admit measured work against size, locks, cutoff and closure reserve', options: { evidence: { type: 'string' } } },
   'graph-validate': { summary: 'Validate graph definition, state, locks, and retry bounds', options: {} },
+  'node-brief': { summary: 'Print the self-contained work order for one node: contract, flags, routes, budget', options: {} },
+  'graph-report': { summary: 'Measured minutes, attempts and retries per node from state and journal', options: {
+    write: { type: 'boolean', default: false, help: 'Also write report/graph-report.{json,md}' },
+  }},
   'node-open': { summary: 'Acquire resources and open one ready graph node', options: {
     snapshot: { type: 'string' }, 'rollback-ref': { type: 'string' }, approval: { type: 'string' },
     'applicability-only': { type: 'boolean', default: false },
   }},
   'node-close': { summary: 'Close a node with evidence and activate outcome routes', options: {
     outcome: { type: 'string' }, evidence: { type: 'string' }, 'evidence-loop': { type: 'string' },
-    approval: { type: 'string' },
+    approval: { type: 'string' }, review: { type: 'string', help: 'Independent verifier verdict bound to the evidence hash' },
   }},
   'closure-start': { summary: 'Bind a new final-proof epoch to current code and live inputs', options: {} },
   'closure-check': { summary: 'Refuse incomplete or stale closure evidence', options: { evidence: { type: 'string' } } },
@@ -71,7 +75,7 @@ export const COMMANDS = {
     snapshot: { type: 'string' }, 'rollback-ref': { type: 'string' },
     stateful: { type: 'boolean', default: false },
   }},
-  'snapshot-create': { summary: 'Create and record the rollback snapshot for a loop', options: {
+  'snapshot-create': { summary: 'Create and record the rollback snapshot for a ready graph node (--node) or a loop', options: {
     name: { type: 'string' },
   }},
   approval: { summary: 'Record intent authorization or observed-result acceptance', options: {

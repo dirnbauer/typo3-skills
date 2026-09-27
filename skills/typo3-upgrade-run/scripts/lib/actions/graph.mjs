@@ -16,6 +16,9 @@ import { assertPhaseRuntime, runtimeProfileIssues } from '../run/runtime.mjs';
 import { forecastGraph } from '../run/forecast.mjs';
 import { nodeClaims, claimsConflict, lockOwners, blockedClaims, acquireClaims, releaseClaims } from '../run/resources.mjs';
 import { closureCheck, readClosureArtifact, readFeaturePlan, validClosureAcceptance, verifyRecordedClosureAcceptance } from './closure.mjs';
+import {
+  forbiddenMeasurementChanges, measurementInputs, overBudget, parseReview, projectChangeSince, reviewRequired,
+} from '../run/guards.mjs';
 export { validClosureAcceptance } from './closure.mjs';
 
 const GRAPH_SCHEMA = 'typo3-upgrade-run/graph@1';
@@ -149,10 +152,23 @@ export async function nodeOpen({ values, paths, log, journal }) {
   for (const { resource } of blockedClaims(claims, state.graph.locks)) {
     throw new PreconditionError(`Resource ${resource} is locked by ${lockOwners(state.graph.locks[resource]).join(', ')}.`);
   }
+  const guarded = definition.policy?.guard_change_scope === true && !applicabilityOnly
+    && ['code', 'stateful'].includes(node.mutation);
+  const measurement = guarded ? await measurementInputs(paths) : {};
   const now = new Date().toISOString();
   acquireClaims(state.graph.locks, claims, id);
   nodeState.status = 'running';
   nodeState.applicability_only = applicabilityOnly;
+  // The anchor is what a rollback and the change-scope guard compare against.
+  nodeState.anchor = {
+    rollback_ref: values['rollback-ref'] ? String(values['rollback-ref']) : null,
+    snapshot: values.snapshot ? String(values.snapshot) : null,
+    approval: values.approval ? String(values.approval) : null,
+    measurement,
+  };
+  nodeState.review = null;
+  nodeState.review_sha256 = null;
+  nodeState.change = null;
   nodeState.attempts += 1;
   nodeState.active_since = now;
   nodeState.completed_at = null;
@@ -211,6 +227,51 @@ export async function nodeClose({ values, paths, log, journal }) {
     }
   }
 
+  let reviewRef = null, reviewHash = null, change = null;
+  if (reviewRequired(definition, node, outcome)) {
+    reviewRef = String(values.review ?? '');
+    if (!reviewRef) {
+      throw new PreconditionError(`Outcome ${outcome} of ${id} needs --review: the verdict of an independent verifier that read only the node brief and this evidence.`);
+    }
+    if (path.normalize(reviewRef) === path.normalize(evidence)) {
+      throw new PreconditionError('The review must be a separate artifact, not the evidence file itself.');
+    }
+    const reviewBytes = await readClosureArtifact(paths.root, reviewRef);
+    const review = parseReview(reviewBytes.toString('utf8'));
+    const reviewedEvidence = evidenceHash ?? `sha256:${sha256(await readClosureArtifact(paths.root, evidence))}`;
+    if (review.verdict !== 'agree') {
+      throw new PreconditionError(`The independent review of ${id} does not agree. Resolve its objections, or close with the outcome the review supports.`);
+    }
+    if (review.evidenceSha256 !== reviewedEvidence) {
+      throw new PreconditionError('The review names different evidence bytes (evidence_sha256). Review the current evidence file.');
+    }
+    reviewHash = `sha256:${sha256(reviewBytes)}`;
+  }
+  const guarded = definition.policy?.guard_change_scope === true && !nodeState.applicability_only
+    && ['code', 'stateful'].includes(node.mutation);
+  if (guarded && outcome !== 'blocked') {
+    const forbidden = forbiddenMeasurementChanges(nodeState.anchor?.measurement ?? {}, await measurementInputs(paths),
+      { measurementNode: node.measurement === true });
+    if (forbidden.length) {
+      throw new PreconditionError(`Node ${id} changed measurement inputs it may not change: ${forbidden.join(', ')}. `
+        + 'Restore them. A measurement problem belongs to a harness recovery node with an ADR, never to a site fix.');
+    }
+  }
+  if (guarded && outcome === 'pass' && String(nodeState.anchor?.rollback_ref ?? '').startsWith('git:')) {
+    change = await projectChangeSince(paths.root, nodeState.anchor.rollback_ref.slice(4));
+    const budget = id.endsWith('-recovery') ? definition.policy?.recovery_change_budget : null;
+    change.over_budget = overBudget(change, budget);
+    change.approval = null;
+    if (change.over_budget) {
+      const approval = values.approval ? String(values.approval) : '';
+      if (!approval || !state.approvals.includes(approval)) {
+        throw new PreconditionError(`Recovery ${id} changed ${change.files} file(s) and ${change.added + change.deleted} line(s), `
+          + `over its ${budget.files}-file/${budget.lines}-line budget. Split the fix into another attempt, or pass --approval naming a granted approval.`);
+      }
+      change.approval = approval;
+    }
+  }
+
   const matching = definition.edges.filter((edge) => edge.from === id && edge.outcome === outcome);
   const retriesUsed = definition.edges.filter(e => e.retry === true)
     .reduce((n, e) => n + state.graph.edges[e.id].traversals, 0);
@@ -233,12 +294,16 @@ export async function nodeClose({ values, paths, log, journal }) {
     state.contract_b.unlocked_at = now;
   }
   const evidenceLoop = values['evidence-loop'] ? String(values['evidence-loop']).slice(0, 3) : null;
-  const previous = { status: nodeState.status, attempt: nodeState.attempts, outcome, evidence, evidence_sha256: evidenceHash, evidence_loop: evidenceLoop, completed_at: now, applicability_only: nodeState.applicability_only ?? false };
+  const previous = { status: nodeState.status, attempt: nodeState.attempts, outcome, evidence, evidence_sha256: evidenceHash, evidence_loop: evidenceLoop, completed_at: now, applicability_only: nodeState.applicability_only ?? false,
+    review: reviewRef, review_sha256: reviewHash, change };
   nodeState.history.push(previous);
   nodeState.status = statusForOutcome(outcome);
   nodeState.outcome = outcome;
   nodeState.evidence = evidence;
   nodeState.evidence_sha256 = evidenceHash;
+  nodeState.review = reviewRef;
+  nodeState.review_sha256 = reviewHash;
+  nodeState.change = change;
   nodeState.evidence_loop = evidenceLoop;
   nodeState.completed_at = now;
   nodeState.active_since = null;
@@ -321,6 +386,13 @@ export function validateGraphDefinition(definition) {
     && (!definition.policy.require_artifacts || !nodeIds.has('intake-join'))) {
     issues.push('feature contracts require hashed artifacts and an intake-join node');
   }
+  for (const flag of ['require_node_contracts', 'require_independent_review', 'guard_change_scope']) {
+    if (definition.policy?.[flag] !== undefined && typeof definition.policy[flag] !== 'boolean') issues.push(`policy.${flag} must be boolean`);
+  }
+  const budget = definition.policy?.recovery_change_budget;
+  if (budget !== undefined && !(Number.isInteger(budget?.files) && budget.files > 0 && Number.isInteger(budget?.lines) && budget.lines > 0)) {
+    issues.push('policy.recovery_change_budget needs positive integer files and lines');
+  }
   if (definition.policy?.serialize_mutations && !resources.has('project-write')) issues.push('serialized mutations require the project-write resource');
   if (definition.policy?.shared_proof_reads !== undefined && typeof definition.policy.shared_proof_reads !== 'boolean') {
     issues.push('policy.shared_proof_reads must be boolean');
@@ -359,6 +431,9 @@ export function validateGraphDefinition(definition) {
       continue;
     }
     if (node.mutation !== undefined && !['none', 'code', 'stateful'].includes(node.mutation)) issues.push(`node ${id} has invalid mutation class`);
+    if (definition.policy?.require_node_contracts === true) issues.push(...nodeContractIssues(id, node));
+    if (node.measurement !== undefined && typeof node.measurement !== 'boolean') issues.push(`node ${id} measurement must be boolean`);
+    if (node.review !== undefined && node.review !== 'required') issues.push(`node ${id} review must be "required" when set`);
     for (const required of node.requires ?? []) if (!nodeIds.has(required)) issues.push(`node ${id} requires unknown node ${required}`);
     for (const resource of nodeResources(node, definition)) if (!resources.has(resource)) issues.push(`node ${id} uses undeclared resource ${resource}`);
     const outgoing = definition.edges.filter((edge) => edge.from === id);
@@ -375,6 +450,27 @@ export function validateGraphDefinition(definition) {
   if (hasCycle(nonRetryAdj)) issues.push('graph contains an unbounded cycle; every cycle must cross a bounded retry edge');
   const requiredAdj = Object.fromEntries([...nodeIds].map(id => [id, definition.nodes[id]?.requires ?? []]));
   if (hasCycle(requiredAdj)) issues.push('graph contains a prerequisite cycle and cannot become ready');
+  return issues;
+}
+
+/**
+ * A node contract is the typed handoff a worker receives: what to achieve, when it is done,
+ * and where its evidence goes. Required only for definitions that opt in, so sealed legacy
+ * graphs keep their original hash and meaning.
+ */
+export function nodeContractIssues(id, node) {
+  const issues = [];
+  for (const field of ['objective', 'done']) {
+    const value = node[field];
+    if (typeof value !== 'string' || value.trim().length < 12 || value.length > 280) {
+      issues.push(`node ${id} needs a ${field} sentence of 12–280 characters`);
+    }
+  }
+  const evidence = node.evidence;
+  if (typeof evidence !== 'string' || !/^(nodes|manifests|report|baseline|loops)\/[A-Za-z0-9._\/-]+$/.test(evidence)
+    || evidence.split('/').includes('..')) {
+    issues.push(`node ${id} needs an evidence path inside nodes/, manifests/, report/, baseline/ or loops/`);
+  }
   return issues;
 }
 
@@ -426,7 +522,7 @@ export function validateGraphState(graph, definition, hash, runState = null) {
   return issues;
 }
 
-async function graphContext(paths) {
+export async function graphContext(paths) {
   const state = await new StateStore(paths).read();
   if (!state.graph) throw new PreconditionError('No graph state. Run "t3u graph-init" first.');
   const definitionPath = path.resolve(paths.root, state.graph.definition_path);
@@ -456,7 +552,7 @@ function resolveDefinitionPath(value, paths) {
   return resolved;
 }
 
-function refreshReady(graph, definition, { traversed = [] } = {}) {
+export function refreshReady(graph, definition, { traversed = [] } = {}) {
   const traversedTargets = new Set(traversed.flatMap((edge) => asArray(edge.to)));
   const start = new Set(asArray(definition.start));
   for (const [id, nodeState] of Object.entries(graph.nodes)) {
@@ -475,11 +571,16 @@ function refreshReady(graph, definition, { traversed = [] } = {}) {
       nodeState.evidence = null;
       nodeState.evidence_sha256 = null;
       nodeState.evidence_loop = null;
+      if ('review' in nodeState) {
+        nodeState.review = null;
+        nodeState.review_sha256 = null;
+        nodeState.change = null;
+      }
     }
   }
 }
 
-function recoveryBudgetBlock(graph, definition, id) {
+export function recoveryBudgetBlock(graph, definition, id) {
   // Admit no expensive repair whose every successful continuation is already exhausted.
   // Keep node-close's checks too: another worker may spend shared retries after node-open.
   const outgoing = definition.edges.filter(e => e.from === id);
@@ -496,7 +597,7 @@ function recoveryBudgetBlock(graph, definition, id) {
   return exhausted ? `Node ${id} cannot finish a successful route within the remaining recovery budget; stop before starting another repair.` : null;
 }
 
-function deriveGraphStatus(graph, definition) {
+export function deriveGraphStatus(graph, definition) {
   const entries = Object.entries(graph.nodes);
   const terminals = asArray(definition.terminal);
   if (entries.some(([, n]) => n.status === 'blocked')
@@ -557,7 +658,7 @@ function compatibleSets(nodes) {
   return sets;
 }
 
-function nodeResources(node, definition) {
+export function nodeResources(node, definition) {
   return nodeClaims(node, definition).map(claim => claim.resource);
 }
 

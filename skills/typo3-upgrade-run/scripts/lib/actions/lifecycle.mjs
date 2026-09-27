@@ -110,6 +110,7 @@ export async function loopOpen({ values, paths, log, journal, liveAssert = asser
 
 export async function snapshotCreate({ values, paths, log, journal, runner = runDdev }) {
   const state = await new StateStore(paths).read();
+  if (values.node && !values.loop) return snapshotForNode({ values, state, paths, log, journal, runner });
   const loopName = await resolveLoop(paths, values.loop);
   const id = loopName.slice(0, 3);
   const name = values.name ?? `loop-${id}-pre`;
@@ -120,6 +121,30 @@ export async function snapshotCreate({ values, paths, log, journal, runner = run
   await journal?.append('snapshot', { loop_id: id, name });
   log.success(`DDEV snapshot ${name} created and recorded.`);
   return { exitCode: EXIT.PASS, verdict: 'pass', snapshot: name, message: `snapshot ${name} created` };
+}
+
+/**
+ * A stateful graph node opens only with a recorded snapshot. Take it immediately before
+ * the node, one per attempt, so a rollback restores exactly the state the node started from.
+ */
+async function snapshotForNode({ values, state, paths, log, journal, runner }) {
+  const id = String(values.node);
+  if (!/^[a-z0-9][a-z0-9-]*$/.test(id)) throw new HarnessError('--node must be a graph node id.');
+  const nodeState = state.graph?.nodes?.[id];
+  if (!nodeState) throw new PreconditionError(`Unknown graph node ${id}; run graph-init first.`);
+  if (nodeState.status !== 'ready') {
+    throw new PreconditionError(`Node ${id} is ${nodeState.status}. Snapshot immediately before opening a ready node.`);
+  }
+  const name = values.name ? String(values.name) : `node-${id}-a${nodeState.attempts + 1}`;
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(name)) throw new HarnessError('--name may contain letters, digits, dot, dash and underscore.');
+  await runner(name, state.project?.ddev_project || null);
+  await new StateStore(paths).update((current) => {
+    if (!current.snapshots.includes(name)) current.snapshots.push(name);
+  });
+  await journal?.append('snapshot', { node_id: id, name });
+  log.success(`DDEV snapshot ${name} created and recorded for ${id}.`);
+  return { exitCode: EXIT.PASS, verdict: 'pass', snapshot: name, node: id,
+    message: `snapshot ${name} created; open with --snapshot ${name}` };
 }
 
 export async function approvalRecord({ values, paths, log, journal }) {

@@ -16,6 +16,35 @@ metadata:
 
 One job: decide whether Contract A is actually proven.
 
+## Nodes you own
+
+Start every node from `t3u node-brief --node <id>`; it carries the contract, routes and budget.
+
+| Node | Focus |
+|---|---|
+| `target-content-epoch` | Workflow step 1; flagged **R**: a verifier checks the ledger explanations |
+| `content-ledger-recovery` | Explain or revert unledgered drift; flagged **R** |
+| `http-dom-proof` | Step 3 for every discovered URL; evidence loop |
+| `visual-proof` | Step 3 for the sealed tiered sample; evidence loop; findings → `visual-classify` |
+| `visual-classify` | One cause per difference; flagged **R**, because a wrong class sends the next worker to the wrong repair |
+| `backend-operations` | Step 5 with a non-admin editor where the plan names one |
+| `axe-proof` | Step 7, verify mode, per visible state |
+| `lighthouse-proof` | Step 7 in the quiet lane with the required run count |
+| `markup-recovery` | One template/markup cause; outcome `http` or `visual` names the proof to rerun |
+| `interaction-recovery` | One failing journey step |
+| `quality-recovery` | One accessibility or performance regression |
+| `closure-harness-recovery` | Measurement node: repair the final instrument; the outcome names the single proof to rerun |
+| `closure-join` | All final proofs passed on the current epoch |
+| `closure-reconcile` | Stale evidence, missing assertions or unaccepted changes; flagged **R** |
+| `contract-a-gate` | Closure certificate plus recorded human acceptance of its hash; evidence loop |
+| `elevation-join` | Optional Contract B branches passed or reviewed `not-applicable` |
+| `handover` | Local handover including the graph report and the audit-trail location |
+
+## Worker protocol
+
+Your input is the node brief. Write its evidence file, return one allowed outcome, and never run
+`node-open`/`node-close` or edit run state. Details: [graph runner](../typo3-upgrade-run/references/graph-runner.md).
+
 ## Preconditions
 
 - Graph and identity validate; Baseline A verifies byte-for-byte.

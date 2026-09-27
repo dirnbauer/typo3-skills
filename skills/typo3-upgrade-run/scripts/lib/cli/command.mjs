@@ -30,7 +30,7 @@ const REQUIRES_SELFTEST = new Set([
 ]);
 
 const SELFTEST_MAX_AGE_MS = 24 * 60 * 60 * 1000;
-const AFTER_DEADLINE_COMMANDS = new Set(['status', 'report', 'validate-run']);
+const AFTER_DEADLINE_COMMANDS = new Set(['status', 'report', 'validate-run', 'graph-report']);
 
 export function assertWithinRuntimeBudget(runState, timestamp = Date.now()) {
   const deadline = Date.parse(runState?.runtime?.deadline_at ?? '');

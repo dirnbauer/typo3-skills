@@ -15,6 +15,32 @@ metadata:
 
 One job: change one authorized cause and return inspectable evidence to the graph.
 
+## Nodes you own
+
+Start every node from `t3u node-brief --node <id>`; it carries the contract, routes and budget.
+
+| Node | Focus |
+|---|---|
+| `dependency-plan` | Composer target for ^14.3 with latest stable versions; flagged **R** for the resolution choices |
+| `dependency-resolution` | Exactly one blocker per attempt, behind a Git anchor |
+| `rung-13` | 13.4 compatibility rung; snapshot first; wizards/schema to a fixed point; evidence loop |
+| `mechanical-migration` | Rector, Fractor, scanner; rebuild caches; second pass reports no changes |
+| `manual-migration` | Removed APIs and stored data before registration; snapshot first; evidence loop |
+| `rung-14` | ^14.3, fixed point, DI container, backend opens; snapshot first; evidence loop |
+| `rung13-recovery` | Diagnose the one blocking cause and plan the repair for the retried rung |
+| `mechanical-recovery` | Diagnose the cause the tools left behind; plan the fix for the retry |
+| `manual-recovery` | Diagnose one data/API/registration-order failure; plan the fix |
+| `rung14-recovery` | Diagnose the one blocking cause and plan the repair for the retried rung |
+| `content-recovery` | One ledgered content/data repair found by visual classification; snapshot first |
+
+Stateful nodes open with `t3u snapshot-create --node <id>` first. Code nodes open with a
+`--rollback-ref git:<sha>`; the guard measures your diff against it.
+
+## Worker protocol
+
+Your input is the node brief. Write its evidence file, return one allowed outcome, and never run
+`node-open`/`node-close` or edit run state. Details: [graph runner](../typo3-upgrade-run/references/graph-runner.md).
+
 ## Preconditions
 
 - The node is `ready`; Baseline A is sealed and verified; graph definition/identity/fingerprints match.

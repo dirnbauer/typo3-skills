@@ -8,7 +8,8 @@ definition hash is sealed by `t3u graph-init`. Definition drift makes the run in
 
 Every node declares:
 
-- one objective and one owner skill;
+- one objective and one owner skill; graphs with `require_node_contracts` state them as
+  `objective`, `done` (the testable completion condition) and `evidence` (the default artifact path);
 - phase, mutation class (`none`, `code`, or `stateful`), and shared/exclusive resource claims;
 - named prerequisites and allowed outcomes;
 - required evidence; proof nodes additionally require a green bounded loop id;
@@ -145,3 +146,29 @@ state and cannot repair missing evidence.
 Before the overnight deadline, `closure-verify` can persist a verified-awaiting-acceptance receipt.
 Human acceptance may follow later, but only for that timely, still-current evidence. This separates
 human waiting from compute time; it does not extend the deadline for tests or implementation.
+
+## 10.8 Worker handoff and independent review
+
+`t3u node-brief --node <id>` is the typed handoff: contract, owner skill, open flags, routes, retry
+counters, budget and blockers. A worker receives only the brief, executes one node and returns an
+outcome and evidence path. Only the controller runs `node-open` and `node-close`.
+
+With `policy.require_independent_review`, nodes marked `review: required` (judgement calls such as
+extension resolutions, dependency plans, content-ledger reconciliation, visual classification and
+gate reconciliation) and every `not-applicable` outcome need `--review <path>`. The review is a
+separate artifact by a verifier that saw only the brief and the evidence; it states
+`verdict: agree|disagree` and `evidence_sha256:` of the reviewed evidence. `node-close` refuses a
+missing review, a disagreement, a review of other bytes, and a review that is the evidence file.
+`blocked` never needs a review: stopping must stay cheap.
+
+## 10.9 Change scope
+
+With `policy.guard_change_scope`, `node-open` records the rollback anchor and fingerprints the
+measurement inputs of every code or stateful node: `config/`, `selftest.lock.json`, the URL
+manifest, the feature plan and baseline seals. Before any outcome except `blocked`, `node-close`
+refuses a node that changed them. Nodes marked `measurement: true` may recalibrate `config/` and
+the self-test with an ADR; no node may change baseline seals, the URL manifest or the feature plan.
+
+`policy.recovery_change_budget` limits a passing `*-recovery` node with a `git:` anchor to the stated
+files and changed lines, measured against the anchor and excluding the run directory. Exceeding it
+needs `--approval` naming a granted approval; otherwise split the fix into another attempt.

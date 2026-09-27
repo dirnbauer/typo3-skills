@@ -15,6 +15,29 @@ metadata:
 
 One job: prove exactly what will be upgraded and define the graph before mutation.
 
+## Nodes you own
+
+Start every node from `t3u node-brief --node <id>`; it carries the contract, routes and budget.
+
+| Node | Focus |
+|---|---|
+| `intake` | One project, one DDEV clone, one authorized dataset source; nothing mutated |
+| `project-identity` | Checklist item 1; any mismatch is `findings` → `identity-recovery` |
+| `dataset-freshness` | Checklist item 2; empty, stale or unapproved data is `findings` → `data-recovery` |
+| `extension-inventory` | Checklist items 4–7; flagged **R**: a second verifier reviews the resolutions |
+| `url-discovery` | Checklist item 3; a missing sitemap is `findings` → `sitemap-recovery` |
+| `identity-recovery` | Correct the identity evidence; never "fix" the site to match an assumption |
+| `data-recovery` | Staged, checksummed DB and files from the authorized source; live sync stays separate |
+| `sitemap-recovery` | Diagnose only; `not-applicable` (reviewed) routes to `degraded-discovery` |
+| `degraded-discovery` | Approved page-tree or crawl fallback with named coverage gaps |
+
+The controller closes `intake-join` with your sealed `manifests/feature-contracts.json`.
+
+## Worker protocol
+
+Your input is the node brief. Write its evidence file, return one allowed outcome, and never run
+`node-open`/`node-close` or edit run state. Details: [graph runner](../typo3-upgrade-run/references/graph-runner.md).
+
 ## Preconditions
 
 - `typo3-upgrade-run` initialized the local run and selected one project.

@@ -15,6 +15,25 @@ metadata:
 
 One job: build a trustworthy source instrument before the first site change.
 
+## Nodes you own
+
+Start every node from `t3u node-brief --node <id>`; it carries the contract, routes and budget.
+
+| Node | Focus |
+|---|---|
+| `deterministic-baseline` | Workflow steps 1–7; pass only with a green determinism loop and a sealed `A-original` |
+| `determinism-recovery` | Measurement node: stabilise the observed nondeterminism shape with an ADR-backed adapter |
+| `harness-recovery` | Measurement node: repair the instrument (crash, binary, browser/session setup), never the site |
+| `session-recovery` | Measurement node: consent/session handling that made proof compare different states |
+
+Measurement nodes may recalibrate `config/` and the self-test with an ADR. The change guard still
+refuses any edit to baseline seals, the URL manifest or the feature plan.
+
+## Worker protocol
+
+Your input is the node brief. Write its evidence file, return one allowed outcome, and never run
+`node-open`/`node-close` or edit run state. Details: [graph runner](../typo3-upgrade-run/references/graph-runner.md).
+
 ## Preconditions
 
 - Intake identity and accepted dataset evidence are green.

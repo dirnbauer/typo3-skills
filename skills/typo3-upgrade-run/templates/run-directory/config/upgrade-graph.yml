@@ -4,6 +4,10 @@ policy:
   require_artifacts: true
   require_forecast: true
   require_feature_contracts: true
+  require_node_contracts: true
+  require_independent_review: true
+  guard_change_scope: true
+  recovery_change_budget: { files: 10, lines: 400 }
   serialize_mutations: true
   shared_proof_reads: true
   max_node_attempts: 3
@@ -24,81 +28,133 @@ terminal: [handover, stopped]
 
 nodes:
   intake:
+    objective: "Confirm the single project, its local DDEV clone and the authorized dataset source before any branch starts."
+    done: "Project root, remote, branch, HEAD, DDEV name and the dataset decision are recorded and nothing was mutated."
+    evidence: nodes/intake/evidence.md
     skill: typo3-upgrade-intake
     phase: P00
     outcomes: [pass, blocked]
 
   project-identity:
+    objective: "Prove that repository, branch, HEAD, DDEV project, database and installed core identify the intended site."
+    done: "Every identity field is measured rather than inferred and matches the selected project."
+    evidence: nodes/project-identity/evidence.md
     skill: typo3-upgrade-intake
     phase: P00
     outcomes: [pass, findings, blocked]
   dataset-freshness:
+    objective: "Prove that the local database and fileadmin are the accepted dated dataset, not an empty or stale copy."
+    done: "Dump date, newest pages/tt_content timestamps, row sentinels and fileadmin count/hash are recorded and accepted."
+    evidence: nodes/dataset-freshness/evidence.md
     skill: typo3-upgrade-intake
     phase: P00
     resources: [ddev-stateful]
     outcomes: [pass, findings, blocked]
   extension-inventory:
+    objective: "Inventory every installed, local and abandoned extension with v14 compatibility and real usage."
+    done: "Each extension has usage evidence and one named v14 resolution; why-not and audit output are preserved verbatim."
+    evidence: nodes/extension-inventory/evidence.md
+    review: required
     skill: typo3-upgrade-intake
     phase: P00
     outcomes: [pass, blocked]
   url-discovery:
+    objective: "Discover every site and language route from sitemaps, the page tree and golden paths into the guarded URL manifest."
+    done: "The URL manifest covers all sites and languages and names every uncovered dynamic route."
+    evidence: nodes/url-discovery/evidence.md
     skill: typo3-upgrade-intake
     phase: P00
     resources: [browser-proof]
     outcomes: [pass, findings, blocked]
   backend-group-model-decision:
+    objective: "Decide whether Redirects editing goes to one new least-privilege group or into the existing editor groups."
+    done: "The decision cites the current group inventory; pass selects one new group, not-applicable preserves the existing groups."
+    evidence: nodes/backend-group-model-decision/evidence.md
+    review: required
     skill: typo3-backend-rights
     phase: P00
     outcomes: [pass, not-applicable, blocked]
   structured-data-inventory:
+    objective: "Record the structured data (JSON-LD, microdata) the source site emits per template and language."
+    done: "Emitted types and properties are stored per template and language as the parity reference."
+    evidence: nodes/structured-data-inventory/evidence.md
     skill: typo3-structured-data
     phase: P00
     resources: [browser-proof]
     outcomes: [pass, blocked]
   webmcp-inventory:
+    objective: "Record the browser-agent (WebMCP) tools and declarations the source site exposes, if any."
+    done: "Existing WebMCP surfaces are listed with their behaviour, or their absence is evidenced."
+    evidence: nodes/webmcp-inventory/evidence.md
     skill: typo3-webmcp
     phase: P00
     resources: [browser-proof]
     outcomes: [pass, blocked]
 
   identity-recovery:
+    objective: "Resolve the identity mismatch reported by project-identity without changing the site."
+    done: "Corrected identity evidence exists, or the mismatch is escalated as blocked."
+    evidence: nodes/identity-recovery/evidence.md
     skill: typo3-upgrade-intake
     phase: P00
     outcomes: [pass, blocked]
   data-recovery:
+    objective: "Obtain or restore the authorized dated dataset locally with staged, checksummed database and files."
+    done: "Database and fileadmin match the accepted dataset checksums; any live sync stayed a separate authorized task."
+    evidence: nodes/data-recovery/evidence.md
     skill: typo3-upgrade-intake
     phase: P01
     # Request/verify an authorized local dataset; live sync remains a separate task.
     resources: [ddev-stateful]
     outcomes: [pass, blocked]
   sitemap-recovery:
+    objective: "Diagnose the missing or broken sitemap and choose a read-only discovery source; the site stays unrepaired until Baseline A exists."
+    done: "pass: discovery can rerun from a working source; not-applicable: the approved page-tree fallback is required."
+    evidence: nodes/sitemap-recovery/evidence.md
     skill: typo3-upgrade-intake
     phase: P00
     # Inspect fallback discovery only. Site repairs wait until Baseline A exists.
     outcomes: [pass, not-applicable, blocked]
   degraded-discovery:
+    objective: "Run the approved page-tree or crawl discovery for a site without a usable sitemap."
+    done: "The fallback manifest, its approval and the named coverage gaps are recorded."
+    evidence: nodes/degraded-discovery/evidence.md
     skill: typo3-upgrade-intake
     phase: P00
     outcomes: [pass, blocked]
 
   intake-join:
+    objective: "Seal intake: all inventories agree, runtime sizing is sealed and the feature evidence plan is fixed."
+    done: "manifests/feature-contracts.json validates and is hash-sealed as this node's evidence."
+    evidence: manifests/feature-contracts.json
     phase: P01
     requires: [project-identity, dataset-freshness, extension-inventory, url-discovery, backend-group-model-decision, structured-data-inventory, webmcp-inventory]
     outcomes: [pass, blocked]
 
   deterministic-baseline:
+    objective: "Capture Baseline A twice, unchanged, with zero HTTP, DOM and pixel differences, then seal it."
+    done: "baseline/A-original is sealed with MANIFEST.sha256 and LOCK.json and the determinism loop is green."
+    evidence: nodes/deterministic-baseline/evidence.md
     skill: typo3-upgrade-baseline
     phase: P02
     resources: [browser-proof]
     evidence_loop: required
     outcomes: [pass, invalid, harness-error, blocked]
   determinism-recovery:
+    objective: "Stabilize the measurement for the observed nondeterminism shape (randomness, GIFs, sliders, fonts, lazy media)."
+    done: "A sealed, ADR-backed stabilization adapter is recorded; no threshold, sample or page exclusion changed."
+    evidence: nodes/determinism-recovery/evidence.md
+    measurement: true
     skill: typo3-upgrade-baseline
     phase: P02
     mutation: code
     resources: [browser-proof]
     outcomes: [pass, blocked]
   harness-recovery:
+    objective: "Repair the measuring system (crash, missing binary, browser or session setup) without touching the site."
+    done: "The harness fault is fixed and the affected proof reruns green; the site is unchanged."
+    evidence: nodes/harness-recovery/evidence.md
+    measurement: true
     skill: typo3-upgrade-baseline
     phase: P02
     mutation: code
@@ -106,17 +162,27 @@ nodes:
     outcomes: [pass, blocked]
 
   dependency-plan:
+    objective: "Plan the Composer target for ^14.3 with the latest stable compatible dependencies and PHP 8.4 or 8.5."
+    done: "why-not and audit output are preserved and every blocker has one named resolution; pass only when the plan resolves."
+    evidence: nodes/dependency-plan/evidence.md
+    review: required
     skill: typo3-upgrade-migration
     phase: P05
     resources: [composer]
     outcomes: [pass, findings, blocked]
   dependency-resolution:
+    objective: "Resolve exactly one Composer blocker by upgrade, supported replacement, fork with exit plan or approved removal."
+    done: "The blocker disappears in a dry-run resolution and the change sits behind a rollback reference."
+    evidence: nodes/dependency-resolution/evidence.md
     skill: typo3-upgrade-migration
     phase: P05
     mutation: code
     resources: [composer]
     outcomes: [pass, blocked]
   rung-13:
+    objective: "Move the project to TYPO3 13.4 as the compatibility rung, with wizards and schema updates to a fixed point."
+    done: "13.4 is installed, wizards and schema reach a fixed point on an unchanged rerun, and the evidence loop is green."
+    evidence: nodes/rung-13/evidence.md
     skill: typo3-upgrade-migration
     phase: P06
     mutation: stateful
@@ -124,6 +190,9 @@ nodes:
     evidence_loop: required
     outcomes: [pass, findings, blocked]
   mechanical-migration:
+    objective: "Run Rector, Fractor and the extension scanner, rebuild caches, then run them a second time."
+    done: "The second pass reports no further changes and the exact tool output is preserved."
+    evidence: nodes/mechanical-migration/evidence.md
     skill: typo3-upgrade-migration
     phase: P07
     mutation: code
@@ -131,6 +200,9 @@ nodes:
     evidence_loop: required
     outcomes: [pass, findings, blocked]
   manual-migration:
+    objective: "Migrate what the tools cannot: removed APIs, list_type to CType, Mask data to Content Blocks records."
+    done: "Stored data migrates before registration changes, reaches a fixed point, and the evidence loop is green."
+    evidence: nodes/manual-migration/evidence.md
     skill: typo3-upgrade-migration
     phase: P08
     mutation: stateful
@@ -138,6 +210,9 @@ nodes:
     evidence_loop: required
     outcomes: [pass, findings, blocked]
   rung-14:
+    objective: "Install ^14.3, run wizards and schema updates to a fixed point and rebuild the DI container."
+    done: "14.3 is installed, the fixed point is proven, the backend opens, and the evidence loop is green."
+    evidence: nodes/rung-14/evidence.md
     skill: typo3-upgrade-migration
     phase: P09
     mutation: stateful
@@ -145,40 +220,64 @@ nodes:
     evidence_loop: required
     outcomes: [pass, findings, blocked]
   rung13-recovery:
+    objective: "Diagnose the one cause that blocked the 13.4 rung and plan the smallest repair for the retry."
+    done: "The cause, affected files and planned repair are recorded for the retried rung."
+    evidence: nodes/rung13-recovery/evidence.md
     skill: typo3-upgrade-migration
     phase: P06
     outcomes: [pass, blocked]
   mechanical-recovery:
+    objective: "Diagnose the one cause the mechanical pass left behind and plan its fix for the retry."
+    done: "The cause, affected files and planned fix are recorded for the retried node."
+    evidence: nodes/mechanical-recovery/evidence.md
     skill: typo3-upgrade-migration
     phase: P07
     outcomes: [pass, blocked]
   manual-recovery:
+    objective: "Diagnose one manual migration failure (data, API or registration order) and plan its fix."
+    done: "The cause and the planned fix are recorded for the retried manual migration."
+    evidence: nodes/manual-recovery/evidence.md
     skill: typo3-upgrade-migration
     phase: P08
     outcomes: [pass, blocked]
   rung14-recovery:
+    objective: "Diagnose the one cause that blocked the 14.3 rung and plan the smallest repair for the retry."
+    done: "The cause, affected files and planned repair are recorded for the retried rung."
+    evidence: nodes/rung14-recovery/evidence.md
     skill: typo3-upgrade-migration
     phase: P09
     outcomes: [pass, blocked]
 
   content-blocks:
+    objective: "Migrate Mask or custom content elements to Content Blocks, preserving CType identities, relations and translations."
+    done: "Every element maps to a Content Block with its data preserved; not-applicable when the site has none."
+    evidence: nodes/content-blocks/evidence.md
     skill: typo3-content-blocks
     phase: P08
     mutation: stateful
     resources: [ddev-stateful]
     outcomes: [pass, not-applicable, blocked]
   vite-assets:
+    objective: "Move the asset build to Vite with the latest stable versions while preserving the rendered output."
+    done: "A clean production build exists, its artifacts are committed and affected pages render unchanged; not-applicable when unused."
+    evidence: nodes/vite-assets/evidence.md
     skill: typo3-vite
     phase: P10
     mutation: code
     outcomes: [pass, not-applicable, blocked]
   solr-search:
+    objective: "Upgrade Solr configuration and indexing and keep result order stable with deterministic tie-breakers."
+    done: "Reindexing completes and seeded queries return the same results in the same order; not-applicable without Solr."
+    evidence: nodes/solr-search/evidence.md
     skill: typo3-solr
     phase: P10
     mutation: stateful
     resources: [ddev-stateful, solr-core]
     outcomes: [pass, not-applicable, blocked]
   structured-data-parity:
+    objective: "Prove that the target emits the same structured data as the source inventory."
+    done: "Types and properties match per template and language; any difference routes to recovery."
+    evidence: nodes/structured-data-parity/evidence.md
     skill: typo3-structured-data
     phase: P10
     mutation: code
@@ -186,12 +285,18 @@ nodes:
     requires: [structured-data-inventory, rung-14]
     outcomes: [pass, findings, not-applicable, blocked]
   structured-data-recovery:
+    objective: "Restore one structured-data difference in templates or configuration."
+    done: "The fix sits behind a rollback reference and parity can be retried."
+    evidence: nodes/structured-data-recovery/evidence.md
     skill: typo3-structured-data
     phase: P10
     mutation: code
     resources: [browser-proof]
     outcomes: [pass, blocked]
   webmcp-parity:
+    objective: "Prove that the inventoried WebMCP tools behave on the target as on the source."
+    done: "Every inventoried tool responds as before; not-applicable when none existed."
+    evidence: nodes/webmcp-parity/evidence.md
     skill: typo3-webmcp
     phase: P10
     mutation: code
@@ -199,12 +304,18 @@ nodes:
     requires: [webmcp-inventory, rung-14]
     outcomes: [pass, findings, not-applicable, blocked]
   webmcp-recovery:
+    objective: "Restore one broken WebMCP declaration."
+    done: "The fix sits behind a rollback reference and parity can be retried."
+    evidence: nodes/webmcp-recovery/evidence.md
     skill: typo3-webmcp
     phase: P10
     mutation: code
     resources: [browser-proof]
     outcomes: [pass, blocked]
   redirects-rights-single-group:
+    objective: "Verify Redirects and configure one new least-privilege editor group for it."
+    done: "A non-admin test editor can manage redirects in scope, is denied elsewhere, and the approval is recorded."
+    evidence: nodes/redirects-rights-single-group/evidence.md
     skill: typo3-backend-rights
     phase: P10
     mutation: stateful
@@ -213,6 +324,9 @@ nodes:
     requires: [rung-14]
     outcomes: [pass, blocked]
   redirects-rights-preserved-groups:
+    objective: "Verify Redirects and extend the existing editor groups by the minimum needed."
+    done: "Existing groups keep their rights and gain only the intended Redirects access, proven with a test editor."
+    evidence: nodes/redirects-rights-preserved-groups/evidence.md
     skill: typo3-backend-rights
     phase: P10
     mutation: stateful
@@ -220,9 +334,15 @@ nodes:
     requires: [rung-14]
     outcomes: [pass, blocked]
   redirects-rights-merge:
+    objective: "Join the one editor-rights branch that intake selected."
+    done: "Exactly one rights branch passed with evidence."
+    evidence: nodes/redirects-rights-merge/evidence.md
     phase: P10
     outcomes: [pass, blocked]
   rte-visual-editor:
+    objective: "Migrate RTE presets and Visual Editor configuration and prove stored formatting survives save and reopen."
+    done: "Rich text round-trips through the authenticated backend unchanged; not-applicable when unused."
+    evidence: nodes/rte-visual-editor/evidence.md
     # CKEditor is the default RTE owner; delegate inline editing only when installed.
     skill: typo3-ckeditor5
     phase: P10
@@ -231,26 +351,43 @@ nodes:
     outcomes: [pass, not-applicable, blocked]
 
   migration-join:
+    objective: "Join all specialist branches before the final proof starts."
+    done: "Every specialist node passed or is not-applicable with evidence."
+    evidence: nodes/migration-join/evidence.md
     phase: P10
     requires: [content-blocks, vite-assets, solr-search, structured-data-parity, webmcp-parity, redirects-rights-merge, rte-visual-editor]
     outcomes: [pass, blocked]
   target-content-epoch:
+    objective: "Reconcile expected content changes in the transition ledger and seal the target content epoch."
+    done: "The ledger explains every database and file difference and the target fingerprint is sealed; unledgered drift is invalid."
+    evidence: nodes/target-content-epoch/evidence.md
+    review: required
     skill: typo3-upgrade-closure
     phase: P11
     resources: [ddev-stateful]
     outcomes: [pass, invalid, blocked]
   content-ledger-recovery:
+    objective: "Explain or revert unledgered content drift found at the target epoch."
+    done: "Every difference is ledgered or reverted so the epoch can be sealed again."
+    evidence: nodes/content-ledger-recovery/evidence.md
+    review: required
     skill: typo3-upgrade-closure
     phase: P11
     outcomes: [pass, blocked]
 
   http-dom-proof:
+    objective: "Compare HTTP status, metadata and normalized DOM for every discovered URL against Baseline A."
+    done: "Zero unexplained HTTP or DOM differences and a green evidence loop."
+    evidence: nodes/http-dom-proof/evidence.md
     freeze: true
     skill: typo3-upgrade-closure
     phase: P11
     evidence_loop: required
     outcomes: [pass, findings, invalid, harness-error, blocked]
   visual-proof:
+    objective: "Compare pixels for the sealed tiered sample in the authoritative states against Baseline A."
+    done: "Strict zero pixel differences, or only accepted declared changes, and a green evidence loop."
+    evidence: nodes/visual-proof/evidence.md
     freeze: true
     skill: typo3-upgrade-closure
     phase: P11
@@ -258,6 +395,9 @@ nodes:
     evidence_loop: required
     outcomes: [pass, findings, invalid, harness-error, blocked]
   component-sentinels:
+    objective: "Operate the planned journeys (consent, sliders, navigation, forms, search, login, media) on the target."
+    done: "Every planned journey assertion passes in fresh browser contexts."
+    evidence: nodes/component-sentinels/evidence.md
     freeze: true
     skill: typo3-playwright
     phase: P11
@@ -266,18 +406,27 @@ nodes:
     resources: [project-write, browser-proof]
     outcomes: [pass, findings, invalid, blocked]
   backend-operations:
+    objective: "Prove backend login, module inventory, editor save and reopen, scheduler and runtime logs on the target."
+    done: "All planned backend assertions pass, with a non-admin editor wherever the plan names one."
+    evidence: nodes/backend-operations/evidence.md
     freeze: true
     skill: typo3-upgrade-closure
     phase: P12
     resources: [project-write, backend-session]
     outcomes: [pass, findings, invalid, blocked]
   axe-proof:
+    objective: "Run axe over representative URLs, viewports and visible states in verify mode."
+    done: "No new critical or serious violations compared with the baseline; results are stored per state."
+    evidence: nodes/axe-proof/evidence.md
     freeze: true
     skill: typo3-upgrade-closure
     phase: P12
     read_resources: [browser-proof]
     outcomes: [pass, findings, invalid, harness-error, blocked]
   lighthouse-proof:
+    objective: "Run repeated, version-pinned Lighthouse on fixed URLs in the quiet lane."
+    done: "Medians and ranges meet the declared budgets with the required number of runs."
+    evidence: nodes/lighthouse-proof/evidence.md
     freeze: true
     quiet: true
     skill: typo3-upgrade-closure
@@ -286,80 +435,129 @@ nodes:
     requires: [http-dom-proof, visual-proof, component-sentinels, backend-operations, axe-proof]
     outcomes: [pass, findings, invalid, harness-error, blocked]
   lighthouse-axe:
+    objective: "Join the two quality proofs."
+    done: "axe-proof and lighthouse-proof both passed on the current epoch."
+    evidence: nodes/lighthouse-axe/evidence.md
     # Compatibility join: both independent quality proofs remain mandatory.
     phase: P12
     requires: [axe-proof, lighthouse-proof]
     outcomes: [pass, findings, invalid, harness-error, blocked]
 
   markup-recovery:
+    objective: "Repair one template or markup cause behind an HTTP, DOM or pixel difference."
+    done: "The fix sits behind a rollback reference; the outcome http or visual names the proof to rerun."
+    evidence: nodes/markup-recovery/evidence.md
     skill: typo3-upgrade-closure
     phase: P11
     mutation: code
     outcomes: [http, visual, blocked]
   visual-classify:
+    objective: "Classify every pixel-only difference by one cause: css, assets, markup, content, session or harness."
+    done: "Each difference has exactly one class and the outcome names the matching recovery route."
+    evidence: nodes/visual-classify/evidence.md
+    review: required
     skill: typo3-upgrade-closure
     phase: P11
     outcomes: [css, assets, markup, content, session, harness, blocked]
   css-recovery:
+    objective: "Fix one stylesheet cause of a pixel difference."
+    done: "The fix sits behind a rollback reference and visual-proof can rerun for the affected URLs."
+    evidence: nodes/css-recovery/evidence.md
     skill: typo3-vite
     phase: P11
     mutation: code
     outcomes: [pass, blocked]
   asset-recovery:
+    objective: "Fix one asset cause of a pixel difference (build artifact, path, font or image)."
+    done: "The fix sits behind a rollback reference and visual-proof can rerun for the affected URLs."
+    evidence: nodes/asset-recovery/evidence.md
     skill: typo3-vite
     phase: P11
     mutation: code
     outcomes: [pass, blocked]
   content-recovery:
+    objective: "Repair one content or data difference found by visual classification, with a snapshot first."
+    done: "The ledgered content change is applied and visual-proof can rerun."
+    evidence: nodes/content-recovery/evidence.md
     skill: typo3-upgrade-migration
     phase: P11
     mutation: stateful
     resources: [ddev-stateful]
     outcomes: [pass, blocked]
   session-recovery:
+    objective: "Repair the consent or session handling that made the visual proof compare different states."
+    done: "Fresh-context consent and session setup match the sealed baseline states."
+    evidence: nodes/session-recovery/evidence.md
+    measurement: true
     skill: typo3-upgrade-baseline
     phase: P11
     mutation: code
     resources: [browser-proof]
     outcomes: [pass, blocked]
   interaction-recovery:
+    objective: "Fix one failing journey step (consent, slider, form or search)."
+    done: "The step passes in a fresh context and component-sentinels can rerun."
+    evidence: nodes/interaction-recovery/evidence.md
     skill: typo3-upgrade-closure
     phase: P11
     mutation: code
     outcomes: [pass, blocked]
   backend-recovery:
+    objective: "Repair one backend rights or module failure, with a snapshot first."
+    done: "The failing backend assertion passes and backend-operations can rerun."
+    evidence: nodes/backend-recovery/evidence.md
     skill: typo3-backend-rights
     phase: P12
     mutation: stateful
     resources: [ddev-stateful, backend-session]
     outcomes: [pass, blocked]
   quality-recovery:
+    objective: "Fix one accessibility or performance regression introduced by the upgrade."
+    done: "The fix sits behind a rollback reference and both quality proofs can rerun."
+    evidence: nodes/quality-recovery/evidence.md
     skill: typo3-upgrade-closure
     phase: P12
     mutation: code
     outcomes: [pass, blocked]
   closure-harness-recovery:
+    objective: "Repair the final-proof instrument (hash mismatch, missing artifact, drifted input) without changing the site."
+    done: "The outcome names the single proof to rerun: http, visual, component, backend, quality, contract or reproof."
+    evidence: nodes/closure-harness-recovery/evidence.md
+    measurement: true
     skill: typo3-upgrade-closure
     phase: P11
     mutation: code
     resources: [browser-proof]
     outcomes: [http, visual, component, backend, quality, contract, reproof, blocked]
   closure-reconcile:
+    objective: "Reconcile gate findings: stale evidence, missing assertions or a change nobody accepted yet."
+    done: "pass returns to the gate with current evidence; reproof restarts from the target content epoch."
+    evidence: nodes/closure-reconcile/evidence.md
+    review: required
     skill: typo3-upgrade-closure
     phase: P13
     outcomes: [pass, reproof, blocked]
 
   closure-join:
+    objective: "Join all final proofs before the Contract A gate."
+    done: "HTTP/DOM, visual, component, backend and quality proofs all passed on the current epoch."
+    evidence: nodes/closure-join/evidence.md
     skill: typo3-upgrade-closure
     phase: P13
     requires: [http-dom-proof, visual-proof, component-sentinels, backend-operations, lighthouse-axe]
     outcomes: [pass, blocked]
   contract-a-gate:
+    objective: "Close Contract A with current closure evidence and a recorded human acceptance of its manifest hash."
+    done: "closure-check passes and the named acceptance matches this run and hash; the evidence loop is green."
+    evidence: nodes/contract-a-gate/evidence.md
     skill: typo3-upgrade-closure
     phase: P13
     evidence_loop: required
     outcomes: [pass, findings, invalid, blocked]
   structured-data-enrichment:
+    objective: "Add approved structured-data improvements after Contract A as Contract B work."
+    done: "Approved enrichment validates and leaves Contract A pages unchanged; not-applicable when not requested."
+    evidence: nodes/structured-data-enrichment/evidence.md
     skill: typo3-structured-data
     phase: P14
     mutation: stateful
@@ -369,6 +567,9 @@ nodes:
     requires: [contract-a-gate]
     outcomes: [pass, findings, not-applicable, blocked]
   structured-data-enrichment-recovery:
+    objective: "Fix one finding from the approved structured-data enrichment."
+    done: "The fix sits behind a snapshot and the enrichment can be retried."
+    evidence: nodes/structured-data-enrichment-recovery/evidence.md
     skill: typo3-structured-data
     phase: P14
     mutation: stateful
@@ -376,6 +577,9 @@ nodes:
     approval: required
     outcomes: [pass, blocked]
   webmcp-readiness:
+    objective: "Add approved native WebMCP tools after Contract A as Contract B work."
+    done: "The approved tools respond as declared and Contract A pages stay unchanged; not-applicable when not requested."
+    evidence: nodes/webmcp-readiness/evidence.md
     skill: typo3-webmcp
     phase: P14
     mutation: code
@@ -385,6 +589,9 @@ nodes:
     requires: [contract-a-gate]
     outcomes: [pass, findings, not-applicable, blocked]
   webmcp-readiness-recovery:
+    objective: "Fix one finding from the approved WebMCP readiness work."
+    done: "The fix sits behind a rollback reference and readiness can be retried."
+    evidence: nodes/webmcp-readiness-recovery/evidence.md
     skill: typo3-webmcp
     phase: P14
     mutation: code
@@ -392,15 +599,24 @@ nodes:
     approval: required
     outcomes: [pass, blocked]
   elevation-join:
+    objective: "Join the optional Contract B branches."
+    done: "Both branches passed or are not-applicable with evidence."
+    evidence: nodes/elevation-join/evidence.md
     skill: typo3-upgrade-closure
     phase: P14
     requires: [structured-data-enrichment, webmcp-readiness]
     outcomes: [pass, blocked]
   handover:
+    objective: "Hand over locally: project, branch, HEAD, versions, dataset, backups, graph hash, tests, declared changes and risks."
+    done: "The handover exists, closure is current and accepted, the audit trail is committed or archived, and no staging or live action happened."
+    evidence: report/handover.md
     skill: typo3-upgrade-closure
     phase: P15
     outcomes: [pass]
   stopped:
+    objective: "Record why the run stopped and the smallest decision needed to continue."
+    done: "The stop reason, last safe state and rollback reference are recorded."
+    evidence: nodes/stopped/evidence.md
     phase: P15
     outcomes: [blocked]
 

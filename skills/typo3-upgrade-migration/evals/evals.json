@@ -89,6 +89,7 @@
         "Returns remaining root causes as graph findings instead of nesting a loop",
         "Preserves change budget, rollback reference, and tool output"
       ]
-    }
+    },
+    {"id":"migration-stateful-node-snapshot","kind":"behaviour","status":"proposed","prompt":"Open the manual data migration step now, we can take a database backup afterwards if something goes wrong.","assertions":["Creates and records a node snapshot immediately before opening the stateful node","Refuses to start data changes without the recorded snapshot","Keeps one cause per attempt and returns evidence to the graph"]}
   ]
 }

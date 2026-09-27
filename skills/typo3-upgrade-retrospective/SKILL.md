@@ -21,7 +21,8 @@ One job: turn real run evidence into durable process corrections without rewriti
 
 1. Project repository: identity, branch/HEAD, status, core/PHP constraints/lock, upgrade commits.
 2. `.typo3-update/state.json`, graph hash/nodes/edges/locks, journal, manifests, loop reports,
-   approvals, ADRs, closure/handover.
+   approvals, ADRs, closure/handover. Graph-era runs add `report/graph-report.json` (measured
+   minutes per node), `nodes/<id>/review.md` and each node's recorded `anchor` and `change`.
 3. Test/build/capture/security reports and deployment artifacts in scope.
 4. Codex task/thread messages and timings: distinguish user request, AI question, tool result,
    user steer, final claim, and follow-up.

@@ -29,6 +29,44 @@ The RAG example's fixed file/function limits, Postgres, README-per-directory and
 dependency delay are not imported as universal rules. They do not fit this task and would conflict
 with the explicit latest-compatible updates and urgent security fixes.
 
+## Rechecked against current theory (27 September 2026)
+
+The July 2026 "loop engineering versus graph engineering" debate converged on one shape: a stable
+control graph, bounded loops inside selected nodes, and verification the agent cannot talk its way
+past. The graph was checked against the primary sources below; every gap became a harness check.
+
+| Source | Finding | Status here |
+|---|---|---|
+| [Hu Wei, Structured Graph Harness](https://arxiv.org/abs/2604.11378) (April 2026) | Immutable plan per version; separate planning, execution and recovery; strict escalation; node state machine with termination guarantees | Already present: sealed graph hash, intake/forecast → nodes → recovery nodes, bounded retries, stop routes |
+| [Lulla et al., Loop Engineering](https://arxiv.org/abs/2608.21884) (August 2026) | Five building blocks: machine-checkable stop, persistent state files, verifier sub-agents, token budgets, human escalation; state files are rarely committed | Added independent review and measured node minutes; audit trail status now reported |
+| [Feng et al., Graph Engineering](https://arxiv.org/abs/2608.21156) (August 2026) | Explicit, evolving graph structures for multi-agent systems | Deliberately static: a changed graph is a new, auditable run |
+| [Anthropic, harness design for long-running apps](https://www.anthropic.com/engineering/harness-design-long-running-apps) (March 2026) | Testable "sprint contracts" before work; self-evaluation praises its own output, so evaluation needs a separate skeptical agent; context resets | Added node contracts (`objective`, `done`, `evidence`), `node-brief` for fresh workers, bound reviews |
+| [Anthropic, effective harnesses for long-running agents](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents) (November 2025) | Feature list with pass/fail, progress file, one feature at a time, browser end-to-end tests, never edit tests to pass | Feature plan and journeys existed; test/threshold protection is now mechanical |
+| [Anthropic, effective context engineering](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents) (September 2025) | Sub-agents with clean context windows beat one ever-growing context | Worker protocol: the brief is the whole input |
+| [SpecBench](https://arxiv.org/abs/2605.21384) (2026) and [ImpossibleBench](https://www.lesswrong.com/posts/qJYMbrabcQqCZ7iqm/impossiblebench-measuring-reward-hacking-in-llm-coding-1) (ICLR 2026) | Agents saturate visible tests and still game the specification; the gap grows with code size | Measurement inputs frozen inside site-fix nodes; recovery change budget; unchanged final rerun acts as held-out proof |
+| [Cemri et al., MAST](https://arxiv.org/abs/2503.13657) (NeurIPS 2025) | Most multi-agent failures are specification and coordination problems; verification gaps follow | Typed contracts per node; controller-only state writes; cause-specific routes |
+| [Wu, silent failures in production agents](https://arxiv.org/abs/2606.14589) (2026) | Failures turn into fluent success narratives | Evidence must carry commands, exit codes and hashes; a narrative is not evidence |
+| [LangGraph interrupts and persistence](https://docs.langchain.com/oss/python/langgraph/interrupts) | Checkpoint every step; human-in-the-loop as durable interrupts | Already present: transactional `state.json`, journal, approvals |
+
+What the recheck added, all enforced by `t3u` and covered by unit tests:
+
+1. **Node contracts** — `require_node_contracts`: every node states objective, done condition and
+   evidence path; [the node reference](graph-nodes.md) is generated and drift-checked.
+2. **Typed handoff** — `t3u node-brief` renders one node's complete work order for a fresh worker.
+3. **Independent review** — `require_independent_review`: nodes flagged `review: required` and every
+   `not-applicable` outcome close only with an agreeing review bound to the evidence SHA-256.
+4. **Change scope** — `guard_change_scope`: measurement inputs are fingerprinted at `node-open` and
+   compared at `node-close`; only `measurement: true` nodes may recalibrate config, and nobody may
+   touch baseline seals, the URL manifest or the feature plan. `recovery_change_budget` caps a
+   recovery attempt at 10 files or 400 lines unless an approval is recorded.
+5. **Measured operation** — `t3u graph-report` turns the journal into per-node minutes and plan
+   estimates, and reports whether the audit trail is in Git.
+6. **Node snapshots** — `t3u snapshot-create --node` records the snapshot a stateful node needs
+   without inventing a loop.
+
+Not adopted: token budgets as a hard control. Agent runtimes do not expose reliable per-node token
+counts to the harness; elapsed time, attempts and change size are measured instead.
+
 ## How this differs from nested loops
 
 | Structural cost/failure | Implemented control |
@@ -42,6 +80,9 @@ with the explicit latest-compatible updates and urgent security fixes.
 | Repeated full-site/page × widget-state matrices | Affected + seeded intermediate coverage; at most three global final states; targeted journeys |
 | Old code/report labels treated as completed upgrades | Hashed artifacts, current-source epochs and actual acceptance |
 | Waiting for a person consumes the night or fakes acceptance | Timely `closure-verify` receipt, followed by separately recorded human acceptance |
+| One long agent context accumulates assumptions across phases | `node-brief` hands each node to a fresh worker; the controller keeps state, not memory |
+| A fix "passes" by relaxing what is measured | Measurement fingerprint at open/close; recovery change budget |
+| A skipped branch or a judgement call is self-approved | Independent review bound to the evidence hash |
 
 ## Remaining validation work
 
@@ -49,8 +90,10 @@ See [parallel execution](parallel-execution.md) for the implemented concurrency 
 browser fixtures verify serial/parallel findings and missing-job handling; they do not establish
 whole-upgrade throughput. Strict pixel render order and independent final passes are preserved.
 
-Run this version on a representative small, large and huge **authorized local clone**, preserving
-real per-node elapsed time and coverage. Compare equivalent workloads and environments, not live
+No client upgrade has yet run end to end on the graph: the Gütezeichen (July) and Saferinternet.at
+(August) runs used the loop protocols that this graph replaced. Run this version on a representative
+small, large and huge **authorized local clone**, preserving real per-node elapsed time and coverage
+with `t3u graph-report --write`. Compare equivalent workloads and environments, not live
 versus local Lighthouse scores. Feed those measurements into admission estimates. Also run isolated
 model behavior trials against held-out scenarios; static Skill Doctor and lexical routing are not
 substitutes. Human signatures remain human work.

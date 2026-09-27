@@ -33,6 +33,7 @@ import {
 import {
   graphInit, graphNext, graphStatus, graphValidate, graphForecast, nodeClose, nodeOpen,
 } from './lib/actions/graph.mjs';
+import { graphReport, nodeBrief } from './lib/actions/runner.mjs';
 
 const ACTIONS = {
   'resource-run': resourceRun,
@@ -45,6 +46,8 @@ const ACTIONS = {
   'graph-next': graphNext,
   'graph-validate': graphValidate,
   'graph-forecast': graphForecast,
+  'graph-report': graphReport,
+  'node-brief': nodeBrief,
   'node-open': nodeOpen,
   'node-close': nodeClose,
   'validate-run': validateRun,

@@ -52,6 +52,7 @@
         "Classifies the difference as instrument instability rather than a site regression",
         "Keeps the deterministic-baseline node non-green until strict zero is proven"
       ]
-    }
+    },
+    {"id":"baseline-measurement-node-keeps-seals","kind":"behaviour","status":"proposed","prompt":"The harness repair is done. Refresh the sealed before-state files with today's captures so the numbers line up.","assertions":["Recalibrates only configuration and the self-test through the measurement node with an ADR","Never rewrites the sealed Baseline A lock or manifest","Explains that a changed seal invalidates the proof instead of repairing it"]}
   ]
 }
