@@ -4,7 +4,7 @@ description: "Designs and migrates TYPO3 extension icons to the v14 line-art sty
 compatibility: "TYPO3 14.x"
 metadata:
   skill_type: capability
-  version: "1.4.0"
+  version: "1.5.0"
   origin: "webconsulting"
 license: "MIT / CC-BY-SA-4.0"
 ---
@@ -37,10 +37,11 @@ file names, and render contexts that already exist in the codebase.
    communicate?
 5. Load live TYPO3 v14 references for the matching icon family. See
    [references/live-sources.md](references/live-sources.md).
-6. *(Optional)* Generate a raster **reference** with an image model (GPT Image 2 or
-   Gemini) when a metaphor is non-obvious or you want to explore a family look. The
-   raster is a guide only — see
-   [references/image-reference-pipeline.md](references/image-reference-pipeline.md).
+6. Use an image generator to design the requested icons, including simple glyphs.
+   Choose **GPT Image 2.5** or **Google Nano Banana**, with actual neighboring
+   backend icons as style references. Generate a coherent family where appropriate.
+   If generation is unavailable, use the fallback below for every requested icon.
+   See [references/image-reference-pipeline.md](references/image-reference-pipeline.md).
 7. Redraw or modernize the SVG in the correct TYPO3 v14 style (author by hand to
    spec — never ship the raster or a naive auto-trace).
 8. Run `scripts/verify-icon.sh <file> <type>` — it must print `RESULT: PASS`.
@@ -67,39 +68,54 @@ ask for a short mapping such as:
 
 The user can describe usage, not geometry. Translate usage into icon semantics.
 
-## Optional: Image-Model Reference Stage
+## Image-Generator Design Stage
 
-You can use an image model — **OpenAI GPT Image 2** or **Google Gemini ("Nano
-Banana")** — to *ideate* an icon, then **redraw the result as a clean v14 SVG**.
-The raster is a design reference, never the shipped asset: TYPO3 backend icons are
-monochrome line-art (`currentColor`, transparent, dark-mode-safe), and shipping a
-raster or a naive auto-trace produces fuzzy, scheme-breaking junk. This stage is
-optional — for simple glyphs, authoring the SVG directly is faster and cleaner.
+Use **GPT Image 2.5** or **Google Nano Banana** before authoring new or redesigned
+icons. This applies to module, extension, plugin, record, action, and Content Blocks
+icons. Pure registration fixes or unchanged Core icon reuse do not need generation.
+Honor an explicit user request to skip generation.
+
+Inspect two or three existing icons in the target backend and the matching Core
+catalog. Supply their screenshots or rendered SVGs as visual references when the
+image tool supports them; otherwise describe their actual geometry, padding,
+stroke weight, and palette in the prompt. For module icons, match the current
+TYPO3 line-art family and the installation's accent colour (a purple/lilac or blue
+theme in 14.3). Do not invent a
+separate style or retain the old colored tiles.
+
+Prefer an available built-in image generator; it does not require a shell API key.
+Select GPT Image 2.5 or Nano Banana when the interface exposes model choice. Never
+claim a specific model was used when the tool does not report it. With API access,
+`scripts/generate-icon-reference.sh` supports either provider and technical failover.
 
 ```bash
-# 1. Generate a reference (auto-selects the model from whichever key is present:
-#    OPENAI_API_KEY -> GPT Image 2, else GEMINI_API_KEY/GOOGLE_API_KEY -> Gemini)
-scripts/generate-icon-reference.sh "agent streaming events into a UI bubble" \
-    /tmp/module-agui.ref.png --accent "one spark mark, top-right" \
-    --family "centered glyph, 8px padding on a 64 grid, 4px stroke"
-
-# 2. Redraw it by hand as a conformant v14 SVG, then gate it:
-scripts/verify-icon.sh packages/agui_integration/Resources/Public/Icons/module-agui.svg module
+scripts/generate-icon-reference.sh "SEO crawler, a circular arrow" /tmp/crawler.ref.png \
+  --provider auto --type module --accent "lavender arrowhead" \
+  --family "match adjacent TYPO3 module icons, 64 grid, 4px strokes, 12px padding"
 ```
 
-Key facts (verified mid-2026; re-check live docs):
+Generated images are design references. Inspect them, then redraw the chosen
+geometry as minimal SVG with `currentColor`, transparent background, and
+`var(--icon-color-accent, #ff8700)`. TYPO3 sets this variable from the active backend
+theme (a purple or blue primary token in 14.3, orange as the fallback); do not bake a
+colour into the asset. Keep each icon's type and render size.
 
-- **`gpt-image-2`** is the current OpenAI image model but does **not** support
-  transparent backgrounds — prompt it for a flat white background and drop it in the
-  redraw. Use `--transparent` (→ `gpt-image-1-mini`) only when you truly need an alpha
-  raster. GPT-image returns base64 at `data[0].b64_json`; the org may need API
-  verification.
-- **Gemini** returns base64 at `candidates[0].content.parts[].inlineData.data`, has
-  no transparent option, and watermarks with SynthID.
+### Fallback for every icon
 
-No key? Skip this stage and author the SVG directly — the result is just as good for
-line-art icons. Full details and the prompt template:
-[references/image-reference-pipeline.md](references/image-reference-pipeline.md).
+1. If the preferred generator is unavailable, unconfigured, rate-limited, times out,
+   returns an invalid image, or lacks the requested model, try the other available
+   authorized provider once. Honor an explicit provider restriction. A safety
+   refusal is not a technical failure to route around.
+2. If neither provider can produce a reference, say so briefly and complete the
+   **entire requested set** by authoring SVGs from the observed Core family. Do not
+   ask for keys or leave icons unfinished when this fallback can complete the work.
+3. Preserve meaning, identifiers, type-appropriate viewBox, theme tokens and the
+   same verification gates on both the generated-reference and fallback routes.
+   Never ship a bitmap, an automatic raster trace, a blank icon, or an unrelated
+   placeholder as the fallback. Report which route was actually used.
+
+See [references/image-reference-pipeline.md](references/image-reference-pipeline.md)
+for current API model IDs, provider selection, prompt guidance, and exit statuses.
 
 ## Source Of Truth
 
@@ -252,8 +268,8 @@ Before finishing:
   guidance, and common mistakes
 - [references/migration-steps.md](references/migration-steps.md): migration checklist
 - [references/image-reference-pipeline.md](references/image-reference-pipeline.md):
-  optional GPT Image 2 / Gemini reference stage, model facts, prompt template, gates
-- `scripts/generate-icon-reference.sh`: dual-model reference generator (GPT Image 2 / Gemini)
+  GPT Image 2.5 / Nano Banana design stage, provider failover, model facts, prompt guidance
+- `scripts/generate-icon-reference.sh`: GPT Image 2.5 / Nano Banana reference generator with technical failover
 - `scripts/verify-icon.sh`: hard conformance gate for authored icons
 
 Source: https://github.com/dirnbauer/webconsulting-skills

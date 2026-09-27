@@ -33,6 +33,14 @@ Guidance:
 
 ## Match the Core icon family
 
+Use the installed backend as the visual reference for image generation. Compare
+neighboring module glyphs before prompting GPT Image 2.5 or Nano Banana. The current
+backend theme supplies the accent (a purple or blue primary token in 14.3) through
+`--icon-color-accent`; the orange fallback in SVG source is not a reason to hardcode
+any colour. Keep the image
+reference and authored SVG consistent in geometry, optical size and stroke weight.
+
+
 Pick references from the Core family that matches the job:
 
 | Situation | Prefer this family |
