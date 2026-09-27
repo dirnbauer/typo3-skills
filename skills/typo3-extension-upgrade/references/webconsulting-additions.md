@@ -55,6 +55,9 @@ only to surfaces the extension supplies; do not start a whole-site upgrade for o
 
 Classify Scanner findings. Compatibility aliases can intentionally remain on the target while the
 scanner warns about their future removal; runtime tests decide whether they are still needed.
+Without backend access, run the Core matchers headlessly with
+[`typo3-upgrade-run/scripts/extension-scanner.php`](../../typo3-upgrade-run/scripts/extension-scanner.php)
+(`--path=` the extension; exit 1 on a strong match or parse error).
 
 ## Migrate persisted identities before registrations
 
@@ -84,6 +87,14 @@ prove finishers/mail before deleting the old extension.
 Fluid cache warm-up is not render coverage. A custom ViewHelper namespace must be declared in every
 independently parsed template or partial that uses it; render every retained CType, plugin/list type
 and page template at least once.
+
+## #109585 applies to direct v13 → 14.3 too
+
+Upstream `upgrade-v13-to-v14.md` §2 says to skip the #109585 wizard when upgrading directly from
+v13. Do not: 12.4/13.4 left empty `password`/`password2` keys in `be_users.uc`, which
+`setup_userSettingsMigration` copies into `user_settings`, and the scrubber is idempotent. Keep the
+user-settings wizards in registry order and judge residue by value, not key — see the
+[typo3-security v14 notes](../../typo3-security/references/v14-notes.md).
 
 ## Credits & Attribution
 

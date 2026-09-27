@@ -1,0 +1,166 @@
+{
+  "skill_name": "typo3-jev",
+  "skill_type": "capability",
+  "spec": "SKILL-SPEC.md",
+  "note": "Source-grounded draft coverage for webcon_jev. Jev-specific tasks route here; ordinary deterministic Powermail behavior stays with typo3-powermail. Behavioral expectations await human review and execution.",
+  "evals": [
+    {
+      "id": "typo3-jev-trigger-alias",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "How do I use typo3_jev with powermail_condition in my site?",
+      "expect_skill": "typo3-jev"
+    },
+    {
+      "id": "typo3-jev-trigger-install",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "Connect webconsulting/webcon-jev on a fresh TYPO3 14.3 project.",
+      "expect_skill": "typo3-jev"
+    },
+    {
+      "id": "typo3-jev-trigger-credentials",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "Jev works in the backend playground but every visitor gets a fallback. Is the key readable there?",
+      "expect_skill": "typo3-jev"
+    },
+    {
+      "id": "typo3-jev-trigger-probability",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "Our Jev noul says 0.70. Why does the callback block show with confidence set to 0.75?",
+      "expect_skill": "typo3-jev"
+    },
+    {
+      "id": "typo3-jev-trigger-routing",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "Let Jev classify the enquiry and send it to a department we have approved.",
+      "expect_skill": "typo3-jev"
+    },
+    {
+      "id": "typo3-jev-trigger-api",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "Use DecisionRunner to ask three typed Jev questions about a support request.",
+      "expect_skill": "typo3-jev"
+    },
+    {
+      "id": "typo3-jev-negative-deterministic",
+      "kind": "trigger-negative",
+      "status": "proposed",
+      "prompt": "In Powermail show the company name only when customer_type equals business.",
+      "expect_skill": "typo3-powermail"
+    },
+    {
+      "id": "typo3-jev-negative-finisher",
+      "kind": "trigger-negative",
+      "status": "proposed",
+      "prompt": "Create a Powermail finisher that forwards the submitted fields to our CRM.",
+      "expect_skill": "typo3-powermail"
+    },
+    {
+      "id": "typo3-jev-negative-accessibility",
+      "kind": "trigger-negative",
+      "status": "proposed",
+      "prompt": "Our form errors are not announced to screen reader users. Audit accessibility.",
+      "expect_skill": "typo3-accessibility"
+    },
+    {
+      "id": "typo3-jev-behaviour-composer-source",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Composer cannot find webconsulting/webcon-jev. Should we allow every dev package to make it install?",
+      "expected_output": "Checks package publication and the reviewed stable Git tag, adds only the scoped root VCS repository if needed, and preserves existing source/stability policy.",
+      "assertions": [
+        "Distinguishes a GitHub tag from a published Packagist version",
+        "Uses the root repository configuration because dependency repository definitions are ignored",
+        "Does not globally lower minimum-stability",
+        "Reviews the resolved lock reference without claiming a tested live integration"
+      ],
+      "files": []
+    },
+    {
+      "id": "typo3-jev-behaviour-noul-boundary",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Configure a Jev callback hint with operator 104 at 0.70; the decision's confidence limit is 0.75. Explain p=0.70 and an absent answer.",
+      "expected_output": "Matches at 0.70 without the additional derived-confidence gate; absent answer does not match and the parent action determines visibility.",
+      "assertions": [
+        "Identifies operator 104 as >=, not strict >",
+        "Uses raw noul probability instead of confidentAnswer for this operator",
+        "Distinguishes missing probability from probability zero",
+        "Explains false-branch inversion for action 1"
+      ],
+      "files": []
+    },
+    {
+      "id": "typo3-jev-behaviour-routing-fallback",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Jev is unavailable but the form's receiver changes to triage@example.org. The decision default is that address. Fix the explanation before changing code.",
+      "expected_output": "Explains outcomeFor default mapping and recipient replacement. Offers an empty default to preserve the original receiver, or explicitly approved triage routing. Does not mutate the extension during diagnosis.",
+      "assertions": [
+        "Checks outcomeFor and MailRoutingListener instead of repeating README claims",
+        "Does not add a finisher to choose the already-sent receiver",
+        "Keeps recipient addresses curated and authorized",
+        "Does not change configuration without change authorization"
+      ],
+      "files": []
+    },
+    {
+      "id": "typo3-jev-behaviour-minimize-state",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "The form has name, email, password, upload and message. Leave the Jev state template empty because the collector removes sensitive data, right?",
+      "expected_output": "Rejects the anonymization assumption, selects only approved fields with a state template, and checks personal data inside free text before any external request.",
+      "assertions": [
+        "Names field-type exclusions without claiming all PII is removed",
+        "Explains that an empty template forwards the collected context",
+        "Does not run a real playground or API call without authorization"
+      ],
+      "files": []
+    },
+    {
+      "id": "typo3-jev-behaviour-request-loop",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "A Jev rule hides the field it reads. Can we raise the Powermail condition loop count until it settles?",
+      "expected_output": "Keeps stable source fields outside hidden targets and accounts for the request memo's decision/form key; does not hide the cycle by raising the limit.",
+      "assertions": [
+        "Recognizes that memoized results are not refreshed for state changes within the request",
+        "Preserves submission and avoids blocking controls on uncertain answers",
+        "Separates offline source probes from browser timing proof"
+      ],
+      "files": []
+    },
+    {
+      "id": "typo3-jev-behaviour-routing-optin",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Enable Jev receiver selection for our double-opt-in Powermail form. The playground is already green, so can we ship?",
+      "expected_output": "Inspects the reviewed controller's persistence/hash gate and request-local routing store. Reports the final-send gap instead of silently changing storage or opt-in policy.",
+      "assertions": [
+        "Checks createAction and optinConfirmAction instead of assuming the event always fires",
+        "Distinguishes a stored summary from a restored receiver decision",
+        "Does not disable opt-in or enable database storage to mask the gap",
+        "Requires a project integration test before promising final receiver behavior"
+      ],
+      "files": []
+    },
+    {
+      "id": "typo3-jev-behaviour-confidence-api",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Our DecisionOutcome has a weak department answer and a confident detail score. needsHumanReview is false, so may we route using the department choice?",
+      "expected_output": "Checks the specific department answer with confidentAnswer and follows its approved default; the aggregate review flag is insufficient.",
+      "assertions": [
+        "Distinguishes low confidence from the isFallback flag",
+        "Does not invent a guarantee that DecisionRunner catches every infrastructure exception",
+        "Explains stable option IDs versus configured outcome values"
+      ],
+      "files": []
+    }
+  ]
+}

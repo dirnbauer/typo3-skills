@@ -1,6 +1,6 @@
 # TYPO3 Agent Skills
 
-This repository contains 60 Agent Skills for AI-augmented software development.
+This repository contains 61 Agent Skills for AI-augmented software development.
 
 ## Instructions
 

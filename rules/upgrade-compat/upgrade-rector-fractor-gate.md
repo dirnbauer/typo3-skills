@@ -22,9 +22,10 @@ Fluid, TypoScript, YAML), and **PHPStan** (catches type/usage regressions).
 # typical upgrade gate (dev tools, installed as require-dev)
 composer req --dev ssch/typo3-rector a9f/typo3-fractor phpstan/phpstan
 vendor/bin/rector process Classes/        # PHP migrations
-vendor/bin/typo3-fractor process .        # TCA / Fluid / TypoScript / YAML
+vendor/bin/fractor process .              # TCA / Fluid / TypoScript / YAML (binary from a9f/fractor)
 vendor/bin/phpstan analyse Classes/
-# plus: Backend → Admin Tools → "Scan Extension Files" (Extension Scanner)
+# plus the Extension Scanner: Backend → System → Upgrade → "Scan Extension Files",
+# or headless: php typo3-upgrade-run/scripts/extension-scanner.php --path=<extension>
 ```
 
 > Why: the Extension Scanner reports removed APIs, Rector/Fractor mechanize the bulk of

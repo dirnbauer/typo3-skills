@@ -67,8 +67,10 @@ export async function backendSweep({ values, paths, log, journal }) {
   const report = { baseUrl: trusted, modules: [], groups: 0, realModules: 0, opened: 0, failed: 0, skippedExpected: 0, skippedUnexpected: 0 };
 
   try {
-    const context = await newContext(browser, { viewport: 'desktop' });
+    // Egress is denied before the credentials exist in the page: an allowed URL that redirects
+    // a subresource or the login POST to a foreign host is refused at the network layer.
     const policy = createRoutePolicy({ allowedOrigins: [trusted] });
+    const context = await newContext(browser, { viewport: 'desktop', proxy: await policy.egressProxy() });
     await policy.attach(context);
     const page = await context.newPage();
 
@@ -280,8 +282,8 @@ export async function smoke({ values, paths, log }) {
   let n = 0;
 
   try {
-    const context = await newContext(browser, { viewport: 'desktop' });
     const policy = createRoutePolicy({ allowedOrigins: manifest.allowedOrigins });
+    const context = await newContext(browser, { viewport: 'desktop', proxy: await policy.egressProxy() });
     await policy.attach(context);
     const page = await context.newPage();
 
@@ -518,9 +520,11 @@ export async function axeAudit({ values, paths, log }) {
     ({ browser } = await launchBrowser({ log }));
     collected = await collectAxeJobs(jobs, workers, async ({ url, viewport, state }) => {
       // A fresh context per job isolates cookies, storage and stateful navigation.
-      const context = await newContext(browser, { viewport, storageState: consent, stabilize: stabilization });
+      const policy = createRoutePolicy({ allowedOrigins: manifest.allowedOrigins });
+      const context = await newContext(browser, {
+        viewport, storageState: consent, stabilize: stabilization, proxy: await policy.egressProxy(),
+      }).catch(async (error) => { await policy.close(); throw error; });
       try {
-        const policy = createRoutePolicy({ allowedOrigins: manifest.allowedOrigins });
         await policy.attach(context);
         const page = await context.newPage();
         await guard.assertUrl(url, { purpose: 'axe-goto' });
@@ -528,7 +532,9 @@ export async function axeAudit({ values, paths, log }) {
         guard.assertSameOrigin(page.url(), new URL(url).origin, { purpose: 'axe-post-goto' });
         await page.waitForLoadState('load', { timeout: 45_000 });
         await assertCleanFrontendSession(page);
-        await stabilizePage(page, stabilization);
+        // axe audits what visitors receive. Randomized-region replacement is a comparison
+        // adapter, so the selected links, images and alt texts stay in the page for the audit.
+        await stabilizePage(page, { ...stabilization, randomizedRegions: [] });
         const stateResult = await applyState(page, state, stabilization);
         if (stateResult.skipped) return { skipped: true, reason: stateResult.reason };
         if (!stateResult.applied) throw new HarnessError(stateResult.reason ?? 'Interaction state was not applied');
@@ -547,6 +553,7 @@ export async function axeAudit({ values, paths, log }) {
         return { skipped: false, ...result };
       } finally {
         await context.close();
+        await policy.close();
       }
     });
   } finally {

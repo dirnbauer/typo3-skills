@@ -15,7 +15,8 @@ import { UrlGuard, assertPlausibleBaseUrl } from '../net/url-guard.mjs';
 import { walkSitemaps } from '../net/sitemap.mjs';
 import { StateStore } from '../run/state.mjs';
 import { buildManifest } from '../run/manifest.mjs';
-import { profileHash } from '../browser/stabilize.mjs';
+import { profileHash, validateStabilizationProfile } from '../browser/stabilize.mjs';
+import { resolveImageMagick } from '../browser/media-adapters.mjs';
 import { DEFAULT_STATES, MAX_AUTHORITATIVE_STATES, stateByName } from '../browser/states.mjs';
 import { intOpt, listOpt } from '../cli/args.mjs';
 import { readJson } from './core.mjs';
@@ -234,6 +235,12 @@ async function loadStabilization(file) {
     const parsed = JSON.parse(await readFile(file, 'utf8'));
     if (parsed.consent?.cookies && !parsed.consent.origin) {
       throw new HarnessError('stabilization consent cookies require consent.origin.');
+    }
+    validateStabilizationProfile(parsed);
+    // Refuse to seal a profile the capture machine cannot execute.
+    const gif = parsed.media?.gifFirstFrame;
+    if (gif && !resolveImageMagick(gif.command ?? null)) {
+      throw new PreconditionError('stabilization media.gifFirstFrame needs ImageMagick ("magick" or "convert") on PATH.');
     }
     return parsed;
   } catch (error) {

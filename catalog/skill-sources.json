@@ -398,7 +398,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-icon14/SKILL.md",
-    "line_count": 260,
+    "line_count": 276,
     "frontmatter_keys": [
       "name",
       "description",
@@ -437,6 +437,24 @@
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-initial-release/SKILL.md",
     "line_count": 432,
+    "frontmatter_keys": [
+      "name",
+      "description",
+      "metadata",
+      "license"
+    ],
+    "pass_1": [],
+    "pass_2": [],
+    "pass_3": []
+  },
+  {
+    "directory": "typo3-jev",
+    "skill_name": "typo3-jev",
+    "description": "Configure and integrate TypeSafe Jev decisions through EXT:webcon_jev (webconsulting/webcon-jev, also called typo3_jev). Use for Jev installation, vault token setup, choice/score/noul questions, state templates, probability thresholds, Jev-powered Powermail Conditions operators, semantic recipient routing, or DecisionRunner PHP integrations. Requires a Jev-specific task; ordinary deterministic form rules belong to typo3-powermail.",
+    "source_owner": "webconsulting",
+    "source_url": "https://github.com/dirnbauer/typo3-skills",
+    "file_path": "skills/typo3-jev/SKILL.md",
+    "line_count": 92,
     "frontmatter_keys": [
       "name",
       "description",
@@ -490,7 +508,7 @@
     "source_owner": "webconsulting",
     "source_url": null,
     "file_path": "skills/typo3-powermail/SKILL.md",
-    "line_count": 99,
+    "line_count": 102,
     "frontmatter_keys": [
       "name",
       "description",
@@ -563,7 +581,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-scheduler-jobs/SKILL.md",
-    "line_count": 172,
+    "line_count": 174,
     "frontmatter_keys": [
       "name",
       "metadata",
@@ -873,7 +891,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-upgrade-run/SKILL.md",
-    "line_count": 253,
+    "line_count": 255,
     "frontmatter_keys": [
       "name",
       "description",

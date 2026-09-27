@@ -51,6 +51,30 @@
       "prompt": "Build a Lit component for the backend form editor.",
       "expect_skill": "typo3-webcomponents",
       "note": "Backend JavaScript."
+    },
+    {
+      "id": "typo3-icon14-behaviour-generator",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Replace the pink Yoast menu tiles and green file tool with icons like the purple TYPO3 navigation. Use image generation for the designs.",
+      "assertions": [
+        "Inspects actual neighboring backend module icons and the matching Core catalog before generating.",
+        "Calls the available image generator for a coherent reference family, selecting GPT Image 2.5 or Nano Banana when model selection is exposed.",
+        "Ships clean theme-aware SVGs, not generated bitmaps, and checks the real menu size in light and dark schemes."
+      ],
+      "note": "Regression from the September 2026 request: the earlier optional step was skipped even though the user wanted generated icon designs."
+    },
+    {
+      "id": "typo3-icon14-behaviour-fallback",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Modernize our module, extension, record, plugin and toolbar artwork. OpenAI returns a quota error and the Google key is absent; finish the set.",
+      "assertions": [
+        "Attempts the configured image provider, falls back to the other available provider only for technical failures, and does not silently choose an older model.",
+        "When neither provider is usable, reports that limitation and completes every requested icon as native SVG based on Core references.",
+        "Uses 64x64 for modules and extensions and 16x16 for record, plugin and action contexts; never substitutes blank or generic placeholder assets."
+      ],
+      "note": "The fallback applies to the whole requested set, including small icons."
     }
   ]
 }

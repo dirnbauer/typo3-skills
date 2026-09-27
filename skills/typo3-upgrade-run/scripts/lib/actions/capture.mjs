@@ -16,6 +16,7 @@ import { extractRecord } from '../compare/http-meta.mjs';
 import { domHash, templateSignature } from '../compare/dom-normalize.mjs';
 import { launchBrowser, newContext, stabilizePage, VIEWPORTS } from '../browser/launch.mjs';
 import { createRoutePolicy, createQuietDetector, attachNavigationGuard } from '../browser/route-policy.mjs';
+import { mergeMediaReports, resolveImageMagick } from '../browser/media-adapters.mjs';
 import { applyState } from '../browser/states.mjs';
 import { verifyManifest, urlById } from '../run/manifest.mjs';
 import { captureId } from '../run/paths.mjs';
@@ -319,6 +320,9 @@ export async function captureAll({
     states: {},
   };
   const stabilization = manifest.stabilization ?? {};
+  // Sealed adapters (references/determinism-stabilization.md): the same entries shape the
+  // server-HTML DOM stage and the in-page settle step.
+  const regionConfig = stabilization.randomizedRegions ?? [];
   const consent = stabilization.consent
     ? consentStateFor({
         ...stabilization.consent,
@@ -378,14 +382,17 @@ export async function captureAll({
       }
       let dom = null;
       if (stages.has('dom') && html) {
-        const { normalized, hits, overreach } = domHash(res.body);
+        const { normalized, hits, overreach, randomizedRegions } = domHash(res.body, { randomizedRegions: regionConfig });
         await writeFile(path.join(outRoot, 'dom', `${keyOf(url)}.html`), normalized, 'utf8');
         const sig = templateSignature(res.body);
         await writeFile(
           path.join(outRoot, 'dom', `${keyOf(url)}.meta.json`),
-          `${JSON.stringify({ hits, overreach, signature: sig.hash, tagCount: sig.tagCount }, null, 2)}\n`, 'utf8',
+          `${JSON.stringify({
+            hits, overreach, signature: sig.hash, tagCount: sig.tagCount,
+            ...(regionConfig.length ? { randomizedRegions } : {}),
+          }, null, 2)}\n`, 'utf8',
         );
-        dom = { signature: sig.hash, overreach };
+        dom = { signature: sig.hash, overreach, invalidRegions: randomizedRegions.filter((region) => !region.valid) };
       }
       return { warmed, html, modalTrigger, wroteHttp, dom };
     };
@@ -419,6 +426,12 @@ export async function captureAll({
           index.signatures[url] = dom.signature;
           if (dom.overreach.length) {
             log.warn(`normalisation overreach on ${url}: ${dom.overreach.join(', ')}`);
+          }
+          if (dom.invalidRegions.length) {
+            index.errors.push({
+              url: '(redacted)', captureId: keyOf(url), stage: 'randomized-region-integrity',
+              error: regionIntegrityMessage(dom.invalidRegions),
+            });
           }
           index.dom += 1;
         }
@@ -457,6 +470,11 @@ export async function captureAll({
   if (stages.has('visual') && captureSet.length) {
     const byViewport = groupBy(captureSet, (c) => c.viewport);
     const routeReports = [];
+    const gifFirstFrame = stabilization.media?.gifFirstFrame;
+    const imageMagick = gifFirstFrame ? resolveImageMagick(gifFirstFrame.command ?? null) : null;
+    if (gifFirstFrame && !imageMagick) {
+      throw new PreconditionError('stabilization media.gifFirstFrame needs ImageMagick ("magick" or "convert") on PATH.');
+    }
     // Screenshots from concurrent runs on one machine contend for cores and can flake
     // each other's zero-pixel proofs. The machine-wide lock queues visual stages across
     // runs (re-entrant in-process; a dead holder is stolen). Other managed jobs
@@ -490,12 +508,15 @@ export async function captureAll({
         index.browserStartup.push({ viewport, workers: workerCount, durationMs: Date.now() - startupAt });
         const workerReports = await Promise.all(
           Array.from({ length: workerCount }, async (_, workerIndex) => {
+            const policy = createRoutePolicy({
+              allowedOrigins: manifest.allowedOrigins, media: stabilization.media ?? null, imageMagick,
+            });
             const context = await newContext(browsers[workerIndex], {
               viewport,
               storageState: consent,
               stabilize: stabilization,
-            });
-            const policy = createRoutePolicy({ allowedOrigins: manifest.allowedOrigins });
+              proxy: await policy.egressProxy(),
+            }).catch(async (error) => { await policy.close(); throw error; });
             await policy.attach(context);
             const reusePage = scope === 'intermediate';
             let reusablePage = null;
@@ -529,6 +550,8 @@ export async function captureAll({
                     }
                     await guard.assertUrl(url, { purpose: 'capture-goto' });   // again, right before goto
                     navigationGuard = attachNavigationGuard(page, guard, new URL(url).origin);
+                    policy.takePageMedia(page);   // a reused page starts without earlier evidence
+                    policy.takeRedirectViolations(page);
 
                     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
                     guard.assertSameOrigin(page.url(), new URL(url).origin, { purpose: 'post-goto' });
@@ -562,15 +585,38 @@ export async function captureAll({
                     index.states[cap.captureId] = stateResult;
 
                     await page.screenshot({ path: file, fullPage: true });
+                    // Original bytes of every transformed GIF/SVG on this page: compare.mjs
+                    // fails pass/pass and before/after when they differ.
+                    const media = policy.takePageMedia(page);
                     await writeFile(
                       metaFile,
                       `${JSON.stringify({
                         captureId: cap.captureId, viewport, state: cap.state, captureAttempt: attempt,
                         visualWorker: workerIndex + 1,
                         documentHeight: settle.height, settle, network, state_result: stateResult,
+                        ...(media.resources.length ? { mediaAdapters: media.resources } : {}),
                       }, null, 2)}\n`, 'utf8',
                     );
                     index.shots += 1;
+                    for (const failure of media.failures) {
+                      index.errors.push({
+                        captureId: cap.captureId, stage: 'media-adapter',
+                        error: `${failure.kind} ${failure.resource}: ${failure.error}`,
+                      });
+                    }
+                    const invalidRegions = (settle.randomizedRegions ?? []).filter((region) => !region.valid);
+                    if (regionConfig.length && settle.settleFailed) {
+                      // The adapter never ran: this shot shows the live selection.
+                      index.errors.push({
+                        captureId: cap.captureId, stage: 'randomized-region-integrity',
+                        error: 'settle script failed; randomized regions were not replaced',
+                      });
+                    } else if (invalidRegions.length) {
+                      index.errors.push({
+                        captureId: cap.captureId, stage: 'randomized-region-integrity',
+                        error: regionIntegrityMessage(invalidRegions),
+                      });
+                    }
                     if (attempt > 1) {
                       index.retries.push({ captureId: cap.captureId, attempt, firstError });
                     }
@@ -605,6 +651,16 @@ export async function captureAll({
                         navigationViolations: navigationGuard.violations.length,
                       });
                     }
+                    // An allowed URL redirected off the allow-list. The egress proxy refused the
+                    // hop, but the page asked for it, so this capture is not clean evidence.
+                    const hops = page ? policy.takeRedirectViolations(page) : [];
+                    if (hops.length) {
+                      index.errors.push({
+                        captureId: cap.captureId, stage: 'visual',
+                        error: `redirect-guard: ${hops[0].from} redirected to ${hops[0].to}`,
+                        redirectViolations: hops.length,
+                      });
+                    }
                     navigationGuard?.dispose();
                     if (!reusePage) await page?.close().catch(() => {});
                   }
@@ -614,6 +670,7 @@ export async function captureAll({
             } finally {
               await reusablePage?.close().catch(() => {});
               await context.close();
+              await policy.close();
             }
           }),
         );
@@ -675,14 +732,26 @@ function mergeRoutePolicyReports(reports) {
       blockedOrigins[origin] = (blockedOrigins[origin] ?? 0) + count;
     }
   }
+  const egress = [...new Set(reports.map((report) => report.egress))];
   return {
     workers: reports.length,
     blockThirdParty: reports.every((report) => report.blockThirdParty),
+    // Weakest wins: one worker without the egress proxy means the run was route-only.
+    egress: egress.length === 1 ? egress[0] : (egress.includes('route-only') ? 'route-only' : 'mixed'),
+    redirectViolations: reports.reduce((sum, report) => sum + (report.redirectViolations ?? 0), 0),
     allowedOrigins: [...new Set(reports.flatMap((report) => report.allowedOrigins ?? []))].sort(),
     blockedOrigins: Object.fromEntries(Object.entries(blockedOrigins).sort()),
     blockedRequests: reports.reduce((sum, report) => sum + (report.blockedRequests ?? 0), 0),
     permittedRequests: reports.reduce((sum, report) => sum + (report.permittedRequests ?? 0), 0),
+    ...(reports.some((report) => report.media) ? { media: mergeMediaReports(reports.map((report) => report.media)) } : {}),
   };
+}
+
+/** One line per capture: which configured regions failed which integrity checks. */
+function regionIntegrityMessage(regions) {
+  return `${regions.length} randomized region(s) failed integrity: ${regions
+    .map((region) => `${region.selector} (${Object.entries(region.problems).map(([reason, count]) => `${reason}×${count}`).join(', ')})`)
+    .join('; ')}`;
 }
 
 export { readFile };

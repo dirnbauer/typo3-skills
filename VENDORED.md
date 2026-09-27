@@ -55,7 +55,7 @@ skill or rename fails preflight; expanding the collection requires a separate ex
 | `web-design-guidelines` | Vercel | https://github.com/vercel-labs/agent-skills | `—` | 2026-07-27 |
 | `web-platform-design` | ehmo | https://github.com/ehmo/platform-design-skills | `—` | 2026-07-27 |
 
-20 vendored skills · 40 collection-maintained skills · 60 total.
+20 vendored skills · 41 collection-maintained skills · 61 total.
 
 ## Attribution
 

@@ -70,6 +70,7 @@ export async function newContext(browser, {
   colorScheme = 'light',
   storageState,
   stabilize = {},
+  proxy,   // from createRoutePolicy().egressProxy(): deny-by-default egress
 } = {}) {
   const vp = VIEWPORTS[viewport];
   if (!vp) throw new PolicyError(`Unknown viewport: ${viewport}`);
@@ -85,6 +86,7 @@ export async function newContext(browser, {
     reducedMotion: 'reduce',
     forcedColors: 'none',
     storageState,
+    ...(proxy ? { proxy } : {}),
   });
 
   await context.addInitScript(initScript(stabilize));

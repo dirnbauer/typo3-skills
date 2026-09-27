@@ -304,7 +304,9 @@ a styling bug. Grep the stylesheet for class names Core used to supply — `cont
 **Symptom.** After the 14.x rung, configuration that used to apply is simply gone. A menu renders
 unstyled, a plugin loses its settings, a whole library of TypoScript behaves as if it was never
 written. **Nothing is logged** — no error, no warning, no deprecation entry. Status codes stay
-200 and the page renders, just wrong.
+200 and the page renders, just wrong. The exception is an include that carried the `PAGE` object
+itself: then 14.3 logs an error and answers 500 "No page configured for type=0"
+(`PrepareTypoScriptFrontendRendering`), which looks like a different problem.
 
 **Cause.** `<INCLUDE_TYPOSCRIPT: ...>` was **removed in v14** (deprecated in #105171, removed
 with #105377). It was replaced by `@import` back in v9, but the old construct kept working for
@@ -356,7 +358,10 @@ grep -rn 'INCLUDE_TYPOSCRIPT' packages/ config/ fileadmin/
 ```
 
 Convert the database hits by hand — same syntax Fractor produces — and re-run both checks until
-each returns nothing.
+each returns nothing. A hand conversion in the DDEV database does not reach production: ship it
+as a sitepackage upgrade wizard that changes only the exact pre-migration record and does nothing
+on an already migrated or later edited one, and list it in the handover. A deploy step that
+throws on any unexpected state blocks every future deploy after the next backend edit.
 
 **Two details that bite during the conversion.**
 

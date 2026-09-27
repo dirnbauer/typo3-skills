@@ -114,6 +114,24 @@ TYPO3 v14 changed Scheduler storage from PHP-serialized task objects to structur
 - Recreate an unmigratable task from a reviewed plan, not from the old serialized blob.
 - Remove legacy rows only after the new task succeeds and a database backup exists.
 
+**A legacy payload that no longer fits its class fails the whole upgrade run.** Task classes had
+typed properties before v14 (Linkvalidator's `ValidatorTask` declares `int $page`, `int $depth`,
+`bool $emailOnBrokenLinkOnly` in 12.4 already), so an old blob storing another scalar type is
+rejected. 12.4 turns that into an invalid-task entry, "to be able to use the backend to remove
+invalid tasks": the task has been dead since then. On 14.3 `schedulerDatabaseStorageMigration`
+fails on it, and a plain `upgrade:run` — or a deploy step running it — exits non-zero.
+
+- Diagnose read-only: for rows with empty `tasktype`, record the class and the stored property
+  types. Read the blob with `unserialize(..., ['allowed_classes' => false])` and never instantiate
+  it; report no e-mail addresses or other configuration values.
+- Classify it `pre-existing` at P01, not as an upgrade regression.
+- Default fix: soft-delete the task in the source Scheduler module, then recreate it from the
+  reviewed plan in v14. Reviving a task dead since v12 changes behaviour (link-check mails start
+  again) and needs approval.
+- Never edit serialized data with regex and never unserialize with `allowed_classes => true`. If an
+  unattended replay is unavoidable, use an approved, registered project wizard that runs before
+  `upgrade:run`.
+
 ## Completion gate
 
 Fail the handoff if any of these remain unexplained:

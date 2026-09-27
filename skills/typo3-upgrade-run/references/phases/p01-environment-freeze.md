@@ -81,7 +81,9 @@ P00 complete.
      with no modules or with all of them, which is also a security regression the frontend gate
      cannot see.
    - **Scheduler tasks** — every row in `tx_scheduler_task` with its PHP class, whether that class
-     still resolves, and when it last ran.
+     still resolves, and when it last ran. A stored payload whose property types no longer fit its
+     class is a dead task since v12 and blocks `upgrade:run` on 14.3; classify it `pre-existing`
+     ([legacy payloads](../../../typo3-scheduler-jobs/references/discovery-and-operations.md#migrate-into-v14-safely)).
    - **Redirects** — the `sys_redirect` row count and a sample of real source paths. They are not
      in any sitemap, so nothing else in this run will ever request them.
    - **Workspaces** — pending versioned rows per workspace. Wizards touch versioned records;

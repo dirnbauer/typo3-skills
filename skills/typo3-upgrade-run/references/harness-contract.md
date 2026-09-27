@@ -52,7 +52,11 @@ on disk that can be edited:
 1. `discover-urls` — the base URL, each sitemap target, **each `loc`**, each golden path, each hop.
 2. `manifest.write()` — nothing is persisted unguarded.
 3. `capture` — **immediately before every `page.goto()`**, re-read from the manifest.
-4. Playwright `context.route('**/*')` — every subresource; non-allow-listed origins aborted and counted.
+4. Playwright `context.route('**/*')` — the first URL of every page request; non-allow-listed origins
+   aborted and counted. What it never sees — redirect hops, service-worker fetches, WebSockets —
+   meets a deny-by-default egress proxy that only the exact allowed origins (scheme, host, port)
+   bypass: refused and counted, and an off-origin redirect hop is a `redirect-guard` capture error.
+   What stays outside (DNS, WebRTC UDP, other processes) is listed in `route-policy.mjs`.
 5. `page.on('framenavigated')` and `context.on('page')` — the post-redirect URL is still allowed.
 6. `backend-sweep` — before credentials are typed, again after the login POST settles, before each
    module click, and after each content-frame navigation.

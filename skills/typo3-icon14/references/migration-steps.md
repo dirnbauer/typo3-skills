@@ -27,7 +27,13 @@ Use this checklist when updating existing extension icons.
 - [ ] Check the official Icon API docs for registration details
 - [ ] If available, validate the look in `EXT:styleguide`
 
-## 5. Redraw
+## 5. Generate and redraw
+
+- [ ] Use GPT Image 2.5 or Nano Banana with neighboring backend icons as references
+- [ ] Inspect the generated design at the intended render size
+- [ ] On technical failure, try the other available authorized provider once
+- [ ] If both are unavailable, disclose the fallback and finish every icon from Core references
+- [ ] Redraw the selected design as native SVG; never ship the reference bitmap
 
 - [ ] Remove solid legacy backgrounds
 - [ ] Replace hardcoded white/black/gray with `currentColor`

@@ -24,6 +24,20 @@ and maintained extension tools; it does not rebuild their scanners, parsers or m
    This helper checks collection-specific residuals; use the Core Extension Scanner first for
    supported compatibility discovery and native `fluid:analyze` for template diagnostics. Check
    actual file coverage, including legacy `.html`; JSON-mode exit 0 can still contain findings.
+
+   Core 13.4/14.3 has no scanner command, and System → Upgrade needs a maintainer in sudo mode.
+   Record the evidence headlessly with the bundled adapter, which runs the project's installed Core
+   matchers (no TYPO3 boot, no data access; `vendor/`, `.Build/` and `node_modules/` skipped):
+
+   ```bash
+   mkdir -p .typo3-update/tools
+   cp /path/to/typo3-upgrade-run/scripts/extension-scanner.php .typo3-update/tools/
+   ddev exec php .typo3-update/tools/extension-scanner.php \
+     --output=.typo3-update/manifests/extension-scanner.json
+   ```
+
+   It scans every directory in `packages/` (or each `--path=`), exits 1 on a strong match or a
+   parse error and 2 on an unsupported Core version. Weak matches do not fail it; classify them.
 2. Remove `TYPO3_version` branches, v12/v13 constraints, compatibility helpers, deprecated hooks that
    have documented event replacements, legacy backend module registration, obsolete TypoScript,
    unused XLF keys and dead imports.
@@ -69,7 +83,7 @@ and maintained extension tools; it does not rebuild their scanners, parsers or m
    **before** risky rewrites, not after.
 
 ## Exit
-0 strong extension-scanner matches; local-extension audit exits 0; no `TYPO3_version` branch or
+0 strong extension-scanner matches (`manifests/extension-scanner.json`, adapter exit 0); local-extension audit exits 0; no `TYPO3_version` branch or
 v12/v13 constraint left in executable code or configuration.
 
 ## Blocking

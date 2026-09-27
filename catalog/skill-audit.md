@@ -7,7 +7,7 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 2. Source attribution and provenance drift
 3. Repository optimization gaps
 
-- Skills audited: 60
+- Skills audited: 61
 - Total findings: 6
 - Skills with pass 1 findings: 0
 - Skills with pass 2 findings: 6
@@ -376,7 +376,7 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source owner: webconsulting
 - Source URL: https://github.com/dirnbauer/webconsulting-skills
 - Frontmatter name: typo3-icon14
-- SKILL.md lines: 260
+- SKILL.md lines: 276
 
 **Pass 1: Structure**
 - No pass 1 issues found.
@@ -409,6 +409,22 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source URL: https://github.com/dirnbauer/webconsulting-skills
 - Frontmatter name: typo3-initial-release
 - SKILL.md lines: 432
+
+**Pass 1: Structure**
+- No pass 1 issues found.
+
+**Pass 2: Source**
+- No pass 2 issues found.
+
+**Pass 3: Optimization**
+- No pass 3 issues found.
+
+## `typo3-jev`
+
+- Source owner: webconsulting
+- Source URL: https://github.com/dirnbauer/typo3-skills
+- Frontmatter name: typo3-jev
+- SKILL.md lines: 92
 
 **Pass 1: Structure**
 - No pass 1 issues found.
@@ -456,7 +472,7 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source owner: webconsulting
 - Source URL: webconsulting-original / no external upstream recorded
 - Frontmatter name: typo3-powermail
-- SKILL.md lines: 99
+- SKILL.md lines: 102
 
 **Pass 1: Structure**
 - No pass 1 issues found.
@@ -520,7 +536,7 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source owner: webconsulting
 - Source URL: https://github.com/dirnbauer/typo3-skills
 - Frontmatter name: typo3-scheduler-jobs
-- SKILL.md lines: 172
+- SKILL.md lines: 174
 
 **Pass 1: Structure**
 - No pass 1 issues found.
@@ -792,7 +808,7 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source owner: webconsulting
 - Source URL: https://github.com/dirnbauer/typo3-skills
 - Frontmatter name: typo3-upgrade-run
-- SKILL.md lines: 253
+- SKILL.md lines: 255
 
 **Pass 1: Structure**
 - No pass 1 issues found.

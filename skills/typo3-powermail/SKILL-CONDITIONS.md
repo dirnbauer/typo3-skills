@@ -39,6 +39,14 @@ For exact equality between two fields, use server-side validation or the fork-sp
 
 Source: [Comparison](https://github.com/dirnbauer/powermail_cond/blob/fc5324f9d22ee1bcd3515d3d2ca51793b5545ec1/Classes/Domain/Comparator/Comparison.php).
 
+### Jev semantic operators
+
+For `webcon_jev` / `typo3_jev`, use [the Jev integration recipes](../typo3-jev/references/powermail.md).
+The extension supplies operators **100–105** through the fork's `EvaluateRuleEvent`; do not
+reuse those values for a sitepackage operator. Choice/score rules use the decision confidence
+gate; noul rules compare the probability directly. Missing answers follow the condition's
+false branch, including its opposite action. Use ordinary rules above for exact requirements.
+
 ## Targets, relations and loops
 
 Resolve real persisted UIDs before writing conditions:

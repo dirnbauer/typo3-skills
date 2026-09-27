@@ -1,120 +1,93 @@
 #!/usr/bin/env bash
-#
-# generate-icon-reference.sh — produce a RASTER icon REFERENCE for a TYPO3 v14 icon.
-#
-# IMPORTANT: the PNG this writes is a *design reference*, never the shipped asset.
-# TYPO3 v14 backend icons are monochrome line-art SVGs (currentColor + one accent,
-# transparent background). This script gives you a clean reference glyph that an
-# agent/human then REDRAWS as a conformant SVG (see verify-icon.sh). Shipping the
-# raster — or a naive auto-trace of it — is exactly the junk this skill avoids.
-#
-# Model selection (whichever key is present; OpenAI preferred when both are set):
-#   OPENAI_API_KEY              -> OpenAI GPT Image   (default model: gpt-image-2)
-#   GEMINI_API_KEY / GOOGLE_API_KEY -> Google Gemini  (default: gemini-2.5-flash-image, "Nano Banana")
-#
-# Overrides:
-#   OPENAI_IMAGE_MODEL   (default gpt-image-2; --transparent forces gpt-image-1-mini)
-#   GEMINI_IMAGE_MODEL   (default gemini-2.5-flash-image)
-#
-# Usage:
-#   generate-icon-reference.sh "<concept>" [out.png] [--accent "<accent element>"] [--transparent] [--family "<shared grid>"]
-#
-# Examples:
-#   generate-icon-reference.sh "agent streaming events to a UI speech bubble" module-agui.ref.png \
-#       --accent "a single spark mark top-right" --family "centered glyph, 8px padding, 4px stroke"
-#
-# Notes on the models (verified mid-2026, official docs):
-#   - gpt-image-2 is current/recommended but does NOT support transparent backgrounds.
-#     We therefore prompt for a FLAT WHITE background and drop it in the redraw.
-#     --transparent switches to gpt-image-1-mini + background:transparent (deprecation-flagged).
-#   - GPT-image models always return base64 at data[0].b64_json (no url, no response_format).
-#   - GPT-image may require API Organization Verification on the OpenAI org.
-#   - Gemini returns base64 at candidates[0].content.parts[].inlineData.data; carries a SynthID
-#     watermark and has no transparent-bg option.
-#
+# Generate a raster reference, then redraw it as a TYPO3 SVG.
+# Exit 0: PNG saved; 1: usage/output error; 3: use SVG fallback; 4: safety refusal.
 set -euo pipefail
-
 die() { echo "ERROR: $*" >&2; exit 1; }
-need() { command -v "$1" >/dev/null 2>&1 || die "missing dependency: $1"; }
-need curl; need jq; need base64
-
-[ $# -ge 1 ] || die 'usage: generate-icon-reference.sh "<concept>" [out.png] [--accent "..."] [--transparent] [--family "..."]'
-
+fallback() { echo "FALLBACK: $* Complete every requested icon as native SVG from matching TYPO3 Core references; run verify-icon.sh. No reference saved." >&2; exit 3; }
+usage() { echo 'Usage: generate-icon-reference.sh "concept" [out.png] [--provider auto|openai|gemini] [--type module|small|content] [--accent "detail"] [--family "style references"] [--no-fallback]'; }
+[ $# -gt 0 ] || { usage >&2; exit 1; }
+if [ "$1" = --help ]; then usage; exit 0; fi
 concept="$1"; shift
-out="icon-reference.png"
-accent=""
-family="centered single glyph, generous even padding, one uniform medium stroke weight"
-transparent=0
-
-# First positional after concept (if not a flag) is the output path.
-if [ $# -ge 1 ] && [[ "$1" != --* ]]; then out="$1"; shift; fi
+[ -n "$concept" ] || die 'empty concept'
+out=icon-reference.png
+provider=auto
+kind=module
+accent='one purple/lilac detail matching the installed backend'
+family='match the neighboring TYPO3 icons, balanced optical size and spacing'
+allow_fallback=1
+if [ $# -gt 0 ] && [[ "$1" != --* ]]; then out="$1"; shift; fi
 while [ $# -gt 0 ]; do
   case "$1" in
-    --accent) accent="${2:-}"; shift 2;;
-    --family) family="${2:-}"; shift 2;;
-    --transparent) transparent=1; shift;;
-    *) die "unknown arg: $1";;
+    --provider|--type|--accent|--family)
+      [ $# -ge 2 ] && [[ "$2" != --* ]] || die "missing value for $1"
+      case "$1" in
+        --provider) provider="$2";; --type) kind="$2";;
+        --accent) accent="$2";; --family) family="$2";;
+      esac
+      shift 2;;
+    --no-fallback) allow_fallback=0; shift;;
+    --transparent) echo 'NOTE: using flat white reference; the final SVG is transparent. No model downgrade.' >&2; shift;;
+    *) die "unknown argument: $1";;
   esac
 done
-
-# Prompt tuned to yield a reference that translates cleanly into v14 line-art:
-# one centered pictogram, flat, single stroke weight, no color/gradient/shadow/3D/text,
-# legible at 16px. Background is flat white for gpt-image-2 (dropped in the redraw);
-# transparent only on the gpt-image-1-mini path.
-bg_clause="on a plain solid white background"
-[ "$transparent" -eq 1 ] && bg_clause="on a fully transparent background"
-accent_clause=""
-[ -n "$accent" ] && accent_clause=" Exactly one small accent detail: ${accent}."
-
-prompt="A single centered pictographic user-interface icon representing: ${concept}.${accent_clause} \
-Flat 2D line-art, one uniform medium-weight dark stroke ${bg_clause}, no color fills, no gradients, \
-no drop shadows, no 3D, no perspective, no background scene, no text, letters or numbers. \
-${family}. Simple geometric shapes, minimal detail expressing one clear idea, crisp and unmistakable \
-when scaled down to 16x16 pixels. Symmetrical, balanced composition."
-
-if [ -n "${OPENAI_API_KEY:-}" ]; then
-  model="${OPENAI_IMAGE_MODEL:-gpt-image-2}"
-  body=$(jq -n --arg m "$model" --arg p "$prompt" \
-    '{model:$m, prompt:$p, size:"1024x1024", quality:"high", output_format:"png", n:1}')
-  if [ "$transparent" -eq 1 ]; then
-    # gpt-image-2 rejects transparent; use the transparent-capable (deprecation-flagged) mini.
-    model="${OPENAI_IMAGE_MODEL:-gpt-image-1-mini}"
-    body=$(jq -n --arg m "$model" --arg p "$prompt" \
-      '{model:$m, prompt:$p, background:"transparent", size:"1024x1024", quality:"high", output_format:"png", n:1}')
+case "$provider" in auto|openai|gemini) ;; *) die 'invalid provider';; esac
+case "$kind" in
+  module) grid='64x64 canvas, 4-unit strokes, geometry within 12..52, readable at 32px';;
+  small) grid='16x16 canvas, minimal 1-unit strokes, readable at 16px';;
+  content) grid='square Content Blocks thumbnail matching the content icon family';;
+  *) die 'invalid type';;
+esac
+[[ "$out" = *.png ]] || die 'output must end in .png'
+for dependency in curl jq base64 od; do
+  command -v "$dependency" >/dev/null 2>&1 || fallback "Missing $dependency."
+done
+prompt="Design one pictographic icon representing: ${concept}. Match neighboring TYPO3 icons: ${family}. ${grid}. Flat geometric line art on a plain white reference background. Accent: ${accent}. No colored tile, gradients, shadows, 3D, background scene or labels. Preserve the meaning, keep details readable at actual size. This raster guides a transparent SVG using currentColor and the backend accent token."
+mkdir -p "$(dirname "$out")" || die 'cannot create output directory'
+scratch=$(mktemp -d "$(dirname "$out")/.icon-reference.XXXXXX") || die 'cannot create temporary directory'
+trap 'rm -rf "$scratch"' EXIT
+request() {
+  local engine="$1" model key endpoint status
+  if [ "$engine" = openai ]; then
+    key="${OPENAI_API_KEY:-}"
+    [ -n "$key" ] || { echo 'OpenAI unavailable: no API key.' >&2; return 1; }
+    model="${OPENAI_IMAGE_MODEL:-gpt-image-2.5-flare}"
+    endpoint=https://api.openai.com/v1/images/generations
+    jq -n --arg model "$model" --arg prompt "$prompt" '{model:$model,prompt:$prompt,size:"1024x1024",quality:"high",output_format:"png",n:1}' > "$scratch/request.json"
+    printf 'Authorization: Bearer %s\nContent-Type: application/json\n' "$key" > "$scratch/headers"
+  else
+    key="${GEMINI_API_KEY:-${GOOGLE_API_KEY:-}}"
+    [ -n "$key" ] || { echo 'Nano Banana unavailable: no API key.' >&2; return 1; }
+    model="${GEMINI_IMAGE_MODEL:-gemini-3.1-flash-image}"
+    [[ "$model" =~ ^[A-Za-z0-9._-]+$ ]] || { echo 'Invalid Gemini model ID.' >&2; return 1; }
+    endpoint="https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent"
+    jq -n --arg prompt "$prompt" '{contents:[{parts:[{text:$prompt}]}],generationConfig:{responseModalities:["IMAGE"]}}' > "$scratch/request.json"
+    printf 'x-goog-api-key: %s\nContent-Type: application/json\n' "$key" > "$scratch/headers"
   fi
-  echo "→ OpenAI GPT Image: $model (transparent=$transparent)" >&2
-  resp=$(curl -fsS https://api.openai.com/v1/images/generations \
-    -H "Authorization: Bearer $OPENAI_API_KEY" -H "Content-Type: application/json" -d "$body") \
-    || die "OpenAI request failed (check key, org verification, model availability)"
-  echo "$resp" | jq -e '.data[0].b64_json' >/dev/null 2>&1 \
-    || die "unexpected OpenAI response: $(echo "$resp" | jq -c '.error // .' 2>/dev/null | head -c 300)"
-  echo "$resp" | jq -r '.data[0].b64_json' | base64 --decode > "$out"
-
-elif [ -n "${GEMINI_API_KEY:-${GOOGLE_API_KEY:-}}" ]; then
-  key="${GEMINI_API_KEY:-${GOOGLE_API_KEY}}"
-  model="${GEMINI_IMAGE_MODEL:-gemini-2.5-flash-image}"
-  echo "→ Google Gemini (Nano Banana): $model" >&2
-  body=$(jq -n --arg p "$prompt" \
-    '{contents:[{parts:[{text:$p}]}], generationConfig:{responseModalities:["IMAGE"]}}')
-  resp=$(curl -fsS "https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent" \
-    -H "x-goog-api-key: $key" -H "Content-Type: application/json" -d "$body") \
-    || die "Gemini request failed (check key, model availability)"
-  data=$(echo "$resp" | jq -r '.candidates[0].content.parts[]? | select(.inlineData!=null) | .inlineData.data' | head -1)
-  [ -n "$data" ] || die "no image in Gemini response: $(echo "$resp" | jq -c '.error // .promptFeedback // .' 2>/dev/null | head -c 300)"
-  echo "$data" | base64 --decode > "$out"
-
-else
-  cat >&2 <<'EOF'
-ERROR: no image-model API key found.
-  Set one of:
-    export OPENAI_API_KEY=sk-...     # GPT Image 2 (preferred)
-    export GEMINI_API_KEY=...        # Google "Nano Banana"
-  Then re-run. Without a key, SKIP this stage and author the v14 SVG directly
-  from the icon's meaning per the skill rules — that still produces a perfect icon.
-EOF
-  exit 3
+  echo "Generating with $engine ($model)." >&2
+  if ! status=$(curl -sS --connect-timeout 15 --max-time 180 -o "$scratch/response.json" -w '%{http_code}' -H "@$scratch/headers" --data-binary "@$scratch/request.json" "$endpoint"); then
+    echo "$engine transport failure." >&2; return 1
+  fi
+  # Never route around safety refusals or print raw responses/credentials.
+  if jq -e '(.error.code == "content_policy_violation") or (.error.code == "moderation_blocked") or (.promptFeedback.blockReason? != null) or any(.candidates[]?; .finishReason == "SAFETY" or .finishReason == "IMAGE_SAFETY" or .finishReason == "PROHIBITED_CONTENT")' "$scratch/response.json" >/dev/null 2>&1; then
+    echo "$engine refused the request. No provider fallback attempted." >&2; exit 4
+  fi
+  case "$status" in 2??) ;; *) echo "$engine HTTP $status." >&2; return 1;; esac
+  if [ "$engine" = openai ]; then
+    jq -er '.data[0].b64_json | select(type == "string" and length > 0)' "$scratch/response.json" > "$scratch/image.b64" 2>/dev/null || return 1
+  else
+    jq -er '[.candidates[]?.content.parts[]? | .inlineData? | select(.mimeType == "image/png") | .data | select(type == "string" and length > 0)][0] // empty' "$scratch/response.json" > "$scratch/image.b64" 2>/dev/null || return 1
+  fi
+  base64 --decode < "$scratch/image.b64" > "$scratch/image.png" 2>/dev/null || return 1
+  [ "$(wc -c < "$scratch/image.png" | tr -d ' ')" -gt 100 ] || return 1
+  [ "$(od -An -tx1 -N8 "$scratch/image.png" | tr -d ' \n')" = 89504e470d0a1a0a ] || return 1
+  mv "$scratch/image.png" "$out" || die 'cannot save reference'
+  echo "Reference saved: $out ($engine / $model). Inspect, redraw as SVG, and run verify-icon.sh." >&2
+}
+case "$provider" in auto|openai) engines=(openai gemini);; gemini) engines=(gemini openai);; esac
+if [ "$allow_fallback" -eq 0 ]; then
+  if [ "$provider" = auto ] && [ -z "${OPENAI_API_KEY:-}" ]; then engines=(gemini); else engines=("${engines[0]}"); fi
 fi
-
-bytes=$(wc -c < "$out" | tr -d ' ')
-[ "$bytes" -gt 100 ] || die "output looks empty ($bytes bytes)"
-echo "✓ reference saved: $out ($bytes bytes) — now REDRAW it as a clean v14 SVG and run verify-icon.sh" >&2
+for engine in "${engines[@]}"; do
+  if request "$engine"; then exit 0; fi
+done
+fallback 'No available provider returned a valid PNG.'

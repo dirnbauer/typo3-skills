@@ -26,6 +26,14 @@ backend/integration/cache journeys. Do not rerun a major-version migration or in
 closure from successful current checks. Frontend production-context fixtures remain local with
 intercepted external services; they do not grant live access.
 
+## #109585 applies to direct v13 → 14.3 too
+
+Upstream limits the #109585 wizard to sites that ran v14.2 and says to skip it for direct
+v13 → 14.3 upgrades. Run `setup_userSettingsScrubbingMigration` on every upgrade to 14.3 instead:
+v12/v13 left empty `password`/`password2` keys that the user-settings migration copies, and a
+skipped or out-of-order scrub leaves residue behind a wizard marked done. Details and the
+value-based check: [typo3-security v14 notes](../../typo3-security/references/v14-notes.md).
+
 ## Credits & Attribution
 
 This skill is based on the excellent work by **Netresearch DTT GmbH**.

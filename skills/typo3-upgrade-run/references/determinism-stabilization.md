@@ -94,34 +94,67 @@ other shifts the entire layout horizontally and reads as a site-wide regression.
 | One image differs, others fine | `_processed_` generated during the capture |
 | A banner present in one pass | consent state not seeded |
 | Random small regions | animation or transition not suppressed |
+| A logo strip or teaser block changes selection although `Math.random` is seeded, and the served HTML already differs | server-side `shuffle()`/`RAND()` → `randomizedRegions` adapter below |
+| One animated image differs, nothing else | GIF animation → `media.gifFirstFrame` adapter below |
 | Everything differs slightly | device scale factor, colour scheme, or a browser version change → check the environment fingerprint first; this is `INVALID`, not a stabilisation problem |
 
 ## Server-side randomness and media adapters
 
 Seeding `Math.random()` cannot control PHP `shuffle()`, a database `RAND()` order or a provider that
-chooses editorial records before HTML reaches the browser. Do not hide the region or exclude the
-whole page. Add a **project-local, configured adapter** that replaces only the unstable region with a
-structural marker carrying its measured item count and geometry. Preserve separate assertions for
-every selected item's link target, resource URL, accessible name/alt text and load status. The
-coverage declaration must say that the structure and resource integrity were proved while the exact
-editorial selection/order was not. Seal the selector and adapter profile into the manifest; never add
-a provider- or project-specific selector to the shared harness.
+chooses editorial records before HTML reaches the browser, and no CSS or timer freeze stops an
+animated GIF. Do not hide the region, exclude the whole page, or fork the harness into the project:
+the harness ships sealed adapters for exactly these cases. Configure them in the same
+`--stabilization-config` JSON as consent. Each entry names the ADR that approved it, because it
+narrows what the pixel claim means; it never authorises a threshold increase.
 
-Animated and compositor-sensitive media need the same split between stable pixels and untouched
-source evidence:
+```json
+{
+  "randomizedRegions": [
+    { "selector": "div.partner-logos", "adr": "ADR-004", "placeholderHeight": 48, "minLinks": 1, "minImages": 1 }
+  ],
+  "media": {
+    "gifFirstFrame": { "adr": "ADR-005" },
+    "svgBlendNeutralize": { "adr": "ADR-006", "modes": ["multiply"] }
+  }
+}
+```
 
-- For an animated GIF, a route adapter may serve frame 1 during screenshots. Record the transformed
-  resource URL and count, hash the original response separately, and declare every later frame
-  untested. A static poster is preferable when the product owns the markup.
-- If identical SVG bytes containing a blend mode such as `mix-blend-mode:multiply` rasterise
-  differently even with the GPU disabled, a narrowly guarded route adapter may neutralise that one
-  instruction for screenshots. Record the original byte length and SHA-256 on both sides and fail on
-  any source mismatch. The SVG source remains contractual even when that compositor instruction is
-  excluded from pixel proof.
+**`randomizedRegions`** — for comparison captures, the region's contents are replaced by a marker, in
+the served HTML (DOM stage) and in the rendered page (pixels). The region keeps its box at
+`placeholderHeight` px; without it, at the measured height, which only works when the selection does
+not change the size. Still proven: every selected item's link target, accessible name, image URL,
+`alt` and load status, the `minLinks`/`minImages` counts, and everything around the region. Any
+failed check is a capture error, so the self-test and the final capture fail. The settle report and
+the DOM meta carry counts, geometry and problems per region. axe audits keep the original contents.
 
-Every transform must apply identically to both captures, report its coverage and refuse when the
-guard does not match. It requires an ADR because it narrows what the pixel claim means; it does not
-authorise a threshold increase.
+**`media.gifFirstFrame`** — an animated GIF from an allowed origin is served as a PNG of frame 1 on the
+canvas Chromium would use (logical screen ∪ first frame, transparent outside it). Needs ImageMagick
+on the capture machine (`magick`, or the v6 `convert` that DDEV images ship); discovery refuses to
+seal a profile it cannot execute. Later frames are untested and counted as `laterFramesUntested`.
+
+**`media.svgBlendNeutralize`** — only when identical SVG bytes still rasterise differently with
+`--disable-gpu`, which is already the default. The listed `mix-blend-mode` values become `normal`;
+everything else in the SVG stays byte-identical.
+
+Both media adapters record the ORIGINAL response per screenshot (`mediaAdapters` in the shot meta:
+SHA-256 and byte length). A changed source fails the self-test (`media-source-differs`) and is a
+before/after finding (`visual-media-source`, major) even when frame 1 matches: TYPO3 re-processing an
+animated GIF with another ImageMagick/GraphicsMagick is a real way to lose its later frames. Review
+and declare it; do not delete the evidence.
+
+The harness enforces the rest:
+
+- Region selectors are one class, optionally with a tag (`.partner-logos`, `div.partner-logos`), on
+  an element with a required end tag, because the dependency-free DOM normaliser must find exactly
+  what `querySelectorAll` finds. Markup it cannot balance is refused and reported, never guessed.
+- A response that does not match an adapter's guard — static or malformed GIF, SVG without the blend
+  instruction, non-200, redirect — is never transformed. The browser loads it untouched and it is
+  counted as `passthrough`. Adapters only see requests the route policy already allowed.
+- Every transform applies identically to both sides and is sealed with the profile hash. The capture
+  index (`routePolicy.media`) lists each transformed resource; carry `laterFramesUntested` and each
+  region's ADR into the closure coverage declaration next to `carousels.untestedSlides`.
+
+A static poster is still preferable when the product owns the markup.
 
 ## When a page genuinely cannot be stabilised
 

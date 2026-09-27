@@ -33,6 +33,7 @@
  */
 import { chromium } from 'playwright';
 import { writeFileSync } from 'node:fs';
+import { createRoutePolicy } from './lib/browser/route-policy.mjs';
 import { execFileSync } from 'node:child_process';
 
 const MARK = '_t3u_probe_';
@@ -99,13 +100,20 @@ const ERROR_MARKERS = [
 ];
 
 let browser;
+let policy;
 let pageUid = null;
 let contentUid = null;
 let refUid = null;
 
 try {
   browser = await chromium.launch();
-  const ctx = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 1600, height: 1200 } });
+  // Backend credentials are typed into this context. Deny all egress except the site itself so
+  // no embedded resource or redirect hop can carry the session elsewhere (route-policy.mjs).
+  policy = createRoutePolicy({ allowedOrigins: [origin] });
+  const ctx = await browser.newContext({
+    ignoreHTTPSErrors: true, viewport: { width: 1600, height: 1200 }, proxy: await policy.egressProxy(),
+  });
+  await policy.attach(ctx);
   const page = await ctx.newPage();
 
   const listFrame = async (waitMs = 1400) => {
@@ -265,9 +273,15 @@ try {
     } catch { console.error('  ! cleanup failed — remove records prefixed _t3u_probe_ by hand'); }
   }
 } finally {
+  if (policy) report.routePolicy = policy.report();
   if (browser) await browser.close();
 }
 
 if (reportPath) writeFileSync(reportPath, JSON.stringify(report, null, 2));
+// The egress proxy refused these hops; the site still tried to leave its origin.
+if (report.routePolicy?.redirectViolations) {
+  console.error(`\norigin escape: ${report.routePolicy.redirectViolations} redirect hop(s) left ${origin} (refused)`);
+  process.exit(5);
+}
 console.log(failed ? `\n${failed} finding(s)` : '\nBackend write round-trip passed.');
 process.exit(failed ? 1 : 0);
