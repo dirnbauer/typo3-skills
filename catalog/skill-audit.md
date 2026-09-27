@@ -536,7 +536,7 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source owner: webconsulting
 - Source URL: https://github.com/dirnbauer/typo3-skills
 - Frontmatter name: typo3-scheduler-jobs
-- SKILL.md lines: 172
+- SKILL.md lines: 174
 
 **Pass 1: Structure**
 - No pass 1 issues found.
