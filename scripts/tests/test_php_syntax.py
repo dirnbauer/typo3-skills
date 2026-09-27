@@ -7,7 +7,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 # One PHP process for all files: TOKEN_PARSE runs the real parser and throws ParseError.
+# Keep the ini files: Debian/Ubuntu ship the tokenizer as a shared extension, so `php -n` lacks it.
 CHECK = r"""
+if (!function_exists('token_get_all')) {
+    fwrite(STDOUT, "The tokenizer extension is not loaded; enable it to syntax-check the skills.\n");
+    exit(2);
+}
 $failed = 0;
 foreach (array_slice($argv, 1) as $file) {
     try {
@@ -31,7 +36,7 @@ class PhpSyntaxTests(unittest.TestCase):
         )
         self.assertTrue(files, "expected PHP files under skills/")
         result = subprocess.run(
-            ["php", "-n", "-r", CHECK, "--", *files],
+            ["php", "-r", CHECK, "--", *files],
             capture_output=True, text=True, timeout=600,
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
