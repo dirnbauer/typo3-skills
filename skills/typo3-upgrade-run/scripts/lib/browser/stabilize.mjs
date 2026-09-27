@@ -15,6 +15,90 @@
  */
 
 import { sha256 } from '../run/paths.mjs';
+import { HarnessError } from '../cli/exit-codes.mjs';
+import { parseRegionSelector } from '../compare/dom-normalize.mjs';
+import { BLEND_MODES } from './media-adapters.mjs';
+
+const ADR_ID = /^ADR-\d{3,}$/;
+const MAX_RANDOMIZED_REGIONS = 20;
+
+/**
+ * Validate the adapter keys of a stabilization profile before it is sealed.
+ *
+ * randomizedRegions and media narrow what the pixel claim means, so every entry names the ADR
+ * that approved it, and unknown keys are refused rather than ignored: a typo would otherwise
+ * seal a profile that silently does nothing. Other top-level keys are left to their owners.
+ */
+export function validateStabilizationProfile(profile = {}) {
+  const problems = [];
+  const isObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
+  const onlyKeys = (value, allowed, at) => {
+    for (const key of Object.keys(value)) if (!allowed.includes(key)) problems.push(`${at}.${key} is not a known key`);
+  };
+  const adr = (value, at) => {
+    if (!ADR_ID.test(String(value ?? ''))) problems.push(`${at}.adr must name the approving ADR, e.g. "ADR-004"`);
+  };
+  const optionalInt = (value, min, max, at) => {
+    if (value !== undefined && (!Number.isInteger(value) || value < min || value > max)) {
+      problems.push(`${at} must be an integer from ${min} to ${max}`);
+    }
+  };
+
+  const regions = profile.randomizedRegions;
+  if (regions !== undefined) {
+    if (!Array.isArray(regions) || regions.length > MAX_RANDOMIZED_REGIONS) {
+      problems.push(`randomizedRegions must be a list of at most ${MAX_RANDOMIZED_REGIONS} entries`);
+    } else {
+      regions.forEach((region, i) => {
+        const at = `randomizedRegions[${i}]`;
+        if (!isObject(region)) { problems.push(`${at} must be an object`); return; }
+        onlyKeys(region, ['selector', 'adr', 'placeholderHeight', 'minLinks', 'minImages'], at);
+        if (!parseRegionSelector(region.selector)) {
+          problems.push(`${at}.selector must be ".class" or "tag.class" on an element with a required end tag`);
+        }
+        adr(region.adr, at);
+        optionalInt(region.placeholderHeight, 1, 4000, `${at}.placeholderHeight`);
+        optionalInt(region.minLinks, 0, 1000, `${at}.minLinks`);
+        optionalInt(region.minImages, 0, 1000, `${at}.minImages`);
+      });
+    }
+  }
+
+  const media = profile.media;
+  if (media !== undefined) {
+    if (!isObject(media)) {
+      problems.push('media must be an object');
+    } else {
+      onlyKeys(media, ['gifFirstFrame', 'svgBlendNeutralize'], 'media');
+      const gif = media.gifFirstFrame;
+      if (gif !== undefined) {
+        if (!isObject(gif)) problems.push('media.gifFirstFrame must be an object');
+        else {
+          onlyKeys(gif, ['adr', 'command'], 'media.gifFirstFrame');
+          adr(gif.adr, 'media.gifFirstFrame');
+          if (gif.command !== undefined && !['magick', 'convert'].includes(gif.command)) {
+            problems.push('media.gifFirstFrame.command must be "magick" or "convert"');
+          }
+        }
+      }
+      const svg = media.svgBlendNeutralize;
+      if (svg !== undefined) {
+        if (!isObject(svg)) problems.push('media.svgBlendNeutralize must be an object');
+        else {
+          onlyKeys(svg, ['adr', 'modes'], 'media.svgBlendNeutralize');
+          adr(svg.adr, 'media.svgBlendNeutralize');
+          if (svg.modes !== undefined && (!Array.isArray(svg.modes) || !svg.modes.length
+            || svg.modes.some((mode) => !BLEND_MODES.includes(mode)) || new Set(svg.modes).size !== svg.modes.length)) {
+            problems.push('media.svgBlendNeutralize.modes must be a non-empty list of distinct CSS blend modes');
+          }
+        }
+      }
+    }
+  }
+
+  if (problems.length) throw new HarnessError(`Invalid stabilization profile: ${problems.join('; ')}`);
+  return profile;
+}
 
 export const STABILIZE_CSS = `
 *, *::before, *::after {
@@ -79,6 +163,14 @@ export function initScript({ seed = 20260725, epoch = 1774425600000 } = {}) {
 export function settleScript(profile = {}) {
   const consentSelectors = JSON.stringify(profile.consent?.fallbackSelectors ?? []);
   const scrollLockClasses = JSON.stringify(profile.consent?.scrollLockClasses ?? []);
+  // Validated selectors and ADR ids only: safe to embed in the page source.
+  const randomizedRegions = JSON.stringify((profile.randomizedRegions ?? []).map((region) => ({
+    selector: region.selector,
+    adr: region.adr,
+    placeholderHeight: region.placeholderHeight ?? null,
+    minLinks: region.minLinks ?? 0,
+    minImages: region.minImages ?? 0,
+  })));
   return `(async () => {
   const report = {
     fonts: false, lazy: 0, lazyPromoted: 0, videos: 0, height: 0,
@@ -250,6 +342,69 @@ export function settleScript(profile = {}) {
       });
     }
   } catch {}
+
+  // Server-randomized regions (sealed profile, one ADR per entry).
+  //
+  // PHP shuffle(), SQL RAND() and editorial rotation choose content before the HTML reaches
+  // the browser, so the seeded Math.random cannot make them repeatable. Assert every selected
+  // item first - link target, accessible name, image URL, alt text and load status - then
+  // replace only the region's contents with a marker of stable height. The entry states that
+  // structure and resource integrity were proven while the exact selection and order were not.
+  report.randomizedRegions = [];
+  const REGIONS = ${randomizedRegions};
+  const textOf = (el) => (el && el.textContent ? el.textContent.trim() : '');
+  for (const cfg of REGIONS) {
+    let found = [];
+    try { found = [...document.querySelectorAll(cfg.selector)]; } catch {}
+    // Only the outermost match is a region; a nested match is part of it.
+    const regions = found.filter((el) => !found.some((other) => other !== el && other.contains(el)));
+    for (const [index, region] of regions.entries()) {
+      const rect = region.getBoundingClientRect();
+      const links = [...region.querySelectorAll('a')];
+      const images = [...region.querySelectorAll('img')];
+      const problems = {};
+      const fail = (reason) => { problems[reason] = (problems[reason] || 0) + 1; };
+      for (const link of links) {
+        if (!(link.getAttribute('href') || '').trim()) fail('link-without-href');
+        const labelledBy = (link.getAttribute('aria-labelledby') || '').split(' ').filter(Boolean)
+          .map((id) => textOf(document.getElementById(id))).join('');
+        const name = (link.getAttribute('aria-label') || '').trim() || labelledBy || textOf(link)
+          || (link.getAttribute('title') || '').trim()
+          || [...link.querySelectorAll('img[alt]')].map((img) => img.getAttribute('alt').trim()).join('');
+        if (!name) fail('link-without-accessible-name');
+      }
+      for (const img of images) {
+        if (!img.hasAttribute('alt')) fail('image-without-alt');
+        if (!(img.currentSrc || img.getAttribute('src') || '').trim()) { fail('image-without-url'); continue; }
+        const loaded = img.complete && typeof img.decode === 'function'
+          ? await Promise.race([
+            img.decode().then(() => true, () => false),
+            new Promise((resolve) => setTimeout(() => resolve(false), 3000)),
+          ])
+          : false;
+        if (!loaded) fail('image-not-loaded');
+      }
+      if (!region.children.length && !textOf(region)) fail('empty-region');
+      if (links.length < cfg.minLinks) fail('fewer-links-than-expected');
+      if (images.length < cfg.minImages) fail('fewer-images-than-expected');
+      const height = cfg.placeholderHeight === null ? Math.round(rect.height) : cfg.placeholderHeight;
+      report.randomizedRegions.push({
+        selector: cfg.selector, adr: cfg.adr, index,
+        links: links.length, images: images.length,
+        measured: { width: Math.round(rect.width), height: Math.round(rect.height) },
+        placeholderHeight: height,
+        valid: Object.keys(problems).length === 0,
+        problems,
+        coverage: 'structure and resource integrity proven; exact selection and order not compared',
+      });
+      const marker = document.createElement('div');
+      marker.setAttribute('data-t3u-randomized-region', cfg.selector);
+      marker.style.cssText = 'display:block;width:100%;height:' + height + 'px';
+      region.replaceChildren(marker);
+      for (const prop of ['height', 'min-height', 'max-height']) region.style.setProperty(prop, height + 'px', 'important');
+      region.style.setProperty('overflow', 'hidden', 'important');
+    }
+  }
 
   // Allow carousel refresh/layout writes to reach a paint boundary before freezing their
   // timers and recording the document height.

@@ -169,8 +169,10 @@ Read [`rules/20-baseline-integrity.md`](rules/20-baseline-integrity.md),
 
 - Capture before sitemap repair, Vite/Bootstrap work, accessibility fixes, or the core update.
 - Determinism uses strict zero. Never raise thresholds, shrink samples, quarantine pages, or
-  refresh the baseline to make a difference disappear. Stabilise nondeterminism with the sealed,
-  ADR-backed adapters in [`references/determinism-stabilization.md`](references/determinism-stabilization.md).
+  refresh the baseline to make a difference disappear. Stabilise nondeterminism — server-side
+  random regions, animated GIFs, blend-mode SVGs — with the sealed, ADR-backed adapters in
+  [`references/determinism-stabilization.md`](references/determinism-stabilization.md); never
+  fork the harness into the project.
 - Final HTTP and normalized DOM cover every discovered route; pixels use the sealed tiered sample.
 - Authoritative global states are `default`, `keyboard-focus`, and `nav-open`.
 - Component sentinels come from the inventory: cookie consent (fresh reject/accept/settings),

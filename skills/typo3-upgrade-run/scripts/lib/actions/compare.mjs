@@ -33,6 +33,7 @@ import { acquireMachineLock, releaseMachineLock } from '../util/machine-lock.mjs
 import { WorkerPool } from '../util/worker-pool.mjs';
 import { withMachineResources, machineCapacity } from '../util/machine-resources.mjs';
 import { readEvidenceContext } from '../run/evidence.mjs';
+import { mediaSourceFingerprint } from '../browser/media-adapters.mjs';
 
 const nextId = (loopId, n) => `F-${String(loopId ?? '000').padStart(3, '0')}-${String(n).padStart(3, '0')}`;
 
@@ -234,6 +235,7 @@ export async function compareVisual({ values, paths, log }) {
   const results = [];
   let n = 0;
   let match = 0;
+  let mediaSourceDifferences = 0;
 
   // A capture present in the baseline but absent from the after-set is NOT a difference: on an
   // intermediate loop the after-set is a deliberate sample, and calling every un-sampled capture
@@ -289,6 +291,20 @@ export async function compareVisual({ values, paths, log }) {
       continue;
     }
 
+    // A media adapter showed frame 1 or a neutralized blend layer on both sides, so the pixels
+    // cannot see a changed source. Its original bytes are the evidence for what was excluded.
+    const media = await mediaSourcesDiffer(path.join(beforeDir, p.file), path.join(afterDir, p.file));
+    if (media) {
+      n += 1;
+      mediaSourceDifferences += 1;
+      findings.push({
+        id: nextId(values.loop, n), target: p.file,
+        class: 'regression', severity: 'major', status: 'open',
+        stage: 'visual-media-source', reason: 'media-source-differs',
+        mediaSourcesBefore: media.mediaSourcesA, mediaSourcesAfter: media.mediaSourcesB,
+      });
+    }
+
     const outcome = pixelOutcomes[i];
     if (!outcome.ok) throw outcome.error;
     const { identical, cmp } = outcome.value;
@@ -323,6 +339,7 @@ export async function compareVisual({ values, paths, log }) {
     onlyInBefore: onlyInBefore.length,
     notCaptured: notCaptured.length,
     onlyInAfter: onlyInAfter.length,
+    mediaSourceDifferences,
   };
   const verdict = findings.length ? 'findings' : 'pass';
 
@@ -508,6 +525,11 @@ export async function selftestDeterminism({ values, paths, log, journal }) {
       if (p.status !== 'pair') { unstable.push({ capture: p.file, reason: 'capture-set-differs' }); continue; }
       const bp = path.join(rootA, 'shots', p.file);
       const ap = path.join(rootB, 'shots', p.file);
+      const media = await mediaSourcesDiffer(bp, ap);
+      if (media) {
+        unstable.push({ capture: p.file, reason: 'media-source-differs', ...media, suggestedStabilization: ['media-adapter'] });
+        continue;
+      }
       if (await quickIdentical(bp, ap)) continue;
       const cmp = await compareOne(bp, ap, null, log);
       const px = cmp.diffPixels ?? 1;
@@ -678,6 +700,20 @@ export async function promoteSelftestBaseline(source, target) {
     await rm(pending, { recursive: true, force: true });
     throw error;
   }
+}
+
+/**
+ * Transformed-media sources recorded next to two shots (media-adapters.mjs), or null when they
+ * match. Compared as a multiset of kind, SHA-256 and byte length: a renamed but identical file
+ * is not a difference, a changed one always is.
+ */
+export async function mediaSourcesDiffer(shotA, shotB) {
+  const read = async (shot) => mediaSourceFingerprint(
+    (await readJson(shot.replace(/\.png$/i, '.meta.json')))?.mediaAdapters ?? [],
+  );
+  const [a, b] = await Promise.all([read(shotA), read(shotB)]);
+  if (a.length === b.length && a.every((entry, i) => entry === b[i])) return null;
+  return { mediaSourcesA: a, mediaSourcesB: b };
 }
 
 function suggest(cmp) {

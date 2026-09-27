@@ -79,6 +79,13 @@ capture:
       - consent.fallbackSelectors
       - consent.scrollLockClasses
       - consent.modalTriggerSelectors
+    # Same file, only when the untouched site needs them, each entry naming its ADR
+    # (references/determinism-stabilization.md): server-side shuffle()/RAND() regions,
+    # animated GIFs, and SVG blend layers that still differ with --disable-gpu.
+    optional_keys:
+      - randomizedRegions
+      - media.gifFirstFrame
+      - media.svgBlendNeutralize
 
 interactions:
   # Sealed inventory-driven sentinel file. Required components: consent, every slider/rotator,

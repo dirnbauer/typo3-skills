@@ -26,6 +26,7 @@
  */
 import { chromium } from 'playwright';
 import { writeFileSync, readFileSync } from 'node:fs';
+import { createRoutePolicy } from './lib/browser/route-policy.mjs';
 import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 
@@ -105,7 +106,13 @@ const axeSource = readFileSync(require_.resolve('axe-core/axe.min.js'), 'utf8');
 console.log(`\naxe-core audit — ${picked.length} page(s), tags ${tags.join(',')}, seed ${seed}\n`);
 
 const browser = await chromium.launch();
-const ctx = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 1280, height: 900 } });
+// The same egress policy as `t3u axe`: the audit reads only the site under test, and nothing a
+// page embeds or redirects to can phone home.
+const policy = createRoutePolicy({ allowedOrigins: [new URL(baseUrl).origin] });
+const ctx = await browser.newContext({
+  ignoreHTTPSErrors: true, viewport: { width: 1280, height: 900 }, proxy: await policy.egressProxy(),
+});
+await policy.attach(ctx);
 const byRule = new Map();
 const perPage = [];
 
@@ -143,6 +150,7 @@ for (const p of picked) {
   }
   await page.close();
 }
+const routePolicy = policy.report();
 await browser.close();
 
 const rules = [...byRule.values()]
@@ -180,7 +188,7 @@ const out = {
     visualChangeRules: visual.length,
     totalNodes: rules.reduce((n, r) => n + r.nodes, 0),
   },
-  rules, perPage,
+  rules, perPage, routePolicy,
 };
 if (reportPath) { writeFileSync(reportPath, JSON.stringify(out, null, 2)); console.log(`\nreport: ${reportPath}`); }
 process.exit(rules.length ? 1 : 0);

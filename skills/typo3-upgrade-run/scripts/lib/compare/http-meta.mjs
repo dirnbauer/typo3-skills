@@ -112,9 +112,30 @@ export function compareRecords(before, after) {
       normalizeHeaderValue(name, after.headers?.[name]),
     );
   }
-  diff('cookieNames', before.cookieNames, after.cookieNames);
+  diff('cookieNames', comparableCookieNames(before.cookieNames), comparableCookieNames(after.cookieNames));
 
   return { identical: differences.length === 0, differences };
+}
+
+/**
+ * Cookie names as compared.
+ *
+ * TYPO3's RequestTokenMiddleware (verified against 14.3.6) names one cookie per nonce
+ * `typo3nonce_` + base64url(md5(random bytes)), prefixed `__Secure-` under HTTPS, and emits or
+ * revokes them per response. The suffix and the count are request noise; the family is not.
+ * The prefix stays significant: losing `__Secure-` after an update means TYPO3 no longer
+ * detects HTTPS behind the proxy.
+ */
+export function comparableCookieNames(names) {
+  const out = [];
+  const families = new Set();
+  for (const name of names ?? []) {
+    const nonce = /^(__Secure-)?typo3nonce_[A-Za-z0-9_-]+$/.exec(name);
+    if (!nonce) { out.push(name); continue; }
+    const family = `${nonce[1] ?? ''}typo3nonce_*`;
+    if (!families.has(family)) { families.add(family); out.push(family); }
+  }
+  return out.sort();
 }
 
 /* ---------------------------------------------------------------- helpers */

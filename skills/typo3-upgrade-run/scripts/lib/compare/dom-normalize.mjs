@@ -13,6 +13,7 @@
  */
 
 import { sha256 } from '../run/paths.mjs';
+import { HarnessError } from '../cli/exit-codes.mjs';
 
 /** Each rule: id, what it replaces, and why it is safe to replace. */
 export const RULES = Object.freeze([
@@ -59,12 +60,154 @@ export const NEVER_NORMALISE = Object.freeze([
 
 const DEFAULT_OVERREACH_LIMIT = 200;
 
+/** Elements that cannot hold a region or whose end tag may be omitted, so cannot be balanced. */
+const UNBALANCEABLE = new Set([
+  'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr',
+  'li', 'dt', 'dd', 'p', 'rt', 'rp', 'optgroup', 'option', 'colgroup', 'caption',
+  'thead', 'tbody', 'tfoot', 'tr', 'td', 'th', 'html', 'head', 'body',
+]);
+const ATTRS = String.raw`((?:[^>"']|"[^"]*"|'[^']*')*)`;
+const TOKEN = new RegExp(
+  String.raw`<!--[\s\S]*?-->|<(script|style|template|textarea)\b[^>]*>[\s\S]*?<\/\1\s*>|<(\/?)([a-zA-Z][a-zA-Z0-9-]*)\b${ATTRS}>`,
+  'g',
+);
+
 /**
- * @returns {{html:string, hits:Record<string,number>, overreach:string[]}}
+ * A randomized region is addressed by one class, optionally with a tag: `.partner-logos` or
+ * `div.partner-logos`. That subset is what both the page (querySelectorAll) and this
+ * dependency-free normaliser find identically.
  */
-export function normalizeHtml(html, { overreachLimit = DEFAULT_OVERREACH_LIMIT } = {}) {
-  let out = String(html);
-  const hits = {};
+export function parseRegionSelector(selector) {
+  const m = /^([a-z][a-z0-9-]*)?\.(-?[_a-zA-Z][_a-zA-Z0-9-]*)$/.exec(String(selector ?? '').trim());
+  if (!m || (m[1] && UNBALANCEABLE.has(m[1]))) return null;
+  return { tag: m[1] ?? null, className: m[2] };
+}
+
+/**
+ * Server-randomized regions from the sealed stabilization profile.
+ *
+ * PHP shuffle() and SQL RAND() make the served HTML differ between two requests for the same
+ * page. The region's own opening and closing tags stay; its contents become one marker, so
+ * the selection and order no longer reach the hash while everything around it still does.
+ * Integrity is measured on the ORIGINAL markup and returned separately: a missing link target,
+ * image URL or alt text still fails capture, and markup that cannot be balanced is refused
+ * (left untouched and reported) rather than guessed.
+ *
+ * @returns {{html:string, integrity:object[]}}
+ */
+export function canonicalizeRandomizedRegions(html, regions = []) {
+  const input = String(html);
+  if (!regions.length) return { html: input, integrity: [] };
+  const tokens = [...input.matchAll(TOKEN)].map((m) => ({
+    start: m.index,
+    end: m.index + m[0].length,
+    raw: m[1] !== undefined || m[0].startsWith('<!--'),
+    closing: m[2] === '/',
+    name: (m[3] ?? '').toLowerCase(),
+    attrs: m[4] ?? '',
+    selfClosing: /\/\s*$/.test(m[4] ?? ''),
+  }));
+
+  const found = [];
+  for (const config of regions) {
+    const selector = parseRegionSelector(config.selector);
+    if (!selector) throw new HarnessError(`Unsupported randomized region selector: ${config.selector}`);
+    tokens.forEach((open, i) => {
+      if (open.raw || open.closing || (selector.tag && open.name !== selector.tag)) return;
+      const classes = (attribute(open.attrs, 'class') ?? '').split(/\s+/);
+      if (!classes.includes(selector.className)) return;
+      if (UNBALANCEABLE.has(open.name) || open.selfClosing) {
+        found.push({ config, start: open.start, end: open.end, problem: 'unsupported-element' });
+        return;
+      }
+      let depth = 0;
+      for (let j = i; j < tokens.length; j += 1) {
+        const t = tokens[j];
+        if (t.raw || t.name !== open.name || t.selfClosing) continue;
+        depth += t.closing ? -1 : 1;
+        if (depth === 0) {
+          found.push({ config, start: open.start, openEnd: open.end, closeStart: t.start, end: t.end });
+          return;
+        }
+      }
+      // Extent unknown: report it, replace nothing, and let later regions stand on their own.
+      found.push({ config, start: open.start, end: open.end, problem: 'unbalanced-markup' });
+    });
+  }
+
+  // Outermost wins: a region inside another region is part of it.
+  found.sort((a, b) => a.start - b.start || b.end - a.end);
+  const accepted = [];
+  for (const region of found) {
+    if (accepted.length && region.start < accepted[accepted.length - 1].end) continue;
+    accepted.push(region);
+  }
+
+  let out = '';
+  let cursor = 0;
+  const integrity = accepted.map((region) => {
+    if (region.problem) {
+      return {
+        selector: region.config.selector, adr: region.config.adr, links: 0, images: 0,
+        valid: false, problems: { [region.problem]: 1 }, coverage: REGION_COVERAGE,
+      };
+    }
+    out += input.slice(cursor, region.openEnd)
+      + `<t3u-randomized-region data-selector="${region.config.selector}"></t3u-randomized-region>`;
+    cursor = region.closeStart;
+    return regionIntegrity(input.slice(region.openEnd, region.closeStart), region.config);
+  });
+  out += input.slice(cursor);
+  return { html: out, integrity };
+}
+
+const REGION_COVERAGE = 'structure and resource integrity proven; exact selection and order not compared';
+const LINK = new RegExp(String.raw`<a\b${ATTRS}>([\s\S]*?)<\/a\s*>`, 'gi');
+const IMG = new RegExp(String.raw`<img\b${ATTRS}>`, 'gi');
+
+function regionIntegrity(inner, config) {
+  const problems = {};
+  const fail = (reason) => { problems[reason] = (problems[reason] ?? 0) + 1; };
+  const stripTags = (s) => s.replace(/<[^>]*>/g, '').trim();
+  const links = [...inner.matchAll(LINK)];
+  for (const [, attrs, body] of links) {
+    if (!(attribute(attrs, 'href') ?? '').trim()) fail('link-without-href');
+    const name = (attribute(attrs, 'aria-label') ?? '').trim()
+      || (attribute(attrs, 'aria-labelledby') ?? '').trim()
+      || stripTags(body)
+      || (attribute(attrs, 'title') ?? '').trim()
+      || [...body.matchAll(IMG)].map(([, imgAttrs]) => (attribute(imgAttrs, 'alt') ?? '').trim()).join('');
+    if (!name) fail('link-without-accessible-name');
+  }
+  const images = [...inner.matchAll(IMG)];
+  for (const [, attrs] of images) {
+    if (attribute(attrs, 'alt') === null) fail('image-without-alt');
+    const url = attribute(attrs, 'src') || attribute(attrs, 'srcset') || attribute(attrs, 'data-src') || '';
+    if (!url.trim()) fail('image-without-url');
+  }
+  if (!stripTags(inner) && !/<[a-zA-Z]/.test(inner)) fail('empty-region');
+  if (links.length < (config.minLinks ?? 0)) fail('fewer-links-than-expected');
+  if (images.length < (config.minImages ?? 0)) fail('fewer-images-than-expected');
+  return {
+    selector: config.selector, adr: config.adr, links: links.length, images: images.length,
+    valid: Object.keys(problems).length === 0, problems, coverage: REGION_COVERAGE,
+  };
+}
+
+/** Attribute value, '' for a bare boolean attribute, null when absent. */
+function attribute(attrs, name) {
+  const valued = new RegExp(String.raw`(?:^|\s)${name}\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))`, 'i').exec(attrs);
+  if (valued) return valued[1] ?? valued[2] ?? valued[3] ?? '';
+  return new RegExp(String.raw`(?:^|\s)${name}(?=\s|/|$)`, 'i').test(attrs) ? '' : null;
+}
+
+/**
+ * @returns {{html:string, hits:Record<string,number>, overreach:string[], randomizedRegions:object[]}}
+ */
+export function normalizeHtml(html, { overreachLimit = DEFAULT_OVERREACH_LIMIT, randomizedRegions = [] } = {}) {
+  const randomized = canonicalizeRandomizedRegions(html, randomizedRegions);
+  let out = randomized.html;
+  const hits = randomizedRegions.length ? { 'randomized-region': randomized.integrity.length } : {};
   const overreach = [];
 
   for (const rule of RULES) {
@@ -82,12 +225,12 @@ export function normalizeHtml(html, { overreachLimit = DEFAULT_OVERREACH_LIMIT }
   // Collapse insignificant whitespace between tags only. Text content is untouched.
   out = out.replace(/>\s+</g, '><').trim();
 
-  return { html: out, hits, overreach };
+  return { html: out, hits, overreach, randomizedRegions: randomized.integrity };
 }
 
 export function domHash(html, opts) {
-  const { html: normalized, hits, overreach } = normalizeHtml(html, opts);
-  return { hash: sha256(normalized), normalized, hits, overreach };
+  const { html: normalized, hits, overreach, randomizedRegions } = normalizeHtml(html, opts);
+  return { hash: sha256(normalized), normalized, hits, overreach, randomizedRegions };
 }
 
 /**
