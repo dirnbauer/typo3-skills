@@ -26,6 +26,7 @@ import {
 import { gate, promoteSelftestBaseline } from '../../lib/actions/compare.mjs';
 import { approvalRecord, loopOpen, loopStart, validateRun } from '../../lib/actions/lifecycle.mjs';
 import { validateContentTransition } from '../../lib/actions/core.mjs';
+import { browserArgs } from '../../lib/browser/launch.mjs';
 
 const tmp = () => mkdtemp(path.join(tmpdir(), 't3u-contract-'));
 const log = new Proxy({}, { get: () => () => {} });
@@ -344,6 +345,23 @@ describe('state, loop paths, and approval choreography', () => {
     assert.equal(result.exitCode, 0);
     const report = JSON.parse(await readFile(paths.loopReport(loop), 'utf8'));
     assert.deepEqual(report.idempotence, { required: false, ran: false, diffCount: null });
+  });
+
+  test('loop-open checks live inputs with the browser launch arguments the fingerprint sealed', async () => {
+    const dir = await tmp();
+    const paths = new RunPaths('.typo3-update', dir);
+    await mkdir(paths.loop('100-migration-core'), { recursive: true });
+    const state = emptyState({ runId: '2026-07-29-acme', now: '2026-07-29T00:00:00Z' });
+    state.loops['100'] = 'planned';
+    await new StateStore(paths).write(state);
+
+    const seen = [];
+    await loopOpen({
+      values: { loop: '100-migration-core', 'rollback-ref': 'git:abc123' }, paths, log,
+      journal: { append: async () => {} },
+      liveAssert: async (_paths, options) => { seen.push(options); },
+    });
+    assert.deepEqual(seen, [{ launchArgs: browserArgs() }]);
   });
 
   test('a stateful loop still requires a recorded database snapshot', async () => {
