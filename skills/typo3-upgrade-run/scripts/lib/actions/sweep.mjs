@@ -51,7 +51,7 @@ export async function backendSweep({ values, paths, log, journal }) {
   const baseUrl = values['base-url'] ?? state?.project?.trusted_origin;
   if (!baseUrl) throw new HarnessError('--base-url is required');
 
-  const { user, password } = readCredentials(values);
+  const { user, password } = await readCredentials(values);
   if (!user || !password) {
     throw new PreconditionError(
       'Backend credentials missing. Provide BE_USER and BE_PASSWORD in the process environment '
@@ -241,8 +241,16 @@ export async function backendSweep({ values, paths, log, journal }) {
   };
 }
 
-function readCredentials(values) {
-  // Process environment only, or an explicitly named file. Never an implicit .env.
+export async function readCredentials(values) {
+  // Process environment, or an explicitly named file with BE_USER= and BE_PASSWORD= lines.
+  // Never an implicit .env, and never a value in logs or reports.
+  if (values['credentials-from']) {
+    let body;
+    try { body = await readFile(values['credentials-from'], 'utf8'); }
+    catch (error) { throw new PreconditionError(`Cannot read --credentials-from: ${error.code ?? 'unreadable'}`); }
+    const pick = (key) => body.match(new RegExp(`^\\s*${key}\\s*=\\s*(.*?)\\s*$`, 'm'))?.[1] || null;
+    return { user: pick('BE_USER'), password: pick('BE_PASSWORD') };
+  }
   return { user: process.env.BE_USER ?? null, password: process.env.BE_PASSWORD ?? null };
 }
 

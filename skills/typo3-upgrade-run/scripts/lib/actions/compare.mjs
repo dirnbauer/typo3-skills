@@ -23,7 +23,7 @@ import {
 } from '../compare/image.mjs';
 import { classify, severityFor, countByClass, loopVerdict, isBlocking, Unclassifiable } from '../compare/classify.mjs';
 import {
-  loadDeclaredChanges, splitHttpDifferences, applyDomRules, declaredFields,
+  loadDeclaredChanges, splitHttpDifferences, applyDomRules, declaredFields, wholeDocumentRuleFor,
 } from '../compare/declared-changes.mjs';
 import { envelope, writeReport } from '../report/write.mjs';
 import { sealBaseline, verifyBaseline, renderSeal } from '../run/lockfile.mjs';
@@ -278,6 +278,10 @@ export async function compareVisual({ values, paths, log }) {
   let n = 0;
   let match = 0;
   let mediaSourceDifferences = 0;
+  // Only a URL-scoped whole-document declaration can explain pixels (rule 30.8).
+  const declared = await declaredRules(paths, log);
+  const wholeDocumentRules = declared.rules.filter((rule) => rule.stage === 'dom' && rule.wholeDocument);
+  const captureUrls = wholeDocumentRules.length ? await manifestCaptureUrls(paths) : new Map();
 
   // A capture present in the baseline but absent from the after-set is NOT a difference: on an
   // intermediate loop the after-set is a deliberate sample, and calling every un-sampled capture
@@ -359,6 +363,17 @@ export async function compareVisual({ values, paths, log }) {
     if (status === STATUS.MATCH) { match += 1; continue; }
 
     n += 1;
+    const pageUrl = captureUrls.get(p.file.replace(/\.png$/, '')) ?? null;
+    const whole = cmp.ok ? wholeDocumentRuleFor(wholeDocumentRules, pageUrl) : null;
+    if (whole) {
+      findings.push({
+        id: nextId(values.loop, n), target: p.file, class: 'declared-change', severity: 'info', status: 'open',
+        stage: 'visual', url: pageUrl, ...declaredFields([whole]),
+        diff_pixels: cmp.diffPixels ?? null, diff_percent: cmp.diffPercent ?? null,
+        documentHeightDelta: cmp.documentHeightDelta ?? null, artifact: path.join(diffDir, `diff_${p.file}`),
+      });
+      continue;
+    }
     findings.push({
       id: nextId(values.loop, n),
       target: p.file,
@@ -377,13 +392,14 @@ export async function compareVisual({ values, paths, log }) {
     captures: pairs.length,
     match,
     different: findings.filter((f) => f.class === 'regression' && f.stage === 'visual').length,
+    declared: findings.filter((f) => f.class === 'declared-change').length,
     error: findings.filter((f) => f.class === 'harness-noise').length,
     onlyInBefore: onlyInBefore.length,
     notCaptured: notCaptured.length,
     onlyInAfter: onlyInAfter.length,
     mediaSourceDifferences,
   };
-  const verdict = findings.length ? 'findings' : 'pass';
+  const verdict = findings.some(isBlocking) ? 'findings' : 'pass';
 
   const report = envelope({
     kind: 'visual', ...await reportEvidence(paths, values), verdict, counts, findings,
@@ -393,6 +409,7 @@ export async function compareVisual({ values, paths, log }) {
       policy: { zeroTolerance: true, minorBucket: false },
       unmatched: { onlyInBefore, onlyInAfter },
       results: results.slice(0, 500),
+      declaredChanges: { hash: declared.hash, rules: wholeDocumentRules.map((rule) => rule.id), issues: declared.issues },
     },
   });
   const written = await writeReport(reportPath, report, { profile: values['redaction-profile'], dryRun: values['dry-run'] });
@@ -401,7 +418,7 @@ export async function compareVisual({ values, paths, log }) {
     log.finding(`${onlyInAfter.length} capture(s) exist only AFTER — new content is a difference too`);
   }
   log[verdict === 'pass' ? 'success' : 'finding'](
-    `Visual: ${match}/${pairs.length} identical, ${counts.different} different, ${counts.error} error(s)`,
+    `Visual: ${match}/${pairs.length} identical, ${counts.different} different${counts.declared ? `, ${counts.declared} declared` : ''}, ${counts.error} error(s)`,
   );
 
   return {
@@ -959,6 +976,13 @@ async function declaredRules(paths, log) {
   const declared = await loadDeclaredChanges(paths, state);
   for (const issue of declared.issues) log.warn(`declared change refused: ${issue}`);
   return declared;
+}
+
+/** captureId → page URL from the sealed URL manifest (screenshots are named by capture id). */
+async function manifestCaptureUrls(paths) {
+  const manifest = await readJson(paths.urlManifest);
+  const urls = new Map((manifest?.allUrls ?? []).map((entry) => [entry.id, entry.url]));
+  return new Map((manifest?.captures ?? []).map((capture) => [capture.captureId, urls.get(capture.urlId) ?? null]));
 }
 
 /** The URL of a DOM snapshot, from the HTTP record captured next to it. */
