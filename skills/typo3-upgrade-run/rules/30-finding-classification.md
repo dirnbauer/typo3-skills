@@ -24,6 +24,9 @@ Work top to bottom. The first match wins.
 2. **Does it reproduce on an immediate re-shoot of the same URL?** If no → `harness-noise`. A difference that does not reproduce is a property of the measurement.
 3. **Does it reproduce against baseline A on the *unmodified* site?** If yes → `pre-existing`. It was already there.
 4. **Is there an approval record naming this exact difference class?** If yes → `declared-change`. If the approval is missing, it is **not** a declared change — it is a `regression` until the approval exists.
+   The comparison applies this step itself: each approved class is a rule in `decisions/declared-changes.json`
+   (§30.8), and the HTTP and DOM stages classify a finding as `declared-change` only when rules backed by a granted
+   user approval explain **all** of its differences. Pixel differences cannot be declared; restore them or stop.
 5. **Does it exist only because this is DDEV** (a `.ddev.site` URL in a canonical, mail landing in Mailpit, a header a production proxy would set)? → `environment`.
 6. **Would a visitor see or receive something different?** → `regression`.
 7. **Is it a genuine opportunity rather than a difference?** → `improvement`.
@@ -89,3 +92,39 @@ own the site, not to the agent. Put the choice to them explicitly:
 Both are legitimate; pretending the question does not exist is not. This is also why P00 asks for a
 freeze window or a recorded staleness decision up front — resolving drift is much cheaper as a
 decision made before the run than as a surprise in loop 300.
+
+## 30.8 Declared changes are rules, not edits
+
+A core upgrade changes some output on purpose: a default security header (`Cache-Control: private, no-store`),
+a modernised head (`<meta charset>`), the `lang` value, a rewritten core script. Restoring that output is often
+impossible or wrong, so the user may approve the difference **class**. Record it as a rule; never edit a stage
+report to change a class.
+
+```json
+{
+  "schema": "typo3-upgrade-run/declared-changes@1",
+  "changes": [
+    { "id": "DC-001", "approval_ref": "APR-009", "stage": "http", "field": "header:cache-control",
+      "before": "^max-age=0$", "after": "^private, no-store, max-age=0$",
+      "reason": "TYPO3 13 sends Cache-Control: private, no-store by default" },
+    { "id": "DC-002", "approval_ref": "APR-009", "stage": "dom",
+      "before": "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" ?/>",
+      "after": "<meta charset=\"utf-8\"/>", "reason": "TYPO3 13 page template always renders <meta charset>" },
+    { "id": "DC-003", "approval_ref": "APR-009", "stage": "dom", "whole_document": true, "url": "/sitemap\\.xml$",
+      "reason": "Core exception template on a page that already returned HTTP 500 before the upgrade" }
+  ]
+}
+```
+
+- `http` rules match one recorded difference: `field`, and the `before`/`after` regular expressions against the
+  value (objects as JSON). `dom` rules rewrite an in-memory copy of the normalised BEFORE document
+  (`before` regex → `after` text), and only where the new document no longer contains the old form. A
+  `whole_document` DOM rule must be scoped with `url`. `url` is an optional regex on the page URL.
+- A rule counts only when its `approval_ref` is a granted user approval of this run (in `state.json` and in
+  `approvals/`). Refused rules are listed in the stage report and change nothing.
+- The file's hash is part of every stage report's inputs, so all three stages of one comparison judge with the
+  same rules. A finding a rule explains keeps its raw segments/differences plus the rule ids it relied on;
+  a finding with anything unexplained stays a `regression` and reports only the unexplained part.
+- A declared change is still a change: prove the behaviour behind it where it matters (for example a journey
+  that decodes an obfuscated mailto link after the core rewrote its script).
+

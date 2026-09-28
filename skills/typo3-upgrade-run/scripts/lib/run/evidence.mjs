@@ -12,6 +12,7 @@ import { collectEnvironment, compareEnvironment } from '../fingerprint/environme
 import { collectContent, compareContent } from '../fingerprint/content.mjs';
 import { StateStore } from './state.mjs';
 import { sha256 } from './paths.mjs';
+import { declaredChangesHash } from '../compare/declared-changes.mjs';
 
 export async function readEvidenceContext(paths) {
   const state = await new StateStore(paths).read();
@@ -46,6 +47,9 @@ export async function readEvidenceContext(paths) {
     targetContentFingerprintHash: targetActive ? contentTarget?.fingerprintHash ?? null : null,
     contentTransitionHash: targetActive ? state.fingerprints?.content_transition_hash ?? null : null,
     selftestLockHash: state.selftest?.lock_hash ?? selftest.selftestHash ?? null,
+    // Approved declared changes decide classes, so they are an evidence input like the
+    // fingerprints: a proof epoch goes stale when the rules change.
+    declaredChangesHash: await declaredChangesHash(paths.root),
   };
   const mismatches = [];
   compareRef(mismatches, 'state.fingerprints.environment', state.fingerprints?.environment, inputs.environmentFingerprintHash);

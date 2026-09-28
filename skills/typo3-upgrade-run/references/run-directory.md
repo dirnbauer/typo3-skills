@@ -54,7 +54,8 @@ Nothing in this skill is "remembered". It is written down, and the gates read wh
 │   ├── APPROVALS.md                index
 │   └── APR-nnn-<slug>.md           one record per approval
 ├── decisions/
-│   └── ADR-nnn-<slug>.md
+│   ├── ADR-nnn-<slug>.md
+│   └── declared-changes.json       approved difference classes as HTTP/DOM rules (rule 30.8)
 └── report/
     ├── contract-a-closure.md
     ├── contract-b-summary.md
