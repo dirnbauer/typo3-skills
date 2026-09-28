@@ -39,7 +39,11 @@ export async function repositorySubject(cwd, runRoot) {
   const untracked = (await git('ls-files', '--others', '--exclude-standard', '-z', '--', ...pathspec)).split('\0').filter(Boolean);
   // Untracked implementation files must be staged/committed before proof. Do not read
   // unknown files (possibly credentials) into evidence just to fingerprint a dirty tree.
-  if (untracked.length) throw new PreconditionError('Untracked files outside the run directory: classify/ignore private artifacts and stage implementation files before closure.');
+  if (untracked.length) {
+    // Name only the top-level paths, never file contents: owner drafts go to .git/info/exclude (local, uncommitted).
+    const tops = [...new Set(untracked.map((file) => file.split('/')[0] + (file.includes('/') ? '/' : '')))].slice(0, 8);
+    throw new PreconditionError(`Untracked files outside the run directory (${tops.join(', ')}): classify/ignore private artifacts (for example in .git/info/exclude) and stage implementation files before closure.`);
+  }
   // Index object IDs + unstaged delta bind code bytes/modes. HEAD is provenance, not
   // the freshness key: committing only run reports must not invalidate their own proof.
   return { root, branch, head, sourceIndexHash: `sha256:${sha256(index)}`, worktreeHash: `sha256:${sha256(diff)}` };

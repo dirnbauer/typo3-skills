@@ -75,6 +75,17 @@ The plan is the passed `intake-join` artifact. Every planned assertion must have
 and evidence bound to its parent check; missing or altered inventory/plan files refuse closure.
 No extra top-level checks, global browser states or full-capture loops are introduced.
 
+## Residual findings do not block closure
+
+`closure-check` requires zero unresolved run findings. That count follows the loop gate (`loopVerdict`): only
+blocking classes (`regression`, `harness-noise`, `content-drift`), an unapproved `declared-change` and unclassified
+findings count. An approved declared change, a `pre-existing`, `environment` or `improvement` finding is a residual:
+it stays in the loop report and in the certificate, but it does not keep the run open. Harness versions before this
+rule counted every open residual, so a run with approved declared changes could never close.
+
+Owner drafts that are untracked in the repository (for example `relaunch/`) block `closure-start` until they are
+classified. Add them to `.git/info/exclude` (local, never committed); the refusal names the top-level paths.
+
 ## Invalidation and recovery
 
 Changed source/index objects, branch, unstaged-code delta, graph hash, dataset/media epoch,

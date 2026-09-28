@@ -21,7 +21,7 @@ import {
   pairFiles, listShots, statusFor, quickIdentical,
   comparePairPixelmatch, runOdiff, resolveOdiffBin, STATUS,
 } from '../compare/image.mjs';
-import { classify, severityFor, countByClass, loopVerdict, isBlocking, Unclassifiable } from '../compare/classify.mjs';
+import { classify, severityFor, countByClass, loopVerdict, isBlocking, Unclassifiable, CLASSES } from '../compare/classify.mjs';
 import {
   loadDeclaredChanges, splitHttpDifferences, applyDomRules, declaredFields, wholeDocumentRuleFor,
 } from '../compare/declared-changes.mjs';
@@ -942,7 +942,10 @@ export async function countActiveOpenFindings(paths, state) {
     if (!loop?.kind) {
       throw new PreconditionError(`Active loop ${matches[0]} has no authoritative report.json.`);
     }
-    total += (loop?.findings ?? []).filter((finding) => finding.status !== 'closed').length;
+    // Same rule as the loop gate (loopVerdict): an approved declared change, a pre-existing, environment-only or
+    // improvement finding is a residual. Only blocking or unclassified findings keep the run from closing.
+    total += (loop?.findings ?? []).filter((finding) => finding.status !== 'closed'
+      && (!CLASSES.includes(finding.class) || isBlocking(finding))).length;
   }
   return total;
 }
