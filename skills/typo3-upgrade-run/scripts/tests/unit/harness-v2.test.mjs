@@ -1222,6 +1222,36 @@ describe('generated summaries', () => {
     assert.equal(await countActiveOpenFindings(paths, state), 2);
   });
 
+  test('approved declared changes and other residual classes do not count as open findings', async () => {
+    const dir = await tmp();
+    const paths = new RunPaths('.typo3-update', dir);
+    await mkdir(paths.loopsDir, { recursive: true });
+    const state = { loops: { '100': 'green', '300': 'green' } };
+    const residuals = [
+      { id: 'dc', class: 'declared-change', approval_ref: 'APR-009', status: 'open' },
+      { id: 'pre', class: 'pre-existing', status: 'open' },
+      { id: 'env', class: 'environment', status: 'open' },
+      { id: 'better', class: 'improvement', status: 'open' },
+    ];
+    for (const [name, findings] of [
+      ['100-invariance-rung-13', residuals],
+      ['300-invariance-closure', [
+        ...residuals,
+        { id: 'unapproved', class: 'declared-change', status: 'open' },
+        { id: 'reg', class: 'regression', status: 'open' },
+        { id: 'fixed', class: 'regression', status: 'closed' },
+        { id: 'unknown', class: 'mystery', status: 'open' },
+      ]],
+    ]) {
+      await mkdir(paths.loop(name), { recursive: true });
+      await writeFile(paths.loopReport(name), JSON.stringify({ kind: 'loop', findings }));
+    }
+
+    // A run whose loops are all green with approved declared changes must be able to close.
+    assert.equal(await countActiveOpenFindings(paths, { loops: { '100': 'green' } }), 0);
+    assert.equal(await countActiveOpenFindings(paths, state), 3);
+  });
+
   test('run-wide reporting skips superseded and orphan loop directories', async () => {
     const dir = await tmp();
     const paths = new RunPaths('.typo3-update', dir);
