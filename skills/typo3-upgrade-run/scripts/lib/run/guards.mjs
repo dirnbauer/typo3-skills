@@ -54,7 +54,35 @@ export function forbiddenMeasurementChanges(before, after, { measurementNode = f
 }
 
 /** Project change since the node's Git rollback anchor, excluding the run directory. */
-export async function projectChangeSince(runRoot, ref) {
+/**
+ * Untracked, non-ignored files outside the run directory with a content hash, recorded at node-open.
+ * A user's pre-existing draft folder must not count as the node's own change.
+ */
+export async function untrackedSnapshot(runRoot) {
+  const run = async (cwd, args) => (await exec('git', ['-C', cwd, ...args], { maxBuffer: 64 * 1024 * 1024 })).stdout;
+  let top, runReal;
+  try {
+    runReal = await realpath(runRoot);
+    top = await realpath((await run(runReal, ['rev-parse', '--show-toplevel'])).trim());
+  } catch {
+    return null;
+  }
+  const runRel = path.relative(top, runReal) || '.';
+  const files = (await run(top, ['ls-files', '--others', '--exclude-standard', '--', '.', `:(exclude)${runRel}`]))
+    .split('\n').filter(Boolean);
+  const snapshot = {};
+  for (const rel of files) snapshot[rel] = await fileMark(path.join(top, rel));
+  return snapshot;
+}
+
+async function fileMark(file) {
+  const info = await stat(file).catch(() => null);
+  if (!info?.isFile()) return null;
+  if (info.size > 8 * 1024 * 1024) return `size:${info.size}:${Math.floor(info.mtimeMs / 1000)}`;
+  return `sha256:${sha256(await readFile(file))}`;
+}
+
+export async function projectChangeSince(runRoot, ref, { untrackedBaseline = null } = {}) {
   const run = async (cwd, args) => (await exec('git', ['-C', cwd, ...args], { maxBuffer: 64 * 1024 * 1024 })).stdout;
   let top, runReal;
   try {
@@ -79,6 +107,9 @@ export async function projectChangeSince(runRoot, ref) {
   const untracked = (await git('ls-files', '--others', '--exclude-standard', '--', '.', exclude))
     .split('\n').filter(Boolean);
   for (const rel of untracked) {
+    // Present and unchanged since node-open: not this node's change.
+    if (untrackedBaseline && Object.hasOwn(untrackedBaseline, rel)
+      && untrackedBaseline[rel] === await fileMark(path.join(top, rel))) continue;
     files += 1;
     const file = path.join(top, rel);
     const info = await stat(file).catch(() => null);
