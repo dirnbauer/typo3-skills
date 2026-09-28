@@ -18,6 +18,11 @@ const context = await browser.newContext({
 });
 ```
 
+The browser itself runs with `--disable-gpu` and `--disable-partial-raster` (software raster, whole
+tiles). Without the second flag a late repaint re-rasterises only part of a tile, and the edge pixels
+of antialiased shapes depend on that timing: a rounded box's corners came out one colour level apart at
+random, on TYPO3 12.4 and 13.4 alike (fakeshop, 2026-09-29: 5/8 vs 3/8 without the flag, 8/8 with it).
+
 ## The init script — run before any page code
 
 ```js
@@ -94,6 +99,7 @@ other shifts the entire layout horizontally and reads as a site-wide regression.
 | One image differs, others fine | `_processed_` generated during the capture |
 | A banner present in one pass | consent state not seeded |
 | Random small regions | animation or transition not suppressed |
+| A few pixels at the edge of a rounded box, one colour level, flipping between runs | partial raster → `--disable-partial-raster` (default since 2026-09-29); an older pin needs a new run |
 | A logo strip or teaser block changes selection although `Math.random` is seeded, and the served HTML already differs | server-side `shuffle()`/`RAND()` → `randomizedRegions` adapter below |
 | One animated image differs, nothing else | GIF animation → `media.gifFirstFrame` adapter below |
 | Everything differs slightly | device scale factor, colour scheme, or a browser version change → check the environment fingerprint first; this is `INVALID`, not a stabilisation problem |

@@ -100,6 +100,11 @@ describe('browser settling', () => {
     assert.ok(browserArgs({}).includes('--disable-gpu'));
   });
 
+  test('deterministic captures disable partial raster (timing-dependent antialiasing)', () => {
+    assert.ok(SAFE_BROWSER_ARGS.includes('--disable-partial-raster'));
+    assert.ok(browserArgs({}).includes('--disable-partial-raster'));
+  });
+
   test('quiet detection tracks request identities instead of leaking duplicate events', async t => {
     // Assert the detector contract, not whether a loaded CI host schedules us in 100ms.
     t.mock.timers.enable({ apis: ['Date', 'setTimeout'], now: 0 });
