@@ -6,6 +6,7 @@ import path from 'node:path';
 
 import {
   HASH_RELEVANT,
+  RECORDED_ONLY,
   compareEnvironment,
   hashComponents,
 } from '../../lib/fingerprint/environment.mjs';
@@ -18,7 +19,7 @@ import {
   StateStore,
   emptyState,
 } from '../../lib/run/state.mjs';
-import { LOOP_DOCS, RunPaths } from '../../lib/run/paths.mjs';
+import { LOOP_DOCS, RunPaths, sha256 } from '../../lib/run/paths.mjs';
 import {
   assertLiveInputs,
   readEvidenceContext,
@@ -88,6 +89,45 @@ describe('renderer and upgrade-subject fingerprints', () => {
     const cmp = compareEnvironment(fingerprint('before', components), fingerprint('after', after));
     assert.equal(cmp.match, false);
     assert.deepEqual(cmp.drifted.map((entry) => entry.key), ['browser.version']);
+  });
+
+  // The 12.4 -> 13.4 rung changes Core GFX defaults; the pilot run went INVALID on exactly this.
+  const GFX_12 = "[GFX]\nimagefile_ext = 'gif,jpg,jpeg,tif,tiff,bmp,pcx,tga,png,pdf,ai,svg'\ngdlib = true\nthumbnails_png = true";
+  const GFX_13 = "[GFX]\nimagefile_ext = 'gif,jpg,jpeg,tif,tiff,bmp,pcx,tga,png,pdf,ai,svg,webp,avif'\nwebp_quality = 85\navif_quality = 50";
+  const withGfx = (gfx) => {
+    const next = structuredClone(components);
+    Object.assign(next.imageProcessing, { typo3Gfx: gfx, gfxHash: sha256(gfx) });
+    return next;
+  };
+
+  test('a GFX-only difference is a recorded upgrade subject, not drift', () => {
+    assert.equal(HASH_RELEVANT.includes('imageProcessing.gfxHash'), false);
+    assert.ok(RECORDED_ONLY.includes('imageProcessing.gfxHash') && RECORDED_ONLY.includes('imageProcessing.typo3Gfx'));
+    const before = withGfx(GFX_12), after = withGfx(GFX_13);
+    assert.equal(hashComponents(before), hashComponents(after));
+    assert.deepEqual(compareEnvironment(fingerprint('before', before), fingerprint('after', after)), { match: true, drifted: [] });
+  });
+
+  test('an image processor version difference is still renderer drift', () => {
+    const after = withGfx(GFX_12);
+    after.imageProcessing.version = 'Version: ImageMagick 7.1.1-47 Q16-HDRI aarch64';
+    const cmp = compareEnvironment(fingerprint('before', withGfx(GFX_12)), fingerprint('after', after));
+    assert.equal(cmp.match, false);
+    assert.deepEqual(cmp.drifted.map((entry) => entry.key), ['imageProcessing.version']);
+  });
+
+  test('a fingerprint sealed while GFX was hashed is judged by the current classification', () => {
+    const legacyKeys = [...HASH_RELEVANT, 'imageProcessing.gfxHash'];
+    const sealed = {
+      ...fingerprint(`sha256:${'e'.repeat(64)}`, withGfx(GFX_12)),
+      hashRelevantKeys: legacyKeys,
+      recordedOnly: RECORDED_ONLY.filter((key) => !key.startsWith('imageProcessing.')),
+    };
+    assert.deepEqual(compareEnvironment(sealed, fingerprint('after', withGfx(GFX_13))), { match: true, drifted: [] });
+    const renderer = withGfx(GFX_13);
+    renderer.imageProcessing.processor = 'GraphicsMagick';
+    assert.deepEqual(compareEnvironment(sealed, fingerprint('after', renderer)).drifted.map((entry) => entry.key),
+      ['imageProcessing.processor']);
   });
 });
 

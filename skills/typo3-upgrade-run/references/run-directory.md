@@ -19,7 +19,7 @@ Nothing in this skill is "remembered". It is written down, and the gates read wh
 │   └── thresholds.yml              visual thresholds, loop budgets, contract-B targets
 ├── manifests/
 │   ├── url-manifest.json           seed, all URLs, tiers, clusters, viewports, coverage
-│   ├── environment.json            versions + fonts + GFX config, hashed
+│   ├── environment.json            renderer identity hashed; GFX config recorded as upgrade subject
 │   ├── content-fingerprint.json    complete ordered row/schema hashes + fileadmin tree hash
 │   ├── content-fingerprint-target.json  post-migration epoch; source remains immutable
 │   ├── content-transition.json     snapshot, successful argv and fixed-point reconciliation
