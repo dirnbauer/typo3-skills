@@ -99,7 +99,7 @@ nodes:
     phase: P00
     outcomes: [pass, blocked]
   data-recovery:
-    objective: "Obtain or restore the authorized dated dataset locally with staged, checksummed database and files."
+    objective: "Obtain the authorized dated dataset locally with checksums; delete the local fileadmin before syncing it from live."
     done: "Database and fileadmin match the accepted dataset checksums; any live sync stayed a separate authorized task."
     evidence: nodes/data-recovery/evidence.md
     skill: typo3-upgrade-intake

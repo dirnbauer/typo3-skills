@@ -149,8 +149,11 @@ imported skills sequentially or nest their orchestration loops.
 ## Scope, security and destructive operations
 
 The controller owns project identity, contracts, approvals, budgets, routing and the final verdict
-for one local DDEV clone. Live sync, deployment and remote mutation are separate tasks. Record the
-approval/ADR and measured content timestamps for any accepted dated dataset.
+for one local DDEV clone. A user-authorized pull from live uses `scripts/pull-live-dataset.mjs`
+(read-only on the server; **the local fileadmin is deleted before any fileadmin sync**). Publication
+goes to staging only, through `scripts/deploy-staging.mjs`; live deployment is never part of a run.
+See [live dataset and staging](references/live-dataset-and-staging.md). Record the approval/ADR and
+measured content timestamps for any accepted dated dataset.
 
 Before mutation, read [scope guards](rules/00-scope-and-prohibitions.md) and
 [approval rules](rules/40-approval-matrix.md). Re-prove repository/branch/DDEV/database/site identity.
@@ -241,6 +244,7 @@ deployment was performed. Distinguish **implemented**, **verified awaiting accep
 
 - [Graph runner](references/graph-runner.md) — dispatch, briefs, evidence and review templates, resume, calibration
 - [Graph nodes](references/graph-nodes.md) — generated contract of every node
+- [Live dataset and staging](references/live-dataset-and-staging.md) — read-only pull, delete-first fileadmin, staging-only deploy guard
 - [Graph architecture](references/graph-architecture.md) — design rationale and the sources it was checked against
 - [`rules/10-graph-protocol.md`](rules/10-graph-protocol.md) · [`rules/10-loop-protocol.md`](rules/10-loop-protocol.md)
 - [`references/run-directory.md`](references/run-directory.md) · [`references/state-file.md`](references/state-file.md)
