@@ -152,6 +152,9 @@ async function snapshotForNode({ values, state, paths, log, journal, runner }) {
 export async function approvalRecord({ values, paths, log, journal }) {
   const id = String(values.id ?? '');
   const stage = values.stage;
+  // An approval records a user decision; there is nothing to simulate. Refuse instead of
+  // silently writing a granted record under --dry-run.
+  if (values['dry-run']) throw new PreconditionError('approval records a user decision and has no --dry-run; nothing was written.');
   if (!/^APR-\d{3}$/.test(id)) throw new HarnessError('--id must be APR-NNN.');
   if (!['intent', 'acceptance'].includes(stage)) throw new HarnessError('--stage must be intent or acceptance.');
   for (const key of ['scope', 'question', 'answer']) {
@@ -162,9 +165,12 @@ export async function approvalRecord({ values, paths, log, journal }) {
   }
 
   const state = await new StateStore(paths).read();
+  const existing = (await readdir(paths.approvalsDir).catch(() => [])).find((name) => name.startsWith(`${id}-${stage}-`));
+  if (existing) throw new PreconditionError(`${id} (${stage}) is already recorded in ${existing}; record a new id instead.`);
   const granted = values.granted === true;
   const now = new Date().toISOString();
-  const file = path.join(paths.approvalsDir, `${id}-${stage}-${slug(values.scope)}.md`);
+  // The file name carries a bounded slug; the full scope stays in the front matter and body.
+  const file = path.join(paths.approvalsDir, `${id}-${stage}-${slug(values.scope).slice(0, 80).replace(/-+$/, '')}.md`);
   const body = [
     '---',
     `id: "${id}"`,

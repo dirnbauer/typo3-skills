@@ -26,7 +26,8 @@ Work top to bottom. The first match wins.
 4. **Is there an approval record naming this exact difference class?** If yes → `declared-change`. If the approval is missing, it is **not** a declared change — it is a `regression` until the approval exists.
    The comparison applies this step itself: each approved class is a rule in `decisions/declared-changes.json`
    (§30.8), and the HTTP and DOM stages classify a finding as `declared-change` only when rules backed by a granted
-   user approval explain **all** of its differences. Pixel differences cannot be declared; restore them or stop.
+   user approval explain **all** of its differences. Pixels can be declared only through a URL-scoped `whole_document`
+   rule (the page as a whole is approved as changed); every other pixel difference is restored or stops the loop.
 5. **Does it exist only because this is DDEV** (a `.ddev.site` URL in a canonical, mail landing in Mailpit, a header a production proxy would set)? → `environment`.
 6. **Would a visitor see or receive something different?** → `regression`.
 7. **Is it a genuine opportunity rather than a difference?** → `improvement`.
@@ -119,7 +120,8 @@ report to change a class.
 - `http` rules match one recorded difference: `field`, and the `before`/`after` regular expressions against the
   value (objects as JSON). `dom` rules rewrite an in-memory copy of the normalised BEFORE document
   (`before` regex → `after` text), and only where the new document no longer contains the old form. A
-  `whole_document` DOM rule must be scoped with `url`. `url` is an optional regex on the page URL.
+  `whole_document` DOM rule must be scoped with `url`; it declares that page's DOM **and its screenshots**, and it is the
+  only way a pixel difference can be declared. `url` is an optional regex on the page URL.
 - A rule counts only when its `approval_ref` is a granted user approval of this run (in `state.json` and in
   `approvals/`). Refused rules are listed in the stage report and change nothing.
 - The file's hash is part of every stage report's inputs, so all three stages of one comparison judge with the

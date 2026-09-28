@@ -10,7 +10,8 @@
  *
  * Rules never touch the sealed baseline or the capture: they are applied to an in-memory copy
  * of the normalised BEFORE document (DOM) or matched against a recorded difference (HTTP), and
- * every finding lists the rules it relied on. Pixel differences cannot be declared here.
+ * every finding lists the rules it relied on. Pixels can be declared only by a URL-scoped whole_document
+ * rule, which approves one page as a whole (see wholeDocumentRuleFor).
  */
 
 import { readdir, readFile } from 'node:fs/promises';
@@ -163,6 +164,16 @@ export function applyDomRules(normalizedBefore, rules, url, normalizedAfter = nu
     text = next;
   }
   return { text, applied };
+}
+
+/**
+ * The approved whole_document rule that covers a page, if any. A whole-document declaration
+ * approves the page as changed, so it also declares that page's screenshots; no other rule
+ * can declare pixels.
+ */
+export function wholeDocumentRuleFor(rules, url) {
+  if (typeof url !== 'string') return null;
+  return rules.find((rule) => rule.stage === 'dom' && rule.wholeDocument && applies(rule, url)) ?? null;
 }
 
 /** The finding fields a declared-change classification adds. */
