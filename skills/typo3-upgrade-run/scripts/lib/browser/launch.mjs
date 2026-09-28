@@ -18,6 +18,11 @@ export const SAFE_BROWSER_ARGS = Object.freeze([
   // GPU/SwiftShader raster paths can produce sparse pixel changes inside otherwise identical
   // decoded images; software rendering makes the same captures exact.
   '--disable-gpu',
+  // Software raster still re-rasterises only the invalidated part of a tile when something repaints late
+  // (partial raster). The edge pixels of antialiased shapes (rounded corners) then depend on repaint timing:
+  // fakeshop's /en/ .alert corners came out in two variants (one colour level) at random across fresh
+  // browsers, 12.4 and 13.4 alike. With full-tile raster the same page is exact 8/8.
+  '--disable-partial-raster',
   '--disable-background-timer-throttling',
   '--disable-backgrounding-occluded-windows',
   '--disable-renderer-backgrounding',
