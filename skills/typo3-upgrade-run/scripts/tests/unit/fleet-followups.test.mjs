@@ -81,3 +81,11 @@ test('backend-sweep credentials: an explicit file is honoured, otherwise the env
     if (saved.password === undefined) delete process.env.BE_PASSWORD; else process.env.BE_PASSWORD = saved.password;
   }
 });
+
+test('dom normaliser: a TYPO3 content-exception code is per-request, the error itself stays compared', async () => {
+  const { compareDom } = await import('../../lib/compare/dom-normalize.mjs');
+  const page = (code) => `<main id="main">\n\tOops, an error occurred! Code: ${code}\n</main>`;
+  assert.equal(compareDom(page('202609282000396f4bcc31'), page('202609282008051aeda7df')).identical, true);
+  assert.equal(compareDom('<main id="main"><p>Sitemap</p></main>', page('202609282008051aeda7df')).identical, false,
+    'an element that starts failing is still a difference');
+});

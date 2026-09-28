@@ -31,6 +31,10 @@ export const RULES = Object.freeze([
   { id: 'iso-timestamp', why: 'render time', re: /\b\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?/g, to: '<TS>' },
   { id: 'epoch-ms', why: 'render time in milliseconds', re: /\b1[6-9]\d{11}\b/g, to: '<EPOCH>' },
   { id: 'debug-comment', why: 'parse-time debug output', re: /<!--\s*(?:parsetime|generated|cached|debug)[^>]*-->/gi, to: '<!--<D>-->' },
+  // TYPO3's content exception handler renders a failing element as "Oops, an error occurred! Code: <YmdHis><8 hex>".
+  // The code names one log entry and is new on every request by design; the message itself stays compared, so an
+  // element that starts or stops failing is still a difference.
+  { id: 'typo3-exception-code', why: 'per-request TYPO3 content-exception log code', re: /(\bCode: )\d{14}[0-9a-f]{8}\b/g, to: '$1<CODE>' },
   // EXT:form regenerates three things per request BY DESIGN, and a predictable honeypot
   // would be useless against spam bots: the honeypot's field NAME, its LENGTH (5-25 chars),
   // and its POSITION in the __trustedProperties field list. Masking the name alone therefore
