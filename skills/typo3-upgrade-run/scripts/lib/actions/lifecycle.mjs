@@ -16,6 +16,7 @@ import { EXIT, HarnessError, PreconditionError } from '../cli/exit-codes.mjs';
 import { LOOP_DOCS } from '../run/paths.mjs';
 import { StateStore, assertLoopTransition } from '../run/state.mjs';
 import { assertLiveInputs, readEvidenceContext } from '../run/evidence.mjs';
+import { browserArgs } from '../browser/launch.mjs';
 import { loopDocSchemaErrors } from '../run/schema.mjs';
 import { validateReport } from '../report/write.mjs';
 import { graphValidate } from './graph.mjs';
@@ -95,7 +96,8 @@ export async function loopOpen({ values, paths, log, journal, liveAssert = asser
   if (snapshot && !state.snapshots.includes(snapshot)) {
     throw new PreconditionError(`Snapshot ${snapshot} is not recorded. Run snapshot-create first.`);
   }
-  await liveAssert(paths);
+  // Same launch arguments the environment fingerprint sealed; an empty list always reads as drift.
+  await liveAssert(paths, { launchArgs: browserArgs() });
   await store.update((current) => { current.loops[id] = 'open'; });
   await journal?.append('transition', {
     loop_id: id, from: 'planned', to: 'open', snapshot: snapshot ?? null,
