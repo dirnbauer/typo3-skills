@@ -14,6 +14,10 @@ Do not delete working template records just to satisfy the upstream shorthand.
 
 Verified against the versioned [TYPO3 14.3 Site Settings documentation](https://docs.typo3.org/m/typo3/reference-coreapi/14.3/en-us/ApiOverview/SiteHandling/SiteSettings.html).
 
+## Docs cache: call the scripts by their resolved path
+
+Through a symlinked install such as `~/.claude/skills`, `lookup.sh` looks for the docs cache in `~/.claude/cache` while `fetch-docs.sh` (also behind `lookup.sh --update`) writes it to `cache/` at the real collection root, git-ignored in this repository, and `lookup.sh` has no `--cache-dir`, so call both via the resolved path, for example `"$(cd -P ~/.claude/skills/typo3-typoscript-ref && pwd)/scripts/lookup.sh"`.
+
 ## Credits & Attribution
 
 This skill is based on the excellent work by **Netresearch DTT GmbH**.

@@ -10,3 +10,5 @@ __pycache__/
 *.pyc
 /.validation/
 /dist/chatgpt/
+# Docs cache written by the vendored typo3-typoscript-ref scripts/fetch-docs.sh (default ../../../cache)
+/cache/
