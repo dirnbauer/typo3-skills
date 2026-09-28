@@ -18,6 +18,7 @@ import { nodeClaims, claimsConflict, lockOwners, blockedClaims, acquireClaims, r
 import { closureCheck, readClosureArtifact, readFeaturePlan, validClosureAcceptance, verifyRecordedClosureAcceptance } from './closure.mjs';
 import {
   forbiddenMeasurementChanges, measurementInputs, overBudget, parseReview, projectChangeSince, reviewRequired,
+  untrackedSnapshot,
 } from '../run/guards.mjs';
 export { validClosureAcceptance } from './closure.mjs';
 
@@ -155,6 +156,8 @@ export async function nodeOpen({ values, paths, log, journal }) {
   const guarded = definition.policy?.guard_change_scope === true && !applicabilityOnly
     && ['code', 'stateful'].includes(node.mutation);
   const measurement = guarded ? await measurementInputs(paths) : {};
+  const gitAnchor = guarded && String(values['rollback-ref'] ?? '').startsWith('git:');
+  const untracked = gitAnchor ? await untrackedSnapshot(paths.root) : null;
   const now = new Date().toISOString();
   acquireClaims(state.graph.locks, claims, id);
   nodeState.status = 'running';
@@ -165,6 +168,7 @@ export async function nodeOpen({ values, paths, log, journal }) {
     snapshot: values.snapshot ? String(values.snapshot) : null,
     approval: values.approval ? String(values.approval) : null,
     measurement,
+    untracked,
   };
   nodeState.review = null;
   nodeState.review_sha256 = null;
@@ -258,7 +262,8 @@ export async function nodeClose({ values, paths, log, journal }) {
     }
   }
   if (guarded && outcome === 'pass' && String(nodeState.anchor?.rollback_ref ?? '').startsWith('git:')) {
-    change = await projectChangeSince(paths.root, nodeState.anchor.rollback_ref.slice(4));
+    change = await projectChangeSince(paths.root, nodeState.anchor.rollback_ref.slice(4),
+      { untrackedBaseline: nodeState.anchor.untracked ?? null });
     const budget = id.endsWith('-recovery') ? definition.policy?.recovery_change_budget : null;
     change.over_budget = overBudget(change, budget);
     change.approval = null;

@@ -246,6 +246,39 @@ test('a site fix cannot pass by changing what is measured, and recovery size is 
   }
 });
 
+test('pre-existing untracked user files are not counted as the recovery node\'s change', async () => {
+  const { root, paths, head } = await runFixture(GUARDED, { git: true });
+  try {
+    await mkdir(path.join(root, 'relaunch'), { recursive: true });
+    for (const n of [1, 2, 3, 4]) await writeFile(path.join(root, 'relaunch', `draft-${n}.html`), '<p>draft</p>\n');
+    await nodeOpen({ values: { node: 'css-recovery', 'rollback-ref': `git:${head}` }, paths, log: quietLog, journal: quietJournal });
+    const ev = await evidence(paths, 'css-recovery', 'evidence.md', 'fixed one selector, exit=0\n');
+    await writeFile(path.join(root, 'site.css'), 'a { color: red; }\n');
+    await nodeClose({ values: { node: 'css-recovery', outcome: 'pass', evidence: ev }, paths, log: quietLog, journal: quietJournal });
+    const node = (await new StateStore(paths).read()).graph.nodes['css-recovery'];
+    assert.equal(node.status, 'passed');
+    assert.deepEqual({ files: node.change.files, over: node.change.over_budget }, { files: 1, over: false });
+    assert.equal(Object.keys(node.anchor.untracked).length, 4);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test('a changed pre-existing untracked file still counts', async () => {
+  const { root, paths, head } = await runFixture(GUARDED, { git: true });
+  try {
+    await writeFile(path.join(root, 'draft.html'), '<p>draft</p>\n');
+    await nodeOpen({ values: { node: 'css-recovery', 'rollback-ref': `git:${head}` }, paths, log: quietLog, journal: quietJournal });
+    const ev = await evidence(paths, 'css-recovery', 'evidence.md', 'edited the draft, exit=0\n');
+    await writeFile(path.join(root, 'draft.html'), '<p>changed</p>\n');
+    await nodeClose({ values: { node: 'css-recovery', outcome: 'pass', evidence: ev }, paths, log: quietLog, journal: quietJournal });
+    const node = (await new StateStore(paths).read()).graph.nodes['css-recovery'];
+    assert.equal(node.change.files, 1);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test('measurement nodes may recalibrate config but never touch sealed evidence', () => {
   const before = { 'config/thresholds.yml': `sha256:${'1'.repeat(64)}`, 'baseline/A-original/LOCK.json': `sha256:${'2'.repeat(64)}`,
     'manifests/url-manifest.json': `sha256:${'3'.repeat(64)}` };

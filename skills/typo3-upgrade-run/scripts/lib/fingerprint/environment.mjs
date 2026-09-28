@@ -23,7 +23,8 @@ const SCRIPT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 
 /**
  * Immutable renderer/tooling keys. The application being upgraded is deliberately absent:
- * changing PHP or TYPO3 is the subject of the experiment, not renderer drift.
+ * changing PHP, TYPO3 or TYPO3's GFX defaults is the subject of the experiment, not renderer
+ * drift. The image processor that executes GFX is the renderer and stays hashed.
  */
 export const HASH_RELEVANT = Object.freeze([
   'node.version', 'os.type', 'os.release', 'os.arch', 'os.containerImage',
@@ -31,14 +32,19 @@ export const HASH_RELEVANT = Object.freeze([
   'fonts.listHash',
   'rendering.deviceScaleFactor', 'rendering.colorScheme', 'rendering.reducedMotion',
   'rendering.forcedColors', 'rendering.locale', 'rendering.timezone',
-  'imageProcessing.processor', 'imageProcessing.version', 'imageProcessing.gfxHash',
+  'imageProcessing.processor', 'imageProcessing.version',
   'ddev.version',
   'harness.version', 'harness.depsLockHash', 'harness.sourceHash',
 ]);
 
+/**
+ * Recorded for provenance, never hashed. GFX is an upgrade subject: Core changes its defaults
+ * between majors (12.4 -> 13.4 added webp/avif), so its pixel effects are visual findings.
+ */
 export const RECORDED_ONLY = Object.freeze([
   'os.cpus', 'os.totalmem', 'os.hostname', 'os.uptime',
   'php.version', 'php.extensionsHash', 'typo3.version', 'typo3.context',
+  'imageProcessing.gfxHash', 'imageProcessing.typo3Gfx',
   'ddev.projectType', 'ddev.dbEngine',
 ]);
 
@@ -105,7 +111,11 @@ export function hashComponents(components) {
   return `sha256:${sha256(parts.join('\n'))}`;
 }
 
-/** @returns {{match:boolean, drifted:Array<{key:string,before:*,after:*}>}} */
+/**
+ * Judged by the current HASH_RELEVANT, never by the sealed `hashRelevantKeys`: a fingerprint
+ * sealed by an older harness that still hashed GFX must not turn an upgrade subject into drift.
+ * @returns {{match:boolean, drifted:Array<{key:string,before:*,after:*}>}}
+ */
 export function compareEnvironment(sealed, current) {
   const drifted = [];
   for (const key of HASH_RELEVANT) {
@@ -203,7 +213,7 @@ async function detectDdev(runner) {
   }
 }
 
-/** GFX config decides how TYPO3 renders images; a change there moves pixels. */
+/** The processor is renderer identity; the GFX config is recorded as an upgrade subject. */
 async function detectImaging(runner) {
   const version = await runner('convert', ['-version']);
   const processor = version?.includes('GraphicsMagick') ? 'GraphicsMagick'
