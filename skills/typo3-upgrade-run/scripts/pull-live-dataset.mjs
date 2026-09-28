@@ -17,7 +17,8 @@
  *   node pull-live-dataset.mjs --project <dir> --host <alias|hostname> --out <dir>
  *        [--webroot public] [--skip-db] [--skip-files] [--include-processed] [--dry-run]
  *
- * Import afterwards is a separate stateful step: snapshot first, then `ddev import-db`.
+ * Import afterwards is a separate stateful step: snapshot first, then `ddev import-db`, then
+ * `typo3 extension:setup`, because the excluded cache tables are not in the dump at all.
  */
 
 import { execFileSync, spawn } from 'node:child_process';
@@ -180,7 +181,8 @@ export async function pullLiveDataset({ project, hostName, out, webroot = 'publi
     }
   }
   writeFileSync(path.join(out, 'live-dataset.json'), `${JSON.stringify(manifest, null, 2)}\n`);
-  log(`Dataset written to ${out}. Next: snapshot, then ddev import-db --file=${path.join(out, 'db.sql.gz')}`);
+  log(`Dataset written to ${out}. Next: snapshot, ddev import-db --file=${path.join(out, 'db.sql.gz')}, `
+    + 'then ddev exec vendor/bin/typo3 extension:setup (recreates the excluded cache tables) and cache:flush.');
   return manifest;
 }
 

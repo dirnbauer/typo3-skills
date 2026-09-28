@@ -25,7 +25,9 @@ node skills/typo3-upgrade-run/scripts/pull-live-dataset.mjs \
 - The script compares server and local file counts and writes `live-dataset.json` with release,
   timestamps, counts and the dump's SHA-256. Use it as `dataset-freshness` or `data-recovery` evidence.
 - Importing is a separate stateful step: `t3u snapshot-create --node data-recovery`, then
-  `ddev import-db --file=<out>/db.sql.gz`, then verify the content sentinels.
+  `ddev import-db --file=<out>/db.sql.gz`, then `ddev exec vendor/bin/typo3 extension:setup` and
+  `cache:flush`. The excluded cache tables are missing entirely until `extension:setup` recreates
+  them; without it every request fails with a missing `cache_*` table. Then verify the content sentinels.
 
 ## Publishing to staging
 
