@@ -34,7 +34,8 @@ t3u capture --label iter-1 --scope intermediate --affected page-17
 
 # final: all URLs for HTTP/DOM and the three authoritative states for visual targets
 t3u capture --label after
-# compare-* default to captures/before; point them at the sealed baseline
+# compare-* default to captures/before; point them at the sealed baseline. compare-all also
+# accepts bare labels: A-original resolves to the sealed baseline, after to captures/after.
 t3u compare-all --loop 300-invariance-closure \
   --before .typo3-update/baseline/A-original \
   --after .typo3-update/captures/after --idempotence-diff 0

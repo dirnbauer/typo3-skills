@@ -62,7 +62,8 @@
         "baselineContentFingerprintHash": { "type": ["string", "null"] },
         "targetContentFingerprintHash": { "type": ["string", "null"] },
         "contentTransitionHash": { "type": ["string", "null"] },
-        "selftestLockHash": { "type": "string", "minLength": 1 }
+        "selftestLockHash": { "type": "string", "minLength": 1 },
+        "declaredChangesHash": { "type": ["string", "null"] }
       }
     },
     "verdict": { "enum": ["pass", "findings", "invalid", "error"] },

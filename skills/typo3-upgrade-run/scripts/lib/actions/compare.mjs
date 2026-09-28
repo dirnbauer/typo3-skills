@@ -21,7 +21,10 @@ import {
   pairFiles, listShots, statusFor, quickIdentical,
   comparePairPixelmatch, runOdiff, resolveOdiffBin, STATUS,
 } from '../compare/image.mjs';
-import { classify, severityFor, countByClass, loopVerdict, Unclassifiable } from '../compare/classify.mjs';
+import { classify, severityFor, countByClass, loopVerdict, isBlocking, Unclassifiable } from '../compare/classify.mjs';
+import {
+  loadDeclaredChanges, splitHttpDifferences, applyDomRules, declaredFields,
+} from '../compare/declared-changes.mjs';
 import { envelope, writeReport } from '../report/write.mjs';
 import { sealBaseline, verifyBaseline, renderSeal } from '../run/lockfile.mjs';
 import { StateStore } from '../run/state.mjs';
@@ -55,7 +58,8 @@ async function compareHttpRecords({ values, paths, log }) {
   const after = values.after ?? path.join(paths.root, 'captures', 'after', 'http');
   const reportPath = values.report ?? await stageReportPath(paths, values.loop, 'http');
 
-  const { pairsChecked, findings, missing } = await compareRecordDirs(before, after, values.loop, log);
+  const declared = await declaredRules(paths, log);
+  const { pairsChecked, findings, missing } = await compareRecordDirs(before, after, values.loop, log, declared.rules);
 
   // On an intermediate loop the after-set is a deliberate sample, so a baseline record with no
   // counterpart is missing COVERAGE, not a difference. Declared, never silently dropped — and it
@@ -64,19 +68,22 @@ async function compareHttpRecords({ values, paths, log }) {
   const notCaptured = sampled ? missing : [];
   const realMissing = sampled ? [] : missing;
 
+  const blocking = findings.filter(isBlocking);
   const counts = { urls: pairsChecked, identical: pairsChecked - findings.length,
-    different: findings.length, missing: realMissing.length, notCaptured: notCaptured.length };
-  const verdict = findings.length || realMissing.length ? 'findings' : 'pass';
+    different: findings.length, declared: findings.length - blocking.length,
+    missing: realMissing.length, notCaptured: notCaptured.length };
+  const verdict = blocking.length || realMissing.length ? 'findings' : 'pass';
 
   const evidence = await reportEvidence(paths, values);
   const report = envelope({
     kind: 'http', ...evidence, verdict, counts, findings,
-    extra: { comparedFields: 'see lib/compare/http-meta.mjs COMPARED_FIELDS', missing: realMissing, notCaptured },
+    extra: { comparedFields: 'see lib/compare/http-meta.mjs COMPARED_FIELDS', missing: realMissing, notCaptured,
+      declaredChanges: { hash: declared.hash, rules: declared.rules.map((rule) => rule.id), issues: declared.issues } },
   });
   const written = await writeReport(reportPath, report, { profile: values['redaction-profile'], dryRun: values['dry-run'] });
 
   log[verdict === 'pass' ? 'success' : 'finding'](
-    `HTTP/metadata: ${counts.identical}/${counts.urls} identical, ${counts.different} different, ${counts.missing} missing${counts.notCaptured ? `, ${counts.notCaptured} not captured (sampled scope)` : ''}`,
+    `HTTP/metadata: ${counts.identical}/${counts.urls} identical, ${counts.different - counts.declared} different, ${counts.declared} declared, ${counts.missing} missing${counts.notCaptured ? `, ${counts.notCaptured} not captured (sampled scope)` : ''}`,
   );
   return {
     exitCode: verdict === 'pass' ? EXIT.PASS : EXIT.FINDINGS,
@@ -85,7 +92,7 @@ async function compareHttpRecords({ values, paths, log }) {
   };
 }
 
-async function compareRecordDirs(beforeDir, afterDir, loopId, log) {
+async function compareRecordDirs(beforeDir, afterDir, loopId, log, rules = []) {
   const [b, a] = await Promise.all([safeList(beforeDir, '.json'), safeList(afterDir, '.json')]);
   if (!b.length && !a.length) {
     throw new PreconditionError(`No HTTP records in ${beforeDir} or ${afterDir}. Capture first.`);
@@ -106,14 +113,29 @@ async function compareRecordDirs(beforeDir, afterDir, loopId, log) {
     if (cmp.identical) continue;
 
     n += 1;
+    const { declared, residual } = splitHttpDifferences(cmp.differences, rules, before.url ?? after.url);
+    if (!residual.length) {
+      findings.push({
+        id: nextId(loopId, n),
+        target: before.url ?? file,
+        class: 'declared-change',
+        severity: 'info',
+        status: 'open',
+        stage: 'http',
+        ...declaredFields(rules.filter((rule) => declared.some((d) => d.declared_change === rule.id))),
+        differences: declared.slice(0, 12),
+      });
+      continue;
+    }
     findings.push({
       id: nextId(loopId, n),
       target: before.url ?? file,
       class: 'regression',
-      severity: cmp.differences.some((d) => d.field === 'status') ? 'blocker' : 'major',
+      severity: residual.some((d) => d.field === 'status') ? 'blocker' : 'major',
       status: 'open',
       stage: 'http',
-      differences: cmp.differences.slice(0, 12),
+      differences: residual.slice(0, 12),
+      ...(declared.length ? { declared_differences: declared.slice(0, 12) } : {}),
     });
   }
   for (const file of [...as].sort()) if (!bs.has(file)) missing.push({ file, side: 'before' });
@@ -141,6 +163,8 @@ async function compareDomRecords({ values, paths, log }) {
   const as = new Set(a);
   const findings = [];
   const overreach = new Set();
+  const declared = await declaredRules(paths, log);
+  const domRules = declared.rules.filter((rule) => rule.stage === 'dom');
   let n = 0;
   let checked = 0;
 
@@ -151,11 +175,25 @@ async function compareDomRecords({ values, paths, log }) {
       readFile(path.join(before, file), 'utf8'),
       readFile(path.join(after, file), 'utf8'),
     ]);
-    const cmp = compareDom(bh, ah);
+    const url = domRules.length ? await captureUrl(before, file) : null;
+    const cmp = compareDom(bh, ah, domRules.length ? { transformBefore: (text, afterText) => applyDomRules(text, domRules, url, afterText) } : {});
     for (const o of cmp.overreach ?? []) overreach.add(o);
     if (cmp.identical) continue;
 
     n += 1;
+    if (cmp.explained) {
+      findings.push({
+        id: nextId(values.loop, n),
+        target: file,
+        class: 'declared-change',
+        severity: 'info',
+        status: 'open',
+        stage: 'dom',
+        ...declaredFields(cmp.declared),
+        segments: cmp.segments,
+      });
+      continue;
+    }
     findings.push({
       id: nextId(values.loop, n),
       target: file,
@@ -164,6 +202,7 @@ async function compareDomRecords({ values, paths, log }) {
       status: 'open',
       stage: 'dom',
       segments: cmp.segments,
+      ...(cmp.declared?.length ? { declared_changes: declaredFields(cmp.declared).declared_changes } : {}),
     });
   }
 
@@ -181,22 +220,25 @@ async function compareDomRecords({ values, paths, log }) {
     log.warn(`normalisation overreach: ${[...overreach].join(', ')} — a rule may be masking real differences`);
   }
 
-  const counts = { urls: checked, identical: checked - findings.length, different: findings.length };
-  const verdict = findings.length ? 'findings' : 'pass';
+  const blocking = findings.filter(isBlocking);
+  const counts = { urls: checked, identical: checked - findings.length, different: findings.length,
+    declared: findings.length - blocking.length };
+  const verdict = blocking.length ? 'findings' : 'pass';
   const report = envelope({
     kind: 'dom',
     ...await reportEvidence(paths, values),
     verdict,
     counts,
     findings,
+    extra: { declaredChanges: { hash: declared.hash, rules: domRules.map((rule) => rule.id), issues: declared.issues } },
   });
   const written = await writeReport(reportPath, report, { profile: values['redaction-profile'], dryRun: values['dry-run'] });
 
-  log[verdict === 'pass' ? 'success' : 'finding'](`DOM: ${counts.identical}/${counts.urls} identical`);
+  log[verdict === 'pass' ? 'success' : 'finding'](`DOM: ${counts.identical}/${counts.urls} identical${counts.declared ? `, ${counts.declared} declared` : ''}`);
   return {
     exitCode: verdict === 'pass' ? EXIT.PASS : EXIT.FINDINGS,
     verdict, counts, reports: [written.path],
-    message: verdict === 'pass' ? 'normalised DOM identical' : `${findings.length} DOM finding(s)`,
+    message: verdict === 'pass' ? 'normalised DOM identical' : `${blocking.length} DOM finding(s)`,
   };
 }
 
@@ -378,8 +420,8 @@ export async function compareVisual({ values, paths, log }) {
 export async function compareAll(ctx) {
   const { values, paths } = ctx;
   if (!values.loop) throw new PreconditionError('--loop is required for compare-all.');
-  const beforeRoot = values.before ?? paths.baseline('A-original');
-  const afterRoot = values.after ?? path.join(paths.root, 'captures', 'after');
+  const beforeRoot = await captureRoot(paths, values.before, paths.baseline('A-original'));
+  const afterRoot = await captureRoot(paths, values.after, path.join(paths.root, 'captures', 'after'));
 
   const http = await compareHttp({
     ...ctx,
@@ -407,6 +449,25 @@ export async function compareAll(ctx) {
       ? 'HTTP, DOM and visual proof identical; loop gate green'
       : gated.message,
   };
+}
+
+/**
+ * --before/--after take a directory. A bare label that is not a directory resolves to the
+ * sealed baseline of that id, then to captures/<label>, so "--before A-original --after
+ * rung13-a1" compares what it names instead of failing on two missing relative paths.
+ */
+export async function captureRoot(paths, value, fallback) {
+  if (value === undefined || value === null || value === '') return fallback;
+  const given = String(value);
+  if (await exists(given) || !/^[A-Za-z0-9._-]+$/.test(given)) return given;
+  for (const candidate of [paths.baseline(given), path.join(paths.root, 'captures', given)]) {
+    if (await exists(candidate)) return candidate;
+  }
+  return given;
+}
+
+async function exists(target) {
+  try { await access(target); return true; } catch { return false; }
 }
 
 async function compareOne(bPath, aPath, diffPath, log, pool = null) {
@@ -887,8 +948,23 @@ async function reportEvidence(paths, values) {
       loopId: loopName.slice(0, 3) || null,
       track: loopTrack(loopName),
     },
+    // Includes declaredChangesHash: every stage of one comparison judges with the same rules.
     inputs: evidence.inputs,
   };
+}
+
+/** Approved declared changes for this comparison; refused rules are reported, never applied. */
+async function declaredRules(paths, log) {
+  const state = await new StateStore(paths).read();
+  const declared = await loadDeclaredChanges(paths, state);
+  for (const issue of declared.issues) log.warn(`declared change refused: ${issue}`);
+  return declared;
+}
+
+/** The URL of a DOM snapshot, from the HTTP record captured next to it. */
+async function captureUrl(domDir, file) {
+  const record = await readJson(path.join(path.dirname(domDir), 'http', file.replace(/\.html$/, '.json')));
+  return typeof record?.url === 'string' ? record.url : null;
 }
 
 function loopTrack(loop) {

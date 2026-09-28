@@ -250,6 +250,7 @@ describe('evidence inputs and live assertions', () => {
       baselineContentFingerprintHash: evidenceInputs.contentFingerprintHash,
       targetContentFingerprintHash: null,
       contentTransitionHash: null,
+      declaredChangesHash: null,
     });
 
     let envCollected = 0;

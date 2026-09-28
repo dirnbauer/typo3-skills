@@ -43,6 +43,7 @@ export function envelope({ kind, run, inputs = {}, verdict, counts = {}, finding
       targetContentFingerprintHash: inputs.targetContentFingerprintHash ?? null,
       contentTransitionHash: inputs.contentTransitionHash ?? null,
       selftestLockHash: inputs.selftestLockHash ?? null,
+      declaredChangesHash: inputs.declaredChangesHash ?? null,
     },
     verdict,
     counts,

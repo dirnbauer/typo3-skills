@@ -266,7 +266,7 @@ export function templateSignature(html) {
  * Compare two normalised documents. Reports a bounded, readable diff rather than the whole
  * document — a 5,000-URL run must not produce megabytes of prose.
  */
-export function compareDom(beforeHtml, afterHtml, { maxSegments = 5, context = 60 } = {}) {
+export function compareDom(beforeHtml, afterHtml, { maxSegments = 5, context = 60, transformBefore = null } = {}) {
   const b = domHash(beforeHtml);
   const a = domHash(afterHtml);
 
@@ -274,12 +274,19 @@ export function compareDom(beforeHtml, afterHtml, { maxSegments = 5, context = 6
     return { identical: true, hash: a.hash, segments: [], overreach: [...new Set([...b.overreach, ...a.overreach])] };
   }
 
-  const bs = b.normalized;
   const as = a.normalized;
+  // Approved declared changes rewrite an in-memory copy of the normalised BEFORE document.
+  // They never touch the sealed capture, and they can only explain a difference, not hide
+  // one: the raw segments stay in the finding when the rewrite explains everything.
+  const declared = transformBefore ? transformBefore(b.normalized, as) : { text: b.normalized, applied: [] };
+  const explained = Boolean(declared.wholeDocument) || (declared.applied.length > 0 && declared.text === as);
+  const bs = explained ? b.normalized : declared.text;
   const segments = divergentSegments(bs, as, { maxSegments, context });
 
   return {
     identical: false,
+    explained,
+    declared: declared.applied,
     hash: { before: b.hash, after: a.hash },
     segments: segments.slice(0, maxSegments),
     hits: { before: b.hits, after: a.hits },
