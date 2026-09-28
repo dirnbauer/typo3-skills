@@ -130,6 +130,11 @@ through the same URL guard, labels those manifest entries `page-tree`, and recor
 plugin detail URLs cannot be inferred from the `pages` table. This is an ADR-backed temporary
 baseline source, not a substitute for repairing and reconciling the sitemap after it is sealed.
 
+Page URLs follow the owning site's `config/sites/*/config.yaml`: language base (`/en/`; the base
+variant on the run's origin wins) plus its one PageType `default` suffix off the root (`/en/news/`).
+`--languages` matches `languageId`, ISO code, `hreflang`, `locale` or base segment; language 0 is
+always in. Unknown or off-origin languages drop out, rootless pages keep `base + slug`; both warn.
+
 When a budget was exhausted, the loop report carries `coverageDegraded: true` and the generated
 summary says so in its **first paragraph**. A report that covered 60% of a site and reads exactly
 like one that covered all of it is worse than no report.

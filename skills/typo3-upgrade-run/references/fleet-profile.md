@@ -18,6 +18,7 @@ inventories.
 | Check | Why | Command |
 |---|---|---|
 | **Database engine version** | DDEV configs written years ago pin MariaDB 10.2, six years below the DBAL 4 floor. This is the single most common blocker, and it surfaces as an SQL *syntax* error after everything else has gone well. | `ddev describe` |
+| **Hosting database version** | Staging and live lag the same way (MariaDB 10.3 on shared hosting), and no local migration fixes them. Raise it at intake: a hosting upgrade takes lead time. | `gzip -dc <dataset>/db.sql.gz \| head -8` |
 | **`TYPO3_CONTEXT` in `.ddev/config.yaml`** | Usually `Development/Docker`, and the site's `baseVariants` are frequently keyed to that exact string — so switching to `Production` makes the local site unresolvable rather than production-like. Check the site YAML before changing the context. | `grep TYPO3_CONTEXT .ddev/config.yaml` |
 | **PHP version** | Often trails the target by two minors. Move it with the ladder, never ahead of the installed core. | `ddev describe` |
 

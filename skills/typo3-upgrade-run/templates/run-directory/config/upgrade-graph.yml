@@ -180,15 +180,15 @@ nodes:
     resources: [composer]
     outcomes: [pass, blocked]
   rung-13:
-    objective: "Move the project to TYPO3 13.4 as the compatibility rung, with wizards and schema updates to a fixed point."
-    done: "13.4 is installed, wizards and schema reach a fixed point on an unchanged rerun, and the evidence loop is green."
+    objective: "Move the project to TYPO3 13.4 as the compatibility rung, with wizards and schema updates to a fixed point. not-applicable only when `composer show typo3/cms-core` proves the installed core already satisfies ^14.3."
+    done: "13.4 is installed, wizards and schema reach a fixed point on an unchanged rerun, and the evidence loop is green; when not-applicable, rung-14 performs the patch update (latest 14.3.x, compatible dependencies) to a wizard/schema fixed point."
     evidence: nodes/rung-13/evidence.md
     skill: typo3-upgrade-migration
     phase: P06
     mutation: stateful
     resources: [composer, ddev-stateful]
     evidence_loop: required
-    outcomes: [pass, findings, blocked]
+    outcomes: [pass, findings, not-applicable, blocked]
   mechanical-migration:
     objective: "Run Rector, Fractor and the extension scanner, rebuild caches, then run them a second time."
     done: "The second pass reports no further changes and the exact tool output is preserved."
@@ -210,7 +210,7 @@ nodes:
     evidence_loop: required
     outcomes: [pass, findings, blocked]
   rung-14:
-    objective: "Install ^14.3, run wizards and schema updates to a fixed point and rebuild the DI container."
+    objective: "Install ^14.3 at the latest 14.3.x patch with compatible dependencies, run wizards and schema updates to a fixed point and rebuild the DI container."
     done: "14.3 is installed, the fixed point is proven, the backend opens, and the evidence loop is green."
     evidence: nodes/rung-14/evidence.md
     skill: typo3-upgrade-migration
@@ -666,6 +666,7 @@ edges:
   - { id: dependency-retry, from: dependency-resolution, outcome: pass, to: dependency-plan, retry: true, max_traversals: 2 }
   - { id: dependency-resolution-blocked, from: dependency-resolution, outcome: blocked, to: stopped }
   - { id: rung13-pass, from: rung-13, outcome: pass, to: mechanical-migration }
+  - { id: rung13-already-14, from: rung-13, outcome: not-applicable, to: rung-14 }
   - { id: rung13-findings, from: rung-13, outcome: findings, to: rung13-recovery }
   - { id: rung13-blocked, from: rung-13, outcome: blocked, to: stopped }
   - { id: mechanical-pass, from: mechanical-migration, outcome: pass, to: manual-migration }

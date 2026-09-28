@@ -151,7 +151,8 @@ imported skills sequentially or nest their orchestration loops.
 The controller owns project identity, contracts, approvals, budgets, routing and the final verdict
 for one local DDEV clone. A user-authorized pull from live uses `scripts/pull-live-dataset.mjs`
 (read-only on the server; **the local fileadmin is deleted before any fileadmin sync**). Publication
-goes to staging only, through `scripts/deploy-staging.mjs`; live deployment is never part of a run.
+goes to staging only, through `scripts/deploy-staging.mjs`, which also refuses a staging platform
+below the target (exit 6); live deployment is never part of a run.
 See [live dataset and staging](references/live-dataset-and-staging.md). Record the approval/ADR and
 measured content timestamps for any accepted dated dataset.
 

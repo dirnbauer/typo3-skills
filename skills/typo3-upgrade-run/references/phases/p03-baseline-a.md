@@ -46,6 +46,8 @@ certificate. Never fix the sitemaps first:
 t3u discover-urls --from-pages --allow-missing-sitemap
 ```
 
-The fallback includes public standard pages and shortcut roots (`doktype` 1 and 4). It cannot infer
-route-enhancer or plugin detail URLs from `pages`; the manifest records that limitation. Repair the
-sitemap after the baseline, then reconcile its dynamic URLs against the sealed fallback manifest.
+The fallback includes public standard pages and shortcut roots (`doktype` 1 and 4), with each site's
+language base and PageType suffix ([harness contract](../harness-contract.md#coverage-honesty)). It
+cannot infer route-enhancer or plugin detail URLs from `pages`; the manifest records that limitation.
+Repair the sitemap after the baseline, then reconcile its dynamic URLs against the sealed fallback
+manifest.

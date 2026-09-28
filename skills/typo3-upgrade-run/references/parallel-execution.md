@@ -33,8 +33,15 @@ capacity settings. These limits are ceilings, not a recommendation to occupy eve
 - `axe --workers 4` is the default; 1–12 independent URL/viewport/state jobs are supported.
   Each gets a fresh browser context. Expected/completed/failed/skipped counts, stable findings,
   per-job elapsed time and capacity wait time are reported. No missing worker result can pass.
-- Capture starts at most four Chromium processes at once, with stable worker indexing. Final
-  capture reserves the whole browser lane and keeps the worker count licensed by its self-test.
+- Capture starts at most four Chromium processes at once, with stable worker indexing, and leases
+  the worker count it runs with. Final and self-test capture keep the count licensed by the
+  self-test and own the browser lane (`exclusiveBrowsers`): other browser work waits, because a
+  competing renderer can flake a zero-pixel proof; CPU-only work continues beside it.
+- Only page work holds browser slots: capture, `backend-sweep`, `smoke`, axe, Lighthouse,
+  `resource-run --browsers` and the live-input preflight of comparison, sweep, axe and Lighthouse
+  commands. `node-open`/`node-close`, `gate`, `closure-*`, `validate-run`, the fingerprints,
+  `discover-urls` and `doctor` hold none (their Chromium version probe opens no page;
+  `content-fingerprint` takes one CPU slot), so a state transition never waits for browsers.
 - HTTP/DOM uses its existing bounded pool. Pixel comparison uses the CPU budget; native odiff
   stays preferred and the Pixelmatch fallback uses at most four persistent worker threads.
 - Lighthouse reserves the entire cooperative machine budget. Keep its repeated measurements,

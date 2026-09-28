@@ -32,6 +32,26 @@ const REQUIRES_SELFTEST = new Set([
 const SELFTEST_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 const AFTER_DEADLINE_COMMANDS = new Set(['status', 'report', 'validate-run', 'graph-report']);
 
+/** Leases for single-browser page work and file hashing; capture, axe, pixels and Lighthouse lease their own pools. */
+const ACTION_RESOURCES = Object.freeze({
+  'backend-sweep': Object.freeze({ browsers: 1 }),
+  smoke: Object.freeze({ browsers: 1 }),
+  'content-fingerprint': Object.freeze({ cpu: 1 }),
+});
+
+/**
+ * Browser slots belong to work that renders pages. A version probe (environment fingerprint,
+ * live-input check, doctor's launch check) opens no page and holds none, so node-close, gate,
+ * closure and validation never wait for browser capacity. Proof commands queue their live-input
+ * preflight on one slot next to their own browser or CPU work; gate is a verdict and does not.
+ */
+export function commandResources(command) {
+  return {
+    preflight: REQUIRES_SELFTEST.has(command) && command !== 'gate' ? { browsers: 1 } : null,
+    action: ACTION_RESOURCES[command] ?? null,
+  };
+}
+
 export function assertWithinRuntimeBudget(runState, timestamp = Date.now()) {
   const deadline = Date.parse(runState?.runtime?.deadline_at ?? '');
   if (!Number.isFinite(deadline)) return true;
@@ -44,7 +64,8 @@ export function assertWithinRuntimeBudget(runState, timestamp = Date.now()) {
   return true;
 }
 
-export async function runCommand({ command, values, positionals, argv, actions, now = Date.now }) {
+export async function runCommand({ command, values, positionals, argv, actions, now = Date.now,
+  reserve = withMachineResources, liveInputs = assertLiveInputs }) {
   const log = createLogger({ quiet: values.quiet, verbose: values.verbose });
   const paths = new RunPaths(values['run-dir'] ?? '.typo3-update');
   const journal = new Journal(paths.journalPath);
@@ -71,23 +92,21 @@ export async function runCommand({ command, values, positionals, argv, actions, 
       assertWithinRuntimeBudget(runState, now());
     }
 
+    const resources = commandResources(command);
     if (REQUIRES_SELFTEST.has(command) && !values['dry-run']) {
       await assertSelftestValid(paths, now);
       const { browserArgs } = await import('../browser/launch.mjs');
-      await withMachineResources({ browsers: 1, owner: 'live-input-preflight', log,
-        deadlineAt: runState?.runtime?.deadline_at }, () => assertLiveInputs(paths, { launchArgs: browserArgs() }));
+      const check = () => liveInputs(paths, { launchArgs: browserArgs() });
+      await (resources.preflight
+        ? reserve({ ...resources.preflight, owner: 'live-input-preflight', log, deadlineAt: runState?.runtime?.deadline_at }, check)
+        : check());
     }
 
     const action = actions[command];
     if (!action) throw new HarnessError(`No implementation registered for command: ${command}`);
 
-    // Single-browser checks and input/fingerprint readers have no inner lease.
-    // Capture, axe, pixel comparison and Lighthouse reserve their own pools.
-    const singleSlotCommands = ['backend-sweep', 'smoke', 'doctor', 'env-fingerprint', 'content-fingerprint',
-      'discover-urls', 'gate', 'closure-start', 'closure-check', 'closure-verify', 'node-close', 'validate-run'];
-    result = singleSlotCommands.includes(command) && !values['dry-run']
-      ? await withMachineResources({ browsers: 1, owner: command, log,
-        deadlineAt: AFTER_DEADLINE_COMMANDS.has(command) ? undefined : runState?.runtime?.deadline_at }, () => action(ctx))
+    result = resources.action && !values['dry-run']
+      ? await reserve({ ...resources.action, owner: command, log, deadlineAt: runState?.runtime?.deadline_at }, () => action(ctx))
       : await action(ctx);
     if (runState && !AFTER_DEADLINE_COMMANDS.has(command)) {
       assertWithinRuntimeBudget(await state.read(), now());

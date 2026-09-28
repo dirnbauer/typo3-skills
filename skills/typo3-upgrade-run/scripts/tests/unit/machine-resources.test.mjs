@@ -38,6 +38,25 @@ test('queued Lighthouse gets an exclusive quiet window before later arrivals', (
   await pause(20); assert.equal(lateStarted, false);
   await quiet.release(); await (await late).release();
 }));
+test('an authoritative browser lane excludes other browser work, never CPU-only work', () => fixture(async options => {
+  const lane = await acquireMachineResources({ ...options, browsers: 2, exclusiveBrowsers: true });
+  const cpu = await acquireMachineResources({ ...options, cpu: 1 });
+  const idle = await acquireMachineResources(options);
+  await assert.rejects(acquireMachineResources({ ...options, browsers: 1, waitMs: 25 }), /wait exceeded/);
+  await Promise.all([lane.release(), idle.release()]);
+  const browser = await acquireMachineResources({ ...options, browsers: 1 });
+  const lanePending = acquireMachineResources({ ...options, browsers: 2, exclusiveBrowsers: true });
+  for (;;) {
+    if (JSON.parse(await readFile(path.join(options.root, 'leases.json'))).leases.some(l => l.exclusiveBrowsers)) break;
+    await pause(5);
+  }
+  let lateStarted = false;
+  const late = acquireMachineResources({ ...options, browsers: 1 }).then(lease => { lateStarted = true; return lease; });
+  await pause(20); assert.equal(lateStarted, false, 'a queued lane is not starved by later browser work');
+  await browser.release(); const second = await lanePending;
+  await pause(20); assert.equal(lateStarted, false);
+  await second.release(); await (await late).release(); await cpu.release();
+}));
 test('failed work, timeouts and dead holders release or reclaim capacity', () => fixture(async options => {
   await assert.rejects(withMachineResources(options, async () => { throw new Error('fixture failure'); }), /fixture failure/);
   const quiet = await acquireMachineResources({ ...options, exclusive: true });

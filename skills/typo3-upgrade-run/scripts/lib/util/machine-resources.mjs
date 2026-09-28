@@ -1,5 +1,7 @@
 /** Cooperative, process-shared capacity budget. This is not an OS load isolator.
  * Lighthouse takes an exclusive lease; other harness work shares browser/CPU slots.
+ * An `exclusiveBrowsers` lease (authoritative pixels) owns the browser lane: no other
+ * browser work beside it, while CPU-only work and lease-free state commands continue.
  * Dead lease holders are reaped under the metadata lock. A torn metadata lock fails
  * closed after a bounded wait; it is never stolen from a possibly active writer.
  */
@@ -26,7 +28,7 @@ export function machineCapacity(env = process.env) {
     cpu: read('T3U_CPU_SLOTS', Math.max(1, Math.min(8, os.availableParallelism() - 2)), 16) };
 }
 
-export async function acquireMachineResources({ browsers = 0, cpu = 0, exclusive = false,
+export async function acquireMachineResources({ browsers = 0, cpu = 0, exclusive = false, exclusiveBrowsers = false,
   owner = 'harness', log, deadlineAt, waitMs = 600_000, pollMs = 100,
   root = MACHINE_RESOURCE_DIR, capacity = machineCapacity() } = {}) {
   if (process.env.T3U_RESOURCE_RUN_ACTIVE === '1') {
@@ -64,7 +66,7 @@ export async function acquireMachineResources({ browsers = 0, cpu = 0, exclusive
       if (new Set(state.leases.map(lease => lease?.id)).size !== state.leases.length
         || state.leases.some(lease => !lease || typeof lease.id !== 'string'
           || !Number.isInteger(lease.pid) || lease.pid < 1 || !['waiting', 'active'].includes(lease.status)
-          || typeof lease.exclusive !== 'boolean'
+          || typeof lease.exclusive !== 'boolean' || !['undefined', 'boolean'].includes(typeof lease.exclusiveBrowsers)
           || ['browsers', 'cpu'].some(key => !Number.isInteger(lease[key]) || lease[key] < 0))) {
         throw new HarnessError('Invalid machine resource lease; inspect the ledger before recovery.');
       }
@@ -91,7 +93,7 @@ export async function acquireMachineResources({ browsers = 0, cpu = 0, exclusive
   };
   try {
     await transaction(state => {
-      state.leases.push({ id, pid: process.pid, owner, browsers, cpu, exclusive, status: 'waiting' });
+      state.leases.push({ id, pid: process.pid, owner, browsers, cpu, exclusive, exclusiveBrowsers, status: 'waiting' });
     });
     registered = true;
     let announced = false;
@@ -101,15 +103,18 @@ export async function acquireMachineResources({ browsers = 0, cpu = 0, exclusive
         const index = state.leases.findIndex(lease => lease.id === id);
         if (index < 0) throw new HarnessError('Machine resource request disappeared.');
         const active = state.leases.filter(lease => lease.status === 'active');
-        // A queued exclusive measurement cannot starve behind newly arriving jobs.
-        const earlierExclusive = state.leases.slice(0, index).some(lease => lease.exclusive);
+        // A queued exclusive measurement or browser lane cannot starve behind newly arriving jobs.
+        const earlierExclusive = state.leases.slice(0, index)
+          .some(lease => lease.exclusive || (browsers > 0 && lease.exclusiveBrowsers));
         if (earlierExclusive || active.some(lease => lease.exclusive) || (exclusive && active.length)) return false;
+        if ((browsers > 0 && active.some(lease => lease.exclusiveBrowsers))
+          || (exclusiveBrowsers && active.some(lease => lease.browsers > 0))) return false;
         if (active.reduce((n, lease) => n + lease.browsers, browsers) > capacity.browsers
           || active.reduce((n, lease) => n + lease.cpu, cpu) > capacity.cpu) return false;
         state.leases[index].status = 'active';
         return true;
       });
-      if (granted) return { release, waitMs: Date.now() - started, browsers, cpu, exclusive, capacity };
+      if (granted) return { release, waitMs: Date.now() - started, browsers, cpu, exclusive, exclusiveBrowsers, capacity };
       if (!announced) { log?.info(`Waiting for shared machine capacity (${owner}).`); announced = true; }
       await pause(Math.min(pollMs, Math.max(1, deadline - Date.now())));
     }
