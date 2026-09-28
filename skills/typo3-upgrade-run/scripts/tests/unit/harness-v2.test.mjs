@@ -872,6 +872,7 @@ describe('database-backed URL discovery', () => {
 
   test('runs the page query without a shell and guards every discovered URL', async () => {
     const guarded = [];
+    const warned = [];
     const run = async (command, args, options) => {
       assert.equal(command, 'ddev');
       assert.deepEqual(args.slice(0, 4), ['mysql', '-N', '-B', '-e']);
@@ -880,7 +881,7 @@ describe('database-backed URL discovery', () => {
     };
     const result = await discoverFromPages({
       base: new URL('https://acme.ddev.site/'), cwd: '/project', run,
-      log: { step() {} },
+      log: { step() {}, warn: (message) => warned.push(message) },
       guard: {
         async assertUrl(url, context) {
           guarded.push([url, context.purpose]);
@@ -892,6 +893,8 @@ describe('database-backed URL discovery', () => {
     assert.deepEqual(guarded.map((entry) => entry[1]), [
       'page-tree-discovery', 'page-tree-discovery',
     ]);
+    // No site configuration: today's base + slug, said out loud.
+    assert.match(warned.join('\n'), /no config\/sites\/\*\/config\.yaml under \/project/);
   });
 });
 

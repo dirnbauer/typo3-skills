@@ -265,6 +265,15 @@ export function selectUrls(allUrls, {
     strategy: 'all-http-dom+tiered-visual' };
 }
 
+/**
+ * The visual stage leases the Chromium processes it really starts, not the whole pool. Final and
+ * self-test pixels also own the browser lane: another renderer competing for cores can flake a
+ * zero-pixel proof. CPU-only work and lease-free state commands (node-close) still run beside it.
+ */
+export function visualCaptureLease({ visualWorkers, perViewport, scope }) {
+  return { browsers: Math.min(visualWorkers, Math.max(1, ...perViewport)), exclusiveBrowsers: scope === 'final' };
+}
+
 /** Select the expensive browser matrix. Intermediate work uses default state only. */
 export function selectCaptures(manifest, selection, { scope = 'final' } = {}) {
   const selectedIds = new Set(selection.urls.map((entry) => entry.id));
@@ -484,9 +493,9 @@ export async function captureAll({
     try {
     const capacity = machineCapacity();
     if (visualWorkers > capacity.browsers) throw new PreconditionError('Visual workers exceed T3U_BROWSER_SLOTS; calibrate and seal the worker count before proof.');
-    // Authoritative pixels retain a dedicated browser lane. Do not silently alter
-    // the licensed renderer count, assignment or viewport order to fit other jobs.
-    machineLease = await acquireMachineResources({ browsers: capacity.browsers, owner: 'visual-capture', log, deadlineAt });
+    // Do not silently alter the licensed renderer count, assignment or viewport order to fit other jobs.
+    machineLease = await acquireMachineResources({ ...visualCaptureLease({ visualWorkers, scope,
+      perViewport: [...byViewport.values()].map((caps) => caps.length) }), owner: 'visual-capture', log, deadlineAt });
     index.machineWaitMs = machineLease.waitMs;
     index.browserStartup = [];
     for (const [viewport, caps] of byViewport) {

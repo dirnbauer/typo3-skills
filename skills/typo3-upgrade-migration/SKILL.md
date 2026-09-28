@@ -23,10 +23,10 @@ Start every node from `t3u node-brief --node <id>`; it carries the contract, rou
 |---|---|
 | `dependency-plan` | Composer target for ^14.3 with latest stable versions; flagged **R** for the resolution choices |
 | `dependency-resolution` | Exactly one blocker per attempt, behind a Git anchor |
-| `rung-13` | 13.4 compatibility rung; snapshot first; wizards/schema to a fixed point; evidence loop |
+| `rung-13` | 13.4 compatibility rung; snapshot first; wizards/schema to a fixed point; evidence loop. Core already on ^14.3: read-only `not-applicable` (below) |
 | `mechanical-migration` | Rector, Fractor, scanner; rebuild caches; second pass reports no changes |
 | `manual-migration` | Removed APIs and stored data before registration; snapshot first; evidence loop |
-| `rung-14` | ^14.3, fixed point, DI container, backend opens; snapshot first; evidence loop |
+| `rung-14` | ^14.3 at the latest 14.3.x patch, fixed point, DI container, backend opens; snapshot first; evidence loop |
 | `rung13-recovery` | Diagnose the one blocking cause and plan the repair for the retried rung |
 | `mechanical-recovery` | Diagnose the cause the tools left behind; plan the fix for the retry |
 | `manual-recovery` | Diagnose one data/API/registration-order failure; plan the fix |
@@ -35,6 +35,11 @@ Start every node from `t3u node-brief --node <id>`; it carries the contract, rou
 
 Stateful nodes open with `t3u snapshot-create --node <id>` first. Code nodes open with a
 `--rollback-ref git:<sha>`; the guard measures your diff against it.
+
+**Patch path.** When `ddev composer show typo3/cms-core` proves the installed core already satisfies
+^14.3, `rung-13` opens `--applicability-only` and closes `not-applicable` with that output as evidence
+and an independent review; the graph skips `mechanical-migration` and `manual-migration`, and
+`rung-14` does the patch update (latest 14.3.x, compatible dependencies) to a wizard/schema fixed point.
 
 ## Worker protocol
 

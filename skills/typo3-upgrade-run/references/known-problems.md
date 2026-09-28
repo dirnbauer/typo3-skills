@@ -29,6 +29,7 @@ matching symptom with a different cause is exactly how a wrong fix gets applied 
 - [Composer metadata says compatible, runtime still breaks](#composer-metadata-says-compatible-runtime-still-breaks)
 - [Static analysis says addTCAcolumns expects exactly 2 arguments](#static-analysis-says-addtcacolumns-expects-exactly-2-arguments)
 - [A local ext_emconf.php reports an undefined $_EXTKEY](#a-local-ext_emconfphp-reports-an-undefined-_extkey)
+- [A read-only command dirtied config/system/settings.php](#a-read-only-command-dirtied-configsystemsettingsphp)
 
 ---
 
@@ -45,9 +46,18 @@ parse. Nothing announces a version problem.
 **Fix.** Migrate the engine — see P01. Snapshot and dump first, then
 `ddev debug migrate-database mariadb:10.11`, then verify row counts.
 
-**Carry it to the handover.** Production runs the same old engine. A local migration does not change
-that, and the site will fail there in the same way. It belongs in the deployment notes as a
-prerequisite, not a footnote.
+**Check the hosting at intake.** Staging and live often run the same old engine, and a local
+migration does not change that: the site fails there in the same way. Read the server version from
+the header of the dataset dump and compare it with the target floor (13.4/14.3: MariaDB 10.4.3,
+MySQL 8.0.17) before any migration work:
+
+```bash
+gzip -dc .typo3-update/dataset/<date>/db.sql.gz | head -8   # -- Server version 10.3.39-MariaDB-…
+```
+
+A hosting upgrade needs lead time, so a floor miss is an intake blocker for the user and a deployment
+prerequisite in the handover, never a footnote. `deploy-staging.mjs` refuses such a staging platform
+with exit code 6.
 
 ---
 
@@ -652,3 +662,18 @@ Composer metadata is the source of truth, and v15 no longer evaluates the file.
 `type: typo3-cms-extension` plus `extra.typo3/cms.extension-key` in `composer.json`. Retain the file
 only for TER/Tailor publication or Classic mode; in that loader context keep `$EM_CONF[$_EXTKEY]`
 and its TER-compatible file restrictions. Do not hardcode the key merely to silence analysis.
+
+---
+
+## A read-only command dirtied config/system/settings.php
+
+**Symptom.** `git status` shows `config/system/settings.php` modified after intake, although only
+inspection commands ran. The diff adds `EXTENSIONS` entries nobody configured.
+
+**Cause.** typo3-console 8.x `cache:flush` and `extension:list` synchronise extension configuration:
+they write every `ext_conf_template.txt` default that is missing from `EXTENSIONS` into
+`settings.php`. Core's plain `typo3 list` does not.
+
+**Fix.** Treat those commands as writes. Record `git status` and `git diff config/system/settings.php`
+before and after them, and revert the drift (or record it as its own change) before sealing the
+fingerprints. It is neither a project edit nor a migration result; never attribute it to either.

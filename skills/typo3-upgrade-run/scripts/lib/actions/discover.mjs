@@ -13,6 +13,7 @@ import { promisify } from 'node:util';
 import { EXIT, HarnessError, PreconditionError } from '../cli/exit-codes.mjs';
 import { UrlGuard, assertPlausibleBaseUrl } from '../net/url-guard.mjs';
 import { walkSitemaps } from '../net/sitemap.mjs';
+import { pagePath, readSiteConfigs, siteRouting } from '../net/site-routing.mjs';
 import { StateStore } from '../run/state.mjs';
 import { buildManifest } from '../run/manifest.mjs';
 import { profileHash, validateStabilizationProfile } from '../browser/stabilize.mjs';
@@ -23,13 +24,18 @@ import { readJson } from './core.mjs';
 
 const execFileAsync = promisify(execFile);
 
-export const PAGE_TREE_SQL = `SELECT uid, doktype, slug
+export const PAGE_TREE_SQL = `SELECT uid, doktype, slug, sys_language_uid, l10n_parent
 FROM pages
 WHERE deleted=0 AND hidden=0 AND t3ver_wsid=0
   AND (starttime=0 OR starttime<=UNIX_TIMESTAMP())
   AND (endtime=0 OR endtime>UNIX_TIMESTAMP())
   AND doktype IN (1,4)
   AND slug IS NOT NULL AND slug<>''
+ORDER BY uid`;
+
+/** The rootline that maps a page to its site: every live default-language page and its parent. */
+export const PAGE_PARENTS_SQL = `SELECT uid, pid FROM pages
+WHERE deleted=0 AND t3ver_wsid=0 AND sys_language_uid=0
 ORDER BY uid`;
 
 export async function discoverUrls({ values, paths, log, journal }) {
@@ -75,7 +81,7 @@ export async function discoverUrls({ values, paths, log, journal }) {
   const urlSources = new Map(urls.map((url) => [url, 'sitemap']));
   let pageTree = null;
   if (values['from-pages']) {
-    pageTree = await discoverFromPages({ base, guard, cwd: process.cwd(), log });
+    pageTree = await discoverFromPages({ base, guard, cwd: process.cwd(), log, languages });
     for (const url of pageTree.urls) {
       if (!urlSources.has(url)) urlSources.set(url, 'page-tree');
     }
@@ -99,6 +105,8 @@ export async function discoverUrls({ values, paths, log, journal }) {
       rows: pageTree.rows,
       urls: pageTree.urls.length,
       doktypes: [1, 4],
+      languages: [...new Set(pageTree.records.map((record) => record.language))].sort((a, b) => a - b),
+      skippedRows: pageTree.skipped,
     } : null,
     knownLimitations: pageFallbackDegraded ? [{
       id: 'dynamic-routes-not-discoverable',
@@ -177,37 +185,101 @@ export async function discoverUrls({ values, paths, log, journal }) {
   };
 }
 
-export function parsePageTreeRows(stdout, base) {
+/**
+ * Page rows -> URLs. With `routing` (siteRouting sites, the default-language parent map and the
+ * run's --languages), each row takes its site's language prefix and PageType suffix: /en/news/,
+ * not /news. The default language is always in, like /sitemap.xml; other languages only when
+ * selected (all when none are). A row no single site root claims keeps base + slug; a row in a
+ * language its site lacks, or cannot serve on this origin, is left out. Both are warnings.
+ */
+export function parsePageTreeRows(stdout, base, { sites = [], parents = new Map(), languages = [] } = {}) {
   const records = [];
   const urls = new Set();
+  const notes = new Map();
+  const note = (text) => notes.set(text, (notes.get(text) ?? 0) + 1);
+  const wanted = languages.map((value) => String(value).trim().toLowerCase()).filter(Boolean);
+  let skipped = 0;
   for (const line of stdout.split('\n').map((value) => value.trim()).filter(Boolean)) {
-    const [uidRaw, doktypeRaw, slugRaw] = line.split('\t');
+    const [uidRaw, doktypeRaw, slugRaw, languageRaw = '0', parentRaw = '0'] = line.split('\t');
     const uid = Number(uidRaw);
     const doktype = Number(doktypeRaw);
     const slug = slugRaw?.trim();
     if (!Number.isInteger(uid) || ![1, 4].includes(doktype) || !slug) continue;
-    const url = new URL(slug.startsWith('/') ? slug : `/${slug}`, base).href;
-    records.push({ uid, doktype, slug, url });
+    const language = Number(languageRaw);
+    const slugPath = slug.startsWith('/') ? slug : `/${slug}`;
+    let url = new URL(slugPath, base).href;
+    if (sites.length) {
+      const routed = routeRow({ uid, language, parent: Number(parentRaw), slugPath }, { sites, parents, wanted });
+      if (routed.note) note(routed.note);
+      if (routed.skip) { skipped += 1; continue; }
+      if (routed.path) url = new URL(routed.path, base).href;
+    }
+    records.push({ uid, doktype, slug, language, url });
     urls.add(url);
   }
-  return { rows: records.length, records, urls: [...urls].sort() };
+  const warnings = [...notes].map(([text, count]) => `${count} page row(s): ${text}`);
+  return { rows: records.length, records, urls: [...urls].sort(), skipped, warnings };
 }
 
-export async function discoverFromPages({ base, guard, cwd, log, run = execFileAsync }) {
-  let stdout;
-  try {
-    ({ stdout } = await run('ddev', ['mysql', '-N', '-B', '-e', PAGE_TREE_SQL], {
-      cwd, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024,
-    }));
-  } catch (error) {
-    throw new PreconditionError(`Database URL discovery failed: ${error.message}`);
+/** Default-language uid -> pid, from PAGE_PARENTS_SQL. */
+export function parsePageParents(stdout) {
+  const parents = new Map();
+  for (const line of stdout.split('\n').map((value) => value.trim()).filter(Boolean)) {
+    const [uid, pid] = line.split('\t').map(Number);
+    if (Number.isInteger(uid) && Number.isInteger(pid)) parents.set(uid, pid);
   }
-  const parsed = parsePageTreeRows(stdout, base);
+  return parents;
+}
+
+/** One row through its site: a path, a skip, or neither (no site: base + slug stays). */
+function routeRow({ uid, language, parent, slugPath }, { sites, parents, wanted }) {
+  const site = siteOf(language > 0 ? parent : uid, sites, parents);
+  if (!site) return { note: 'no single site root in the rootline; kept base + slug' };
+  const siteLanguage = site.languages.find((candidate) => candidate.languageId === language);
+  if (!siteLanguage) return { skip: true, note: `site ${site.identifier} has no language ${language}; left out` };
+  if (!siteLanguage.enabled || (language !== 0 && wanted.length && !wanted.some((code) => siteLanguage.codes.has(code)))) {
+    return { skip: true };
+  }
+  if (siteLanguage.prefix === null) {
+    return { skip: true, note: `site ${site.identifier} language ${language} is ${siteLanguage.unreachable}; left out` };
+  }
+  return { path: pagePath(siteLanguage.prefix, slugPath, site.suffix) };
+}
+
+/** The nearest site root in the rootline; none, or two sites on one root, maps to nothing. */
+function siteOf(uid, sites, parents) {
+  const seen = new Set();
+  for (let current = uid; current > 0 && !seen.has(current); current = parents.get(current) ?? 0) {
+    seen.add(current);
+    const claimed = sites.filter((site) => site.rootPageId === current);
+    if (claimed.length) return claimed.length === 1 ? claimed[0] : null;
+  }
+  return null;
+}
+
+export async function discoverFromPages({ base, guard, cwd, log, languages = [], run = execFileAsync }) {
+  const query = async (sql) => {
+    try {
+      return (await run('ddev', ['mysql', '-N', '-B', '-e', sql], { cwd, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 })).stdout;
+    } catch (error) {
+      throw new PreconditionError(`Database URL discovery failed: ${error.message}`);
+    }
+  };
+  const stdout = await query(PAGE_TREE_SQL);
+  const { configs, warnings } = await readSiteConfigs(cwd);
+  if (!configs.length) warnings.push(`no config/sites/*/config.yaml under ${cwd}; page URLs keep base + slug`);
+  const sites = siteRouting(configs, base);
+  const parents = sites.length ? parsePageParents(await query(PAGE_PARENTS_SQL)) : new Map();
+  const parsed = parsePageTreeRows(stdout, base, { sites, parents, languages });
+  for (const warning of [...warnings, ...sites.flatMap((site) => site.warnings), ...parsed.warnings]) {
+    log.warn(`page-tree discovery: ${warning}`);
+  }
   const accepted = [];
   for (const url of parsed.urls) {
     accepted.push((await guard.assertUrl(url, { purpose: 'page-tree-discovery' })).url.href);
   }
-  log.step(`Database discovery added ${accepted.length} URL(s) from ${parsed.rows} public page row(s)`);
+  log.step(`Database discovery added ${accepted.length} URL(s) from ${parsed.rows} public page row(s)`
+    + (parsed.skipped ? `; ${parsed.skipped} row(s) left out by language` : ''));
   return { ...parsed, urls: accepted };
 }
 

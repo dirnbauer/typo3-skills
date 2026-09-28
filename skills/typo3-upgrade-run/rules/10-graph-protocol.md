@@ -27,8 +27,9 @@ or stable report reference, never “the agent checked it.” `not-applicable` n
 why the node does not apply.
 
 Use `node-open --applicability-only` only for an optional node whose absence or unrequested
-scope was established at intake. It permits read-only inspection without a mutation approval,
-snapshot or rollback anchor, and can close only `not-applicable` or `blocked`, never `pass`.
+scope was established at intake, or for `rung-13` when the installed core already satisfies
+`^14.3`. It permits read-only inspection without a mutation approval, snapshot or rollback
+anchor, and can close only `not-applicable` or `blocked`, never `pass`.
 Do not start implementation in this mode. Choose the normal guarded open when the feature applies.
 
 The shipped graph requires a real, nonempty run-relative artifact at node closure and records its

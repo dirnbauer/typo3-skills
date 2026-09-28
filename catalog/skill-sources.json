@@ -834,7 +834,7 @@
     "source_owner": "webconsulting",
     "source_url": null,
     "file_path": "skills/typo3-upgrade-intake/SKILL.md",
-    "line_count": 115,
+    "line_count": 118,
     "frontmatter_keys": [
       "name",
       "description",
@@ -853,7 +853,7 @@
     "source_owner": "webconsulting",
     "source_url": null,
     "file_path": "skills/typo3-upgrade-migration/SKILL.md",
-    "line_count": 113,
+    "line_count": 118,
     "frontmatter_keys": [
       "name",
       "description",
@@ -891,7 +891,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-upgrade-run/SKILL.md",
-    "line_count": 259,
+    "line_count": 260,
     "frontmatter_keys": [
       "name",
       "description",

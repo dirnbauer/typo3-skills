@@ -6,11 +6,12 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
-import { graphInit, nodeClose, nodeOpen, validateGraphDefinition } from '../../lib/actions/graph.mjs';
+import { graphForecast, graphInit, graphNext, nodeClose, nodeOpen, validateGraphDefinition } from '../../lib/actions/graph.mjs';
 import { buildGraphReport, buildNodeBrief, nodeBrief, renderNodeBrief } from '../../lib/actions/runner.mjs';
 import { snapshotCreate } from '../../lib/actions/lifecycle.mjs';
 import { forbiddenMeasurementChanges, parseReview } from '../../lib/run/guards.mjs';
 import { RunPaths, sha256 } from '../../lib/run/paths.mjs';
+import { runtimeWindow } from '../../lib/run/runtime.mjs';
 import { emptyState, StateStore } from '../../lib/run/state.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -159,6 +160,59 @@ test('judgement outcomes need an agreeing review bound to the exact evidence byt
     assert.equal(node.review, agree);
     assert.match(node.review_sha256, /^sha256:[a-f0-9]{64}$/);
     assert.deepEqual(parseReview('verdict: AGREE\nevidence_sha256: nope'), { verdict: 'agree', evidenceSha256: null });
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test('a project already on 14.3 skips the 13.4 rung and the v12/v13 migrations on a reviewed read-only check', async () => {
+  const { root, paths } = await runFixture(await readFile(DEFAULT_GRAPH, 'utf8'));
+  try {
+    const store = new StateStore(paths);
+    const now = new Date().toISOString(), window = runtimeWindow(now, 'small');
+    await store.update((s) => {
+      Object.assign(s.runtime, { started_at: now, sealed_at: now, size_profile: 'small', size_evidence_ref: 'nodes/intake/pilot.md',
+        deadline_at: window.deadlineAt, migration_cutoff_at: window.migrationCutoffAt,
+        max_hours: window.maxHours, closure_reserve_hours: window.closureReserveHours });
+      // Intake, baseline and the dependency plan are not under test: the plan passed.
+      Object.assign(s.graph.nodes['dependency-plan'], { status: 'passed', outcome: 'pass' });
+      s.graph.edges['dependencies-pass'].traversals = 1;
+    });
+    const definition = parseYaml(await readFile(paths.graphDefinition, 'utf8'));
+    await evidence(paths, 'intake', 'pilot.md', 'measured pilot minutes\n');
+    const state = await store.read();
+    const plan = { schema: 'typo3-upgrade-run/runtime-plan@1', run_id: state.run_id, graph_hash: state.graph.definition_hash,
+      max_workers: 1, final_passes: 2, lighthouse_runs_per_url: 3, buffer_minutes: 30,
+      nodes: Object.fromEntries(Object.keys(definition.nodes).map((id) => [id, { minutes: 1, source: 'nodes/intake/pilot.md',
+        ...(id === 'rung-13' ? { outcome: 'not-applicable' } : {}) }])) };
+    await mkdir(paths.reportDir, { recursive: true });
+    await writeFile(path.join(paths.reportDir, 'runtime-plan.json'), JSON.stringify(plan));
+    const forecast = await graphForecast({ values: { evidence: 'report/runtime-plan.json' }, paths, log: quietLog, journal: quietJournal });
+    assert.equal(forecast.feasible, true);
+    assert.ok(forecast.schedule.some((job) => job.id === 'rung-14'));
+    assert.ok(!forecast.schedule.some((job) => ['mechanical-migration', 'manual-migration'].includes(job.id)));
+
+    // Read-only: no snapshot, no rollback anchor, and never a pass.
+    await nodeOpen({ values: { node: 'rung-13', 'applicability-only': true }, paths, log: quietLog, journal: quietJournal });
+    const ev = await evidence(paths, 'rung-13', 'evidence.md',
+      '$ ddev composer show typo3/cms-core\nversions : * v14.3.5\nexit=0\n^14.3 is already installed: patch path.\n');
+    const close = (extra) => nodeClose({ values: { node: 'rung-13', evidence: ev, ...extra }, paths, log: quietLog, journal: quietJournal });
+    await assert.rejects(close({ outcome: 'pass', 'evidence-loop': '100' }), /read-only applicability/);
+    await assert.rejects(close({ outcome: 'not-applicable' }), /needs --review/);
+    const hash = `sha256:${sha256(await readFile(path.join(paths.root, ev)))}`;
+    const review = await evidence(paths, 'rung-13', 'review.md', `verdict: agree\nevidence_sha256: ${hash}\n`);
+    const closed = await close({ outcome: 'not-applicable', review });
+    assert.deepEqual(closed.routes, ['rung13-already-14']);
+
+    const graph = (await store.read()).graph;
+    assert.equal(graph.nodes['rung-13'].status, 'skipped');
+    assert.equal(graph.nodes['rung-13'].review_sha256, `sha256:${sha256(await readFile(path.join(paths.root, review)))}`);
+    assert.equal(graph.nodes['rung-14'].status, 'ready');
+    assert.equal(graph.nodes['mechanical-migration'].status, 'pending');
+    assert.equal(graph.nodes['manual-migration'].status, 'pending');
+    const next = await graphNext({ paths, log: quietLog });
+    assert.ok(next.ready.some((node) => node.id === 'rung-14'));
+    assert.ok(!next.ready.some((node) => node.id === 'mechanical-migration'));
   } finally {
     await rm(root, { recursive: true, force: true });
   }

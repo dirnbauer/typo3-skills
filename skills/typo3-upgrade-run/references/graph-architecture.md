@@ -84,6 +84,26 @@ counts to the harness; elapsed time, attempts and change size are measured inste
 | A fix "passes" by relaxing what is measured | Measurement fingerprint at open/close; recovery change budget |
 | A skipped branch or a judgement call is self-approved | Independent review bound to the evidence hash |
 
+## Patch path for a project already on 14.3
+
+A project whose installed core already satisfies `^14.3` (14.3.x to the latest 14.3.x security
+patch) has no 13.4 rung and no v12/v13 code to migrate. `rung-13` then closes `not-applicable` from
+a read-only check, and edge `rung13-already-14` routes straight to `rung-14`, which installs the
+latest 14.3.x with compatible dependencies and proves the wizard/schema fixed point;
+`mechanical-migration` and `manual-migration` never activate. The runtime plan marks `rung-13`
+`outcome: not-applicable` so `graph-forecast` admits that route.
+
+```bash
+t3u node-open --node rung-13 --applicability-only   # no snapshot, rollback anchor or approval
+ddev composer show typo3/cms-core                    # evidence: the installed version satisfies ^14.3
+t3u node-close --node rung-13 --outcome not-applicable \
+  --evidence nodes/rung-13/evidence.md --review nodes/rung-13/review.md
+```
+
+`--applicability-only` still acquires the node's locks and needs the admitted forecast and sealed
+runtime; it skips the change-scope guard and can close only `not-applicable` or `blocked`. Like every
+`not-applicable`, the close needs an agreeing independent review bound to the evidence SHA-256.
+
 ## Remaining validation work
 
 See [parallel execution](parallel-execution.md) for the implemented concurrency contract. Real local

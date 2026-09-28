@@ -1,20 +1,29 @@
 #!/usr/bin/env node
 /**
- * Pull a dated dataset (database + fileadmin) from a Deployer host. Read-only on the server.
+ * Pull a dated dataset (database + fileadmin) from a Deployer host, or from any host described in
+ * the same YAML shape. Read-only on the server.
  *
  * Standing rule: before any fileadmin sync from live, delete the local fileadmin first. The
  * local copy is then an exact mirror of the server and never a mix of old and new files.
  *
- *   1. Resolve the host from the project's Deployer `.hosts.yaml` (alias or hostname).
+ *   1. Resolve the host from the project's Deployer `.hosts.yaml` (alias or hostname), or from a
+ *      hand-written read-only hosts file (`--hosts-file`) for a project without one.
  *   2. Preflight over SSH (BatchMode): current release, shared fileadmin, remote file count.
  *   3. Database: `typo3 database:export` runs on the server and streams to a local .sql.gz;
  *      nothing is written on the server.
  *   4. fileadmin: delete the local <webroot>/fileadmin, then rsync from
- *      <deploy_path>/shared/<webroot>/fileadmin/ and compare the file counts.
+ *      <deploy_path>/<fileadmin_path>/ and compare the file counts.
  *   5. Write live-dataset.json (source, release, times, counts, SHA-256) as node evidence.
  *
+ * Optional host keys beyond Deployer's, all relative paths without "..":
+ *   current_path    current release below deploy_path   default current (Surf: releases/current)
+ *   fileadmin_path  shared fileadmin below deploy_path  default shared/<webroot>/fileadmin
+ *   typo3_bin       CLI below the current release       default vendor/bin/typo3 (Surf app/: app/vendor/bin/typo3)
+ * Without remote_user the target is the bare hostname, so an ~/.ssh/config alias supplies user,
+ * port and key. -p is passed only for an explicit port, never over the alias's own.
+ *
  * Usage:
- *   node pull-live-dataset.mjs --project <dir> --host <alias|hostname> --out <dir>
+ *   node pull-live-dataset.mjs --project <dir> --host <alias|hostname> --out <dir> [--hosts-file <file>]
  *        [--webroot public] [--skip-db] [--skip-files] [--include-processed] [--dry-run]
  *
  * Import afterwards is a separate stateful step: snapshot first, then `ddev import-db`, then
@@ -34,17 +43,23 @@ export const SCHEMA = 'typo3-upgrade-run/live-dataset@1';
 export const DB_EXCLUDES = Object.freeze(['cache_*', 'cf_*', 'be_sessions', 'fe_sessions', 'sys_lockedrecords', 'sys_log', 'sys_http_report']);
 export const FILE_EXCLUDES = Object.freeze(['_processed_/', '_temp_/']);
 
-/** Deployer 7 hosts file: `hosts: { alias: { hostname, port, remote_user, deploy_path, bin/php, labels } }`. */
+/**
+ * Deployer 7 hosts file: `hosts: { alias: { hostname, port, remote_user, deploy_path, bin/php, labels } }`,
+ * plus the optional layout keys current_path, fileadmin_path and typo3_bin.
+ */
 export function readHosts(text) {
   const data = parseYaml(text) ?? {};
   const hosts = data.hosts ?? {};
   return Object.entries(hosts).map(([alias, h]) => ({
     alias,
     hostname: String(h?.hostname ?? alias),
-    port: Number(h?.port ?? 22),
+    port: h?.port == null ? null : Number(h.port),
     user: h?.remote_user ?? h?.user ?? null,
     deployPath: h?.deploy_path ?? null,
     php: h?.['bin/php'] ?? 'php',
+    currentPath: String(h?.current_path ?? 'current'),
+    fileadminPath: h?.fileadmin_path == null ? null : String(h.fileadmin_path),
+    typo3Bin: String(h?.typo3_bin ?? 'vendor/bin/typo3'),
     branch: h?.branch ?? null,
     stage: String(h?.labels?.stage ?? h?.stage ?? ''),
   }));
@@ -52,15 +67,43 @@ export function readHosts(text) {
 
 export function selectHost(hosts, wanted) {
   const matches = hosts.filter((h) => h.alias === wanted || h.hostname === wanted);
-  if (matches.length !== 1) throw new Error(`Expected exactly one host named ${wanted} in .hosts.yaml, found ${matches.length}.`);
-  const host = matches[0];
-  if (!host.user || !host.deployPath) throw new Error(`Host ${wanted} needs remote_user and deploy_path.`);
-  for (const [field, value] of [['hostname', host.hostname], ['user', host.user], ['deploy_path', host.deployPath], ['bin/php', host.php]]) {
-    if (!/^[A-Za-z0-9@%+=:,./ _-]+$/.test(String(value)) || /[;&|`$()<>]/.test(String(value))) {
+  if (matches.length !== 1) throw new Error(`Expected exactly one host named ${wanted} in the hosts file, found ${matches.length}.`);
+  return checkedHost(matches[0], wanted);
+}
+
+const unsafe = (value) => !/^[A-Za-z0-9@%+=:,./ _-]+$/.test(String(value)) || /[;&|`$()<>]/.test(String(value));
+
+/** Every host value reaches an ssh/rsync argument or a remote shell command. */
+export function checkedHost(host, wanted = host.alias) {
+  if (!host.deployPath) throw new Error(`Host ${wanted} needs deploy_path.`);
+  const fields = [['hostname', host.hostname], ['deploy_path', host.deployPath], ['bin/php', host.php]];
+  if (host.user !== null) fields.push(['user', host.user]);
+  for (const [field, value] of fields) {
+    // A leading dash would turn the ssh target into an option.
+    if (unsafe(value) || (['hostname', 'user'].includes(field) && String(value).startsWith('-'))) {
       throw new Error(`Refusing unsafe ${field} for ${wanted}.`);
     }
   }
+  if (host.port !== null && !(Number.isInteger(host.port) && host.port > 0 && host.port < 65536)) {
+    throw new Error(`Refusing unsafe port for ${wanted}.`);
+  }
+  for (const [field, value] of [['current_path', host.currentPath], ['fileadmin_path', host.fileadminPath], ['typo3_bin', host.typo3Bin]]) {
+    if (value !== null) relativePath(field, value, wanted);
+  }
   return host;
+}
+
+function relativePath(field, value, wanted) {
+  if (unsafe(value) || /\s/.test(value) || value.startsWith('/') || value.startsWith('-') || value.split('/').includes('..')) {
+    throw new Error(`Refusing unsafe ${field} for ${wanted}: it must be a relative path without "..".`);
+  }
+  return value;
+}
+
+/** The current release and the shared fileadmin on the server. */
+export function remotePaths(host, webroot = 'public') {
+  const fileadmin = relativePath('fileadmin_path', host.fileadminPath ?? `shared/${webroot}/fileadmin`, host.alias);
+  return { current: `${host.deployPath}/${host.currentPath}`, fileadmin: `${host.deployPath}/${fileadmin}` };
 }
 
 /** The local fileadmin that will be deleted: must be <project>/<webroot>/fileadmin, never elsewhere. */
@@ -76,19 +119,25 @@ export function localFileadmin(project, webroot) {
   return target;
 }
 
+/** `user@hostname`, or the bare hostname so an ~/.ssh/config alias supplies user, port and key. */
+export function sshTarget(host) {
+  return host.user ? `${host.user}@${host.hostname}` : host.hostname;
+}
+
 export function sshArgs(host, command) {
-  return ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=20', '-o', 'LogLevel=ERROR', '-p', String(host.port), `${host.user}@${host.hostname}`, command];
+  const port = host.port ? ['-p', String(host.port)] : [];
+  return ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=20', '-o', 'LogLevel=ERROR', ...port, sshTarget(host), command];
 }
 
 export function remoteExportCommand(host) {
   const excludes = DB_EXCLUDES.map((t) => `-e '${t}'`).join(' ');
-  return `cd ${host.deployPath}/current && ${host.php} vendor/bin/typo3 database:export ${excludes}`;
+  return `cd ${remotePaths(host).current} && ${host.php} ${host.typo3Bin} database:export ${excludes}`;
 }
 
 export function rsyncArgs(host, webroot, local, { includeProcessed = false } = {}) {
   const excludes = includeProcessed ? [] : FILE_EXCLUDES.flatMap((e) => ['--exclude', e]);
-  return ['-a', '--stats', ...excludes, '-e', `ssh -o BatchMode=yes -o LogLevel=ERROR -p ${host.port}`,
-    `${host.user}@${host.hostname}:${host.deployPath}/shared/${webroot}/fileadmin/`, `${local}/`];
+  return ['-a', '--stats', ...excludes, '-e', `ssh -o BatchMode=yes -o LogLevel=ERROR${host.port ? ` -p ${host.port}` : ''}`,
+    `${sshTarget(host)}:${remotePaths(host, webroot).fileadmin}/`, `${local}/`];
 }
 
 export function countFiles(dir, { includeProcessed = false } = {}) {
@@ -133,14 +182,15 @@ function streamToGzip(command, args, outFile) {
   });
 }
 
-export async function pullLiveDataset({ project, hostName, out, webroot = 'public', skipDb = false, skipFiles = false,
-  includeProcessed = false, dryRun = false, run = execFileSync, log = console.log }) {
-  const hosts = readHosts(readFileSync(path.join(project, '.hosts.yaml'), 'utf8'));
+export async function pullLiveDataset({ project, hostName, out, hostsFile = path.join(project, '.hosts.yaml'), webroot = 'public',
+  skipDb = false, skipFiles = false, includeProcessed = false, dryRun = false, run = execFileSync, log = console.log }) {
+  const hosts = readHosts(readFileSync(hostsFile, 'utf8'));
   const host = selectHost(hosts, hostName);
   const local = localFileadmin(project, webroot);
+  const remote = remotePaths(host, webroot);
   const plan = [];
   const ssh = (command) => ['ssh', sshArgs(host, command)];
-  const preflight = `readlink ${host.deployPath}/current; find ${host.deployPath}/shared/${webroot}/fileadmin -type f ${includeProcessed ? '' : "-not -path '*/_processed_/*' -not -path '*/_temp_/*'"} | wc -l`;
+  const preflight = `readlink ${remote.current}; find ${remote.fileadmin} -type f ${includeProcessed ? '' : "-not -path '*/_processed_/*' -not -path '*/_temp_/*'"} | wc -l`;
   plan.push({ step: 'preflight (read-only)', cmd: ssh(preflight) });
   if (!skipDb) plan.push({ step: 'database export (read-only, streamed)', cmd: ssh(remoteExportCommand(host)) });
   if (!skipFiles) {
@@ -156,7 +206,8 @@ export async function pullLiveDataset({ project, hostName, out, webroot = 'publi
   const [releaseLine, countLine] = run('ssh', sshArgs(host, preflight), { encoding: 'utf8', timeout: 120000 }).trim().split('\n');
   const manifest = {
     schema: SCHEMA, project: path.basename(path.resolve(project)), host: host.alias, hostname: host.hostname,
-    stage: host.stage, release: releaseLine?.split('/').pop() ?? null, pulled_at: new Date().toISOString(),
+    stage: host.stage, hosts_file: path.relative(path.resolve(project), path.resolve(hostsFile)),
+    release: releaseLine?.split('/').pop() ?? null, remote, pulled_at: new Date().toISOString(),
     read_only_on_server: true, db: null, files: null,
   };
   if (!skipDb) {
@@ -189,17 +240,17 @@ export async function pullLiveDataset({ project, hostName, out, webroot = 'publi
 async function main(argv) {
   const { values } = parseArgs({ args: argv, options: {
     project: { type: 'string', default: '.' }, host: { type: 'string' }, out: { type: 'string' },
-    webroot: { type: 'string', default: 'public' }, 'skip-db': { type: 'boolean', default: false },
+    'hosts-file': { type: 'string' }, webroot: { type: 'string', default: 'public' }, 'skip-db': { type: 'boolean', default: false },
     'skip-files': { type: 'boolean', default: false }, 'include-processed': { type: 'boolean', default: false },
     'dry-run': { type: 'boolean', default: false },
   } });
   if (!values.host || (!values.out && !values['dry-run'])) {
-    process.stderr.write('Usage: pull-live-dataset.mjs --project <dir> --host <alias> --out <dir> [--dry-run]\n');
+    process.stderr.write('Usage: pull-live-dataset.mjs --project <dir> --host <alias> --out <dir> [--hosts-file <file>] [--dry-run]\n');
     return 2;
   }
   try {
     const result = await pullLiveDataset({ project: values.project, hostName: values.host, out: values.out,
-      webroot: values.webroot, skipDb: values['skip-db'], skipFiles: values['skip-files'],
+      hostsFile: values['hosts-file'], webroot: values.webroot, skipDb: values['skip-db'], skipFiles: values['skip-files'],
       includeProcessed: values['include-processed'], dryRun: values['dry-run'] });
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     return 0;

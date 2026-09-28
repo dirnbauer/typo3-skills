@@ -47,7 +47,10 @@ Your input is the node brief. Write its evidence file, return one allowed outcom
 ## Evidence checklist
 
 1. Record repository root, canonical remote, branch, HEAD, dirty/untracked ownership, DDEV root/name,
-   primary URL, database identity, and installed TYPO3 core. Refuse any mismatch.
+   primary URL, database identity, and installed TYPO3 core. Refuse any mismatch. Record the
+   live/staging database server version (`-- Server version` in the dump header) against the target
+   floor, and re-check `git status` after typo3-console `cache:flush`/`extension:list`, which write
+   `settings.php` defaults ([known problems](../typo3-upgrade-run/references/known-problems.md)).
 2. Record database dump/source date, maximum `pages` and `tt_content` timestamps, table/row
    sentinels, fileadmin count/hash, and one known page/content/media sentinel. A reachable empty or
    wrong database is a finding, not a usable baseline.
