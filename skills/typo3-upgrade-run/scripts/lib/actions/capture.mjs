@@ -609,6 +609,11 @@ export async function captureAll({
                     } finally {
                       quiet.dispose();
                     }
+                    // An empty first frame under load is noise, not evidence (#21): re-shoot once,
+                    // then report the capture as an error rather than a picture.
+                    if (settle.videoStillLoading > 0) {
+                      throw new Error(`${settle.videoStillLoading} video(s) still loading when the settle bound expired`);
+                    }
 
                     const stateResult = await applyState(page, cap.state ?? 'default', stabilization);
                     index.states[cap.captureId] = stateResult;

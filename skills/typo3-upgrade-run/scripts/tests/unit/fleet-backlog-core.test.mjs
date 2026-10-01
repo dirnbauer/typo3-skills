@@ -418,3 +418,16 @@ describe('pre-capture load check (#11)', async () => {
     assert.equal((await waitForQuietMachine({ env: {}, cores: 8, loadavg: () => 3, now, sleep })).waitedMs, 0);
   });
 });
+
+describe('video first frame under load (#21)', async () => {
+  const { settleScript } = await import('../../lib/browser/stabilize.mjs');
+  const { readFile: read } = await import('node:fs/promises');
+
+  test('the settle step counts videos still loading, and capture re-shoots them', async () => {
+    const script = settleScript();
+    assert.match(script, /report\.videoStillLoading = 0/);
+    assert.match(script, /!ready && !video\.error && video\.networkState === HTMLMediaElement\.NETWORK_LOADING/);
+    const capture = await read(new URL('../../lib/actions/capture.mjs', import.meta.url), 'utf8');
+    assert.match(capture, /if \(settle\.videoStillLoading > 0\) \{\s*throw new Error/);
+  });
+});
