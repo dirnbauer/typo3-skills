@@ -43,8 +43,8 @@ const RED = [255, 0, 0, 255, 255, 0, 0, 255, 255, 0, 0, 255, 255, 0, 0, 255];
 const BLUE = [0, 0, 255, 255, 0, 0, 255, 255, 0, 0, 255, 255, 0, 0, 255, 255];
 const stamp = (text) => ['tEXt', Buffer.from(`date:timestamp\0${text}`, 'latin1')];
 
-const OLD = 'https://acme.ddev.site/typo3temp/assets/images/csm_printlogo_6df2234e32_0334133a12.png';
-const NEW = 'https://acme.ddev.site/typo3temp/assets/images/csm_printlogo_6df2234e32_71adfc2077.png';
+const OLD = 'https://acme.ddev.site/typo3temp/assets/images/csm_logo_1a2b3c4d5e_0334133a12.png';
+const NEW = 'https://acme.ddev.site/typo3temp/assets/images/csm_logo_1a2b3c4d5e_71adfc2077.png';
 
 function page(image, metaImages) {
   const record = extractRecord({
@@ -63,7 +63,7 @@ const digest = (url, over = {}) => ({ url, status: 200, contentType: 'image/png'
 describe('processed-image renames in HTTP metadata (#25)', () => {
   test('the fold is the DOM stage asset-hash rule, applied to the URL', () => {
     assert.equal(foldImageHash(OLD), foldImageHash(NEW));
-    assert.match(foldImageHash(OLD), /csm_printlogo_6df2234e32_<H>\.png$/);
+    assert.match(foldImageHash(OLD), /csm_logo_1a2b3c4d5e_<H>\.png$/);
     const dom = normalizeHtml(`<meta property="og:image" content="${OLD}">`).html;
     assert.ok(dom.includes(foldImageHash(OLD)), 'HTTP and DOM must fold the same way');
     assert.equal(foldImageHash('https://acme.ddev.site/fileadmin/og.png'), 'https://acme.ddev.site/fileadmin/og.png');
@@ -122,7 +122,7 @@ describe('processed-image renames in HTTP metadata (#25)', () => {
   });
 
   test('another image, or another metadata value, is still a plain difference', () => {
-    const other = 'https://acme.ddev.site/typo3temp/assets/images/csm_banner_6df2234e32_71adfc2077.png';
+    const other = 'https://acme.ddev.site/typo3temp/assets/images/csm_banner_1a2b3c4d5e_71adfc2077.png';
     const cmp = compareRecords(
       page(OLD, { 'openGraph.image': digest(OLD) }),
       page(other, { 'openGraph.image': digest(other) }),
