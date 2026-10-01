@@ -12,7 +12,7 @@ import { parse as parseYaml } from 'yaml';
 import { EXIT, HarnessError, InvalidRunError, PreconditionError } from '../cli/exit-codes.mjs';
 import { StateStore } from '../run/state.mjs';
 import { sha256 } from '../run/paths.mjs';
-import { assertPhaseRuntime, runtimeProfileIssues } from '../run/runtime.mjs';
+import { assertPhaseRuntime, runtimeProfileIssues, phaseUsesMigrationWindow } from '../run/runtime.mjs';
 import { forecastGraph } from '../run/forecast.mjs';
 import { nodeClaims, claimsConflict, lockOwners, blockedClaims, acquireClaims, releaseClaims } from '../run/resources.mjs';
 import { closureCheck, readClosureArtifact, readFeaturePlan, validClosureAcceptance, verifyRecordedClosureAcceptance } from './closure.mjs';
@@ -109,6 +109,16 @@ export async function nodeOpen({ values, paths, log, journal }) {
   }
   const exhausted = recoveryBudgetBlock(state.graph, definition, id);
   if (exhausted) throw new PreconditionError(exhausted);
+  if (values['applicability-only'] !== true && phaseUsesMigrationWindow(node.phase)) {
+    const { contractALighthouseBudgetIssues } = await import('./sweep.mjs');
+    const issues = await contractALighthouseBudgetIssues(paths.thresholds);
+    if (issues.length) {
+      throw new PreconditionError(
+        'Declare the Contract A Lighthouse floors in config/thresholds.yml before the site changes: agree them with the owner, '
+        + `measured on the sealed Baseline A or fixed.\n  - ${issues.join('\n  - ')}`,
+      );
+    }
+  }
   const phaseNumber = Number(node.phase?.slice(1));
   if (definition.policy?.require_forecast && phaseNumber >= 2 && phaseNumber <= 10) {
     if (!state.runtime.forecast_ref || !state.runtime.forecast_hash) {

@@ -206,8 +206,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { lateAcceptanceCommand, runCommand } from '../../lib/cli/command.mjs';
-import { recordedOutcomeNote, openGuardedNodes, graphInit } from '../../lib/actions/graph.mjs';
-import { selftestDeterminism, sealBaselineAction, contractALighthouseBudgetIssues } from '../../lib/actions/compare.mjs';
+import { recordedOutcomeNote, openGuardedNodes, graphInit, nodeOpen } from '../../lib/actions/graph.mjs';
+import { selftestDeterminism } from '../../lib/actions/compare.mjs';
 import { closureStart } from '../../lib/actions/closure.mjs';
 import { loopStart, loopSupersede } from '../../lib/actions/lifecycle.mjs';
 import { RunPaths } from '../../lib/run/paths.mjs';
@@ -311,19 +311,23 @@ describe('measurement inputs inside guarded nodes', () => {
   });
 });
 
-describe('Contract A Lighthouse floors are agreed before Baseline A (#lighthouse)', () => {
+describe('Contract A Lighthouse floors are declared before the site changes', () => {
   test('the template nulls are refused for both form factors', async () => {
+    const { contractALighthouseBudgetIssues } = await import('../../lib/actions/sweep.mjs');
     const issues = await contractALighthouseBudgetIssues(THRESHOLDS);
     assert.equal(issues.length, 2);
     assert.match(issues.join('\n'), /lighthouse_performance_mobile/);
     assert.match(issues.join('\n'), /lighthouse_performance_desktop/);
   });
 
-  test('seal-baseline A-original refuses until the floors are set', async () => {
+  test('the first migration node refuses to open until the floors are set', async () => {
     await withRun(async (paths) => {
+      await writeFile(paths.graphDefinition, await readFile(DEFAULT_GRAPH, 'utf8'), 'utf8');
+      await graphInit({ values: {}, paths, log: quietLog, journal: quietJournal });
+      await new StateStore(paths).update((state) => { state.graph.nodes['dependency-resolution'].status = 'ready'; });
       const template = await readFile(THRESHOLDS, 'utf8');
       await writeFile(paths.thresholds, template, 'utf8');
-      await assert.rejects(sealBaselineAction({ values: {}, paths, log: quietLog }),
+      await assert.rejects(nodeOpen({ values: { node: 'dependency-resolution' }, paths, log: quietLog, journal: quietJournal }),
         (err) => err.exitCode === EXIT.PRECONDITION && /Contract A Lighthouse floors/.test(err.message));
       const agreed = template
         .replace('lighthouse_performance_mobile: null', 'lighthouse_performance_mobile: 70')
@@ -332,7 +336,8 @@ describe('Contract A Lighthouse floors are agreed before Baseline A (#lighthouse
         .replace('lighthouse_accessibility: null', 'lighthouse_accessibility: 85')
         .replace('lighthouse_seo: null', 'lighthouse_seo: 90');
       await writeFile(paths.thresholds, agreed, 'utf8');
-      assert.deepEqual(await contractALighthouseBudgetIssues(paths.thresholds), []);
+      await assert.rejects(nodeOpen({ values: { node: 'dependency-resolution' }, paths, log: quietLog, journal: quietJournal }),
+        (err) => !/Lighthouse/.test(err.message), 'with floors set, node-open proceeds to its next precondition');
     });
   });
 });

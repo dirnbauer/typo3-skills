@@ -834,36 +834,9 @@ function suggest(cmp) {
 
 /* ---------------------------------------------------------- baselines */
 
-/**
- * Contract A's Lighthouse floors, as config/thresholds.yml declares them, or the reasons they
- * cannot be used. config/ becomes a measurement input once the baseline exists, so a floor left
- * null at intake can later only be set from a measurement node, after results are known.
- */
-export async function contractALighthouseBudgetIssues(file) {
-  const { readLighthouseBudget } = await import('./sweep.mjs');
-  const issues = [];
-  for (const formFactor of ['mobile', 'desktop']) {
-    try {
-      await readLighthouseBudget(file, 'verify', formFactor);
-    } catch (err) {
-      issues.push(err.message);
-    }
-  }
-  return [...new Set(issues)];
-}
-
 export async function sealBaselineAction({ values, paths, log }) {
   const id = values.id ?? 'A-original';
   const dir = values.dir ?? paths.baseline(id);
-  if (id === 'A-original') {
-    const issues = await contractALighthouseBudgetIssues(paths.thresholds);
-    if (issues.length) {
-      throw new PreconditionError(
-        'Agree the Contract A Lighthouse floors with the owner and set them in config/thresholds.yml before '
-        + `sealing Baseline A (measure the old site first; a slow hero image can sit below a generic floor):\n  - ${issues.join('\n  - ')}`,
-      );
-    }
-  }
   const [manifest, env, content] = await Promise.all([
     readJson(paths.urlManifest), readJson(paths.envFingerprint), readJson(paths.contentFingerprint),
   ]);
