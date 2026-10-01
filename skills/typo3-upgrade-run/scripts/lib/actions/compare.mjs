@@ -59,7 +59,7 @@ async function compareHttpRecords({ values, paths, log }) {
   const reportPath = values.report ?? await stageReportPath(paths, values.loop, 'http');
 
   const declared = await declaredRules(paths, log);
-  const { pairsChecked, findings, missing } = await compareRecordDirs(before, after, values.loop, log, declared.rules);
+  const { pairsChecked, findings, missing, metaImageRenames } = await compareRecordDirs(before, after, values.loop, log, declared.rules);
 
   // On an intermediate loop the after-set is a deliberate sample, so a baseline record with no
   // counterpart is missing COVERAGE, not a difference. Declared, never silently dropped — and it
@@ -78,6 +78,8 @@ async function compareHttpRecords({ values, paths, log }) {
   const report = envelope({
     kind: 'http', ...evidence, verdict, counts, findings,
     extra: { comparedFields: 'see lib/compare/http-meta.mjs COMPARED_FIELDS', missing: realMissing, notCaptured,
+      // Accepted processed-image renames stay visible: each one names its content proof.
+      metaImageRenames: { count: metaImageRenames.length, examples: metaImageRenames.slice(0, 20) },
       declaredChanges: { hash: declared.hash, rules: declared.rules.map((rule) => rule.id), issues: declared.issues } },
   });
   const written = await writeReport(reportPath, report, { profile: values['redaction-profile'], dryRun: values['dry-run'] });
@@ -101,6 +103,7 @@ async function compareRecordDirs(beforeDir, afterDir, loopId, log, rules = []) {
   const as = new Set(a);
   const findings = [];
   const missing = [];
+  const metaImageRenames = [];
   let n = 0;
   let pairsChecked = 0;
 
@@ -110,6 +113,7 @@ async function compareRecordDirs(beforeDir, afterDir, loopId, log, rules = []) {
     const before = JSON.parse(await readFile(path.join(beforeDir, file), 'utf8'));
     const after = JSON.parse(await readFile(path.join(afterDir, file), 'utf8'));
     const cmp = compareRecords(before, after);
+    for (const rename of cmp.metaImageRenames ?? []) metaImageRenames.push({ target: before.url ?? file, ...rename });
     if (cmp.identical) continue;
 
     n += 1;
@@ -140,8 +144,11 @@ async function compareRecordDirs(beforeDir, afterDir, loopId, log, rules = []) {
   }
   for (const file of [...as].sort()) if (!bs.has(file)) missing.push({ file, side: 'before' });
   if (missing.length) log.warn(`${missing.length} URL(s) present on only one side`);
+  if (metaImageRenames.length) {
+    log.info(`${metaImageRenames.length} processed-image rename(s) in metadata accepted on identical content`);
+  }
 
-  return { pairsChecked, findings, missing };
+  return { pairsChecked, findings, missing, metaImageRenames };
 }
 
 /* ------------------------------------------------------------- stage 2 */
@@ -633,7 +640,7 @@ export async function selftestDeterminism({ values, paths, log, journal }) {
   });
 
   const captureProblems = captureErrors.map((error) => ({
-    capture: `${error.captureId}.png`,
+    capture: captureErrorTarget(error),
     reason: 'capture-error',
     pass: error.pass,
     attempts: error.attempts,
@@ -759,6 +766,18 @@ export async function selftestDeterminism({ values, paths, log, journal }) {
     exitCode: EXIT.PASS, verdict: 'pass', captures: pairs.length,
     promotedToBaseline, reports: [reportPath], message: 'determinism proven',
   };
+}
+
+/**
+ * The artifact a capture error belongs to. Stage 1/2 errors name the HTTP record or DOM snapshot of
+ * the page; a screenshot error names the shot. An error without any id still says which stage
+ * failed, instead of the old `undefined.png`.
+ */
+export function captureErrorTarget(error) {
+  if (!error?.captureId) return `(${error?.stage ?? 'capture'}: no capture id)`;
+  if (error.record === 'http') return `http/${error.captureId}.json`;
+  if (error.record === 'dom') return `dom/${error.captureId}.html`;
+  return `${error.captureId}.png`;
 }
 
 export async function promoteSelftestBaseline(source, target) {

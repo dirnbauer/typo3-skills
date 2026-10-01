@@ -11,6 +11,7 @@
  */
 
 import { sha256 } from '../run/paths.mjs';
+import { RULES as DOM_RULES } from './dom-normalize.mjs';
 
 export const COMPARED_FIELDS = Object.freeze([
   'status', 'requestedUrl', 'finalUrl', 'redirectChain', 'contentType', 'documentKind', 'bodyHash', 'contentLanguage',
@@ -27,6 +28,65 @@ export const HEADER_ALLOWLIST = Object.freeze([
 export const VOLATILE_HEADERS = Object.freeze([
   'date', 'etag', 'last-modified', 'age', 'x-request-id', 'server-timing', 'set-cookie',
 ]);
+
+/**
+ * Metadata fields that name an image file.
+ *
+ * TYPO3 names a processed file after a hash of its processing configuration (`csm_<name>_<hash>.png`,
+ * GIFBUILDER `…_<hash>.png`), so a core patch that only changes how that configuration serialises
+ * renames every og:image while the file stays byte-identical. The DOM stage folds that hash with its
+ * asset-hash rule; this stage folds it the same way, but accepts the rename only when the capture
+ * recorded identical image content on both sides. An og:image is never drawn on the page, so no
+ * screenshot would notice a changed image: the content digest is the only proof there is.
+ */
+export const META_IMAGE_FIELDS = Object.freeze([
+  ['openGraph', 'image'], ['openGraph', 'image:url'], ['openGraph', 'image:secure_url'],
+  ['twitter', 'image'], ['twitter', 'image:src'],
+]);
+
+const ASSET_HASH = DOM_RULES.find((rule) => rule.id === 'asset-hash');
+
+/** The DOM stage's asset-hash fold, applied to one metadata image URL. */
+export function foldImageHash(value) {
+  return typeof value === 'string' ? value.replace(ASSET_HASH.re, ASSET_HASH.to) : value;
+}
+
+/** The image URLs a record's metadata names, keyed `group.key` as `metaImages` stores them. */
+export function metaImageUrls(record) {
+  const out = [];
+  for (const [group, key] of META_IMAGE_FIELDS) {
+    const value = record?.[group]?.[key];
+    if (typeof value === 'string' && value.trim()) out.push({ field: `${group}.${key}`, url: value });
+  }
+  return out;
+}
+
+/**
+ * Whether two recorded image digests prove the same image.
+ *
+ * Bytes first. A PNG that differs only in its text and time chunks (ImageMagick 7 stamps
+ * `date:timestamp` into every file it writes) carries a pixel digest, which covers the dimensions,
+ * the decoded RGBA data and the colour chunks; equal pixel digests prove the same picture.
+ */
+export function imageProof(before, after, { beforeUrl, afterUrl } = {}) {
+  const digest = { before: before?.sha256 ?? null, after: after?.sha256 ?? null };
+  if (!before || !after) return { proven: false, reason: 'no image digest recorded', digest };
+  if ((beforeUrl !== undefined && before.url !== beforeUrl) || (afterUrl !== undefined && after.url !== afterUrl)) {
+    return { proven: false, reason: 'the image digest names a different URL', digest };
+  }
+  if (before.status !== 200 || after.status !== 200 || !before.sha256 || !after.sha256) {
+    return {
+      proven: false,
+      reason: `image not fetched (${before.error ?? before.status ?? 'no status'} / ${after.error ?? after.status ?? 'no status'})`,
+      digest,
+    };
+  }
+  if (before.sha256 === after.sha256) return { proven: true, kind: 'bytes-identical', sha256: before.sha256 };
+  if (before.pixelSha256 && before.pixelSha256 === after.pixelSha256) {
+    return { proven: true, kind: 'pixels-identical', sha256: digest, pixelSha256: before.pixelSha256 };
+  }
+  return { proven: false, reason: 'the image content differs', digest };
+}
 
 /** Extract the comparable record from a fetched response + body. Pure, so it is testable. */
 export function extractRecord({ requestedUrl = null, url, status, headers, body, redirects = [] }) {
@@ -75,9 +135,13 @@ export function extractRecord({ requestedUrl = null, url, status, headers, body,
   };
 }
 
-/** @returns {{identical:boolean, differences:Array<{field:string,before:*,after:*}>}} */
+/**
+ * @returns {{identical:boolean, differences:Array<{field:string,before:*,after:*}>,
+ *            metaImageRenames:Array<{field:string,before:string,after:string,proof:string}>}}
+ */
 export function compareRecords(before, after) {
   const differences = [];
+  const metaImageRenames = [];
   const diff = (field, b, a) => {
     if (JSON.stringify(b ?? null) !== JSON.stringify(a ?? null)) {
       differences.push({ field, before: b ?? null, after: a ?? null });
@@ -97,8 +161,8 @@ export function compareRecords(before, after) {
   diff('title', before.title, after.title);
   diff('metaDescription', before.metaDescription, after.metaDescription);
   diff('robots', before.robots, after.robots);
-  diff('openGraph', before.openGraph, after.openGraph);
-  diff('twitter', before.twitter, after.twitter);
+  diffMetaGroup('openGraph', before, after, differences, metaImageRenames);
+  diffMetaGroup('twitter', before, after, differences, metaImageRenames);
   diff('jsonLd', before.jsonLd, after.jsonLd);
   diff('htmlLang', before.htmlLang, after.htmlLang);
   const headerNames = new Set([
@@ -114,7 +178,40 @@ export function compareRecords(before, after) {
   }
   diff('cookieNames', comparableCookieNames(before.cookieNames), comparableCookieNames(after.cookieNames));
 
-  return { identical: differences.length === 0, differences };
+  return { identical: differences.length === 0, differences, metaImageRenames };
+}
+
+const META_IMAGE_KEYS = Object.freeze({
+  openGraph: new Set(META_IMAGE_FIELDS.filter(([g]) => g === 'openGraph').map(([, k]) => k)),
+  twitter: new Set(META_IMAGE_FIELDS.filter(([g]) => g === 'twitter').map(([, k]) => k)),
+});
+
+/**
+ * One metadata group (openGraph, twitter). A difference that remains after folding the processed-file
+ * hash in image URLs is reported as before. A difference that the fold removes is accepted per image
+ * only with a content proof; an unproven rename stays a difference of the group, with the reason.
+ */
+function diffMetaGroup(group, before, after, differences, renames) {
+  const b = before[group] ?? null;
+  const a = after[group] ?? null;
+  if (JSON.stringify(b) === JSON.stringify(a)) return;
+  const keys = META_IMAGE_KEYS[group];
+  const fold = (meta) => (meta && Object.fromEntries(
+    Object.entries(meta).map(([key, value]) => [key, keys.has(key) ? foldImageHash(value) : value]),
+  ));
+  if (!b || !a || JSON.stringify(fold(b)) !== JSON.stringify(fold(a))) {
+    differences.push({ field: group, before: b, after: a });
+    return;
+  }
+  const unproven = [];
+  for (const key of Object.keys(b)) {
+    if (b[key] === a[key]) continue;
+    const field = `${group}.${key}`;
+    const proof = imageProof(before.metaImages?.[field], after.metaImages?.[field], { beforeUrl: b[key], afterUrl: a[key] });
+    if (proof.proven) renames.push({ field, before: b[key], after: a[key], proof: proof.kind });
+    else unproven.push({ field, before: b[key], after: a[key], reason: proof.reason, digest: proof.digest });
+  }
+  if (unproven.length) differences.push({ field: group, before: b, after: a, metaImages: unproven });
 }
 
 /**
