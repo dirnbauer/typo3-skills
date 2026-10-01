@@ -7,7 +7,7 @@ what to achieve, when it is done, and where its evidence goes. Flags: **R** inde
 **M** measurement node (may recalibrate config with an ADR), **A** approval required, **L** green evidence loop required.
 
 Policy: `require_artifacts: true`, `require_forecast: true`, `require_feature_contracts: true`, `require_node_contracts: true`, `require_independent_review: true`, `guard_change_scope: true`, `recovery_change_budget: {"files":10,"lines":400}`, `serialize_mutations: true`, `shared_proof_reads: true`, `max_node_attempts: 3`, `max_total_retries: 12`.
-Nodes: 67; edges: 190; bounded retry edges: 34.
+Nodes: 68; edges: 193; bounded retry edges: 35.
 
 ## Intake: identity, data, discovery and inventories (read-only)
 
@@ -23,6 +23,7 @@ Nodes: 67; edges: 190; bounded retry edges: 34.
 | `webmcp-inventory` | P00 | typo3-webmcp | none | — | Record the browser-agent (WebMCP) tools and declarations the source site exposes, if any. | Existing WebMCP surfaces are listed with their behaviour, or their absence is evidenced. | `nodes/webmcp-inventory/evidence.md` |
 | `identity-recovery` | P00 | typo3-upgrade-intake | none | — | Resolve the identity mismatch reported by project-identity without changing the site. | Corrected identity evidence exists, or the mismatch is escalated as blocked. | `nodes/identity-recovery/evidence.md` |
 | `data-recovery` | P01 | typo3-upgrade-intake | none | — | Obtain the authorized dated dataset locally with checksums; delete the local fileadmin before syncing it from live. | Database and fileadmin match the accepted dataset checksums; any live sync stayed a separate authorized task. | `nodes/data-recovery/evidence.md` |
+| `dataset-acceptance-decision` | P01 | typo3-upgrade-intake | none | R | Let the owner decide whether a partially usable dataset is accepted with its named gaps or must be replaced. | Every gap is named with its effect on proof coverage; the evidence cites the recorded owner answer (approval id) and accepts the dataset as is, or blocks. | `nodes/dataset-acceptance-decision/evidence.md` |
 | `sitemap-recovery` | P00 | typo3-upgrade-intake | none | — | Diagnose the missing or broken sitemap and choose a read-only discovery source; the site stays unrepaired until Baseline A exists. | pass: discovery can rerun from a working source; not-applicable: the approved page-tree fallback is required. | `nodes/sitemap-recovery/evidence.md` |
 | `degraded-discovery` | P00 | typo3-upgrade-intake | none | — | Run the approved page-tree or crawl discovery for a site without a usable sitemap. | The fallback manifest, its approval and the named coverage gaps are recorded. | `nodes/degraded-discovery/evidence.md` |
 | `intake-join` | P01 | controller | none | — | Seal intake: all inventories agree, runtime sizing is sealed and the feature evidence plan is fixed. | manifests/feature-contracts.json validates and is hash-sealed as this node's evidence. | `manifests/feature-contracts.json` |
