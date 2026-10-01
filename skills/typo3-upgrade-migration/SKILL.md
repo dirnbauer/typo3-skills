@@ -71,6 +71,9 @@ Your input is the node brief. Write its evidence file, return one allowed outcom
 - Migrate stored data before new registration. Preserve CType/list-type identities, parent/child and
   FAL relations, nullable meaning, translations, and YAML scalar types.
 - Schema analyzer output is quarantine. Drops require separate exact table/field/index approval.
+- Before the 13.4 schema update, set `''` to `'0'` in every text column that 13 turns into an INT file
+  count (seen: `fe_users.image`, `backend_layout.icon`); strict mode refuses the retype with
+  "Truncated incorrect INTEGER value". Ledger the update and replay it on staging before its schema update.
 - Every migration/wizard/setup command must reach documented fixed point on an unchanged rerun.
 - After any dependency change, including patch releases, inspect used backend subclasses and DI
   signatures against the installed target. Rebuild the container and open the affected real module.

@@ -29,8 +29,9 @@ P00 complete.
    it directly means the measuring instrument can change — or break — mid-run, and the
    environment fingerprint will correctly void the run when it does. Two independent runs
    derived this pin under fire on the same day; it is a rule, not a workaround. Re-pinning at
-   a newer revision is allowed **only before the baseline is sealed**, and re-seals the
-   environment fingerprint.
+   a newer revision before the baseline is sealed re-seals the environment fingerprint. After
+   sealing it needs an owner-approved re-seal and a fresh self-test, and only for a fix that
+   changes a verdict ([harness pins across a fleet](../fleet-profile.md#harness-pins-across-a-fleet)).
 
 3. **Check the container against the target's minimums, not against what boots today.** A v12-era
    DDEV project routinely runs a database the target cannot use, and the failure mode is nasty:

@@ -12,7 +12,8 @@ import { sample } from '../util/rng.mjs';
 import { EXIT, HarnessError, PreconditionError } from '../cli/exit-codes.mjs';
 import { UrlGuard } from '../net/url-guard.mjs';
 import { safeFetch } from '../net/safe-fetch.mjs';
-import { extractRecord } from '../compare/http-meta.mjs';
+import { extractRecord, metaImageUrls } from '../compare/http-meta.mjs';
+import { createImageDigester } from '../compare/image-digest.mjs';
 import { domHash, templateSignature } from '../compare/dom-normalize.mjs';
 import { launchBrowser, newContext, stabilizePage, VIEWPORTS } from '../browser/launch.mjs';
 import { createRoutePolicy, createQuietDetector, attachNavigationGuard } from '../browser/route-policy.mjs';
@@ -25,7 +26,7 @@ import { readJson } from './core.mjs';
 import { consentStateFor } from '../browser/stabilize.mjs';
 import { mapPool } from '../util/pool.mjs';
 import { acquireMachineLock, releaseMachineLock } from '../util/machine-lock.mjs';
-import { acquireMachineResources, withMachineResources, machineCapacity } from '../util/machine-resources.mjs';
+import { acquireMachineResources, withMachineResources, machineCapacity, waitForQuietMachine } from '../util/machine-resources.mjs';
 import { assertCleanFrontendSession } from '../browser/session.mjs';
 
 export async function capture({ values, paths, log, journal }) {
@@ -363,6 +364,7 @@ export async function captureAll({
   // byte-identical whatever order the pool finished in.
   if (stages.has('http') || stages.has('dom')) {
     index.httpWorkers = httpWorkers;
+    const imageDigest = createImageDigester(guard);
     const fetchOne = async (url) => {
       await guard.assertUrl(url, { purpose: 'capture-http' });
       // TYPO3 can emit session cookies while populating a cold page cache and omit them
@@ -381,11 +383,22 @@ export async function captureAll({
         : null;
 
       let wroteHttp = false;
+      let metaImages = null;
       if (stages.has('http')) {
         const record = extractRecord({
           requestedUrl: url, url: res.url, status: res.status, headers: res.headers,
           body: res.body, redirects: res.redirects,
         });
+        // The content of every image the metadata names, so a processed-file rename can be
+        // proven (or refuted) by the comparison instead of trusted.
+        const named = metaImageUrls(record);
+        if (named.length) {
+          record.metaImages = Object.fromEntries(await Promise.all(
+            named.map(async ({ field, url: imageUrl }) => [field, await imageDigest(imageUrl, res.url)]),
+          ));
+          const digests = Object.values(record.metaImages);
+          metaImages = { named: digests.length, unproven: digests.filter((d) => !d.sha256).length };
+        }
         await writeFile(path.join(outRoot, 'http', `${keyOf(url)}.json`), `${JSON.stringify(record, null, 2)}\n`, 'utf8');
         wroteHttp = true;
       }
@@ -403,7 +416,7 @@ export async function captureAll({
         );
         dom = { signature: sig.hash, overreach, invalidRegions: randomizedRegions.filter((region) => !region.valid) };
       }
-      return { warmed, html, modalTrigger, wroteHttp, dom };
+      return { warmed, html, modalTrigger, wroteHttp, dom, metaImages };
     };
 
     const outcomes = await withMachineResources({ owner: 'http-dom', log, deadlineAt }, async lease => {
@@ -419,12 +432,18 @@ export async function captureAll({
       const outcome = outcomes[i];
       if (!outcome.ok) {
         const err = outcome.error;
-        index.errors.push({ url: '(redacted)', stage: 'http/dom', error: err.message });
+        // The record key names the failing page without leaking its URL into the report.
+        index.errors.push({ url: '(redacted)', captureId: keyOf(url), record: 'http', stage: 'http/dom', error: err.message });
         if (err.exitCode === 5) await journal?.policyBlock({ reason: err.message, target: url, purpose: 'capture' });
         continue;
       }
-      const { warmed, html, modalTrigger, wroteHttp, dom } = outcome.value;
+      const { warmed, html, modalTrigger, wroteHttp, dom, metaImages } = outcome.value;
       if (warmed) index.httpWarmup += 1;
+      if (metaImages) {
+        index.metaImages ??= { named: 0, withoutDigest: 0 };
+        index.metaImages.named += metaImages.named;
+        index.metaImages.withoutDigest += metaImages.unproven;
+      }
       if (!html) nonHtmlUrls.add(url);
       if (modalTrigger !== null) modalTriggerByUrl.set(url, modalTrigger);
       if (wroteHttp) index.http += 1;
@@ -438,7 +457,7 @@ export async function captureAll({
           }
           if (dom.invalidRegions.length) {
             index.errors.push({
-              url: '(redacted)', captureId: keyOf(url), stage: 'randomized-region-integrity',
+              url: '(redacted)', captureId: keyOf(url), record: 'dom', stage: 'randomized-region-integrity',
               error: regionIntegrityMessage(dom.invalidRegions),
             });
           }
@@ -497,6 +516,7 @@ export async function captureAll({
     machineLease = await acquireMachineResources({ ...visualCaptureLease({ visualWorkers, scope,
       perViewport: [...byViewport.values()].map((caps) => caps.length) }), owner: 'visual-capture', log, deadlineAt });
     index.machineWaitMs = machineLease.waitMs;
+    index.machineLoad = await waitForQuietMachine({ log, deadlineAt });
     index.browserStartup = [];
     for (const [viewport, caps] of byViewport) {
       if (!VIEWPORTS[viewport]) { log.warn(`unknown viewport ${viewport}, skipped`); continue; }
@@ -588,6 +608,11 @@ export async function captureAll({
                       network = await quiet.wait();
                     } finally {
                       quiet.dispose();
+                    }
+                    // An empty first frame under load is noise, not evidence (#21): re-shoot once,
+                    // then report the capture as an error rather than a picture.
+                    if (settle.videoStillLoading > 0) {
+                      throw new Error(`${settle.videoStillLoading} video(s) still loading when the settle bound expired`);
                     }
 
                     const stateResult = await applyState(page, cap.state ?? 'default', stabilization);

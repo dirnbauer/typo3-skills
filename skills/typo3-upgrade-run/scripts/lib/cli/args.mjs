@@ -12,7 +12,7 @@ import { HarnessError } from './exit-codes.mjs';
 
 /** Flags every command accepts. */
 export const GLOBAL_OPTIONS = {
-  'run-dir': { type: 'string', default: '.typo3-update', help: 'Run directory (must be inside the project)' },
+  'run-dir': { type: 'string', default: '.typo3-update', help: 'Run directory inside the project; an absolute path from elsewhere works in its project' },
   loop: { type: 'string', help: 'Loop directory name, e.g. 300-invariance-closure' },
   node: { type: 'string', help: 'Upgrade graph node id' },
   config: { type: 'string', help: 'Run configuration file' },
@@ -74,6 +74,10 @@ export const COMMANDS = {
   'loop-open': { summary: 'Open a planned loop after rollback-anchor and live freeze checks', options: {
     snapshot: { type: 'string' }, 'rollback-ref': { type: 'string' },
     stateful: { type: 'boolean', default: false },
+  }},
+  'loop-supersede': { summary: 'Close a loop as superseded by a newer loop id (it stops counting as active)', options: {
+    by: { type: 'string', help: 'The superseding loop id (NNN); it must exist' },
+    reason: { type: 'string', help: 'Why the loop no longer counts; journaled' },
   }},
   'snapshot-create': { summary: 'Create and record the rollback snapshot for a ready graph node (--node) or a loop', options: {
     name: { type: 'string' },

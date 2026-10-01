@@ -38,7 +38,7 @@ export const PAGE_PARENTS_SQL = `SELECT uid, pid FROM pages
 WHERE deleted=0 AND t3ver_wsid=0 AND sys_language_uid=0
 ORDER BY uid`;
 
-export async function discoverUrls({ values, paths, log, journal }) {
+export async function discoverUrls({ values, paths, log, journal, cwd = process.cwd() }) {
   const store = new StateStore(paths);
   const state = await store.read();
 
@@ -46,7 +46,7 @@ export async function discoverUrls({ values, paths, log, journal }) {
   if (!baseUrl) throw new HarnessError('--base-url is required (or set project.trusted_origin via init)');
 
   const languages = listOpt(values, 'languages', state.project?.languages ?? []);
-  const seed = values.seed ?? state.manifest?.seed ?? `${state.run_id}-visual`;
+  const seed = discoverySeed(values, state);
   const extraOrigins = values['allow-origin'] ?? [];
   const stabilization = values['stabilization-config']
     ? await loadStabilization(values['stabilization-config'])
@@ -56,11 +56,13 @@ export async function discoverUrls({ values, paths, log, journal }) {
   const guard = await UrlGuard.create({ allowedOrigins: [baseUrl, ...extraOrigins] });
   const base = (await guard.assertUrl(baseUrl, { purpose: 'discovery' })).url;
 
-  // Scheme and port are taken from the validated base URL, never reconstructed.
-  const entryPoints = [new URL('/sitemap.xml', base).href];
-  for (const lang of languages) {
-    entryPoints.push(new URL(`/${lang}/sitemap.xml`, base).href);
-  }
+  // Scheme and port are taken from the validated base URL, never reconstructed; the paths come
+  // from the site languages, read once for the sitemaps and the page tree.
+  const siteConfigs = await readSiteConfigs(cwd);
+  const sitemaps = sitemapEntryPoints(siteRouting(siteConfigs.configs, base), base, { languages });
+  for (const warning of siteConfigs.warnings) log.warn(`site configuration: ${warning}`);
+  for (const warning of sitemaps.warnings) log.warn(`sitemap discovery: ${warning}`);
+  const { entryPoints } = sitemaps;
 
   log.step(`Discovering from ${entryPoints.length} sitemap entry point(s) on ${base.origin}`);
   const { urls, documents, truncated } = await walkSitemaps(guard, entryPoints, {
@@ -81,7 +83,7 @@ export async function discoverUrls({ values, paths, log, journal }) {
   const urlSources = new Map(urls.map((url) => [url, 'sitemap']));
   let pageTree = null;
   if (values['from-pages']) {
-    pageTree = await discoverFromPages({ base, guard, cwd: process.cwd(), log, languages });
+    pageTree = await discoverFromPages({ base, guard, cwd, log, languages, siteConfigs });
     for (const url of pageTree.urls) {
       if (!urlSources.has(url)) urlSources.set(url, 'page-tree');
     }
@@ -186,6 +188,49 @@ export async function discoverUrls({ values, paths, log, journal }) {
 }
 
 /**
+ * The sample seed. A blank one is no seed: state starts with manifest.seed '', which `??` passed
+ * through, so the run-specific default never applied and every run drew the same sample.
+ */
+export function discoverySeed(values, state) {
+  for (const seed of [values.seed, state.manifest?.seed]) {
+    if (typeof seed === 'string' && seed.trim()) return seed;
+  }
+  return `${state.run_id}-visual`;
+}
+
+/**
+ * Sitemap entry points: the base of every language served on this origin, plus sitemap.xml. The
+ * default language usually sits at /, so a guessed /<code>/sitemap.xml for it is a 404 that
+ * reads as a finding. Languages are chosen as for the page tree. Without site configuration, or
+ * when it names nothing served here, the old guess stays (/sitemap.xml and /<code>/sitemap.xml
+ * per --languages value), with a warning that it is one.
+ */
+export function sitemapEntryPoints(sites, base, { languages = [] } = {}) {
+  const wanted = wantedCodes(languages);
+  const entryPoints = new Set(), named = new Set(), warnings = [];
+  for (const site of sites) {
+    for (const siteLanguage of site.languages) {
+      for (const code of wanted) if (siteLanguage.codes.has(code)) named.add(code);
+      if (!siteLanguage.enabled || !selected(siteLanguage, wanted)) continue;
+      if (siteLanguage.servedHere) entryPoints.add(new URL(`${siteLanguage.prefix}sitemap.xml`, base).href);
+      else {
+        const why = siteLanguage.prefix === null ? siteLanguage.unreachable : 'served from another host';
+        warnings.push(`site ${site.identifier} language ${siteLanguage.languageId} is ${why}; its sitemap is not requested`);
+      }
+    }
+  }
+  if (entryPoints.size) {
+    const unknown = wanted.filter((code) => !named.has(code));
+    if (unknown.length) warnings.push(`--languages ${unknown.join(', ')} name no configured site language; no sitemap is requested for them`);
+    return { entryPoints: [...entryPoints], warnings };
+  }
+  const guessed = ['/', ...languages.map((code) => String(code).trim()).filter(Boolean).map((code) => `/${code}/`)];
+  warnings.push(`${sites.length ? `config/sites names no language served on ${new URL(base).origin}` : 'no config/sites/*/config.yaml'}; `
+    + `sitemap entry points are guessed: ${guessed.map((prefix) => `${prefix}sitemap.xml`).join(', ')}`);
+  return { entryPoints: [...new Set(guessed.map((prefix) => new URL(`${prefix}sitemap.xml`, base).href))], warnings };
+}
+
+/**
  * Page rows -> URLs. With `routing` (siteRouting sites, the default-language parent map and the
  * run's --languages), each row takes its site's language prefix and PageType suffix: /en/news/,
  * not /news. The default language is always in, like /sitemap.xml; other languages only when
@@ -197,7 +242,7 @@ export function parsePageTreeRows(stdout, base, { sites = [], parents = new Map(
   const urls = new Set();
   const notes = new Map();
   const note = (text) => notes.set(text, (notes.get(text) ?? 0) + 1);
-  const wanted = languages.map((value) => String(value).trim().toLowerCase()).filter(Boolean);
+  const wanted = wantedCodes(languages);
   let skipped = 0;
   for (const line of stdout.split('\n').map((value) => value.trim()).filter(Boolean)) {
     const [uidRaw, doktypeRaw, slugRaw, languageRaw = '0', parentRaw = '0'] = line.split('\t');
@@ -237,13 +282,20 @@ function routeRow({ uid, language, parent, slugPath }, { sites, parents, wanted 
   if (!site) return { note: 'no single site root in the rootline; kept base + slug' };
   const siteLanguage = site.languages.find((candidate) => candidate.languageId === language);
   if (!siteLanguage) return { skip: true, note: `site ${site.identifier} has no language ${language}; left out` };
-  if (!siteLanguage.enabled || (language !== 0 && wanted.length && !wanted.some((code) => siteLanguage.codes.has(code)))) {
-    return { skip: true };
-  }
+  if (!siteLanguage.enabled || !selected(siteLanguage, wanted)) return { skip: true };
   if (siteLanguage.prefix === null) {
     return { skip: true, note: `site ${site.identifier} language ${language} is ${siteLanguage.unreachable}; left out` };
   }
   return { path: pagePath(siteLanguage.prefix, slugPath, site.suffix) };
+}
+
+function wantedCodes(languages) {
+  return languages.map((value) => String(value).trim().toLowerCase()).filter(Boolean);
+}
+
+/** Language 0 always; another language when --languages names it, or when nothing is named. */
+function selected(siteLanguage, wanted) {
+  return siteLanguage.languageId === 0 || !wanted.length || wanted.some((code) => siteLanguage.codes.has(code));
 }
 
 /** The nearest site root in the rootline; none, or two sites on one root, maps to nothing. */
@@ -257,7 +309,7 @@ function siteOf(uid, sites, parents) {
   return null;
 }
 
-export async function discoverFromPages({ base, guard, cwd, log, languages = [], run = execFileAsync }) {
+export async function discoverFromPages({ base, guard, cwd, log, languages = [], run = execFileAsync, siteConfigs = null }) {
   const query = async (sql) => {
     try {
       return (await run('ddev', ['mysql', '-N', '-B', '-e', sql], { cwd, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 })).stdout;
@@ -266,7 +318,8 @@ export async function discoverFromPages({ base, guard, cwd, log, languages = [],
     }
   };
   const stdout = await query(PAGE_TREE_SQL);
-  const { configs, warnings } = await readSiteConfigs(cwd);
+  // A caller that already read config/sites has reported its warnings.
+  const { configs, warnings } = siteConfigs ? { configs: siteConfigs.configs, warnings: [] } : await readSiteConfigs(cwd);
   if (!configs.length) warnings.push(`no config/sites/*/config.yaml under ${cwd}; page URLs keep base + slug`);
   const sites = siteRouting(configs, base);
   const parents = sites.length ? parsePageParents(await query(PAGE_PARENTS_SQL)) : new Map();

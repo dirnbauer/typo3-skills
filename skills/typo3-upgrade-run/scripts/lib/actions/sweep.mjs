@@ -837,6 +837,24 @@ export async function resolveQualityLoop(paths, values, state) {
   return loop;
 }
 
+/**
+ * Contract A's Lighthouse floors as config/thresholds.yml declares them, or why they cannot be used.
+ * The floors are agreed before the site changes: measured on the sealed Baseline A (pilot rule:
+ * lowest median per category, performance minus 5) or fixed by the owner. Chosen after final
+ * results, a floor proves nothing; a generic one can also sit above a pre-existing slow page.
+ */
+export async function contractALighthouseBudgetIssues(file) {
+  const issues = [];
+  for (const formFactor of ['mobile', 'desktop']) {
+    try {
+      await readLighthouseBudget(file, 'verify', formFactor);
+    } catch (err) {
+      issues.push(err.message);
+    }
+  }
+  return [...new Set(issues)];
+}
+
 export async function readLighthouseBudget(file, mode, formFactor = 'mobile') {
   let parsed;
   try {

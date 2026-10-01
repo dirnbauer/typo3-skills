@@ -27,7 +27,8 @@ Start every node from `t3u node-brief --node <id>`; it carries the contract, rou
 | `extension-inventory` | Checklist items 4–7; flagged **R**: a second verifier reviews the resolutions |
 | `url-discovery` | Checklist item 3; a missing sitemap is `findings` → `sitemap-recovery` |
 | `identity-recovery` | Correct the identity evidence; never "fix" the site to match an assumption |
-| `data-recovery` | `scripts/pull-live-dataset.mjs` (read-only on the server): delete the local fileadmin first, then sync; snapshot before the import |
+| `data-recovery` | `scripts/pull-live-dataset.mjs` (read-only on the server): delete the local fileadmin first, then sync; snapshot before the import. A dataset usable only with named gaps (case-colliding or missing files, absent tables) closes `findings` |
+| `dataset-acceptance-decision` | Name every gap and its effect on proof coverage, ask the owner, record the answer as an approval and cite it; `pass` (reviewed) re-runs `dataset-freshness` against the accepted gaps, `blocked` stops |
 | `sitemap-recovery` | Diagnose only; `not-applicable` (reviewed) routes to `degraded-discovery` |
 | `degraded-discovery` | Approved page-tree or crawl fallback with named coverage gaps |
 

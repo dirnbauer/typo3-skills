@@ -30,7 +30,7 @@ const CREDENTIAL_HEADERS = ['authorization', 'cookie', 'proxy-authorization'];
  * @param {UrlGuard} guard
  * @param {string} rawUrl
  * @param {object} opts
- * @returns {Promise<{url:string, status:number, headers:Headers, body:string,
+ * @returns {Promise<{url:string, status:number, headers:Headers, body:string, buffer?:Buffer,
  *                    bytes:number, contentType:string, redirects:string[], finalOrigin:string}>}
  */
 export async function safeFetch(guard, rawUrl, {
@@ -41,6 +41,9 @@ export async function safeFetch(guard, rawUrl, {
   timeoutMs = DEFAULT_LIMITS.timeoutMs,
   headers = {},
   method = 'GET',
+  // Binary bodies (images) are returned as a Buffer; decoding them as UTF-8 would destroy the
+  // bytes a digest is taken of.
+  binary = false,
   fetchImpl = globalThis.fetch,
 } = {}) {
   let current = (await guard.assertUrl(rawUrl, { purpose })).url.href;
@@ -80,12 +83,13 @@ export async function safeFetch(guard, rawUrl, {
       });
     }
 
-    const { text, bytes } = await readCapped(res, maxBytes, purpose);
+    const { buffer, bytes } = await readCapped(res, maxBytes, purpose);
     return {
       url: current,
       status: res.status,
       headers: res.headers,
-      body: text,
+      body: binary ? '' : buffer.toString('utf8'),
+      ...(binary ? { buffer } : {}),
       bytes,
       contentType,
       redirects,
@@ -99,10 +103,10 @@ export async function safeFetch(guard, rawUrl, {
 /** Count decoded bytes as they stream; abort the moment the cap is exceeded. */
 async function readCapped(res, maxBytes, purpose) {
   if (!res.body) {
-    const text = await res.text();
-    const bytes = Buffer.byteLength(text);
+    const buffer = Buffer.from(await res.arrayBuffer());
+    const bytes = buffer.length;
     if (bytes > maxBytes) throw new PolicyError(`Response exceeds ${maxBytes} bytes`, { purpose, bytes });
-    return { text, bytes };
+    return { buffer, bytes };
   }
   const chunks = [];
   let bytes = 0;
@@ -114,5 +118,5 @@ async function readCapped(res, maxBytes, purpose) {
     }
     chunks.push(Buffer.from(chunk));
   }
-  return { text: Buffer.concat(chunks).toString('utf8'), bytes };
+  return { buffer: Buffer.concat(chunks), bytes };
 }

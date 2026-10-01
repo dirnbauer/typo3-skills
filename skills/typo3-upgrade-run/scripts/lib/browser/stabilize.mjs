@@ -417,6 +417,10 @@ export function settleScript(profile = {}) {
   // only when necessary, and wait within a fixed bound for a paintable, non-loading state.
   report.videoReady = 0;
   report.videoTimedOut = 0;
+  // Timed out while the network is still delivering: under machine load the first frame simply
+  // has not arrived yet, so the capture re-shoots instead of recording an empty frame. A video
+  // that will never load (preload="none", no source, an error) is deterministic and stays a shot.
+  report.videoStillLoading = 0;
   report.videoControlsHidden = 0;
   report.videoStates = [];
   const mediaTimeoutMs = 5000;
@@ -448,6 +452,7 @@ export function settleScript(profile = {}) {
       ]);
       if (ready) report.videoReady += 1;
       else report.videoTimedOut += 1;
+      if (!ready && !video.error && video.networkState === HTMLMediaElement.NETWORK_LOADING) report.videoStillLoading += 1;
       report.videoStates.push({
         currentTime: video.currentTime,
         networkState: video.networkState,

@@ -11,6 +11,7 @@ import { browserArgs } from '../browser/launch.mjs';
 import { verifyBaseline } from '../run/lockfile.mjs';
 import { StateStore } from '../run/state.mjs';
 import { featurePlanIssues, featureCoverageIssues } from '../run/feature-contracts.mjs';
+import { assertSelftestValid } from '../cli/command.mjs';
 
 const exec = promisify(execFile);
 export const CLOSURE_CHECKS = Object.freeze([
@@ -92,6 +93,13 @@ export async function sealedFeaturePlan(paths, state) {
 }
 
 export async function closureStart({ paths, log }) {
+  // The epoch binds the self-test lock among its inputs. A lock made stale by an environment
+  // re-seal would let all thirteen checks run and only then fail closure-check as STALE.
+  try {
+    await assertSelftestValid(paths);
+  } catch (err) {
+    throw new PreconditionError(`Re-run "t3u selftest-determinism" before closure-start: ${err.message}`);
+  }
   const { context, subject } = await currentSubject(paths);
   if (context.state.contract_a.status !== 'closed' && (!Number.isFinite(Date.parse(context.state.runtime?.deadline_at)) || Date.now() >= Date.parse(context.state.runtime.deadline_at))) {
     throw new PreconditionError('The overnight deadline has passed; a new proof epoch cannot extend the run.');

@@ -27,7 +27,8 @@ configuration.
 Use `typo3-backend-rights` to grant the capability through the audited main editor group for the
 named trusted editors, never directly to users:
 
-- add module `redirects`;
+- add module `redirects` and its v14 parent `link_management`, without which the menu hides it
+  ([known problem](known-problems.md#editors-with-redirects-rights-see-no-redirects-module));
 - add `sys_redirect` to both `tables_select` and `tables_modify`;
 - add every runtime editor-editable `sys_redirect` exclude field, but not read-only, passthrough,
   generated, hit-count or other system-managed fields;
@@ -136,6 +137,10 @@ for assistive technology, not decoration for readers. Let the attribute do its t
 through `:lang()` rules for hyphenation, quotation marks and font stack.
 
 Frontend CSS changes rendering, so this loop follows the re-shoot and approval rule.
+
+Prove that stored formatting survives a 14.3 save with the [RTE round-trip proof](measurement-recipes.md#rte-round-trip-proof):
+second saves unchanged, no stored CKEditor list-item ids, every first-save difference classified
+against what a 12.4 save does.
 
 Exit: open a rich-text element and confirm the preset loads with language and abbreviation controls,
 applies the intended styling, and shows the affordances on marked-up text; confirm the same markup

@@ -82,7 +82,9 @@ t3u graph-report --write
 ```
 
 Read [`references/closure-currentness.md`](references/closure-currentness.md) before claiming
-completion or resuming a stale run.
+completion or resuming a stale run. Before `closure-start`: commit all code, re-run the self-test after
+any re-seal, exclude owner drafts locally ([epoch order](references/closure-currentness.md#epoch-order-what-makes-a-new-epoch-stale)).
+A loop that must run again is a new loop id; close the old one with `t3u loop-supersede --loop NNN --by MMM --reason "…"`.
 
 ## What the harness enforces
 
@@ -99,6 +101,8 @@ completion or resuming a stale run.
 | Locks | Shared readers, exclusive writers, a quiet Lighthouse lane; `graph-next` excludes held resources |
 | Deadlines | A sealed small/large/huge profile (8/24/48 h) with migration cutoff and closure reserve |
 | Closure | `closure-check` binds proof to current code/data; Contract A needs human acceptance of its hash |
+| Lighthouse floors | Migration-window nodes (P05–P10) refuse to open while a Contract A floor in `config/thresholds.yml` is null |
+| Self-test placement | `selftest-determinism` refuses while a guarded code/stateful node runs; `closure-start` refuses a stale lock |
 
 A bounded **loop** may still collect iterations inside one node ([compatibility rules](rules/10-loop-protocol.md));
 it never chooses the next node. Read [`rules/10-graph-protocol.md`](rules/10-graph-protocol.md)
@@ -183,7 +187,15 @@ Read [`rules/20-baseline-integrity.md`](rules/20-baseline-integrity.md),
   sliders, accordions, dropdowns, modals, forms, search, login/reset, 404, media and language.
 - Compare HTTP → DOM → pixels. The first differing stage names the cause and the recovery node.
 - Lighthouse and axe are mandatory verification before closure (`--mode verify`). A green axe run
-  is automated evidence, not a WCAG conformance claim.
+  is automated evidence, not a WCAG conformance claim. Agree the Contract A Lighthouse floors at
+  intake and set them after sealing Baseline A, measured or owner-fixed, before the first migration
+  node ([quality bars](references/quality-bars.md#contract-a-lighthouse-floors-decided-at-intake)).
+- On stateful rungs, force-include one page per plugin/CType whose package changes major, and seal an
+  interim content epoch before `compare-all` ([intermediate loops](references/measurement-recipes.md#intermediate-loops-on-stateful-rungs)).
+- Script journeys by the [proof-script rules](references/measurement-recipes.md#proof-scripts-journeys-sweeps-and-row-diffs);
+  prove RTE saves with the [RTE round trip](references/measurement-recipes.md#rte-round-trip-proof).
+- Never run the self-test inside an open code/stateful node; run one capture or self-test per machine
+  ([guards](references/graph-runner.md#what-the-guards-refuse), [load](references/parallel-execution.md#load-across-projects)).
 - Real editor journeys run through `typo3-playwright`: save/reopen, RTE links, plugin previews,
   AJAX/UTF-8 search. Rich-text migrations need the [field round-trip](../typo3-content-blocks/references/rich-text-roundtrip.md).
 - After patch-level dependency changes, recheck used backend subclasses/DI and affected integrations.
@@ -253,7 +265,8 @@ deployment was performed. Distinguish **implemented**, **verified awaiting accep
 - [`references/feature-evidence.md`](references/feature-evidence.md) · [`references/fleet-regression-contracts.md`](references/fleet-regression-contracts.md)
 - [`references/recent-run-lessons.md`](references/recent-run-lessons.md) and the retrospectives of
   [2026-08](references/run-retrospective-2026-08.md), [2026-09](references/run-retrospective-2026-09.md),
-  [2026-09-16](references/run-retrospective-2026-09-16.md) and [2026-09-17](references/run-retrospective-2026-09-17.md)
+  [2026-09-16](references/run-retrospective-2026-09-16.md), [2026-09-17](references/run-retrospective-2026-09-17.md)
+  and [2026-09-30](references/run-retrospective-2026-09-30.md); [fleet harness pins](references/fleet-profile.md#harness-pins-across-a-fleet)
 - [`references/quality-bars.md`](references/quality-bars.md) · [`references/deployment-handover.md`](references/deployment-handover.md)
 - Overview: [`assets/typo3-upgrade-run-infographic.png`](assets/typo3-upgrade-run-infographic.png) and the
   interactive [Archify workflow](assets/typo3-upgrade-run.archify.html); the YAML graph and executable checks are authoritative

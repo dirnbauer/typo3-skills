@@ -64,6 +64,23 @@ inventories.
 | **A broken or missing XML sitemap** | `EXT:seo` installed but its static TypoScript never included in the root template, so `/sitemap.xml` 500s. Since the sitemap is the sampling source, check it at P00 and expect to baseline from the database instead. |
 | **Single site, single language** | Common, and it makes several loops trivial — but verify from `config/sites/*/config.yaml` rather than assuming, because the multi-site case is the one that silently under-measures. |
 
+## Harness pins across a fleet
+
+Several projects updated at once share one harness history, and fixes land mid-run: in one fleet,
+seven runs were on six different pins within two days.
+
+- Pin every run of a fleet to the same harness revision at start ([P01 step 2b](phases/p01-environment-freeze.md)).
+- `harness.sourceHash` covers every harness `.mjs`, so any pin bump costs each open run an
+  owner-approved environment re-seal, a fresh self-test (~20 min) and a recapture of its open loop.
+  Offer a bump that fixes judgement (it changes a verdict: what is captured, compared, classified or
+  declared, or whether closure can pass) to all open runs at once, with that cost stated per run. A
+  bookkeeping fix that changes no verdict (messages, labels) does not justify it.
+- Runs pinned before a judgement fix may need that re-seal to finish. Before screenshot declarations
+  (harness PR #10) an owner-approved visible change could not be declared; before closure accounting
+  (PR #12) a run with approved declared changes could never close.
+- Re-seal outside guarded nodes: the self-test it requires refuses while a code or stateful node is
+  open ([graph runner](graph-runner.md#what-the-guards-refuse)), and `closure-start` refuses until it has run.
+
 ## How to use this file
 
 Work down it at P00 and write the answers into the intake, including the ones that came back

@@ -4,6 +4,13 @@
 here: **a harness that cannot prove zero against itself, and cannot prove it looked at what it claims
 to have looked at, must refuse to emit a verdict.** Refusing is a distinct exit code, not a warning.
 
+## Contents
+
+- [Exit codes](#exit-codes) · [The gating rule](#the-gating-rule) · [Where the URL guard runs](#where-the-url-guard-runs)
+- [Browser arguments](#browser-arguments) · [Secrets](#secrets) · [Reports](#reports) · [Untrusted text](#untrusted-text)
+- [Coverage honesty](#coverage-honesty) · [Tests](#tests) · [Sampling scope](#sampling-scope-cheap-in-the-loops-exhaustive-at-the-end)
+- [Determinism runtime](#determinism-runtime) · [Where the logs are](#where-the-logs-are-and-why-all-three-matter) · [Final smoke test](#final-smoke-test-no-new-errors)
+
 ## Exit codes
 
 | Code | Name | Meaning | Response |
@@ -134,6 +141,10 @@ Page URLs follow the owning site's `config/sites/*/config.yaml`: language base (
 variant on the run's origin wins) plus its one PageType `default` suffix off the root (`/en/news/`).
 `--languages` matches `languageId`, ISO code, `hreflang`, `locale` or base segment; language 0 is
 always in. Unknown or off-origin languages drop out, rootless pages keep `base + slug`; both warn.
+Sitemap entry points come from the same language bases (`/sitemap.xml` for a default language at `/`,
+`/en/sitemap.xml` for `/en/`) with the same `--languages` selection; without site configuration the
+`/<code>/sitemap.xml` guess stays, with a warning. A blank discovery seed falls back to the run's
+default seed instead of sealing `""`.
 
 When a budget was exhausted, the loop report carries `coverageDegraded: true` and the generated
 summary says so in its **first paragraph**. A report that covered 60% of a site and reads exactly

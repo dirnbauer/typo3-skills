@@ -83,8 +83,38 @@ findings count. An approved declared change, a `pre-existing`, `environment` or 
 it stays in the loop report and in the certificate, but it does not keep the run open. Harness versions before this
 rule counted every open residual, so a run with approved declared changes could never close.
 
-Owner drafts that are untracked in the repository (for example `relaunch/`) block `closure-start` until they are
-classified. Add them to `.git/info/exclude` (local, never committed); the refusal names the top-level paths.
+## Epoch order: what makes a new epoch stale
+
+An epoch binds the source identity, the self-test lock, the environment, the URL manifest and the
+content epoch. Changing any of them after `closure-start` wastes every check run in that epoch; two
+fleet runs lost an epoch each this way. Before `closure-start`:
+
+1. **Commit every code change.** A recovery that commits site code after `closure-start` (a backend fix
+   found by `backend-operations`, or the `settings.php` cleanup of an
+   [admin login](known-problems.md#logging-in-as-admin-or-opening-the-install-tool-changes-tracked-files))
+   makes the epoch stale: the next proof (there `axe-proof`) closes `invalid`, `closure-harness-recovery`
+   finds nothing to repair in the instrument and returns `reproof`, and the route runs
+   `target-content-epoch` again before a new `closure-start`.
+2. **Re-run the self-test after any environment re-seal.** `closure-start` refuses a missing or stale
+   lock (`Re-run "t3u selftest-determinism" before closure-start`). Older pins accepted a stale lock,
+   and `closure-check` refused the epoch as STALE only after all thirteen checks had run. Order:
+   re-seal, self-test, `closure-start`.
+3. **Classify untracked owner folders.** `closure-start` refuses untracked files outside the run
+   directory and names their top-level paths. Add owner drafts (for example `relaunch/`) to
+   `.git/info/exclude`: local, never committed, never `.gitignore`.
+
+The `lighthouse` check also needs floors that were fixed before the first migration node
+([quality bars](quality-bars.md#contract-a-lighthouse-floors-decided-at-intake)); its required fields
+are listed above.
+
+**Reproof mechanics.** `node-close --outcome reproof` prints `exit 2 (OUTCOME reproof): node-close
+recorded <node> as "reproof" and activated <edge>; the exit code reports that outcome, not a failure of
+this command.` Older pins printed `exit 2 (HARNESS_ERROR): The harness failed` for the same, correctly
+recorded close: read the journal (`verdict: reproof`) before retrying anything. Run the new epoch's
+checks in new loops; a green loop never reopens. A quality loop is an invariance loop: run
+`compare-all` and `gate` in it as well, or close a loop the new epoch replaces with
+`t3u loop-supersede --loop <NNN> --by <MMM> --reason "…"`. Until then `gate` refuses with "Active loop
+NNN has no authoritative report.json", because axe and Lighthouse write only artifacts.
 
 ## Invalidation and recovery
 
@@ -122,6 +152,8 @@ open and B locked. This is the unattended terminal checkpoint. A later human acc
 that exact receipt after current source/data/renderer/artifact checks; it does not require rerunning
 unchanged tests merely because the person was asleep. A changed manifest, late test, late initial
 verification or changed input cannot use this route to extend the overnight computation window.
+After the deadline only `t3u approval … --stage acceptance` and `node-open`/`node-close` of
+`contract-a-gate` still run, and only when `closure-verify` recorded the proof before the deadline.
 
 ## Coverage that must not disappear
 

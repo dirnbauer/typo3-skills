@@ -106,6 +106,16 @@ nodes:
     phase: P01
     # Request/verify an authorized local dataset; live sync remains a separate task.
     resources: [ddev-stateful]
+    # findings: the dataset is usable only with named gaps (case-colliding or missing files,
+    # absent tables); the owner decides, instead of a forced pass or a run-ending block.
+    outcomes: [pass, findings, blocked]
+  dataset-acceptance-decision:
+    objective: "Let the owner decide whether a partially usable dataset is accepted with its named gaps or must be replaced."
+    done: "Every gap is named with its effect on proof coverage; the evidence cites the recorded owner answer (approval id) and accepts the dataset as is, or blocks."
+    evidence: nodes/dataset-acceptance-decision/evidence.md
+    review: required
+    skill: typo3-upgrade-intake
+    phase: P01
     outcomes: [pass, blocked]
   sitemap-recovery:
     objective: "Diagnose the missing or broken sitemap and choose a read-only discovery source; the site stays unrepaired until Baseline A exists."
@@ -633,6 +643,9 @@ edges:
   - { id: dataset-blocked, from: dataset-freshness, outcome: blocked, to: stopped }
   - { id: data-retry, from: data-recovery, outcome: pass, to: dataset-freshness, retry: true, max_traversals: 2 }
   - { id: data-recovery-blocked, from: data-recovery, outcome: blocked, to: stopped }
+  - { id: data-recovery-findings, from: data-recovery, outcome: findings, to: dataset-acceptance-decision }
+  - { id: dataset-accepted, from: dataset-acceptance-decision, outcome: pass, to: dataset-freshness, retry: true, max_traversals: 1 }
+  - { id: dataset-acceptance-blocked, from: dataset-acceptance-decision, outcome: blocked, to: stopped }
   - { id: inventory-pass, from: extension-inventory, outcome: pass, to: intake-join }
   - { id: inventory-blocked, from: extension-inventory, outcome: blocked, to: stopped }
   - { id: discovery-pass, from: url-discovery, outcome: pass, to: intake-join }
