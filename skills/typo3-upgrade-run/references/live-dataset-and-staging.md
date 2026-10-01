@@ -39,6 +39,14 @@ node skills/typo3-upgrade-run/scripts/pull-live-dataset.mjs \
   `<project>/<webroot>/fileadmin` first, then rsyncs `<deploy_path>/<fileadmin_path>/`.
   A mirror that mixes old local files with new server files is not the dataset anyone approved.
   The same rule applies to any project script that syncs fileadmin: change it to delete first.
+- **Nothing is deleted before the server side is proven.** The read-only preflight lists the release, what
+  the export runs (`current_path`, `typo3_bin`, `bin/php`) and the fileadmin with its files; a missing
+  piece, an empty fileadmin or an SSH failure refuses with exit 5 before the local fileadmin is touched.
+- **Case-insensitive disks** (the macOS default) keep one of two remote names that differ only in case.
+  The preflight lists the colliding names and refuses with exit 5. Pull onto an APFS case-sensitive
+  volume, or accept the loss with `--accept-case-collisions <evidence-file>` (the owner's decision);
+  `live-dataset.json` records the file's SHA-256 and the collision list, and the count check expects the
+  lost files. A dataset accepted with such gaps goes through `dataset-acceptance-decision`.
 - `_processed_/` and `_temp_/` are not copied; TYPO3 regenerates them. Caches, sessions, locks,
   `sys_log` and `sys_http_report` are not exported.
 - The script compares server and local file counts and writes `live-dataset.json` with release,

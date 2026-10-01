@@ -134,6 +134,10 @@ Page URLs follow the owning site's `config/sites/*/config.yaml`: language base (
 variant on the run's origin wins) plus its one PageType `default` suffix off the root (`/en/news/`).
 `--languages` matches `languageId`, ISO code, `hreflang`, `locale` or base segment; language 0 is
 always in. Unknown or off-origin languages drop out, rootless pages keep `base + slug`; both warn.
+Sitemap entry points come from the same language bases (`/sitemap.xml` for a default language at `/`,
+`/en/sitemap.xml` for `/en/`) with the same `--languages` selection; without site configuration the
+`/<code>/sitemap.xml` guess stays, with a warning. A blank discovery seed falls back to the run's
+default seed instead of sealing `""`.
 
 When a budget was exhausted, the loop report carries `coverageDegraded: true` and the generated
 summary says so in its **first paragraph**. A report that covered 60% of a site and reads exactly

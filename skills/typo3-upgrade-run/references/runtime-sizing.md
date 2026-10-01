@@ -77,7 +77,9 @@ dimension against several small ones.
 Count a stateful migration unit per independently reversible data/schema operation such as a rung,
 Mask/Content Blocks data move, list_type→CType move, schema quarantine, Solr rebuild, or rights
 rewrite. Count blockers that still need a supported release, replacement, local port, compatibility
-fork, or approved removal.
+fork, or approved removal. Count every package that blocks `composer why-not typo3/cms-core ^14.3`
+once, whether it sits in `require` or `require-dev`: a dev-only package that needs an approved removal
+is a blocker like a fork.
 
 ## Evidence format
 
