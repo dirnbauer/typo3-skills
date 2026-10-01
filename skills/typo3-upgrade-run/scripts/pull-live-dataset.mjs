@@ -41,10 +41,10 @@ import { execFileSync, spawn } from 'node:child_process';
 import { createHash, randomBytes } from 'node:crypto';
 import { createReadStream, createWriteStream, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { createGzip } from 'node:zlib';
 import { parse as parseYaml } from 'yaml';
+import { isMain } from './lib/cli/is-main.mjs';
 
 export const SCHEMA = 'typo3-upgrade-run/live-dataset@1';
 export const DB_EXCLUDES = Object.freeze(['cache_*', 'cf_*', 'be_sessions', 'fe_sessions', 'sys_lockedrecords', 'sys_log', 'sys_http_report']);
@@ -435,6 +435,6 @@ async function main(argv) {
   }
 }
 
-if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {
+if (isMain(import.meta.url)) {
   process.exitCode = await main(process.argv.slice(2));
 }

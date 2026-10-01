@@ -2,7 +2,7 @@
 
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { isMain } from './lib/cli/is-main.mjs';
 
 const SKIP_DIRS = new Set(['.Build', '.git', 'node_modules', 'vendor']);
 
@@ -189,6 +189,6 @@ async function main(argv) {
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (isMain(import.meta.url)) {
   process.exitCode = await main(process.argv.slice(2));
 }

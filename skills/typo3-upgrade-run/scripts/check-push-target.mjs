@@ -1,9 +1,8 @@
 #!/usr/bin/env node
 /** Offline destination preflight, not a push wrapper or transport/authorization proof. */
 import { execFileSync } from 'node:child_process';
-import { resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
+import { isMain } from './lib/cli/is-main.mjs';
 
 export function parsePushDestination(value) {
   const invalid = { issue: 'Unsupported or ambiguous URL; require credential-free HTTPS or canonical git SSH.' };
@@ -59,7 +58,7 @@ export function checkPushTarget({ repo, remote, env = process.env }) {
   return result;
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+if (isMain(import.meta.url)) {
   try {
     const { values } = parseArgs({ options: { repo: { type: 'string' }, remote: { type: 'string' } }, allowPositionals: false });
     if (!values.repo || !values.remote) throw new Error('arguments');

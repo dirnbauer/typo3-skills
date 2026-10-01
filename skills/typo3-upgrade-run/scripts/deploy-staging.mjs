@@ -25,9 +25,9 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { checkedHost, readHosts, remotePaths, sshArgs, sshTarget } from './pull-live-dataset.mjs';
+import { isMain } from './lib/cli/is-main.mjs';
 
 const STAGING_LABELS = new Set(['staging', 'stage', 'testing', 'test', 'development', 'dev']);
 const PRODUCTION_LABELS = /^(prod|production|live|www|master|main)$/i;
@@ -213,6 +213,6 @@ async function main(argv) {
     skipPlatformCheck: values['skip-platform-check']?.trim() || null });
 }
 
-if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {
+if (isMain(import.meta.url)) {
   process.exitCode = await main(process.argv.slice(2));
 }

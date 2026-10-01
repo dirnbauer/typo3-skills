@@ -15,7 +15,7 @@
 
 import { readFile, access, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { isMain } from './lib/cli/is-main.mjs';
 
 const HASHED_OUTPUT = /-[A-Za-z0-9_-]{8,}\.[A-Za-z0-9]+$/;
 
@@ -112,6 +112,6 @@ async function main(argv) {
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (isMain(import.meta.url)) {
   process.exitCode = await main(process.argv.slice(2));
 }

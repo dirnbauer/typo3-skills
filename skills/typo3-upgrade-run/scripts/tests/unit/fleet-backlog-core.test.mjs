@@ -470,3 +470,29 @@ describe('harness source hash covers measurement code only (#33)', async () => {
     }
   });
 });
+
+describe('standalone scripts run when started through a symlink', async () => {
+  const { isMain } = await import('../../lib/cli/is-main.mjs');
+  const { symlink, mkdtemp: tmp, rm: remove } = await import('node:fs/promises');
+  const { pathToFileURL, fileURLToPath } = await import('node:url');
+  const { execFileSync } = await import('node:child_process');
+
+  test('isMain compares real paths, so a symlinked harness pin still runs the script', async () => {
+    const real = fileURLToPath(new URL('../../pull-live-dataset.mjs', import.meta.url));
+    const dir = await tmp(path.join(os.tmpdir(), 't3u-symlink-'));
+    try {
+      const link = path.join(dir, 'harness');
+      await symlink(path.dirname(real), link);
+      const viaLink = path.join(link, 'pull-live-dataset.mjs');
+      assert.equal(isMain(pathToFileURL(real).href, viaLink), true);
+      assert.equal(isMain(pathToFileURL(real).href, path.join(dir, 'missing.mjs')), false);
+      assert.equal(isMain(pathToFileURL(real).href, undefined), false);
+      // The old guard made this a silent exit 0 without output.
+      let out = '';
+      try { execFileSync(process.execPath, [viaLink], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }); } catch (err) { out = String(err.stderr); }
+      assert.match(out, /Usage: pull-live-dataset\.mjs/, 'the script must run and print its usage');
+    } finally {
+      await remove(dir, { recursive: true, force: true });
+    }
+  });
+});
