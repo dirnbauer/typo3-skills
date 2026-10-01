@@ -92,9 +92,9 @@ export function createImageDigester(guard, { fetchImpl } = {}) {
       });
       return imageDigestRecord({ url: null, status: res.status, contentType: res.contentType, buffer: res.buffer });
     } catch (err) {
-      return imageDigestRecord({
-        url: null, error: err?.exitCode === 5 ? 'refused by the URL policy' : String(err?.message ?? err).slice(0, 160),
-      });
+      // Exit code 5 covers an origin outside the run's allow-list and the response size cap alike.
+      const message = String(err?.message ?? err).split('\n', 1)[0].slice(0, 160);
+      return imageDigestRecord({ url: null, error: err?.exitCode === 5 ? `refused by policy: ${message}` : message });
     }
   };
   return async (rawUrl, pageUrl) => {

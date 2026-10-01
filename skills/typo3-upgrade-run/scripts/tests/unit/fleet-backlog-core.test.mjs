@@ -185,7 +185,7 @@ describe('image content digests (#25)', () => {
     assert.equal(second.sha256, first.sha256);
     assert.match(first.pixelSha256, /^sha256:/);
     const refused = await digester('https://cdn.example.org/og.png', 'https://acme.ddev.site/');
-    assert.equal(refused.error, 'refused by the URL policy');
+    assert.match(refused.error, /^refused by policy: origin not allowed/);
     assert.equal(refused.sha256, undefined);
   });
 });
