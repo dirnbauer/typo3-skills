@@ -46,7 +46,24 @@ export const RECORDED_ONLY = Object.freeze([
   'php.version', 'php.extensionsHash', 'typo3.version', 'typo3.context',
   'imageProcessing.gfxHash', 'imageProcessing.typo3Gfx',
   'ddev.projectType', 'ddev.dbEngine',
+  'harness.bookkeepingHash',
 ]);
+
+/**
+ * Harness code that produces or judges evidence: capture, settle, normalise, compare, classify,
+ * fingerprint, network and sampling. Only this code is `harness.sourceHash`; changing it voids
+ * sealed comparisons. Run bookkeeping (state, graph, closure, approvals, reports, CLI) is hashed
+ * as `harness.bookkeepingHash` and recorded: a bookkeeping fix such as a closure counter then no
+ * longer invalidates every sealed run, while its use stays visible in each fingerprint. A file
+ * that mixes both (compare.mjs, sweep.mjs) counts as measurement.
+ */
+export function isMeasurementSource(relative) {
+  const file = relative.split(path.sep).join('/');
+  return file === 'package.json'
+    || /^lib\/(compare|browser|fingerprint|net)\//.test(file)
+    || ['lib/actions/capture.mjs', 'lib/actions/compare.mjs', 'lib/actions/sweep.mjs',
+      'lib/util/rng.mjs', 'lib/util/pool.mjs', 'lib/util/worker-pool.mjs', 'lib/util/machine-resources.mjs'].includes(file);
+}
 
 export async function collectEnvironment({
   runner = safeRun,
@@ -55,11 +72,12 @@ export async function collectEnvironment({
   harnessVersion = '2.1.0',
   depsLockHash = null,
   sourceHash = null,
+  bookkeepingHash = null,
   rendering = {},
   launchArgs = [],
 } = {}) {
   const runInApp = appRunner ?? ((cmd, args) => ddevRun(cmd, args, ddevProject));
-  const identity = await harnessIdentity({ depsLockHash, sourceHash });
+  const identity = await harnessIdentity({ depsLockHash, sourceHash, bookkeepingHash });
   const [playwrightVersion, browser, fonts, php, typo3, ddev, imaging] = await Promise.all([
     detectPlaywright(),
     detectBrowser(runner),
@@ -228,27 +246,27 @@ async function detectImaging(runner) {
   };
 }
 
-async function harnessIdentity({ depsLockHash, sourceHash }) {
+async function harnessIdentity({ depsLockHash, sourceHash, bookkeepingHash }) {
   const lock = depsLockHash ?? await hashFile(path.join(SCRIPT_ROOT, 'package-lock.json'));
-  const source = sourceHash ?? await hashSourceTree(SCRIPT_ROOT);
-  return {
-    depsLockHash: lock ? `sha256:${lock.replace(/^sha256:/, '')}` : null,
-    sourceHash: source ? `sha256:${source.replace(/^sha256:/, '')}` : null,
-  };
+  const source = sourceHash ?? await hashSourceTree(SCRIPT_ROOT, isMeasurementSource);
+  const bookkeeping = bookkeepingHash ?? await hashSourceTree(SCRIPT_ROOT, (file) => !isMeasurementSource(file));
+  const prefixed = (value) => (value ? `sha256:${value.replace(/^sha256:/, '')}` : null);
+  return { depsLockHash: prefixed(lock), sourceHash: prefixed(source), bookkeepingHash: prefixed(bookkeeping) };
 }
 
 async function hashFile(file) {
   try { return sha256(await readFile(file)); } catch { return null; }
 }
 
-async function hashSourceTree(root) {
+export async function hashSourceTree(root, include = () => true) {
   const files = [];
   async function walk(dir) {
     for (const entry of (await readdir(dir, { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name))) {
       if (['node_modules', 'tests', '.typo3-update'].includes(entry.name)) continue;
       const absolute = path.join(dir, entry.name);
       if (entry.isDirectory()) await walk(absolute);
-      else if (entry.isFile() && (entry.name.endsWith('.mjs') || entry.name === 'package.json')) files.push(absolute);
+      else if (entry.isFile() && (entry.name.endsWith('.mjs') || entry.name === 'package.json')
+        && include(path.relative(root, absolute))) files.push(absolute);
     }
   }
   try { await walk(root); } catch { return null; }

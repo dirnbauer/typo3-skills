@@ -431,3 +431,37 @@ describe('video first frame under load (#21)', async () => {
     assert.match(capture, /if \(settle\.videoStillLoading > 0\) \{\s*throw new Error/);
   });
 });
+
+describe('harness source hash covers measurement code only (#33)', async () => {
+  const { isMeasurementSource, hashSourceTree, HASH_RELEVANT, RECORDED_ONLY } = await import('../../lib/fingerprint/environment.mjs');
+
+  test('evidence code is measurement; run bookkeeping is recorded only', () => {
+    for (const file of ['lib/compare/http-meta.mjs', 'lib/browser/stabilize.mjs', 'lib/net/safe-fetch.mjs',
+      'lib/fingerprint/content.mjs', 'lib/actions/capture.mjs', 'lib/actions/compare.mjs', 'lib/actions/sweep.mjs',
+      'lib/util/rng.mjs', 'package.json']) assert.equal(isMeasurementSource(file), true, file);
+    for (const file of ['lib/actions/closure.mjs', 'lib/actions/graph.mjs', 'lib/actions/lifecycle.mjs', 'lib/run/state.mjs',
+      'lib/cli/command.mjs', 'lib/report/write.mjs', 't3u.mjs', 'pull-live-dataset.mjs']) assert.equal(isMeasurementSource(file), false, file);
+    assert.ok(HASH_RELEVANT.includes('harness.sourceHash'));
+    assert.ok(RECORDED_ONLY.includes('harness.bookkeepingHash'));
+  });
+
+  test('a bookkeeping edit leaves the compared hash unchanged', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 't3u-source-'));
+    try {
+      await mkdir(path.join(root, 'lib', 'compare'), { recursive: true });
+      await mkdir(path.join(root, 'lib', 'actions'), { recursive: true });
+      await writeFile(path.join(root, 'lib', 'compare', 'a.mjs'), 'export const a = 1;\n');
+      await writeFile(path.join(root, 'lib', 'actions', 'closure.mjs'), 'export const b = 1;\n');
+      const measured = () => hashSourceTree(root, isMeasurementSource);
+      const kept = () => hashSourceTree(root, (file) => !isMeasurementSource(file));
+      const [m1, k1] = [await measured(), await kept()];
+      await writeFile(path.join(root, 'lib', 'actions', 'closure.mjs'), 'export const b = 2;\n');
+      assert.equal(await measured(), m1);
+      assert.notEqual(await kept(), k1);
+      await writeFile(path.join(root, 'lib', 'compare', 'a.mjs'), 'export const a = 2;\n');
+      assert.notEqual(await measured(), m1);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+});
