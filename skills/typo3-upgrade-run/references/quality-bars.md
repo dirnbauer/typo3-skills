@@ -21,10 +21,13 @@ Contract A Lighthouse floors in config/thresholds.yml before the site changes". 
 the owner sets them, and never lower a floor after a failing run:
 
 - **Measured on the sealed Baseline A, before the first migration node.** Measure the unchanged old site
-  with the harness-pinned Lighthouse on the harness's fixed sample (homepage plus two seeded pages),
-  three runs per URL, mobile and desktop, medians. `t3u lighthouse` itself runs only inside an open
-  Contract A loop, so the pilot ran the pinned Lighthouse directly. It set each floor at the lowest old
-  median per category, minus 5 for performance (local lab variance), nothing for the audit categories.
+  on the harness's fixed sample (homepage plus two seeded pages), three runs per URL, mobile and desktop,
+  medians. `t3u lighthouse` runs only inside an open Contract A invariance loop against the sealed
+  A-original and refuses a budget with a null floor: open a measurement loop (`loop-start --track
+  invariance`, `loop-open --rollback-ref HEAD`), pass a provisional budget file whose floors are all 1,
+  record the medians, then `loop-supersede` that loop by the first rung loop. The pilot, before
+  `loop-supersede` existed, ran the pinned Lighthouse directly. Each floor is the lowest old median per
+  category, minus 5 for performance (local lab variance), nothing for the audit categories.
 - **Fixed tripwires** when the owner prefers them. They catch a gross regression and nothing else.
   One run settled its floors only after the migration, with no old copy left to measure, and chose 80
   for performance; the final medians were 69–76 on two of three URLs, a slow LCP from a CSS background

@@ -122,6 +122,12 @@ report to change a class.
   (`before` regex → `after` text), and only where the new document no longer contains the old form. A
   `whole_document` DOM rule must be scoped with `url`; it declares that page's DOM **and its screenshots**, and it is the
   only way a pixel difference can be declared. `url` is an optional regex on the page URL.
+- The normalised document carries placeholders such as `<H>` (asset hash) or `<T>` (token) inside URLs and
+  attribute values. In a DOM `before` pattern, the in-tag classes `[^>]` and `[^<>]` therefore also match one
+  whole placeholder; any other class stops at its `>`, so write in-tag spans with one of those two.
+- A processed-image rename in og:image/twitter:image needs no rule: the HTTP stage accepts it only when the
+  capture recorded identical bytes or identical PNG pixels for both files, and lists it under
+  `metaImageRenames` in the report. Different content stays a difference.
 - A rule counts only when its `approval_ref` is a granted user approval of this run (in `state.json` and in
   `approvals/`). Refused rules are listed in the stage report and change nothing.
 - The file's hash is part of every stage report's inputs, so all three stages of one comparison judge with the
