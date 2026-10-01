@@ -151,3 +151,12 @@ journal, retries used, phase totals, running nodes and whether the audit trail i
 | A specialist closes `not-applicable` alone | missing independent review |
 | A reviewer checks yesterday's evidence | review names different evidence bytes |
 | A third identical recovery attempt | retry edge exhausted: re-plan, do not repeat |
+| `selftest-determinism` while a guarded code/stateful node is open (an approved re-seal inside `rung-14`) | refused, naming the open nodes: the self-test rewrites `selftest.lock.json`, a measurement input |
+| A migration-window node (P05–P10) opens while a Contract A Lighthouse floor is null | refused until the owner's floors are in `config/thresholds.yml` ([quality bars](quality-bars.md#contract-a-lighthouse-floors-decided-at-intake)) |
+
+Rule 10.9 fingerprints the measurement inputs, `selftest.lock.json` among them, at `node-open`; only
+measurement nodes may change them. Run the self-test before opening a code or stateful node, after
+closing it, or inside a measurement node (`harness-recovery`, `closure-harness-recovery`). On older pins
+the self-test ran inside the open node and changed the lock, and the node could then close only as
+`blocked`: one fleet run lost its green `rung-14` close that way after an approved environment re-seal.
+A failed self-test deletes the lock as well, so every `compare-*` refuses until the next pass.

@@ -16,7 +16,7 @@ Nothing in this skill is "remembered". It is written down, and the gates read wh
 │   ├── run.yml                     domain, languages, golden paths, budgets, contract-B opt-ins
 │   ├── upgrade-graph.yml           sealed nodes, outcome edges, resources, retry bounds
 │   ├── sample.txt                  S_A — the frozen URL sample; never edited after sealing
-│   └── thresholds.yml              visual thresholds, loop budgets, contract-B targets
+│   └── thresholds.yml              visual thresholds, loop budgets, Contract A Lighthouse floors, contract-B targets
 ├── manifests/
 │   ├── url-manifest.json           seed, all URLs, tiers, clusters, viewports, coverage
 │   ├── environment.json            renderer identity hashed; GFX config recorded as upgrade subject

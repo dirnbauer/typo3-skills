@@ -103,7 +103,9 @@ the actual URL ids and a reason from a fixed set. When a budget is exhausted, th
 summary says so in its first paragraph.
 
 Ordinary iterations do not run this full state matrix. They capture only `default` on affected
-pages plus critical/template representatives and seeded random sentinels. Baseline, exhaustive
+pages plus critical/template representatives and seeded random sentinels; a rung also passes one page
+per plugin/CType of every package whose major version it changes
+([intermediate loops](measurement-recipes.md#intermediate-loops-on-stateful-rungs)). Baseline, exhaustive
 determinism, and final closure capture exactly `default`, `keyboard-focus`, and `nav-open`.
 Dropdown, accordion, form, modal, and consent behaviour use targeted flows only when affected.
 

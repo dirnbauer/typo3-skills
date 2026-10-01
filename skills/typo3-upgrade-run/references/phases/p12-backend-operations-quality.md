@@ -8,6 +8,7 @@ canonical tests and the checks whose subject was changed by the upgrade. Keep th
 below for those cases; record the rest `not-applicable` with inventory evidence. A full security,
 conformance, simplification, editor-permission, search, CI, and documentation programme is optional
 Contract B work unless a concrete blocker or touched boundary makes it necessary for v14 parity.
+Write journey and sweep scripts by the [proof-script rules](../measurement-recipes.md#proof-scripts-journeys-sweeps-and-row-diffs).
 
 ## Backend and operations recipes
 

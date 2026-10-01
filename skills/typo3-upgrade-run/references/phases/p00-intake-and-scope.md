@@ -182,10 +182,15 @@ shortened proof or a false pass.
 15. **Ask about commercially licensed extensions.** Paid extensions usually need a new licence for a
    new major, served from a private repository. That is a purchase with lead time, not a dependency
    problem, and it surfaces mid-P05 as an opaque 403. Identify them now.
-16. Create the run directory and fill `config/run.yml`: trusted origin (scheme included), every site,
+16. **Agree how the Contract A Lighthouse floors are set.** Measured on the old site once Baseline A
+   is sealed (preferred), or fixed tripwires with their known limit: a slow LCP the old site already
+   had can sit below a generic floor while markup and pixels stay identical. Either way the owner's
+   floors must be in `config/thresholds.yml` before the first migration node opens; see
+   [quality bars](../quality-bars.md#contract-a-lighthouse-floors-decided-at-intake).
+17. Create the run directory and fill `config/run.yml`: trusted origin (scheme included), every site,
    languages as the site's real prefixes, golden paths, budgets.
-17. Ask once whether the run directory should be committed, and record the answer.
-18. Write `ADR-001-scope.md`.
+18. Ask once whether the run directory should be committed, and record the answer.
+19. Write `ADR-001-scope.md`.
 
 ## Evidence
 `state.json` initialised · `config/run.yml` · `decisions/ADR-001-scope.md`

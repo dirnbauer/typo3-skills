@@ -17,19 +17,33 @@ matching symptom with a different cause is exactly how a wrong fix gets applied 
 - [The `<html>` language attributes are wrong, missing or contradictory](#the-html-language-attributes-are-wrong-missing-or-contradictory)
 - [Forms lose their styling: inputs collapse to browser-default width](#forms-lose-their-styling-inputs-collapse-to-browser-default-width)
 - [Content tables lose their padding and the page gets shorter](#content-tables-lose-their-padding-and-the-page-gets-shorter)
-- [TypoScript silently stops loading after the v14 rung](#typoscript-silently-stops-loading-after-the-v14-rung)
+- [TypoScript silently stops loading after the v14 rung, or every page answers 500](#typoscript-silently-stops-loading-after-the-v14-rung-or-every-page-answers-500)
 - [Image optimisation configured, nothing got smaller](#image-optimisation-configured-nothing-got-smaller)
 - [A correct HTML fix silently moves the layout](#a-correct-html-fix-silently-moves-the-layout)
 - [Shared links show no preview image](#shared-links-show-no-preview-image)
 - [Editors lose their modules, or gain all of them](#editors-lose-their-modules-or-gain-all-of-them)
 - [Every CLI command dies in alias-loader-include.php](#every-cli-command-dies-in-alias-loader-includephp)
 - [extension:setup fails inside a sitepackage's ext_localconf.php](#extensionsetup-fails-inside-a-sitepackages-ext_localconfphp)
-- [Rector is clean only after a second applied pass](#rector-is-clean-only-after-a-second-applied-pass)
+- [Generated code can require another bounded Rector pass](#generated-code-can-require-another-bounded-rector-pass)
 - [Fractor cannot find the generated extension registry](#fractor-cannot-find-the-generated-extension-registry)
 - [Composer metadata says compatible, runtime still breaks](#composer-metadata-says-compatible-runtime-still-breaks)
 - [Static analysis says addTCAcolumns expects exactly 2 arguments](#static-analysis-says-addtcacolumns-expects-exactly-2-arguments)
 - [A local ext_emconf.php reports an undefined $_EXTKEY](#a-local-ext_emconfphp-reports-an-undefined-_extkey)
 - [A read-only command dirtied config/system/settings.php](#a-read-only-command-dirtied-configsystemsettingsphp)
+- [A powermail form loses its styling or layout after the 13.4 rung](#a-powermail-form-loses-its-styling-or-layout-after-the-134-rung)
+- [Every page's og:image reads "Oops, an error occurred!" after Fractor](#every-pages-ogimage-reads-oops-an-error-occurred-after-fractor)
+- [RTE content renders as escaped tags after the v14 rung](#rte-content-renders-as-escaped-tags-after-the-v14-rung)
+- [A list renders empty after the v14 rung, or a site-package class is fatal](#a-list-renders-empty-after-the-v14-rung-or-a-site-package-class-is-fatal)
+- [Relative asset URLs load a 404 page under a trailing slash](#relative-asset-urls-load-a-404-page-under-a-trailing-slash)
+- [An external-link page loses its URL when it is restored](#an-external-link-page-loses-its-url-when-it-is-restored)
+- [Sitemap index child URLs change after the v14 rung](#sitemap-index-child-urls-change-after-the-v14-rung)
+- [Processed images change name or lose 1 px after the v14 rung](#processed-images-change-name-or-lose-1-px-after-the-v14-rung)
+- [Stored rich text gains `data-list-item-id` on every list item](#stored-rich-text-gains-data-list-item-id-on-every-list-item)
+- [Editors with Redirects rights see no Redirects module](#editors-with-redirects-rights-see-no-redirects-module)
+- [A backend module is gone for admins, or fails on a protected method](#a-backend-module-is-gone-for-admins-or-fails-on-a-protected-method)
+- [Vite 8 fails on Sass imports or rewrites the CSS](#vite-8-fails-on-sass-imports-or-rewrites-the-css)
+- [A spam test submission is rejected without any message](#a-spam-test-submission-is-rejected-without-any-message)
+- [Logging in as admin or opening the Install Tool changes tracked files](#logging-in-as-admin-or-opening-the-install-tool-changes-tracked-files)
 
 ---
 
@@ -309,7 +323,7 @@ a styling bug. Grep the stylesheet for class names Core used to supply — `cont
 
 ---
 
-## TypoScript silently stops loading after the v14 rung
+## TypoScript silently stops loading after the v14 rung, or every page answers 500
 
 **Symptom.** After the 14.x rung, configuration that used to apply is simply gone. A menu renders
 unstyled, a plugin loses its settings, a whole library of TypoScript behaves as if it was never
@@ -345,6 +359,14 @@ against the installed version:
 +@import 'EXT:my_ext/Configuration/TypoScript/*.txt'
 +@import 'fileadmin/templates/legacy.txt'
 ```
+
+**Only for the files it processes.** On one fleet site Fractor's `UP_TO_TYPO3_14` set rewrote the
+`.typoscript` files and left a static template's `setup.txt` and `constants.txt` untouched. 14.3's
+`SysTemplateTreeBuilder` still loads `.typoscript`, `.ts` and `.txt` static-template files, so both
+loaded while their fourteen include lines vanished: no `PAGE` object, HTTP 500 "No page configured for
+type=0" on every page, although 13.4 had rendered. Convert the includes to `@import` (the fix) and
+`git mv` the files to `.typoscript` (same load position; Fractor processes them next time). The grep
+below matches every file extension: treat any hit as a hard gate before the 14 rung.
 
 **The gap is the database, and it is the common case.** Fractor is a file processor: it walks the
 paths given to `withPaths()`. On sites of this generation the includes overwhelmingly live in
@@ -677,3 +699,333 @@ they write every `ext_conf_template.txt` default that is missing from `EXTENSION
 **Fix.** Treat those commands as writes. Record `git status` and `git diff config/system/settings.php`
 before and after them, and revert the drift (or record it as its own change) before sealing the
 fingerprints. It is neither a project edit nor a migration result; never attribute it to either.
+
+---
+
+## A powermail form loses its styling or layout after the 13.4 rung
+
+**Symptom.** After powermail 12 → 13 on the 13.4 rung, the `Basic.css` link disappears from every
+page, or the form page changes: grid classes gone, labels, selects and buttons restyled, labels above
+instead of beside the fields. Pages without a form stay identical, so an intermediate sample that never
+draws the form page stays green ([intermediate loops](measurement-recipes.md#intermediate-loops-on-stateful-rungs)).
+
+**Cause.** Four independent powermail 13 changes:
+
+| powermail 13 | Effect on a 12.x site |
+|---|---|
+| `page.includeCSS.powermailBasicCss` moved from `BootstrapClassesAndLayout` into the new `Powermail_Styling` static template | a root template listing only the old template loses `Basic.css`; TYPO3 ignores the dead include silently |
+| `BootstrapClassesAndLayout` removed | the site's `plugin.tx_powermail.settings.styles.bootstrap.*` constants lose their only reader |
+| `Basic.css` styles the whole form (12.x: error list and progress bar only) | labels, selects, legends, buttons and spacing change |
+| field partials render the label inside `<div class="{fieldWrappingClasses}">` | in a horizontal grid the label moves above the field |
+
+**Fix (Contract A).**
+
+1. `@import` the `Powermail_Styling` constants and setup from the site package, the setup before the
+   site package's own includes, so the stylesheet keeps its place in `<head>`.
+2. Set the same values as `plugin.tx_powermail.settings.styles.framework.*`, including the 12.x
+   defaults the site relied on (`radioClasses`, `checkClasses`, `numberOfColumns`).
+3. Ship 12.x `Basic.css` verbatim in the site package and point `plugin.tx_powermail.settings.BasicCss`
+   at it; declare its new URL. Adopting 13's form design is a Contract B step with its own proof.
+4. Override the partials of the field types in use (`plugin.tx_powermail.view.partialRootPaths`), with
+   only the label moved back. Record the field types left on 13's markup.
+
+---
+
+## Every page's og:image reads "Oops, an error occurred!" after Fractor
+
+**Symptom.** After the mechanical pass every page renders
+`<meta property="og:image" content="Oops, an error occurred! …">`; the baseline had no og:image tag.
+
+**Cause.** `path:` getData is gone in v14, and Fractor's `MigrateTypoScriptGetDataPathFractor` rewrites
+`data = path:…` to `asset:…`. A fallback with a malformed path (`path:EXT:site_package//Resources/…`,
+note the double slash) resolved to nothing on 12.4 and 13.4, so no tag rendered; `asset:` throws on it.
+
+**Fix.** Resolve the target of every `path:` → `asset:` hunk in the Fractor diff. Remove a path that
+never resolved (Contract A keeps "no tag"); correcting it adds an og:image the baseline never had, an
+owner decision for Contract B. A working `asset:` reference appends a cache-busting version query:
+declare it ([rule 30.8](../rules/30-finding-classification.md#308-declared-changes-are-rules-not-edits)).
+
+---
+
+## RTE content renders as escaped tags after the v14 rung
+
+**Symptom.** After the 14.3 rung rich text shows its tags as text on nearly every content page (one
+site: 230 of 231 DOM records and 243 of 360 screenshots differed). Nothing is logged.
+
+**Cause.** 14.0 removed fluid_styled_content's parseFunc (Breaking-107438). A site override that
+*extended* it now defines it alone: `lib.parseFunc_RTE.allowTags := addToList(object,param,embed,iframe)`
+extended 13.4's `allowTags = *` and on 14.3 is a four-tag allow list, so every other tag is escaped.
+
+**Fix.** Keep fluid_styled_content 13.4's `Helper/ParseFunc.typoscript` verbatim in the site package,
+its constants inlined with their 13.4 values, and `@import` it first, where fsc's static template
+loaded it. Flag the pattern at the mechanical node, before the 14 rung:
+
+```bash
+grep -rnE 'allowTags *:= *addToList|styles\.content\.links\.|lib\.parseFunc' packages/ config/
+ddev mysql -N -e "SELECT uid, title FROM sys_template WHERE deleted=0
+  AND (config LIKE '%parseFunc%' OR constants LIKE '%styles.content.links%');"
+```
+
+See also [content tables lose their padding](#content-tables-lose-their-padding-and-the-page-gets-shorter).
+
+---
+
+## A list renders empty after the v14 rung, or a site-package class is fatal
+
+**Symptom.** A plugin list renders empty with HTTP 200 and no message, or every page using a
+site-package class dies with `Non-readonly class … cannot extend readonly class …`.
+
+**Cause.** Site-package PHP written against the old core class shapes. On one site a crop helper
+`extends HtmlCropper` and was created with `makeInstance()`. On 14.3 the parent is `readonly`, its
+constructor requires a `LoggerInterface` (`makeInstance()` outside DI passes none), and
+`TYPO3\CMS\Core\Html\TextCropper` moved to `TYPO3\CMS\Core\Text\TextCropper`. The content object's
+`ProductionExceptionHandler` swallowed the constructor error: the news list rendered nothing.
+
+**Fix.** Make the subclass `final readonly class`, construct it with a logger from `LogManager`, update
+moved namespaces. At the 14 rung, check site-package PHP against the target vendor: every `use` and
+`::class` target exists, `readonly`/`final` parents, constructor arity of `makeInstance()` targets
+(for example PHPStan level 0 with the target vendor; see [TYPO3 14 readiness checks](typo3-14-readiness-checks.md)).
+After every smoke run read the frontend log; a swallowed content-object exception never changes the
+status code:
+
+```bash
+grep -n 'ProductionExceptionHandler' var/log/typo3_*.log
+```
+
+---
+
+## Relative asset URLs load a 404 page under a trailing slash
+
+**Symptom.** After the v14 rung the powermail captcha image is broken on `/contact/` but not on
+`/contact`, so the form cannot be solved. Where the captcha is a declared randomized region, the
+self-test fails with `randomized region failed integrity: … (image-not-loaded)` on that page.
+
+**Cause.** 14.0 no longer prefixes relative content links (Breaking-108114). 12.4 and 13.4 turned
+`src="typo3temp/assets/…/Captcha….png"` into `/typo3temp/…` in the global `absRefPrefix`
+post-processing; 14 leaves it relative, and the browser resolves it against the page path and loads the
+site's soft-404 HTML.
+
+**Fix.** Emit an absolute path where the URL is built: in the ViewHelper, or meanwhile in a
+site-package template override that `f:replace`s the leading `typo3temp/` with `/typo3temp/`. Then
+search the target capture for every other relative asset URL; each hit is a regression, also where it
+works by accident (no trailing slash):
+
+```bash
+grep -rhoE '(src|href)="(typo3temp|fileadmin|typo3conf|_assets)/[^"]*' <after>/dom/ | sort | uniq -c
+```
+
+---
+
+## An external-link page loses its URL when it is restored
+
+**Symptom.** After the 14.3 rung a deleted or hidden page of type External URL (doktype 3) has an
+empty `link`; restored from the recycler or unhidden, it points nowhere. `upgrade:list` never offered
+`pageDoktypeLinkMigration` although `pages.url` held a value.
+
+**Cause.** The wizard migrates `pages.url` to `pages.link`, but its `updateNecessary()` count and its
+select keep the QueryBuilder default restrictions: deleted and hidden pages are neither counted nor
+migrated. The later schema `*.prefix` step moves `pages.url` to `zzz_deleted_url`.
+
+**Fix.** Before the 14.3 schema cleanup, list the rows the wizard skips and decide each one in the
+ledger: migrate it with a reviewed update, or keep `zzz_deleted_url` (never drop it while such rows
+exist) and name the pages in the handover.
+
+```bash
+ddev mysql -N -e "SELECT uid, deleted, hidden, url FROM pages WHERE doktype = 3 AND url <> '';"
+```
+
+---
+
+## Sitemap index child URLs change after the v14 rung
+
+**Symptom.** `/sitemap.xml` links its children as `?tx_seo[sitemap]=pages&cHash=…` instead of
+`?sitemap=pages&cHash=…`, and the 12.4 child URLs now answer with the sitemap index, not a `urlset`.
+
+**Cause.** v14's `XmlSitemapRenderer` reads the sitemap name from `tx_seo[sitemap]`; the cHash
+follows the new parameter.
+
+**Fix.** Core-mandated; keeping the 12.4 parameter would need a core patch. Declare exactly the
+child-URL parameter and its cHash under an approval
+([rule 30.8](../rules/30-finding-classification.md#308-declared-changes-are-rules-not-edits)) and keep the
+content compared: index `lastmod` values and every child `(loc, lastmod)` pair stay identical. When the
+sitemaps are not in the URL manifest, both belong to the route evidence of the `http-dom` closure check.
+
+---
+
+## Processed images change name or lose 1 px after the v14 rung
+
+**Symptom.** After the 14.3 rung some gallery images are 1 px smaller in one dimension, or keep their
+size and appear under new `_processed_` names with slightly different pixels. DOM differences stay in
+those `src`, `width` and `height` values, pixel differences inside the images.
+
+**Cause.** Processed files are re-rendered from the same originals:
+
+- `ImageProcessingInstructions` rounds scaled sizes with `round()` where 13.4 used `ceil()`: ±1 px.
+- The stored processing configuration carries `maxHeight` `0` instead of `""`, so its hash and the file
+  name change. Files that came with the live dataset are re-rendered by the local processor, and
+  fractional crop offsets are now rounded.
+
+**Fix.** Prove per image that source file, crop area and size are unchanged apart from the rounding.
+Then declare the affected pages under an owner approval: a `whole_document` rule scoped by `url` also
+declares their screenshots (pins before harness PR #10 cannot declare screenshots; see
+[harness pins](fleet-profile.md#harness-pins-across-a-fleet)). `og:image` and `twitter:image` appear in no
+screenshot: the HTTP stage accepts such a processed-file rename only when the capture recorded
+identical bytes or identical PNG pixels for both images (`metaImages` digests; the report lists
+`metaImageRenames`). Anything else stays a difference.
+
+---
+
+## Stored rich text gains `data-list-item-id` on every list item
+
+**Symptom.** On 14.3.7 a backend save of a rich-text field with a list stores
+`data-list-item-id="<random>"` on every `<li>`. TYPO3 12 never stored it; the
+[RTE round trip](measurement-recipes.md#rte-round-trip-proof) shows every list record changed.
+
+**Cause.** CKEditor 47's `getData()` adds the id, and 14.3.7's `ckeditor5.js` calls
+`updateSourceElement()` without `skipListItemIds`. An `HTMLparser_db` rule cannot remove it:
+`TS_transform_db` never applies `HTMLparser_db` tag rules inside `<ul>`/`<ol>`.
+
+**Fix.** Strip it in the exit parser of a site preset that imports the core preset, registered under the
+preset name in use (a site with its own preset adds the `processing` block there):
+
+```yaml
+# EXT:site_package/Configuration/RTE/Default.yaml
+imports:
+  - { resource: 'EXT:rte_ckeditor/Configuration/RTE/Default.yaml' }
+processing:
+  exitHTMLparser_db:
+    keepNonMatchedTags: true     # every other tag stays exactly as it is
+    tags:
+      li:
+        fixAttrib:
+          data-list-item-id:
+            unset: true
+```
+
+```php
+// EXT:site_package/ext_localconf.php
+$GLOBALS['TYPO3_CONF_VARS']['RTE']['Presets']['default'] = 'EXT:site_package/Configuration/RTE/Default.yaml';
+```
+
+Prove it: 0 stored ids, a second save changes nothing. Drop the rule once the core saves with
+`skipListItemIds`.
+
+---
+
+## Editors with Redirects rights see no Redirects module
+
+**Symptom.** A group holds `redirects` in `groupMods` and `sys_redirect` table rights, yet its editors
+find no Redirects entry in the module menu; the module opens only by URL.
+
+**Cause.** v14 nests Redirects under Link Management (`link_management`, parent `site`), and the menu
+shows a module only under a parent the group may use.
+
+**Fix.** Grant `link_management` together with `redirects`, additively and idempotently:
+
+```sql
+UPDATE be_groups SET groupMods = CONCAT_WS(',', NULLIF(groupMods, ''), 'link_management')
+ WHERE uid = <group> AND NOT FIND_IN_SET('link_management', COALESCE(groupMods, ''));
+```
+
+Prove it as a real non-admin: Link Management in the menu, its overview offers Redirects, a DDEV-only
+redirect is created, followed, disabled and deleted. Non-admins see only redirects whose source host
+belongs to one of their sites, so records for the live host stay invisible on DDEV; check those as admin.
+
+---
+
+## A backend module is gone for admins, or fails on a protected method
+
+**Symptom.** After the v14 rung an extension module that worked on 12.4 is missing from the admin's
+menu, or opens with `Call to protected method …` or a `TypeError` from a core doc-header listener. Only
+the full admin module sweep finds it; editor journeys never open it.
+
+**Cause.** Two defects in one vendor monitoring module, on its latest stable release:
+
+- It registers `'access' => 'user,group'`, a TYPO3 11 value. 12.4's `ModuleProvider::accessGranted()` let
+  admins in; 14.3 decides through access gates (`admin`, `user`, `systemMaintainer`) and denies an
+  unknown value to everyone, admins included.
+- Its controller calls a method the extension's v14 API made protected and request-bound, and that
+  method unsets `$GLOBALS['TYPO3_REQUEST']`, which later backend listeners need.
+
+**Fix.** Keep the package; repair the boundary with a site-package `BeforeModuleCreationEvent`
+listener (autoconfigured through the site package's `Configuration/Services.yaml`):
+
+```php
+use TYPO3\CMS\Backend\Module\BeforeModuleCreationEvent;
+use TYPO3\CMS\Core\Attribute\AsEventListener;
+
+#[AsEventListener('site-package/restore-module-access')]
+final readonly class RestoreModuleAccess
+{
+    public function __invoke(BeforeModuleCreationEvent $event): void
+    {
+        if ($event->getIdentifier() === '<module>' && $event->getConfigurationValue('access') === 'user,group') {
+            $event->setConfigurationValue('access', 'user'); // admins always, editors by group grant: the 12.4 result
+        }
+    }
+}
+```
+
+In the same listener, point the module's `controllerActions` at a public site-package subclass of the
+vendor controller that calls the method with the request (a bound closure) and restores
+`$GLOBALS['TYPO3_REQUEST']` in a `finally` block. Prove access per user (admin yes, non-admins only
+through a group), the rendered module and zero new log lines. Remove both once the vendor fixes them.
+
+---
+
+## Vite 8 fails on Sass imports or rewrites the CSS
+
+**Symptom.** After Vite 5 → 8 the build fails on Sass imports written relative to the project root, or
+the CSS bundle differs from Vite 5's: `translate3d()` becomes `translate()`, gradient and position
+values are rewritten, `/*! license */` comments vanish. Hashed asset file names change.
+
+**Cause.** Vite 8 bundles with Rolldown, accepts only Sass's modern API, and minifies CSS with
+Lightning CSS against a newer default target.
+
+**Fix (Contract A).** Keep Vite 5's CSS output:
+
+```js
+export default defineConfig({
+  css: { preprocessorOptions: { scss: { loadPaths: [import.meta.dirname] } } }, // `sass` likewise
+  build: { cssMinify: 'esbuild', cssTarget: ['chrome87', 'edge88', 'firefox78', 'safari14'] },
+  esbuild: { legalComments: 'inline' },
+});
+```
+
+Prove equivalence by parsing both bundles into (at-rule context, selector, property, value) tuples in
+cascade order and comparing them; with esbuild minification a fleet trial differed in whitespace only.
+Declare the renamed asset files under an approval.
+
+---
+
+## A spam test submission is rejected without any message
+
+**Symptom.** A honeypot or spam journey submits, gets `303` back to the empty form and finds no error
+text. A check waiting for a "spam" message fails; a check on the status code passes for the wrong reason.
+
+**Cause.** powermail's spamshield redirects a submission it judges as spam back to the form without an
+error (observed on a powermail 14.0 fork).
+
+**Fix.** Assert the rejection facts: the site answered the POST, no thank-you page followed, and no new
+`tx_powermail_domain_model_mail` row, Mailpit message or upload appeared
+([proof scripts](measurement-recipes.md#proof-scripts-journeys-sweeps-and-row-diffs)).
+
+---
+
+## Logging in as admin or opening the Install Tool changes tracked files
+
+**Symptom.** After an admin journey `git status` shows `public/.htaccess` modified, an untracked
+`public/_assets_install/`, or `config/system/settings.php` without `EXTENSIONS` entries of packages
+that are no longer installed.
+
+**Cause.** Side effects of the admin session, not migration results. Opening the Install Tool modules
+rewrites `public/.htaccess`, can rewrite `config/system/settings.php` and publishes
+`public/_assets_install/`. An admin login runs the extension-configuration sync, which removes every
+setting no installed package declares from `settings.php`.
+
+**Fix.** Record `git status --short` and `git diff --stat` before and after every admin journey. Revert
+`.htaccess` and delete `_assets_install/`. The `settings.php` cleanup is what TYPO3 will also write on
+staging and live: trigger it on purpose (one admin login after the last package removal) and commit it
+as its own change before `closure-start`, because a commit after it makes the epoch stale
+([epoch order](closure-currentness.md#epoch-order-what-makes-a-new-epoch-stale)). Commit nothing else the
+journey wrote. See also [a read-only command dirtied settings.php](#a-read-only-command-dirtied-configsystemsettingsphp).
