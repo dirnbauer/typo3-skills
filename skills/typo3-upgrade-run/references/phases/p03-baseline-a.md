@@ -30,12 +30,18 @@ exists can never be audited. **Seal first, remediate second.**
    unsealed `baseline/A-original`; do not capture an identical third browser pass.
 5. Seal: `MANIFEST.sha256` over every artifact, `LOCK.json`, and `SEAL.md` recording who, when, both
    fingerprints and the sample hash.
+6. Set the Contract A Lighthouse floors the way intake agreed: measure the sealed, still unchanged
+   site, show the medians to the owner and write the floors into `config/thresholds.yml` → `contract_a`
+   ([quality bars](../quality-bars.md#contract-a-lighthouse-floors-decided-at-intake)). Every
+   migration-window node refuses to open while a floor is null.
 
 ## Evidence
-`config/sample.txt` · `baseline/A-original/{SEAL.md,MANIFEST.sha256,LOCK.json,http,dom,shots}`
+`config/sample.txt` · `baseline/A-original/{SEAL.md,MANIFEST.sha256,LOCK.json,http,dom,shots}` ·
+`config/thresholds.yml` with the Contract A floors
 
 ## Exit
-Every sample URL captured; manifest written; `state.baselines["A-original"].sealed == true`.
+Every sample URL captured; manifest written; `state.baselines["A-original"].sealed == true`; no Contract A
+Lighthouse floor is null.
 
 ## Blocking
 Sitemaps too broken to derive a sample. Record `ADR-002-degraded-sampling`, derive the sample from a

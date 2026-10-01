@@ -15,7 +15,7 @@ The importer runs on **v13**, not v14:
 
 | Package | TYPO3 | Content Blocks | Mask |
 |---|---|---|---|
-| `nhovratov/mask-to-content-blocks` 1.0.3 | **^13.4** | ^1.3 | ^9 |
+| `nhovratov/mask-to-content-blocks` 1.0.4 | **^13.4** | ^1.3 | ^9 |
 | `schmidtwebmedia/mask-export-to-content-blocks` 0.9.1 | ^12.4 | ^0.7 | — |
 | `friendsoftypo3/content-blocks` 2.4.8 (current) | ^14.3.5 | — | — |
 
@@ -65,7 +65,10 @@ ddev composer remove mask/mask nhovratov/mask-to-content-blocks
 ```
 
 Remove both afterwards. The migration extension is a one-shot tool, and leaving Mask installed
-alongside generated Content Blocks invites two definitions of the same element.
+alongside generated Content Blocks invites two definitions of the same element. Remove
+`friendsoftypo3/fontawesome-provider` in the same step when it served only Mask's backend icons: the
+generated blocks get generated icons. Check first that the frontend's `fa` classes come from the site's
+own CSS, not from that package.
 
 ## What the importer does not do
 
@@ -124,6 +127,34 @@ Preserve the package's layout and partial paths when moving templates, and remov
 or static includes only after the equivalent Content Blocks rendering paths are active. Finish by
 updating the reference index: migrated FAL fields and renamed/prefixed fields can otherwise leave
 records that render locally but fail after cleanup or deployment.
+
+## Six fixes the generated blocks needed
+
+Proven on one fleet site (13.4.35, Mask 9.0.12, importer 1.0.4, Content Blocks 1.6.5). The importer kept
+the `mask_*` CTypes, `prefixFields: false`, the existing columns and child tables, and copied the Mask
+templates verbatim. Six fixes were still needed; 5 and 6 surfaced only at full scope, on pages no
+intermediate sample drew ([intermediate loops](measurement-recipes.md#intermediate-loops-on-stateful-rungs)).
+
+| # | Symptom | Fix |
+|---|---|---|
+| 1 | editors lose the RTE on Mask "richtext" fields | the importer emits a plain `Textarea`: add `enableRichtext: true` |
+| 2 | link fallbacks never render | Link fields are `TypolinkParameter` objects (Mask passed strings), and an empty object is truthy: use `{x.url}` in `f:if` conditions and in `f:link.page pageUid` / `f:link.email email` |
+| 3 | template values come out empty | the template reads a column its element does not define (Mask exposed the whole row): `{data.rawRecord.<column>}`, which also works on the v14 Record API |
+| 4 | the schema update fails in strict mode | Mask `tinytext NULL` becomes `VARCHAR(255)`/`TEXT NOT NULL`: first a ledgered `UPDATE … SET <col> = '' WHERE <col> IS NULL` (check no value exceeds 255 characters); staging replays it before its schema update |
+| 5 | "Oops, an error occurred!" on a page | `f:link.external uri` takes a strict `string`: pass `{x.url}` |
+| 6 | exception on a page | a Mask field named `rowDescription` collides with a reserved Content Blocks property: drop it (Mask never rendered it) |
+
+Before the first capture, list every `{data.<name>}` reference a block's templates make that its
+`config.yaml` does not define. Each hit is a record property (`uid`, `pid`, `rawRecord`, …) or a column
+only Mask exposed (fix 3):
+
+```bash
+for b in packages/*/ContentBlocks/ContentElements/*/; do
+  comm -23 <(grep -rhoE '\{data\.[A-Za-z0-9_]+' "${b}templates" | cut -d. -f2 | sort -u) \
+           <(grep -hoE 'identifier: *[A-Za-z0-9_]+' "${b}config.yaml" | awk '{print $2}' | sort -u) \
+    | sed "s|^|${b}: |"
+done
+```
 
 ## Proving it worked
 

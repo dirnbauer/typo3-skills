@@ -70,6 +70,27 @@ Capacity waits are bounded (ten minutes maximum, shortened by the run deadline w
 Dead process leases can be reclaimed; a stuck metadata lock fails closed and needs owner inspection.
 Reclaiming a compute lease never reconciles a database action or releases its graph mutation lock.
 
+### Load across projects
+
+The cooperative budget cannot see other projects' DDEV stacks, builds or sessions. On one fleet machine
+several DDEV stacks plus captures drove the 1-minute load average to ~80: a self-test failed on fetch
+timeouts, and a video painted an empty first frame at ~75 that the immediate re-shoot did not repeat.
+
+- Run one capture or self-test at a time per machine, across all projects. The machine-wide visual lock
+  serialises screenshots only, not HTTP/DOM fetches, builds or DDEV stacks; stop the stacks of projects
+  you are not measuring (`ddev stop <project>`).
+- Before screenshots, `capture` waits while the 1-minute load average exceeds 2× the core count
+  (`T3U_LOAD_FACTOR`), at most `T3U_LOAD_WAIT_MS` (600000) and never past the deadline. It never refuses:
+  it captures anyway and records the load in the capture index (`machineLoad`); strict-zero comparison
+  still judges the pixels.
+- A capture whose video is still loading when the 5 s settle bound expires is re-shot once, then
+  reported as a capture error, never as an empty frame.
+- Check by hand before a self-test or a long proof:
+
+```bash
+python3 -c 'import os,sys; l=os.getloadavg()[0]; n=os.cpu_count(); print(f"load {l:.1f}, limit {2*n}"); sys.exit(l > 2*n)'
+```
+
 ## Calibrate once, reuse the evidence
 
 Use the existing intake pilot, not a new full-site benchmark programme. Try a small representative

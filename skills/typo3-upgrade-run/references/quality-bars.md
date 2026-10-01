@@ -9,6 +9,31 @@ score is a *relative* signal — the improvement between two runs is the evidenc
 
 Contract B cannot start before the Contract A closure certificate exists.
 
+## Contract A Lighthouse floors, decided at intake
+
+The `lighthouse` closure check compares Contract A medians with no-regression floors, not with the
+Contract B bars below. The floors live in `config/thresholds.yml` → `contract_a`
+(`performance.lighthouse_performance_mobile`, `performance.lighthouse_performance_desktop`,
+`performance.lighthouse_best_practices`, `accessibility.lighthouse_accessibility`, `seo.lighthouse_seo`)
+and are passed as `--budget .typo3-update/config/thresholds.yml`. `node-open` of every migration-window
+node (P05–P10: `dependency-resolution`, `rung-13`, `rung-14`, …) refuses while one is null: "Declare the
+Contract A Lighthouse floors in config/thresholds.yml before the site changes". Agree at intake which way
+the owner sets them, and never lower a floor after a failing run:
+
+- **Measured on the sealed Baseline A, before the first migration node.** Measure the unchanged old site
+  with the harness-pinned Lighthouse on the harness's fixed sample (homepage plus two seeded pages),
+  three runs per URL, mobile and desktop, medians. `t3u lighthouse` itself runs only inside an open
+  Contract A loop, so the pilot ran the pinned Lighthouse directly. It set each floor at the lowest old
+  median per category, minus 5 for performance (local lab variance), nothing for the audit categories.
+- **Fixed tripwires** when the owner prefers them. They catch a gross regression and nothing else.
+  One run settled its floors only after the migration, with no old copy left to measure, and chose 80
+  for performance; the final medians were 69–76 on two of three URLs, a slow LCP from a CSS background
+  hero image that the old site already had, with markup and pixels identical before and after.
+  Contract A cannot repair a pre-existing property, so the run met a failing floor it could not fix.
+
+Runs that started before this check kept their floors in a separate
+`decisions/lighthouse-contract-a-budget.yml` and passed that file as `--budget`.
+
 ## Loop 500 — Performance and Core Web Vitals
 
 | Bar | Target | Local caveat |
