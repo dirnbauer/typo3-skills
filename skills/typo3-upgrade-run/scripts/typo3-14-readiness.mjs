@@ -51,10 +51,11 @@
 import { copyFile, mkdir, readFile, readdir, realpath, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { EXIT, HarnessError, PreconditionError } from './lib/cli/exit-codes.mjs';
 import { mapPool } from './lib/util/pool.mjs';
+import { isMain } from './lib/cli/is-main.mjs';
 
 const SCHEMA = 'typo3-upgrade-run/typo3-14-readiness@1';
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -1707,6 +1708,6 @@ async function main(argv) {
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+if (isMain(import.meta.url)) {
   process.exitCode = await main(process.argv.slice(2));
 }
