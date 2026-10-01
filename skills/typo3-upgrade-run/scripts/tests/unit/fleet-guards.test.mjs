@@ -32,6 +32,9 @@ hosts:
     labels:
       stage: production
 `;
+// What the read-only preflight prints on a healthy server: facts, then the NUL-separated file list.
+const PREFLIGHT = (release, files) => ['release=' + release, 'current=ok', 'typo3_bin=ok', 'php=ok', 'fileadmin=ok', 'files']
+  .map((line) => `t3u:${line}\n`).join('') + files.map((file) => `./${file}\0`).join('');
 
 test('Deployer hosts are parsed with stage labels, users and paths', () => {
   const hosts = readHosts(HOSTS);
@@ -78,7 +81,7 @@ test('a live sync deletes the local fileadmin first, mirrors the server and comp
     const calls = [];
     const run = (command, args) => {
       calls.push(command);
-      if (command === 'ssh') return 'releases/23\n2\n';
+      if (command === 'ssh') return PREFLIGHT('releases/23', ['user_upload/a.jpg', 'b.pdf']);
       // Fake rsync: the server holds two files; stale.pdf must already be gone.
       assert.equal(existsSync(path.join(project, 'public', 'fileadmin', 'old', 'stale.pdf')), false, 'delete happens before rsync');
       const target = args[args.length - 1];
@@ -96,7 +99,7 @@ test('a live sync deletes the local fileadmin first, mirrors the server and comp
     assert.equal(JSON.parse(readFileSync(path.join(out, 'live-dataset.json'), 'utf8')).read_only_on_server, true);
     assert.ok(rsyncArgs(readHosts(HOSTS)[1], 'public', 'x').includes('_processed_/'));
 
-    const mismatch = (command, args) => (command === 'ssh' ? 'releases/23\n5\n' : run(command, args));
+    const mismatch = (command, args) => (command === 'ssh' ? PREFLIGHT('releases/23', ['a', 'b', 'c', 'd', 'e']) : run(command, args));
     await assert.rejects(pullLiveDataset({ project, hostName: 'www.demo.at', out, skipDb: true, run: mismatch, log: () => {} }), /count mismatch/);
   } finally {
     rmSync(project, { recursive: true, force: true });
@@ -129,7 +132,7 @@ test('a hand-written hosts file reaches a Surf layout through an ssh-config alia
     const calls = [];
     const run = (command, args) => {
       calls.push([command, args]);
-      if (command === 'ssh') return './20260928093000\n1\n';
+      if (command === 'ssh') return PREFLIGHT('./20260928093000', ['a.pdf']);
       mkdirSync(args.at(-1), { recursive: true });
       writeFileSync(path.join(args.at(-1), 'a.pdf'), 'a');
       return '';
@@ -139,7 +142,14 @@ test('a hand-written hosts file reaches a Surf layout through an ssh-config alia
     assert.ok(lines.some((l) => l.includes('surf-live cd /var/www/demo/surf/releases/current && php8.3 app/vendor/bin/typo3 database:export')));
     const manifest = await pullLiveDataset({ project, hostName: 'surf-live', hostsFile, out: path.join(project, 'd'), webroot: 'app/public',
       skipDb: true, run, log: () => {} });
-    assert.equal(calls[0][1].at(-1), "readlink /var/www/demo/surf/releases/current; find /var/www/demo/surf/shared/Data/fileadmin -type f -not -path '*/_processed_/*' -not -path '*/_temp_/*' | wc -l");
+    assert.equal(calls[0][1].at(-1), [
+      'echo "t3u:release=$(readlink /var/www/demo/surf/releases/current)"',
+      'if test -d /var/www/demo/surf/releases/current; then echo t3u:current=ok; else echo t3u:current=missing; fi',
+      'if test -f /var/www/demo/surf/releases/current/app/vendor/bin/typo3; then echo t3u:typo3_bin=ok; else echo t3u:typo3_bin=missing; fi',
+      'if command -v php8.3 >/dev/null 2>&1; then echo t3u:php=ok; else echo t3u:php=missing; fi',
+      'if test -d /var/www/demo/surf/shared/Data/fileadmin; then echo t3u:fileadmin=ok; echo t3u:files; cd /var/www/demo/surf/shared/Data/fileadmin '
+        + "&& find . -type f -not -path '*/_processed_/*' -not -path '*/_temp_/*' -print0; else echo t3u:fileadmin=missing; fi",
+    ].join('; '));
     assert.equal(calls[1][1].at(-2), 'surf-live:/var/www/demo/surf/shared/Data/fileadmin/');
     assert.equal(calls[1][1].at(-1), `${path.join(project, 'app', 'public', 'fileadmin')}/`);
     assert.deepEqual([manifest.release, manifest.hosts_file, manifest.files.local_count], ['20260928093000', 'surf-hosts.yaml', 1]);
