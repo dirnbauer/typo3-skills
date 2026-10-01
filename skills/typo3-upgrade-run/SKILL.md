@@ -214,6 +214,10 @@ and [extension strategy](references/extension-strategy.md).
   Preserve CType identifiers, child/FAL relations, nullable semantics and YAML scalar types.
 - Schema analyzer output is quarantine, not deletion permission.
 - Search order is behavioral output: add deterministic tie-breakers and test counts and order.
+- Before the first 14.3 smoke run, run `scripts/typo3-14-readiness.mjs --php "ddev exec php"` (with
+  `--db-export` for database TypoScript) in the rung-14 node: zero errors, every warning explained.
+  After the first 14.3 capture, its `relative-links` check against Baseline A catches Breaking-108114
+  ([readiness checks](references/typo3-14-readiness-checks.md)).
 
 Use the **latest stable compatible version** of every in-scope dependency and tool; read the
 [version policy](references/latest-version-policy.md). Move hard-coded credentials into env files
@@ -268,5 +272,6 @@ deployment was performed. Distinguish **implemented**, **verified awaiting accep
   [2026-09-16](references/run-retrospective-2026-09-16.md), [2026-09-17](references/run-retrospective-2026-09-17.md)
   and [2026-09-30](references/run-retrospective-2026-09-30.md); [fleet harness pins](references/fleet-profile.md#harness-pins-across-a-fleet)
 - [`references/quality-bars.md`](references/quality-bars.md) · [`references/deployment-handover.md`](references/deployment-handover.md)
+- [TYPO3 14 readiness checks](references/typo3-14-readiness-checks.md) — INCLUDE_TYPOSCRIPT/@import, relative links, class names outside PHP, parseFunc overrides, site-package class shapes
 - Overview: [`assets/typo3-upgrade-run-infographic.png`](assets/typo3-upgrade-run-infographic.png) and the
   interactive [Archify workflow](assets/typo3-upgrade-run.archify.html); the YAML graph and executable checks are authoritative

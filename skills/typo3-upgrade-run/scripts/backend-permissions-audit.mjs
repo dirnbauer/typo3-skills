@@ -30,7 +30,7 @@
 import { writeFileSync, existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { pathToFileURL } from 'node:url';
+import { isMain } from './lib/cli/is-main.mjs';
 
 // Local package folders, scanned next to vendor when Composer's record is missing.
 const LOCAL_ROOTS = Object.freeze(['packages', 'extensions']);
@@ -372,6 +372,6 @@ function main(argv) {
   return failed ? 1 : 0;
 }
 
-if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {
+if (isMain(import.meta.url)) {
   process.exitCode = main(process.argv.slice(2));
 }
