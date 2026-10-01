@@ -18,6 +18,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parse as parseYaml } from 'yaml';
 import { sha256 } from '../run/paths.mjs';
+import { RULES as DOM_RULES } from './dom-normalize.mjs';
 
 export const DECLARED_CHANGES_SCHEMA = 'typo3-upgrade-run/declared-changes@1';
 export const DECLARED_CHANGES_FILE = path.join('decisions', 'declared-changes.json');
@@ -55,6 +56,18 @@ export async function declaredChangesHash(root) {
   }
 }
 
+/**
+ * The DOM normaliser writes placeholders such as `<H>` (asset hash) or `<T>` (token) into URLs and
+ * attribute values. A rule written as `<link [^>]+>` stops at the `>` of the first placeholder and
+ * silently matches nothing wherever a URL carries one. In DOM `before` patterns the in-tag classes
+ * `[^>]` and `[^<>]` therefore also accept one whole placeholder, taken from the normaliser's rules.
+ */
+const PLACEHOLDER = `(?:${[...new Set(DOM_RULES.flatMap((rule) => rule.to.match(/<[A-Z]+>/g) ?? []))].join('|')})`;
+
+export function placeholderTolerant(pattern) {
+  return pattern.replace(/(?<!\\)\[\^(<?)>\]/g, (_, lt) => `(?:${PLACEHOLDER}|[^${lt}>])`);
+}
+
 /** Pure validation: returns the usable rules and one issue per refused rule. */
 export function validateDeclaredChanges(doc, grantedIds) {
   const issues = [];
@@ -76,7 +89,9 @@ export function validateDeclaredChanges(doc, grantedIds) {
     const wholeDocument = change?.stage === 'dom' && change?.whole_document === true;
     if (wholeDocument && typeof change?.url !== 'string') problems.push('whole_document rules must be scoped with url');
     if (change?.stage === 'dom' && !wholeDocument && typeof change.after !== 'string') problems.push('dom rules need an after replacement string');
-    const before = wholeDocument ? null : compile(change?.before, problems, 'before');
+    const beforePattern = change?.stage === 'dom' && typeof change?.before === 'string'
+      ? placeholderTolerant(change.before) : change?.before;
+    const before = wholeDocument ? null : compile(beforePattern, problems, 'before');
     const after = change?.stage === 'http' ? compile(change?.after, problems, 'after') : null;
     const url = change?.url === undefined ? null : compile(change.url, problems, 'url');
     if (problems.length) { issues.push(`${label}: ${problems.join('; ')}`); continue; }

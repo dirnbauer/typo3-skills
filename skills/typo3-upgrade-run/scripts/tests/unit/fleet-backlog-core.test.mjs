@@ -361,3 +361,30 @@ describe('loop-supersede (#36)', () => {
     });
   });
 });
+
+describe('declared DOM rules tolerate normaliser placeholders (#26)', async () => {
+  const { placeholderTolerant, validateDeclaredChanges, applyDomRules } = await import('../../lib/compare/declared-changes.mjs');
+
+  test('in-tag classes also accept a whole placeholder; escaped brackets stay literal', () => {
+    const doc = '<link href="/a.<H>.css" media="all"/>';
+    assert.equal(new RegExp('<link [^>]*media="all"[^>]*/>').test(doc), false, 'the old silent failure');
+    assert.equal(new RegExp(placeholderTolerant('<link [^>]*media="all"[^>]*/>')).test(doc), true);
+    assert.equal(new RegExp(placeholderTolerant('<link [^<>]*/>')).test(doc), true);
+    assert.equal(placeholderTolerant('a\\[^>]b'), 'a\\[^>]b');
+    assert.equal(new RegExp(placeholderTolerant('<a [^>]*>')).exec('<a href="x"><b>')[0], '<a href="x">', 'still stops at the tag end');
+  });
+
+  test('a DOM rule now rewrites a tag whose URL carries a placeholder', () => {
+    const { rules, issues } = validateDeclaredChanges({
+      schema: 'typo3-upgrade-run/declared-changes@1',
+      changes: [{ id: 'DC-001', approval_ref: 'APR-001', stage: 'dom', reason: 'core drops the type attribute',
+        before: '(<link [^>]*?) type="text/css"([^>]*>)', after: '$1$2' }],
+    }, new Set(['APR-001']));
+    assert.deepEqual(issues, []);
+    const before = '<link rel="stylesheet" href="/main.<H>.css" type="text/css" media="all">';
+    const after = '<link rel="stylesheet" href="/main.<H>.css" media="all">';
+    const result = applyDomRules(before, rules, null, after);
+    assert.equal(result.text, after);
+    assert.equal(result.applied.length, 1);
+  });
+});
