@@ -4,6 +4,13 @@
 here: **a harness that cannot prove zero against itself, and cannot prove it looked at what it claims
 to have looked at, must refuse to emit a verdict.** Refusing is a distinct exit code, not a warning.
 
+## Contents
+
+- [Exit codes](#exit-codes) · [The gating rule](#the-gating-rule) · [Where the URL guard runs](#where-the-url-guard-runs)
+- [Browser arguments](#browser-arguments) · [Secrets](#secrets) · [Reports](#reports) · [Untrusted text](#untrusted-text)
+- [Coverage honesty](#coverage-honesty) · [Tests](#tests) · [Sampling scope](#sampling-scope-cheap-in-the-loops-exhaustive-at-the-end)
+- [Determinism runtime](#determinism-runtime) · [Where the logs are](#where-the-logs-are-and-why-all-three-matter) · [Final smoke test](#final-smoke-test-no-new-errors)
+
 ## Exit codes
 
 | Code | Name | Meaning | Response |
