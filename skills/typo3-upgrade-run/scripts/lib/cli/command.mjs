@@ -11,6 +11,7 @@
  */
 
 import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 import {
   EXIT, EXIT_NAME, EXIT_DESCRIPTION, HarnessError, PolicyError,
   InvalidRunError, PreconditionError, verdictFor,
@@ -82,7 +83,25 @@ export function lateAcceptanceCommand(command, values, runState) {
 export async function runCommand({ command, values, positionals, argv, actions, now = Date.now,
   reserve = withMachineResources, liveInputs = assertLiveInputs }) {
   const log = createLogger({ quiet: values.quiet, verbose: values.verbose });
-  const paths = new RunPaths(values['run-dir'] ?? '.typo3-update');
+  let paths;
+  try {
+    paths = new RunPaths(values['run-dir'] ?? '.typo3-update');
+  } catch (err) {
+    // No run directory, so no journal: the refusal and its reason are the whole result.
+    const exitCode = err?.exitCode ?? EXIT.HARNESS_ERROR;
+    const error = err?.message ?? String(err);
+    log.error(`${command} failed: ${error}`);
+    if (values.json) log.json({ exitCode, verdict: verdictFor(exitCode), error, detail: null });
+    if (!values.quiet) process.stderr.write(`[t3u] exit ${exitCode} (${EXIT_NAME[exitCode]}): ${EXIT_DESCRIPTION[exitCode]}\n`);
+    return exitCode;
+  }
+  // An absolute --run-dir from outside its project: work in that project, as `git -C` does, so
+  // ddev, git and config/sites are the run's own and not those of the caller's directory.
+  const callerCwd = process.cwd();
+  if (paths.project !== path.resolve(callerCwd)) {
+    process.chdir(paths.project);
+    log.debug(`Working in ${paths.project}, the project of --run-dir ${values['run-dir']}.`);
+  }
   const journal = new Journal(paths.journalPath);
   const state = new StateStore(paths);
   const started = now();
@@ -185,6 +204,7 @@ export async function runCommand({ command, values, positionals, argv, actions, 
     const label = result?.exitNote ? `OUTCOME ${result.verdict}` : EXIT_NAME[exitCode];
     process.stderr.write(`[t3u] exit ${exitCode} (${label}): ${result?.exitNote ?? EXIT_DESCRIPTION[exitCode]}\n`);
   }
+  if (process.cwd() !== callerCwd) process.chdir(callerCwd);
   return exitCode;
 }
 

@@ -22,7 +22,7 @@ export async function readSiteConfigs(root) {
     try {
       configs.push({ identifier: entry.name, config: parseYaml(await readFile(path.join(dir, entry.name, 'config.yaml'), 'utf8')) ?? {} });
     } catch (error) {
-      warnings.push(`site ${entry.name}: config.yaml unreadable (${error.message.split('\n')[0]}); its pages keep base + slug`);
+      warnings.push(`site ${entry.name}: config.yaml unreadable (${error.message.split('\n')[0]}); its language bases and suffix are not applied`);
     }
   }
   return { configs, warnings };
@@ -38,12 +38,17 @@ export function pageTypeSuffix(routeEnhancers) {
  * Per site: root page, suffix and, per language, the path prefix on the run's origin. A relative
  * language base extends the site base (TYPO3's rule); an absolute one stands alone and must be on
  * the run's origin or one of the site's own hosts, otherwise the language is unreachable here.
+ * `servedHere` is narrower: a site whose every base names another host is served elsewhere, so a
+ * request for its sitemap here would fail; only its languages based on this origin are served here.
  */
 export function siteRouting(configs, runBase) {
   const origin = new URL(runBase).origin;
   return configs.map(({ identifier, config }) => {
     const siteBase = localBase(config, origin);
-    const siteOrigins = new Set([origin, ...baseCandidates(config).map(absoluteOrigin).filter(Boolean)]);
+    const bases = baseCandidates(config).map(absoluteOrigin);
+    const siteOrigins = new Set([origin, ...bases.filter(Boolean)]);
+    // A relative base, or a host behind an unresolved placeholder, may well be this origin.
+    const siteHere = !bases.length || bases.some((base) => base === null || base === origin);
     const languages = Array.isArray(config?.languages) ? config.languages : [];
     const pageTypes = Object.values(config?.routeEnhancers ?? {}).filter((enhancer) => enhancer?.type === 'PageType').length;
     const warnings = [];
@@ -56,12 +61,17 @@ export function siteRouting(configs, runBase) {
       rootPageId: Number(config?.rootPageId),
       suffix: pageTypeSuffix(config?.routeEnhancers),
       warnings,
-      languages: languages.map((language) => ({
-        languageId: Number(language?.languageId),
-        enabled: language?.enabled !== false,
-        codes: languageCodes(language),
-        ...languagePrefix(siteBase, localBase(language, origin), siteOrigins),
-      })),
+      languages: languages.map((language) => {
+        const languageBase = localBase(language, origin);
+        const routed = languagePrefix(siteBase, languageBase, siteOrigins);
+        return {
+          languageId: Number(language?.languageId),
+          enabled: language?.enabled !== false,
+          codes: languageCodes(language),
+          ...routed,
+          servedHere: routed.prefix !== null && (siteHere || absoluteOrigin(languageBase) === origin),
+        };
+      }),
     };
   });
 }
