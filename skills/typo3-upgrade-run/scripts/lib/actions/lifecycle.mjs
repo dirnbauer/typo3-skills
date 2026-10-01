@@ -110,6 +110,33 @@ export async function loopOpen({ values, paths, log, journal, liveAssert = asser
   };
 }
 
+/**
+ * A loop that must run again is a new loop id (green -> open is not a transition). The old loop
+ * is closed here as superseded so it stops counting as active: gate and closure read a report
+ * from every loop that is not planned, superseded or aborted, and a quality loop that only wrote
+ * Lighthouse or axe artifacts would otherwise block every later gate. The superseding loop must
+ * already exist; the reason is journaled with both ids.
+ */
+export async function loopSupersede({ values, paths, log, journal }) {
+  const loopName = await resolveLoop(paths, values.loop);
+  const id = loopName.slice(0, 3);
+  const by = String(values.by ?? '');
+  const reason = String(values.reason ?? '').trim();
+  if (!/^\d{3}$/.test(by) || by === id) throw new HarnessError('--by must name the superseding loop id (NNN), not this loop.');
+  if (!reason) throw new HarnessError('--reason is required: say why this loop no longer counts.');
+  const store = new StateStore(paths);
+  let from;
+  await store.update((current) => {
+    if (!current.loops[by]) throw new PreconditionError(`Loop ${by} does not exist. Scaffold it first with loop-start.`);
+    from = current.loops[id];
+    assertLoopTransition(from, 'superseded');
+    current.loops[id] = 'superseded';
+  });
+  await journal?.append('transition', { loop_id: id, from, to: 'superseded', superseded_by: by, reason });
+  log.success(`Loop ${loopName} superseded by ${by}.`);
+  return { exitCode: EXIT.PASS, verdict: 'pass', loop: loopName, status: 'superseded', supersededBy: by, message: `${loopName} superseded by ${by}` };
+}
+
 export async function snapshotCreate({ values, paths, log, journal, runner = runDdev }) {
   const state = await new StateStore(paths).read();
   if (values.node && !values.loop) return snapshotForNode({ values, state, paths, log, journal, runner });

@@ -330,7 +330,41 @@ export async function nodeClose({ values, paths, log, journal }) {
   for (const event of edgeEvents) await journal?.append('edge', event);
   await journal?.append('node', { action: 'close', node_id: id, outcome, evidence, routes: matching.map((edge) => edge.id) });
   log.success(`Node ${id} closed as ${outcome}; ${matching.length} route(s) activated.`);
-  return { exitCode: exitForOutcome(outcome), verdict: outcome, node: id, routes: matching.map((edge) => edge.id), message: `${id}: ${outcome}` };
+  const exitCode = exitForOutcome(outcome);
+  return { exitCode, verdict: outcome, node: id, routes: matching.map((edge) => edge.id), message: `${id}: ${outcome}`,
+    ...(recordedOutcomeNote(id, outcome, exitCode, matching)) };
+}
+
+/**
+ * The close of a node is recorded whatever its outcome; the exit code reports the outcome. For a
+ * route outcome (reproof, blocked, …) the generic exit labels ("the harness failed", "a security
+ * guard refused") are wrong, so the result carries the accurate one.
+ */
+export function recordedOutcomeNote(id, outcome, exitCode, routes = []) {
+  if (exitCode === EXIT.PASS || ['findings', 'invalid', 'harness-error'].includes(outcome)) return {};
+  const activated = routes.length ? ` and activated ${routes.map((edge) => edge.id).join(', ')}` : '';
+  return { exitNote: `node-close recorded ${id} as "${outcome}"${activated}; the exit code reports that outcome, not a failure of this command.` };
+}
+
+/**
+ * Running nodes whose close compares the measurement inputs (rule 10.9): guarded code or stateful
+ * nodes that are not measurement nodes. Anything that rewrites a measurement input while one is
+ * open (the self-test rewrites selftest.lock.json) leaves that node closable only as blocked.
+ */
+export async function openGuardedNodes(paths) {
+  let context;
+  try {
+    context = await graphContext(paths);
+  } catch {
+    return [];
+  }
+  const { state, definition } = context;
+  if (definition?.policy?.guard_change_scope !== true) return [];
+  return Object.entries(state.graph?.nodes ?? {})
+    .filter(([id, node]) => node.status === 'running' && !node.applicability_only
+      && ['code', 'stateful'].includes(definition.nodes?.[id]?.mutation) && definition.nodes?.[id]?.measurement !== true)
+    .map(([id]) => id)
+    .sort();
 }
 
 export async function graphValidate({ paths, log }) {

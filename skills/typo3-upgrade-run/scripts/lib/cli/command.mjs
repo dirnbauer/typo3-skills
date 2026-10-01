@@ -64,6 +64,21 @@ export function assertWithinRuntimeBudget(runState, timestamp = Date.now()) {
   return true;
 }
 
+/**
+ * The overnight deadline bounds the proof, not the owner's answer. A closure recorded by
+ * closure-verify before the deadline may be accepted later: only the acceptance record and the
+ * Contract A gate pass, and both re-check the exact verified manifest (timelyVerification,
+ * verifyRecordedClosureAcceptance). Everything else still stops at the deadline.
+ */
+export function lateAcceptanceCommand(command, values, runState) {
+  const verification = runState?.contract_a?.verification;
+  const deadline = Date.parse(runState?.runtime?.deadline_at ?? '');
+  if (runState?.contract_a?.status === 'closed' || !verification?.evidence_ref
+    || !(Date.parse(verification.at) < deadline)) return false;
+  if (command === 'approval') return values?.stage === 'acceptance';
+  return ['node-open', 'node-close'].includes(command) && values?.node === 'contract-a-gate';
+}
+
 export async function runCommand({ command, values, positionals, argv, actions, now = Date.now,
   reserve = withMachineResources, liveInputs = assertLiveInputs }) {
   const log = createLogger({ quiet: values.quiet, verbose: values.verbose });
@@ -88,7 +103,8 @@ export async function runCommand({ command, values, positionals, argv, actions, 
     })
       .catch(() => { /* the journal must never be the reason a command fails */ });
 
-    if (runState && !AFTER_DEADLINE_COMMANDS.has(command)) {
+    const deadlineExempt = AFTER_DEADLINE_COMMANDS.has(command) || lateAcceptanceCommand(command, values, runState);
+    if (runState && !deadlineExempt) {
       assertWithinRuntimeBudget(runState, now());
     }
 
@@ -108,7 +124,7 @@ export async function runCommand({ command, values, positionals, argv, actions, 
     result = resources.action && !values['dry-run']
       ? await reserve({ ...resources.action, owner: command, log, deadlineAt: runState?.runtime?.deadline_at }, () => action(ctx))
       : await action(ctx);
-    if (runState && !AFTER_DEADLINE_COMMANDS.has(command)) {
+    if (runState && !deadlineExempt) {
       assertWithinRuntimeBudget(await state.read(), now());
     }
     exitCode = result?.exitCode ?? EXIT.PASS;
@@ -117,6 +133,8 @@ export async function runCommand({ command, values, positionals, argv, actions, 
 
     if (exitCode === EXIT.PASS) {
       log.success(result?.message ?? `${command}: pass`);
+    } else if (result?.exitNote) {
+      log.info(result.message ?? `${command}: ${result.verdict}`);
     } else if (exitCode === EXIT.FINDINGS) {
       log.finding(result?.message ?? `${command}: findings — fix the site, then re-run`);
     } else {
@@ -162,7 +180,10 @@ export async function runCommand({ command, values, positionals, argv, actions, 
   }
 
   if (exitCode !== EXIT.PASS && !values.quiet) {
-    process.stderr.write(`[t3u] exit ${exitCode} (${EXIT_NAME[exitCode]}): ${EXIT_DESCRIPTION[exitCode]}\n`);
+    // A recorded outcome (a node closed as reproof or blocked) keeps its exit code for scripts,
+    // but must not read as "the harness failed" or "a security guard refused".
+    const label = result?.exitNote ? `OUTCOME ${result.verdict}` : EXIT_NAME[exitCode];
+    process.stderr.write(`[t3u] exit ${exitCode} (${label}): ${result?.exitNote ?? EXIT_DESCRIPTION[exitCode]}\n`);
   }
   return exitCode;
 }

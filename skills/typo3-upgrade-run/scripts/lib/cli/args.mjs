@@ -75,6 +75,10 @@ export const COMMANDS = {
     snapshot: { type: 'string' }, 'rollback-ref': { type: 'string' },
     stateful: { type: 'boolean', default: false },
   }},
+  'loop-supersede': { summary: 'Close a loop as superseded by a newer loop id (it stops counting as active)', options: {
+    by: { type: 'string', help: 'The superseding loop id (NNN); it must exist' },
+    reason: { type: 'string', help: 'Why the loop no longer counts; journaled' },
+  }},
   'snapshot-create': { summary: 'Create and record the rollback snapshot for a ready graph node (--node) or a loop', options: {
     name: { type: 'string' },
   }},

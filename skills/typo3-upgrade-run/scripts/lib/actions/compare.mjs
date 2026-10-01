@@ -516,6 +516,17 @@ async function compareOne(bPath, aPath, diffPath, log, pool = null) {
 /* ------------------------------------------------- determinism self-test */
 
 export async function selftestDeterminism({ values, paths, log, journal }) {
+  // The self-test rewrites (or, failing, deletes) selftest.lock.json, a measurement input that a
+  // guarded node fingerprints at node-open. Run inside such a node, it leaves that node closable
+  // only as blocked, so it is refused before any capture.
+  const { openGuardedNodes } = await import('./graph.mjs');
+  const guarded = await openGuardedNodes(paths);
+  if (guarded.length) {
+    throw new PreconditionError(
+      `Node(s) ${guarded.join(', ')} are open and guard the measurement inputs; selftest.lock.json is one of them. `
+      + 'Close them first, or run the self-test from a measurement node (harness or closure recovery).',
+    );
+  }
   const manifest = await readJson(paths.urlManifest);
   if (!manifest) throw new PreconditionError('No URL manifest. Run "t3u discover-urls" first.');
 
@@ -823,9 +834,36 @@ function suggest(cmp) {
 
 /* ---------------------------------------------------------- baselines */
 
+/**
+ * Contract A's Lighthouse floors, as config/thresholds.yml declares them, or the reasons they
+ * cannot be used. config/ becomes a measurement input once the baseline exists, so a floor left
+ * null at intake can later only be set from a measurement node, after results are known.
+ */
+export async function contractALighthouseBudgetIssues(file) {
+  const { readLighthouseBudget } = await import('./sweep.mjs');
+  const issues = [];
+  for (const formFactor of ['mobile', 'desktop']) {
+    try {
+      await readLighthouseBudget(file, 'verify', formFactor);
+    } catch (err) {
+      issues.push(err.message);
+    }
+  }
+  return [...new Set(issues)];
+}
+
 export async function sealBaselineAction({ values, paths, log }) {
   const id = values.id ?? 'A-original';
   const dir = values.dir ?? paths.baseline(id);
+  if (id === 'A-original') {
+    const issues = await contractALighthouseBudgetIssues(paths.thresholds);
+    if (issues.length) {
+      throw new PreconditionError(
+        'Agree the Contract A Lighthouse floors with the owner and set them in config/thresholds.yml before '
+        + `sealing Baseline A (measure the old site first; a slow hero image can sit below a generic floor):\n  - ${issues.join('\n  - ')}`,
+      );
+    }
+  }
   const [manifest, env, content] = await Promise.all([
     readJson(paths.urlManifest), readJson(paths.envFingerprint), readJson(paths.contentFingerprint),
   ]);

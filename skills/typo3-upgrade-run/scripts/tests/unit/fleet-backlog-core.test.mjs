@@ -198,3 +198,166 @@ describe('capture errors name their artifact (#10)', () => {
     assert.equal(captureErrorTarget({ stage: 'http/dom' }), '(http/dom: no capture id)');
   });
 });
+
+/* ---------------------------------------------------------------- run lifecycle */
+
+import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { lateAcceptanceCommand, runCommand } from '../../lib/cli/command.mjs';
+import { recordedOutcomeNote, openGuardedNodes, graphInit } from '../../lib/actions/graph.mjs';
+import { selftestDeterminism, sealBaselineAction, contractALighthouseBudgetIssues } from '../../lib/actions/compare.mjs';
+import { closureStart } from '../../lib/actions/closure.mjs';
+import { loopStart, loopSupersede } from '../../lib/actions/lifecycle.mjs';
+import { RunPaths } from '../../lib/run/paths.mjs';
+import { StateStore, emptyState } from '../../lib/run/state.mjs';
+import { EXIT } from '../../lib/cli/exit-codes.mjs';
+
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const DEFAULT_GRAPH = path.resolve(HERE, '../../../templates/run-directory/config/upgrade-graph.yml');
+const THRESHOLDS = path.resolve(HERE, '../../../templates/run-directory/config/thresholds.yml');
+const quietLog = { success() {}, info() {}, debug() {}, warn() {}, step() {}, finding() {}, error() {} };
+const quietJournal = { async append() {} };
+
+async function withRun(fn) {
+  const root = await mkdtemp(path.join(os.tmpdir(), 't3u-backlog-'));
+  try {
+    const paths = new RunPaths('.typo3-update', root);
+    await mkdir(paths.configDir, { recursive: true });
+    const state = emptyState({ runId: '2026-10-01-fixture', now: '2026-10-01T06:00:00.000Z' });
+    state.project.trusted_origin = 'https://fixture.ddev.site';
+    await new StateStore(paths).write(state);
+    return await fn(paths, root);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+}
+
+describe('late Contract A acceptance (#39)', () => {
+  const deadline = '2026-10-01T07:00:00.000Z';
+  const verified = (at) => ({
+    runtime: { deadline_at: deadline },
+    contract_a: { status: 'open', verification: { at, evidence_ref: 'report/closure.json' } },
+  });
+
+  test('only the acceptance record and the gate pass, and only for a proof verified in time', () => {
+    const timely = verified('2026-10-01T06:30:00.000Z');
+    assert.equal(lateAcceptanceCommand('approval', { stage: 'acceptance' }, timely), true);
+    assert.equal(lateAcceptanceCommand('node-open', { node: 'contract-a-gate' }, timely), true);
+    assert.equal(lateAcceptanceCommand('node-close', { node: 'contract-a-gate' }, timely), true);
+    assert.equal(lateAcceptanceCommand('approval', { stage: 'intent' }, timely), false);
+    assert.equal(lateAcceptanceCommand('node-open', { node: 'rung-14' }, timely), false);
+    assert.equal(lateAcceptanceCommand('closure-start', {}, timely), false);
+    assert.equal(lateAcceptanceCommand('approval', { stage: 'acceptance' }, verified('2026-10-01T07:30:00.000Z')), false);
+    assert.equal(lateAcceptanceCommand('approval', { stage: 'acceptance' }, { runtime: { deadline_at: deadline }, contract_a: { status: 'open' } }), false);
+  });
+
+  test('the command wrapper lets a timely-verified acceptance through after the deadline', async () => {
+    await withRun(async (paths, root) => {
+      await new StateStore(paths).update((state) => {
+        state.runtime.deadline_at = '2026-09-30T07:00:00.000Z';
+        state.contract_a.verification = { at: '2026-09-30T06:00:00.000Z', evidence_ref: 'report/closure.json',
+          epoch_hash: `sha256:${'e'.repeat(64)}`, manifest_hash: `sha256:${'a'.repeat(64)}` };
+      });
+      const cwd = process.cwd();
+      process.chdir(root);
+      try {
+        const run = (values) => runCommand({ command: 'approval', values: { 'run-dir': '.typo3-update', quiet: true, ...values },
+          positionals: [], argv: ['approval'], actions: { approval: async () => ({ exitCode: 0, message: 'recorded' }) } });
+        assert.equal(await run({ stage: 'acceptance' }), EXIT.PASS);
+        assert.equal(await run({ stage: 'intent' }), EXIT.PRECONDITION);
+      } finally {
+        process.chdir(cwd);
+      }
+    });
+  });
+});
+
+describe('recorded outcomes are labelled as outcomes (#38)', () => {
+  test('reproof and blocked carry a note; pass, findings and invalid keep their labels', () => {
+    assert.match(recordedOutcomeNote('closure-harness-recovery', 'reproof', EXIT.HARNESS_ERROR, [{ id: 'reproof-route' }]).exitNote,
+      /recorded closure-harness-recovery as "reproof" and activated reproof-route; the exit code reports that outcome/);
+    assert.ok(recordedOutcomeNote('rung-14', 'blocked', EXIT.BLOCKED_BY_POLICY).exitNote);
+    assert.deepEqual(recordedOutcomeNote('a', 'pass', EXIT.PASS), {});
+    assert.deepEqual(recordedOutcomeNote('a', 'findings', EXIT.FINDINGS), {});
+    assert.deepEqual(recordedOutcomeNote('a', 'invalid', EXIT.INVALID), {});
+  });
+});
+
+describe('measurement inputs inside guarded nodes', () => {
+  test('the self-test refuses while a guarded site node is open', async () => {
+    await withRun(async (paths) => {
+      await writeFile(paths.graphDefinition, await readFile(DEFAULT_GRAPH, 'utf8'), 'utf8');
+      await graphInit({ values: {}, paths, log: quietLog, journal: quietJournal });
+      assert.deepEqual(await openGuardedNodes(paths), []);
+      await new StateStore(paths).update((state) => {
+        state.graph.nodes['rung-14'].status = 'running';
+        state.graph.nodes['closure-harness-recovery'].status = 'running';
+      });
+      assert.deepEqual(await openGuardedNodes(paths), ['rung-14'], 'measurement nodes do not guard against themselves');
+      await assert.rejects(
+        selftestDeterminism({ values: {}, paths, log: quietLog, journal: quietJournal }),
+        (err) => err.exitCode === EXIT.PRECONDITION && /rung-14/.test(err.message) && /selftest\.lock\.json/.test(err.message),
+      );
+    });
+  });
+
+  test('closure-start refuses a missing or stale self-test lock before binding an epoch', async () => {
+    await withRun(async (paths) => {
+      await assert.rejects(closureStart({ paths, log: quietLog }),
+        (err) => err.exitCode === EXIT.PRECONDITION && /Re-run "t3u selftest-determinism" before closure-start/.test(err.message));
+    });
+  });
+});
+
+describe('Contract A Lighthouse floors are agreed before Baseline A (#lighthouse)', () => {
+  test('the template nulls are refused for both form factors', async () => {
+    const issues = await contractALighthouseBudgetIssues(THRESHOLDS);
+    assert.equal(issues.length, 2);
+    assert.match(issues.join('\n'), /lighthouse_performance_mobile/);
+    assert.match(issues.join('\n'), /lighthouse_performance_desktop/);
+  });
+
+  test('seal-baseline A-original refuses until the floors are set', async () => {
+    await withRun(async (paths) => {
+      const template = await readFile(THRESHOLDS, 'utf8');
+      await writeFile(paths.thresholds, template, 'utf8');
+      await assert.rejects(sealBaselineAction({ values: {}, paths, log: quietLog }),
+        (err) => err.exitCode === EXIT.PRECONDITION && /Contract A Lighthouse floors/.test(err.message));
+      const agreed = template
+        .replace('lighthouse_performance_mobile: null', 'lighthouse_performance_mobile: 70')
+        .replace('lighthouse_performance_desktop: null', 'lighthouse_performance_desktop: 80')
+        .replace('lighthouse_best_practices: null', 'lighthouse_best_practices: 90')
+        .replace('lighthouse_accessibility: null', 'lighthouse_accessibility: 85')
+        .replace('lighthouse_seo: null', 'lighthouse_seo: 90');
+      await writeFile(paths.thresholds, agreed, 'utf8');
+      assert.deepEqual(await contractALighthouseBudgetIssues(paths.thresholds), []);
+    });
+  });
+});
+
+describe('loop-supersede (#36)', () => {
+  test('an open quality loop is superseded by an existing newer loop and stops counting', async () => {
+    await withRun(async (paths) => {
+      for (const id of ['301', '303']) {
+        await loopStart({ values: { id, track: 'invariance', slug: 'quality' }, paths, log: quietLog, journal: quietJournal });
+      }
+      await new StateStore(paths).update((state) => { state.loops['301'] = 'open'; });
+      const events = [];
+      const journal = { async append(kind, data) { events.push({ kind, ...data }); } };
+      await assert.rejects(loopSupersede({ values: { loop: '301', by: '302', reason: 'r' }, paths, log: quietLog, journal }),
+        (err) => err.exitCode === EXIT.PRECONDITION);
+      await assert.rejects(loopSupersede({ values: { loop: '301', by: '301', reason: 'r' }, paths, log: quietLog, journal }));
+      await assert.rejects(loopSupersede({ values: { loop: '301', by: '303' }, paths, log: quietLog, journal }));
+      const result = await loopSupersede({ values: { loop: '301', by: '303', reason: 'quality loop without stage reports' },
+        paths, log: quietLog, journal });
+      assert.equal(result.status, 'superseded');
+      assert.equal((await new StateStore(paths).read()).loops['301'], 'superseded');
+      assert.deepEqual(events, [{ kind: 'transition', loop_id: '301', from: 'open', to: 'superseded', superseded_by: '303',
+        reason: 'quality loop without stage reports' }]);
+      await assert.rejects(loopSupersede({ values: { loop: '301', by: '303', reason: 'again' }, paths, log: quietLog, journal }),
+        /Illegal loop transition superseded -> superseded/);
+    });
+  });
+});

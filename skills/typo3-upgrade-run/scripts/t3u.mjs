@@ -27,6 +27,7 @@ import {
   approvalRecord,
   loopOpen,
   loopStart,
+  loopSupersede,
   snapshotCreate,
   validateRun,
 } from './lib/actions/lifecycle.mjs';
@@ -56,6 +57,7 @@ const ACTIONS = {
   'closure-verify': closureVerify,
   'loop-start': loopStart,
   'loop-open': loopOpen,
+  'loop-supersede': loopSupersede,
   'snapshot-create': snapshotCreate,
   approval: approvalRecord,
   'env-fingerprint': envFingerprint,
