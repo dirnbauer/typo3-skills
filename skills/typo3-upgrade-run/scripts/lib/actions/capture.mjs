@@ -26,7 +26,7 @@ import { readJson } from './core.mjs';
 import { consentStateFor } from '../browser/stabilize.mjs';
 import { mapPool } from '../util/pool.mjs';
 import { acquireMachineLock, releaseMachineLock } from '../util/machine-lock.mjs';
-import { acquireMachineResources, withMachineResources, machineCapacity } from '../util/machine-resources.mjs';
+import { acquireMachineResources, withMachineResources, machineCapacity, waitForQuietMachine } from '../util/machine-resources.mjs';
 import { assertCleanFrontendSession } from '../browser/session.mjs';
 
 export async function capture({ values, paths, log, journal }) {
@@ -516,6 +516,7 @@ export async function captureAll({
     machineLease = await acquireMachineResources({ ...visualCaptureLease({ visualWorkers, scope,
       perViewport: [...byViewport.values()].map((caps) => caps.length) }), owner: 'visual-capture', log, deadlineAt });
     index.machineWaitMs = machineLease.waitMs;
+    index.machineLoad = await waitForQuietMachine({ log, deadlineAt });
     index.browserStartup = [];
     for (const [viewport, caps] of byViewport) {
       if (!VIEWPORTS[viewport]) { log.warn(`unknown viewport ${viewport}, skipped`); continue; }

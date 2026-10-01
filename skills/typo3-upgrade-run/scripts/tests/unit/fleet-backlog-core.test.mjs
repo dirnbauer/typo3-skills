@@ -388,3 +388,33 @@ describe('declared DOM rules tolerate normaliser placeholders (#26)', async () =
     assert.equal(result.applied.length, 1);
   });
 });
+
+describe('pre-capture load check (#11)', async () => {
+  const { waitForQuietMachine } = await import('../../lib/util/machine-resources.mjs');
+  const clock = () => {
+    let t = 0;
+    return { now: () => t, sleep: async (ms) => { t += ms; } };
+  };
+
+  test('waits while the load exceeds twice the cores, then records what it saw', async () => {
+    const loads = [50, 40, 10];
+    const { now, sleep } = clock();
+    const result = await waitForQuietMachine({ env: {}, cores: 8, loadavg: () => loads.shift(), now, sleep, pollMs: 15_000 });
+    assert.deepEqual(result, { load1: 10, limit: 16, cores: 8, waitedMs: 30_000, overloaded: false });
+  });
+
+  test('gives up after the bound and says so, without refusing', async () => {
+    const { now, sleep } = clock();
+    const warnings = [];
+    const result = await waitForQuietMachine({ env: { T3U_LOAD_WAIT_MS: '60000' }, cores: 8, loadavg: () => 80,
+      now, sleep, log: { step() {}, warn: (m) => warnings.push(m) } });
+    assert.equal(result.overloaded, true);
+    assert.equal(result.waitedMs, 60_000);
+    assert.match(warnings[0], /still exceeds 16/);
+  });
+
+  test('a quiet machine costs nothing', async () => {
+    const { now, sleep } = clock();
+    assert.equal((await waitForQuietMachine({ env: {}, cores: 8, loadavg: () => 3, now, sleep })).waitedMs, 0);
+  });
+});

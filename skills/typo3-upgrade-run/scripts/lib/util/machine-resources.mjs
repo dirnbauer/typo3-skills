@@ -18,6 +18,38 @@ const alive = pid => {
   try { process.kill(pid, 0); return true; } catch (error) { return error.code === 'EPERM'; }
 };
 
+/**
+ * Other projects' DDEV stacks, builds and sessions are invisible to the cooperative budget, and a
+ * load average far above the core count made fetches time out mid-proof (a fleet self-test failed
+ * at a load of ~80). Before authoritative screenshots, wait while the 1-minute load average exceeds
+ * `factor` x cores, bounded by `maxWaitMs` and the sealed deadline. It never refuses: strict-zero
+ * comparison still judges the pixels, and the capture index records the load they were taken under.
+ */
+export async function waitForQuietMachine({ log, deadlineAt, env = process.env, pollMs = 15_000,
+  loadavg = () => os.loadavg()[0], cores = os.availableParallelism(), now = Date.now, sleep = pause } = {}) {
+  const number = (raw, fallback) => (raw !== undefined && Number.isFinite(Number(raw)) && Number(raw) >= 0 ? Number(raw) : fallback);
+  const factor = number(env.T3U_LOAD_FACTOR, 2) || 2;
+  const maxWaitMs = number(env.T3U_LOAD_WAIT_MS, 600_000);
+  const limit = factor * cores;
+  const started = now();
+  const until = Math.min(started + maxWaitMs, Number.isFinite(Date.parse(deadlineAt)) ? Date.parse(deadlineAt) : Infinity);
+  let load = loadavg();
+  let announced = false;
+  while (load > limit && now() < until) {
+    if (!announced) {
+      log?.step(`machine load ${load.toFixed(1)} exceeds ${limit} (${factor}x ${cores} cores); waiting before screenshots`);
+      announced = true;
+    }
+    await sleep(Math.min(pollMs, Math.max(1, until - now())));
+    load = loadavg();
+  }
+  const overloaded = load > limit;
+  if (overloaded) {
+    log?.warn(`machine load ${load.toFixed(1)} still exceeds ${limit} after ${Math.round((now() - started) / 1000)} s; capturing anyway, the capture index records it`);
+  }
+  return { load1: Math.round(load * 100) / 100, limit, cores, waitedMs: now() - started, overloaded };
+}
+
 export function machineCapacity(env = process.env) {
   const read = (name, fallback, max) => {
     const n = env[name] === undefined ? fallback : Number(env[name]);
