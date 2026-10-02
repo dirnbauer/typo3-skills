@@ -296,9 +296,10 @@ test('a stateful node gets its own recorded snapshot immediately before opening'
     const taken = [];
     const runner = async (name) => { taken.push(name); };
     const result = await snapshotCreate({ values: { node: 'judge' }, paths, log: quietLog, journal: quietJournal, runner });
-    assert.equal(result.snapshot, 'node-judge-a1');
-    assert.deepEqual(taken, ['node-judge-a1']);
-    assert.ok((await new StateStore(paths).read()).snapshots.includes('node-judge-a1'));
+    // Run-unique: a project keeps snapshots across runs, and DDEV keeps an existing name while exiting 0.
+    assert.equal(result.snapshot, '2026-09-27-runner-node-judge-a1');
+    assert.deepEqual(taken, ['2026-09-27-runner-node-judge-a1']);
+    assert.ok((await new StateStore(paths).read()).snapshots.includes('2026-09-27-runner-node-judge-a1'));
     await assert.rejects(snapshotCreate({ values: { node: 'done' }, paths, log: quietLog, journal: quietJournal, runner }), /Snapshot immediately before/);
   } finally {
     await rm(root, { recursive: true, force: true });

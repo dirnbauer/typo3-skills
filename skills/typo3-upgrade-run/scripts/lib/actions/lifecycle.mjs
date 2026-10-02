@@ -8,7 +8,7 @@
 
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
@@ -142,7 +142,7 @@ export async function snapshotCreate({ values, paths, log, journal, runner = run
   if (values.node && !values.loop) return snapshotForNode({ values, state, paths, log, journal, runner });
   const loopName = await resolveLoop(paths, values.loop);
   const id = loopName.slice(0, 3);
-  const name = values.name ?? `loop-${id}-pre`;
+  const name = values.name ?? `${runPrefix(state)}loop-${id}-pre`;
   await runner(name, state.project?.ddev_project || null);
   await new StateStore(paths).update((current) => {
     if (!current.snapshots.includes(name)) current.snapshots.push(name);
@@ -164,7 +164,7 @@ async function snapshotForNode({ values, state, paths, log, journal, runner }) {
   if (nodeState.status !== 'ready') {
     throw new PreconditionError(`Node ${id} is ${nodeState.status}. Snapshot immediately before opening a ready node.`);
   }
-  const name = values.name ? String(values.name) : `node-${id}-a${nodeState.attempts + 1}`;
+  const name = values.name ? String(values.name) : `${runPrefix(state)}node-${id}-a${nodeState.attempts + 1}`;
   if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(name)) throw new HarnessError('--name may contain letters, digits, dot, dash and underscore.');
   await runner(name, state.project?.ddev_project || null);
   await new StateStore(paths).update((current) => {
@@ -316,9 +316,40 @@ export async function validateRun({ paths, log, values = {} }) {
   return { exitCode: EXIT.PASS, verdict: 'pass', loops: Object.keys(state.loops).length, message: 'run valid' };
 }
 
+/**
+ * Snapshot names start with the run id: a project keeps its snapshots across runs, and DDEV refuses an existing name
+ * while still exiting 0, which would silently record another run's database as this node's rollback anchor.
+ */
+function runPrefix(state) {
+  const runId = String(state?.run_id ?? '').replace(/[^A-Za-z0-9._-]+/g, '-');
+  return /^[A-Za-z0-9]/.test(runId) ? `${runId}-` : '';
+}
+
+/** Snapshot entries (files or directories) DDEV stores for `name` in a project's .ddev/db_snapshots. */
+export async function snapshotEntries(dir, name) {
+  const entries = await readdir(dir).catch((error) => { if (error.code === 'ENOENT') return []; throw error; });
+  const own = entries.filter((entry) => entry === name || entry.startsWith(`${name}-mariadb_`) || entry.startsWith(`${name}-mysql_`)
+    || entry.startsWith(`${name}-postgres_`));
+  return Promise.all(own.map(async (entry) => ({ entry, mtimeMs: (await stat(path.join(dir, entry))).mtimeMs })));
+}
+
 async function runDdev(name, project) {
-  const args = ['snapshot', '--name', name];
-  await exec('ddev', args, { timeout: 10 * 60 * 1000 });
+  const describe = await exec('ddev', ['describe', '-j', ...(project ? [project] : [])], { timeout: 60 * 1000 });
+  const approot = JSON.parse(describe.stdout)?.raw?.approot;
+  if (!approot) throw new HarnessError('ddev describe did not report the project root; cannot verify the snapshot.');
+  const dir = path.join(approot, '.ddev', 'db_snapshots');
+  const existing = await snapshotEntries(dir, name);
+  if (existing.length) {
+    throw new PreconditionError(`DDEV snapshot ${name} already exists (${existing.map((e) => e.entry).join(', ')}). DDEV would keep `
+      + 'the old file and still exit 0. Pass --name with an unused name, or move the stale snapshot out of .ddev/db_snapshots.');
+  }
+  const startedMs = Date.now() - 2000;
+  const { stdout = '', stderr = '' } = await exec('ddev', ['snapshot', '--name', name, ...(project ? [project] : [])],
+    { timeout: 10 * 60 * 1000 });
+  const failure = `${stdout}\n${stderr}`.split('\n').find((line) => /failed to snapshot/i.test(line));
+  if (failure) throw new HarnessError(`ddev snapshot ${name} failed: ${failure.replace(/\u001b\[[0-9;]*m/g, '').trim()}`);
+  const written = (await snapshotEntries(dir, name)).filter((e) => e.mtimeMs >= startedMs);
+  if (!written.length) throw new HarnessError(`ddev snapshot ${name} exited 0 but wrote no new snapshot in ${dir}.`);
 }
 
 async function resolveLoop(paths, reference) {

@@ -91,3 +91,20 @@ test('the pixel stage normalises the TYPO3 exception code with the DOM rule\'s o
   assert.ok(script.includes(`new RegExp(${JSON.stringify(rule.re.source)})`), 'settle script must reuse the DOM rule pattern');
   assert.ok(script.includes("normalizedTexts = { 'typo3-exception-code': 0 }"));
 });
+
+test('#58 snapshot entries are found by DDEV file name, so an existing name can be refused and a new write verified', async () => {
+  const { snapshotEntries } = await import('../../lib/actions/lifecycle.mjs');
+  const { mkdtemp, writeFile: write, mkdir: mk, rm: remove, utimes } = await import('node:fs/promises');
+  const dir = await mkdtemp(path.join(os.tmpdir(), 't3u-snapshots-'));
+  try {
+    await write(path.join(dir, 'node-rung-13-a1-mariadb_10.11.zst'), 'old');
+    await write(path.join(dir, 'node-rung-13-a10-mariadb_10.11.zst'), 'other attempt');
+    await mk(path.join(dir, 'legacy-dir-snapshot'));
+    await utimes(path.join(dir, 'node-rung-13-a1-mariadb_10.11.zst'), new Date('2026-09-28T19:45:14Z'), new Date('2026-09-28T19:45:14Z'));
+    const found = await snapshotEntries(dir, 'node-rung-13-a1');
+    assert.deepEqual(found.map((e) => e.entry), ['node-rung-13-a1-mariadb_10.11.zst']);
+    assert.ok(found[0].mtimeMs < Date.parse('2026-10-01T00:00:00Z'), 'an old file is not a fresh write');
+    assert.deepEqual((await snapshotEntries(dir, 'legacy-dir-snapshot')).map((e) => e.entry), ['legacy-dir-snapshot']);
+    assert.deepEqual(await snapshotEntries(path.join(dir, 'missing'), 'x'), []);
+  } finally { await remove(dir, { recursive: true, force: true }); }
+});
