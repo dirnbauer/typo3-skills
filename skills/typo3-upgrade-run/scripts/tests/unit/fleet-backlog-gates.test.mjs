@@ -82,3 +82,12 @@ test('#54 axe incomplete results are clustered per rule, viewport and state like
     targets: ['.hero h1', '.hero p'],
   }]);
 });
+
+test('the pixel stage normalises the TYPO3 exception code with the DOM rule\'s own pattern', async () => {
+  const { settleScript } = await import('../../lib/browser/stabilize.mjs');
+  const { RULES } = await import('../../lib/compare/dom-normalize.mjs');
+  const rule = RULES.find((r) => r.id === 'typo3-exception-code');
+  const script = settleScript({});
+  assert.ok(script.includes(`new RegExp(${JSON.stringify(rule.re.source)})`), 'settle script must reuse the DOM rule pattern');
+  assert.ok(script.includes("normalizedTexts = { 'typo3-exception-code': 0 }"));
+});
