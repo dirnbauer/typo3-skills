@@ -20,12 +20,16 @@ How one controller drives the sealed upgrade graph with small, fresh-context wor
 t3u graph-next                      # ready nodes + compatible parallel sets
 t3u node-brief --node <id>          # the work order; add --json for machine dispatch
 t3u snapshot-create --node <id>     # stateful nodes only, immediately before opening
-t3u node-open --node <id> [--snapshot node-<id>-aN] [--rollback-ref git:<sha>] [--approval APR-NNN]
+t3u node-open --node <id> [--snapshot <run-id>-node-<id>-aN] [--rollback-ref git:<sha>] [--approval APR-NNN]
 #   … worker executes, writes nodes/<id>/evidence.md, returns an outcome …
 #   … reviewer writes nodes/<id>/review.md when the brief requires it …
 t3u node-close --node <id> --outcome <o> --evidence nodes/<id>/evidence.md [--review nodes/<id>/review.md] [--evidence-loop NNN]
 t3u graph-report --write            # at checkpoints and before handover
 ```
+
+Snapshot names start with the run id (`<run-id>-node-<id>-a<n>`): a project keeps its DDEV snapshots across runs,
+and DDEV refuses an existing name while still exiting 0. `snapshot-create` therefore refuses a name that already
+exists in `.ddev/db_snapshots` and fails unless DDEV wrote a new snapshot file.
 
 The controller is the only process that opens or closes nodes. Take the Git anchor from a clean
 commit (`git rev-parse HEAD` after committing the previous node's code) so the change guard measures
