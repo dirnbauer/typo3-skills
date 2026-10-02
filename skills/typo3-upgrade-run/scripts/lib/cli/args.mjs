@@ -61,6 +61,7 @@ export const COMMANDS = {
   'node-close': { summary: 'Close a node with evidence and activate outcome routes', options: {
     outcome: { type: 'string' }, evidence: { type: 'string' }, 'evidence-loop': { type: 'string' },
     approval: { type: 'string' }, review: { type: 'string', help: 'Independent verifier verdict bound to the evidence hash' },
+    'closure-evidence': { type: 'string', help: 'Gate nodes: the closure manifest to judge (default: the recorded one)' },
   }},
   'closure-start': { summary: 'Bind a new final-proof epoch to current code and live inputs', options: {} },
   'closure-check': { summary: 'Refuse incomplete or stale closure evidence', options: { evidence: { type: 'string' } } },

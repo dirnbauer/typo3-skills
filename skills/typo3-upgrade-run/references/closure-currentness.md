@@ -23,11 +23,32 @@ t3u closure-verify --evidence report/closure-evidence.json
 t3u validate-run
 # Record real observed-result acceptance; an agent cannot countersign for the user.
 # Use t3u approval with an unused APR-NNN, --stage acceptance, the actual question/answer,
-# --granted only after the user's acceptance, and --evidence path#sha256:<manifestHash>.
+# --granted only after the user's acceptance, and --evidence path#sha256:<manifestHash>, where
+# <manifestHash> is the sha256 of the manifest FILE bytes (shasum -a 256), not the canonical hash
+# closure-verify prints.
 t3u node-open --node contract-a-gate
 t3u node-close --node contract-a-gate --outcome pass --evidence-loop 301 \
-  --evidence report/closure-evidence.json --approval APR-399
+  --evidence nodes/contract-a-gate/evidence.md --approval APR-399
+# ... Contract B branches (not-applicable unless requested), elevation-join ...
+t3u node-open --node handover
+t3u node-close --node handover --outcome pass --evidence report/handover.md
 ```
+
+The gate nodes judge the closure manifest separately from their own evidence file. `node-close`
+uses `--closure-evidence <manifest>` when given; otherwise, for `contract-a-gate`, the manifest
+`closure-verify` recorded (`report/closure-evidence.json` when there is none) and, for `handover`,
+the accepted manifest (`contract_a.closure_ref`). After approved Contract B work, pass the fresh
+final manifest with `--closure-evidence`; the accepted Contract A manifest is still checked for its
+recorded acceptance. Runs that passed the manifest itself as `--evidence` keep working.
+
+### Commands that print nothing on success
+
+`closure-check` refuses an empty artifact, because an empty file cannot show what was checked. Some
+commands print only problems: `redirects:checkintegrity` renders a table only for conflicts.
+Record such a check as a non-empty file with the command, its exit code and timestamps, plus a
+read-only read-back of what it checked or wrote (for the integrity check: the
+`tx_redirects/conflicting_redirects` registry entry and the `integrity_status` of every redirect),
+and reference that file instead of the empty output.
 
 `closure-start` writes a unique, hashed epoch beneath `report/`; it never rewrites old epochs.
 Copy its run id and hash into `report/closure-evidence.json`, using this shape:

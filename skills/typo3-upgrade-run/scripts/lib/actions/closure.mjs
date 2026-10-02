@@ -124,7 +124,10 @@ export async function readClosureArtifact(root, reference) {
   const canonicalRoot = await realpath(root);
   if (!resolved || !resolved.startsWith(canonicalRoot + path.sep)) throw new InvalidRunError(`Missing or escaping closure artifact: ${reference}`);
   const bytes = await readFile(resolved);
-  if (!bytes.length) throw new InvalidRunError(`Empty closure artifact: ${reference}`);
+  if (!bytes.length) {
+    throw new InvalidRunError(`Empty closure artifact: ${reference}. A command that prints nothing on success needs a `
+      + 'non-empty record: its exit code plus a read-back of what it checked (references/closure-currentness.md).');
+  }
   return bytes;
 }
 
@@ -242,12 +245,35 @@ export function validClosureAcceptance(acceptance, { runId, approvalId, evidence
     && acceptance.evidence_ref === `${evidence}#${manifestHash}`);
 }
 
+/**
+ * The closure manifest a gate node (contract-a-gate, handover) judges. It is not necessarily the node's own evidence:
+ * the node definitions name nodes/contract-a-gate/evidence.md and report/handover.md. Order: an explicit
+ * --closure-evidence; the --evidence file itself when it is a closure manifest (how runs before this option closed the
+ * gates); for handover the accepted manifest (contract_a.closure_ref); else the manifest closure-verify recorded.
+ */
+export async function gateClosureEvidence(paths, values, state, id, evidence) {
+  if (values?.['closure-evidence']) return String(values['closure-evidence']);
+  if (await isClosureManifest(paths.root, evidence)) return evidence;
+  if (id === 'handover' && state.contract_a?.closure_ref) return state.contract_a.closure_ref;
+  return state.contract_a?.verification?.evidence_ref ?? 'report/closure-evidence.json';
+}
+
+async function isClosureManifest(root, reference) {
+  try {
+    return JSON.parse(await readClosureArtifact(root, reference))?.schema === 'typo3-upgrade-run/closure@1';
+  } catch {
+    return false;
+  }
+}
+
 export async function verifyRecordedClosureAcceptance(paths, state, now = Date.now()) {
   const closedAt = Date.parse(state.contract_a?.closed_at), deadline = Date.parse(state.runtime?.deadline_at);
   const evidence = state.contract_a?.closure_ref;
   const gate = state.graph?.nodes?.['contract-a-gate'];
+  // Gates closed with their own evidence file record the judged manifest as closure_ref; older runs used the manifest
+  // itself as the node's evidence.
   if (!Number.isFinite(closedAt) || !Number.isFinite(deadline) || closedAt > now
-    || gate?.status !== 'passed' || !evidence || evidence !== gate.evidence) {
+    || gate?.status !== 'passed' || !evidence || evidence !== (gate.closure_ref ?? gate.evidence)) {
     throw new InvalidRunError('Closed label lacks a passed, timely Contract A transition and its evidence reference.');
   }
   // A remains historical after approved B work. Validate its own accepted manifest,

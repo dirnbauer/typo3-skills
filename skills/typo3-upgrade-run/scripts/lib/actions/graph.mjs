@@ -15,7 +15,9 @@ import { sha256 } from '../run/paths.mjs';
 import { assertPhaseRuntime, runtimeProfileIssues, phaseUsesMigrationWindow } from '../run/runtime.mjs';
 import { forecastGraph } from '../run/forecast.mjs';
 import { nodeClaims, claimsConflict, lockOwners, blockedClaims, acquireClaims, releaseClaims } from '../run/resources.mjs';
-import { closureCheck, readClosureArtifact, readFeaturePlan, validClosureAcceptance, verifyRecordedClosureAcceptance } from './closure.mjs';
+import {
+  closureCheck, gateClosureEvidence, readClosureArtifact, readFeaturePlan, validClosureAcceptance, verifyRecordedClosureAcceptance,
+} from './closure.mjs';
 import {
   forbiddenMeasurementChanges, measurementInputs, overBudget, parseReview, projectChangeSince, reviewRequired,
   untrackedSnapshot,
@@ -223,8 +225,12 @@ export async function nodeClose({ values, paths, log, journal }) {
       throw new PreconditionError(`Node ${id} may pass only with --evidence-loop naming a green bounded loop.`);
     }
   }
+  // The gate nodes judge the closure manifest, which need not be their own evidence file (the definitions name
+  // nodes/contract-a-gate/evidence.md and report/handover.md); gateClosureEvidence says which manifest is meant.
+  let closureEvidence = null;
   if (outcome === 'pass' && ['contract-a-gate', 'handover'].includes(id)) {
-    const checkedClosure = await closureCheck({ values, paths, log });
+    closureEvidence = await gateClosureEvidence(paths, values, state, id, evidence);
+    const checkedClosure = await closureCheck({ values: { evidence: closureEvidence }, paths, log });
     if (id === 'handover') await verifyRecordedClosureAcceptance(paths, state);
     if (id === 'contract-a-gate') {
       const approvalId = values.approval;
@@ -235,7 +241,7 @@ export async function nodeClose({ values, paths, log, journal }) {
       }
       const approvalBody = await readFile(path.join(paths.approvalsDir, candidates[0]), 'utf8');
       const acceptance = parseYaml(approvalBody.match(/^---\r?\n([\s\S]*?)\r?\n---/)?.[1] ?? '');
-      if (!validClosureAcceptance(acceptance, { ...checkedClosure, runId: state.run_id, approvalId, evidence })) {
+      if (!validClosureAcceptance(acceptance, { ...checkedClosure, runId: state.run_id, approvalId, evidence: closureEvidence })) {
         throw new PreconditionError('Acceptance must belong to this run and reference the closure path#sha256:hash.');
       }
     }
@@ -304,13 +310,13 @@ export async function nodeClose({ values, paths, log, journal }) {
   }
   const now = new Date().toISOString();
   if (id === 'contract-a-gate' && outcome === 'pass') {
-    state.contract_a = { ...state.contract_a, phase: 'P13', status: 'closed', closed_at: now, closure_ref: evidence };
+    state.contract_a = { ...state.contract_a, phase: 'P13', status: 'closed', closed_at: now, closure_ref: closureEvidence };
     state.contract_b.unlocked = true;
     state.contract_b.unlocked_at = now;
   }
   const evidenceLoop = values['evidence-loop'] ? String(values['evidence-loop']).slice(0, 3) : null;
   const previous = { status: nodeState.status, attempt: nodeState.attempts, outcome, evidence, evidence_sha256: evidenceHash, evidence_loop: evidenceLoop, completed_at: now, applicability_only: nodeState.applicability_only ?? false,
-    review: reviewRef, review_sha256: reviewHash, change };
+    review: reviewRef, review_sha256: reviewHash, change, ...(closureEvidence ? { closure_ref: closureEvidence } : {}) };
   nodeState.history.push(previous);
   nodeState.status = statusForOutcome(outcome);
   nodeState.outcome = outcome;
@@ -320,6 +326,7 @@ export async function nodeClose({ values, paths, log, journal }) {
   nodeState.review_sha256 = reviewHash;
   nodeState.change = change;
   nodeState.evidence_loop = evidenceLoop;
+  if (closureEvidence) nodeState.closure_ref = closureEvidence;
   nodeState.completed_at = now;
   nodeState.active_since = null;
   const releasedResources = releaseClaims(state.graph.locks, id);
