@@ -576,6 +576,11 @@ export async function axeAudit({ values, paths, log }) {
     ...cluster,
     untrustedTargets: targets.map(untrusted),
   }));
+  // "Incomplete" (needs review) results, clustered like violations: their triage (Contract B) then needs no rerun.
+  const reportIncomplete = aggregateAxeIncomplete(observations).map(({ targets, ...cluster }) => ({
+    ...cluster,
+    untrustedTargets: targets.map(untrusted),
+  }));
   const reportCoverageFailures = coverageFailures.map(({ reason, ...failure }) => ({
     ...failure,
     untrustedReason: untrusted(reason),
@@ -621,6 +626,7 @@ export async function axeAudit({ values, paths, log }) {
       axe: { tags, failImpacts: [...failImpacts], sample: urls, viewports, states },
       execution,
       clusters: reportClusters,
+      incompleteClusters: reportIncomplete,
       coverageFailures: reportCoverageFailures,
       caveat: 'No automated violations is not WCAG conformance; incomplete results and manual criteria remain.',
     },
@@ -645,6 +651,11 @@ export function finalAxeSample(manifest, limit = 12) {
     throw new PreconditionError('axe requires at least three distinct frontend URLs.');
   }
   return sample;
+}
+
+/** Incomplete (needs-review) axe results per rule, impact, viewport and state, aggregated like violations. */
+export function aggregateAxeIncomplete(observations) {
+  return aggregateAxeViolations(observations.map((observation) => ({ ...observation, violations: observation.incomplete ?? [] })));
 }
 
 export function aggregateAxeViolations(observations) {

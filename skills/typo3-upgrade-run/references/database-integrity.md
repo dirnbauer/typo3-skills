@@ -49,6 +49,16 @@ Confirm the available syntax with `ddev typo3 help database:updateschema`; this 
 TYPO3 Core. Review all eight types in the dry-run output. Applying only add/change can be a safe
 intermediate step, but it is not evidence that the final schema is clean.
 
+```bash
+# Safe types: must be empty at a fixed point.
+ddev typo3 database:updateschema '*.add,*.change' --dry-run
+# Destructive candidates: list them (-v prints the SQL; without it only counts), never apply them in Contract A.
+ddev typo3 database:updateschema 'field.prefix,field.drop,table.prefix,table.drop' --dry-run -v
+```
+
+There is no `remove` type: `'*.remove'` is rejected (exit 1). The wildcards `*.add`, `*.change`,
+`*.prefix` and `*.drop` expand to their field and table types; the named lists above avoid guessing.
+
 For every change or removal candidate, record:
 
 ```sql

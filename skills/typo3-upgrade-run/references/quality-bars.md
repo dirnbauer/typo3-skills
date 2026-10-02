@@ -73,7 +73,7 @@ Automated and manual results are reported **separately** and never merged into o
 
 | Bar | Target | Local caveat |
 |---|---|---|
-| axe-core | 0 serious/critical across sample × 3 viewports × all languages × applicable visible states; minor/moderate and every `incomplete` result triaged | Automation reaches only part of WCAG. This alone is never conformance. |
+| axe-core | 0 serious/critical across sample × 3 viewports × all languages × applicable visible states; minor/moderate and every `incomplete` result triaged (the axe report lists them as `incompleteClusters`) | Automation reaches only part of WCAG. This alone is never conformance. |
 | Lighthouse Accessibility | 100 | A subset of axe — not independent evidence. |
 | Keyboard | 5 primary journeys completable keyboard-only, visible focus throughout, 0 traps, working skip link | Needs a human. The skill produces the checklist and the evidence slots, not the verdict. |
 | 1.4.10 Reflow | no horizontal scroll or content loss at 320 px and at 400% zoom on 1280 px | Screenshot evidence per page. |

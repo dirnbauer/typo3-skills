@@ -248,8 +248,8 @@ Contract A closes only when every activated required node is terminal and `graph
 `closure-check` and `validate-run` pass; source and target content epochs reconcile; all final
 HTTP/DOM/pixel and component checks are classified; backend, redirects/rights, runtime logs,
 Composer audit, schema fixed point, structured-data parity, Lighthouse and axe evidence exist; and
-zero unapproved regressions remain. `node-close` for `contract-a-gate` checks the current evidence
-and its recorded human acceptance. Never edit `state.json` to manufacture a closure.
+zero unapproved regressions remain. `node-close` for `contract-a-gate` checks the current closure
+manifest (by default the one `closure-verify` recorded) and its recorded human acceptance. Never edit `state.json` to manufacture a closure.
 
 The handover names project/branch/HEAD, core/PHP versions, dataset date, backup and restore
 references, graph hash/status, tests with exit codes, declared changes, residual risks, the graph
