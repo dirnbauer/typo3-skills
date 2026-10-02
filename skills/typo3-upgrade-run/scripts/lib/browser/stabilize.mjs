@@ -16,7 +16,7 @@
 
 import { sha256 } from '../run/paths.mjs';
 import { HarnessError } from '../cli/exit-codes.mjs';
-import { parseRegionSelector } from '../compare/dom-normalize.mjs';
+import { RULES as DOM_RULES, parseRegionSelector } from '../compare/dom-normalize.mjs';
 import { BLEND_MODES } from './media-adapters.mjs';
 
 const ADR_ID = /^ADR-\d{3,}$/;
@@ -158,6 +158,9 @@ export function initScript({ seed = 20260725, epoch = 1774425600000 } = {}) {
   };
 })();`;
 }
+
+// The DOM stage's typo3-exception-code rule, applied to the rendered text before every screenshot (see settleScript).
+const EXCEPTION_CODE = DOM_RULES.find((rule) => rule.id === 'typo3-exception-code');
 
 /** Runs in the page immediately before the screenshot. Returns a small settle report. */
 export function settleScript(profile = {}) {
@@ -339,6 +342,25 @@ export function settleScript(profile = {}) {
           report.carousels.pinned += 1;
           note('owl');
         } catch {}
+      });
+    }
+  } catch {}
+
+  // TYPO3's content exception handler prints "Oops, an error occurred! Code: <YmdHis><8 hex>", a log id that is new
+  // on every request. The DOM stage normalises it (rule typo3-exception-code); the rendered text gets the same
+  // placeholder here, so a pre-existing failing element compares in pixels as it does in HTML. The message itself
+  // stays visible, so an element that starts or stops failing is still a difference. Text nodes only; counted.
+  report.normalizedTexts = { 'typo3-exception-code': 0 };
+  try {
+    const codeTest = new RegExp(${JSON.stringify(EXCEPTION_CODE.re.source)});
+    const codeAll = new RegExp(${JSON.stringify(EXCEPTION_CODE.re.source)}, 'g');
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      const text = node.nodeValue;
+      if (!text || !codeTest.test(text)) continue;
+      node.nodeValue = text.replace(codeAll, (match, prefix) => {
+        report.normalizedTexts['typo3-exception-code'] += 1;
+        return prefix + '<CODE>';
       });
     }
   } catch {}

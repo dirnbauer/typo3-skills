@@ -102,6 +102,7 @@ other shifts the entire layout horizontally and reads as a site-wide regression.
 | A few pixels at the edge of a rounded box, one colour level, flipping between runs | partial raster → `--disable-partial-raster` (default since 2026-09-29); an older pin needs a new run |
 | A logo strip or teaser block changes selection although `Math.random` is seeded, and the served HTML already differs | server-side `shuffle()`/`RAND()` → `randomizedRegions` adapter below |
 | One animated image differs, nothing else | GIF animation → `media.gifFirstFrame` adapter below |
+| "Oops, an error occurred! Code: …" differs on a page with a failing content element | TYPO3's per-request exception log code → normalised to `Code: <CODE>` in the DOM stage and, since 2026-10-02, in the rendered text before every screenshot (settle report `normalizedTexts`); the message itself stays compared. An older pin needs a new run |
 | Everything differs slightly | device scale factor, colour scheme, or a browser version change → check the environment fingerprint first; this is `INVALID`, not a stabilisation problem |
 
 ## Server-side randomness and media adapters
