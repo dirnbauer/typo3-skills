@@ -7,6 +7,8 @@ import path from 'node:path';
 import { RunPaths, sha256 } from '../../lib/run/paths.mjs';
 import { gateClosureEvidence, readClosureArtifact, verifyRecordedClosureAcceptance } from '../../lib/actions/closure.mjs';
 import { aggregateAxeIncomplete } from '../../lib/actions/sweep.mjs';
+import { emptyState } from '../../lib/run/state.mjs';
+import { stateSchemaErrors } from '../../lib/run/schema.mjs';
 
 const NOW = Date.parse('2026-10-01T18:00:00Z');
 const manifest = { schema: 'typo3-upgrade-run/closure@1', runId: 'run-52', checks: [] };
@@ -62,6 +64,24 @@ test('#52 a gate closed with its own evidence file keeps the recorded acceptance
   state.graph.nodes['contract-a-gate'].evidence = 'report/closure-evidence.json';
   await verifyRecordedClosureAcceptance(paths, state, NOW);
 }));
+
+test('#52 the state schema accepts the closure_ref a gate node records', () => {
+  // The #52 fix writes nodeState.closure_ref, but the strict node schema did not list it: closing contract-a-gate
+  // failed with "/graph/nodes/contract-a-gate must NOT have additional properties" (second fleet run to reach the gate).
+  const state = emptyState({ runId: '2026-10-03-run-52', now: '2026-10-03T14:00:00.000Z' });
+  const node = { status: 'passed', attempts: 1, active_since: '2026-10-03T14:00:00.000Z',
+    completed_at: '2026-10-03T14:01:00.000Z', outcome: 'pass', evidence: 'nodes/contract-a-gate/evidence.md',
+    evidence_loop: '310', history: [], closure_ref: 'report/closure-evidence.json' };
+  state.graph = { schema: 'typo3-upgrade-run/graph-state@1', definition_path: 'config/upgrade-graph.yml',
+    definition_hash: `sha256:${'0'.repeat(64)}`, status: 'active', nodes: { 'contract-a-gate': node }, edges: {}, locks: {},
+    updated_at: '2026-10-03T14:01:00.000Z' };
+  assert.deepEqual(stateSchemaErrors(state), []);
+  node.closure_ref = null;
+  assert.deepEqual(stateSchemaErrors(state), []);
+  // The node schema stays strict for anything else.
+  node.closure_reference = 'report/closure-evidence.json';
+  assert.ok(stateSchemaErrors(state).some(e => /additional properties/.test(e)));
+});
 
 test('#53 an empty closure artifact is refused with a hint for commands that print nothing', () => withRun(async (paths) => {
   await writeFile(path.join(paths.root, 'report/empty.txt'), '');
