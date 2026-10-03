@@ -6,6 +6,7 @@ import os from 'node:os';
 
 import {
   finalLighthouseSample,
+  unauditableBaselineUrls,
   lighthouseBudgetFindings,
   stratifyByTemplate,
   withDeadline,
@@ -31,6 +32,35 @@ describe('lighthouse sampling', () => {
     assert.equal(new URL(picked[0]).pathname, '/');
     assert.deepEqual(picked, finalLighthouseSample([...SITEMAP].reverse(), BASE, 'run-seed'));
     assert.equal(new Set(picked).size, 3);
+  });
+
+  test('never samples a URL the sealed baseline captured as an error page or non-HTML', async () => {
+    // A fleet run's seed drew the site's own broken news URL (404); Lighthouse reports an error page as an
+    // incomplete audit, so floors and closure could never be measured.
+    const root = await mkdtemp(path.join(os.tmpdir(), 't3u-lh-sample-'));
+    try {
+      const http = path.join(root, 'http');
+      await (await import('node:fs/promises')).mkdir(http);
+      const captures = [
+        [u('/news/a/'), 200, 'text/html'], [u('/news/b/'), 404, 'text/html'],
+        [u('/about/'), 307, 'text/html'], [u('/feed.xml'), 200, 'application/xml'],
+      ];
+      for (const [i, [url, status, contentType]] of captures.entries()) {
+        await writeFile(path.join(http, `${i}.json`), JSON.stringify({ requestedUrl: url, status, contentType }));
+      }
+      const exclude = await unauditableBaselineUrls(root);
+      assert.deepEqual([...exclude].sort(), [u('/about/'), u('/feed.xml'), u('/news/b/')].sort());
+      for (const seed of ['run-seed', 'other', '2026-10-03-site-visual']) {
+        const picked = finalLighthouseSample(SITEMAP, BASE, seed, { exclude });
+        assert.ok(picked.every((url) => !exclude.has(url)), `seed ${seed} picked an unauditable URL`);
+        assert.equal(picked.length, 3);
+      }
+      // Without a baseline nothing is excluded, and the default call is unchanged.
+      assert.equal((await unauditableBaselineUrls(path.join(root, 'missing'))).size, 0);
+      assert.deepEqual(finalLighthouseSample(SITEMAP, BASE, 'run-seed'), finalLighthouseSample(SITEMAP, BASE, 'run-seed', {}));
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
   });
 
   test('audits all available pages on a one- or two-page site without inventing URLs', () => {

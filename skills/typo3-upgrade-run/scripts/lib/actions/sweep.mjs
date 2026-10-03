@@ -368,7 +368,8 @@ export async function lighthouse({ values, paths, log }) {
   }
 
   const allUrls = manifest.allUrls.map((entry) => entry.url);
-  const urls = finalLighthouseSample(allUrls, manifest.baseUrl, manifest.seed ?? 'lighthouse-final');
+  const unauditable = await unauditableBaselineUrls(paths.baseline('A-original'));
+  const urls = finalLighthouseSample(allUrls, manifest.baseUrl, manifest.seed ?? 'lighthouse-final', { exclude: unauditable });
   const guard = await UrlGuard.create({ allowedOrigins: manifest.allowedOrigins });
 
   // One Chrome for the whole run. v1 spawned and killed one PER URL — 100 cold starts.
@@ -452,7 +453,8 @@ export async function lighthouse({ values, paths, log }) {
     counts: { urls: results.length, runsPerUrl: runs },
     findings,
     extra: {
-      lighthouse: { formFactor, runsPerUrl: runs, aggregate: 'median', machineWaitMs: lease.waitMs, exclusive: true },
+      lighthouse: { formFactor, runsPerUrl: runs, aggregate: 'median', machineWaitMs: lease.waitMs, exclusive: true,
+        sample: urls, sampleExcludedUnauditable: [...unauditable].sort() },
       toolVersion: rawRuns[0]?.lighthouseVersion,
       browser: rawRuns[0]?.environment?.hostUserAgent,
       rawRuns,
@@ -733,15 +735,40 @@ export function stratifyByTemplate(urls, limit, baseUrl) {
   return picked;
 }
 
-/** Final reporting: fixed homepage plus two reproducibly random non-home pages. */
-export function finalLighthouseSample(urls, baseUrl, seed = 'lighthouse-final') {
+/**
+ * Final reporting: fixed homepage plus two reproducibly random non-home pages. `exclude` holds URLs Lighthouse cannot
+ * audit: Lighthouse reports an error page (404, a redirect) as an incomplete audit, so a seed that drew a site's own broken
+ * URL made the quality proof impossible for the whole run.
+ */
+export function finalLighthouseSample(urls, baseUrl, seed = 'lighthouse-final', { exclude = new Set() } = {}) {
   const root = new URL('/', baseUrl).href;
   const candidates = [...new Set(urls)]
     .filter((url) => {
-      try { return new URL(url).pathname !== '/'; } catch { return false; }
+      try { return new URL(url).pathname !== '/' && !exclude.has(url); } catch { return false; }
     })
     .sort();
   return [root, ...seededSample(candidates, Math.min(2, candidates.length), seed)];
+}
+
+/**
+ * URLs whose sealed Baseline A HTTP capture is not a 200 HTML page. Floors and closure read the same sealed captures, so
+ * both measure the same sample. Empty while no baseline exists.
+ */
+export async function unauditableBaselineUrls(baselineDir) {
+  const excluded = new Set();
+  let files;
+  try {
+    files = (await readdir(path.join(baselineDir, 'http'))).filter((file) => file.endsWith('.json'));
+  } catch {
+    return excluded;
+  }
+  for (const file of files) {
+    let capture;
+    try { capture = JSON.parse(await readFile(path.join(baselineDir, 'http', file), 'utf8')); } catch { continue; }
+    const url = capture?.requestedUrl ?? capture?.url;
+    if (url && (capture.status !== 200 || !/html/i.test(String(capture.contentType ?? '')))) excluded.add(url);
+  }
+  return excluded;
 }
 
 export function completeLighthouseAudit(lhr) {
