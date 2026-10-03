@@ -193,6 +193,7 @@
               "evidence": { "type": ["string", "null"] },
               "evidence_sha256": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
               "evidence_loop": { "type": ["string", "null"], "pattern": "^[0-9]{3}$" },
+              "closure_ref": { "type": ["string", "null"] },
               "applicability_only": { "type": "boolean" },
               "anchor": {
                 "type": ["object", "null"],
