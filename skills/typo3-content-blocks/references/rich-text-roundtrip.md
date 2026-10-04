@@ -72,7 +72,7 @@ proof at closure. No extra graph phase, global visual state, independent loop or
 
 ## Evidence basis
 
-Watchlist's September 16 audit found HTML already stored in a migrated plain editor, field-level
+Site G's September 16 audit found HTML already stored in a migrated plain editor, field-level
 preset overrides, and formatting loss on save. Its local report records successful configuration,
 parser and frontend checks but **pending authenticated backend verification**. These are repair
 lessons, not a completed site certificate. See the [September 17 delta review](../../typo3-upgrade-run/references/run-retrospective-2026-09-17.md).

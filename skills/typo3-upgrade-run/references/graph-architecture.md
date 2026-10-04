@@ -110,7 +110,7 @@ See [parallel execution](parallel-execution.md) for the implemented concurrency 
 browser fixtures verify serial/parallel findings and missing-job handling; they do not establish
 whole-upgrade throughput. Strict pixel render order and independent final passes are preserved.
 
-No client upgrade has yet run end to end on the graph: the Gütezeichen (July) and Saferinternet.at
+No client upgrade has yet run end to end on the graph: the Site C (July) and Site D
 (August) runs used the loop protocols that this graph replaced. Run this version on a representative
 small, large and huge **authorized local clone**, preserving real per-node elapsed time and coverage
 with `t3u graph-report --write`. Compare equivalent workloads and environments, not live

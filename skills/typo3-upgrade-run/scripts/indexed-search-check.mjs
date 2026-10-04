@@ -15,7 +15,7 @@
  *
  * Usage:
  *   node indexed-search-check.mjs --base-url https://site.ddev.site --ddev-dir /path \
- *     [--count 50] [--language 0] [--term Fischerei] [--report out.json]
+ *     [--count 50] [--language 0] [--term Kontakt] [--report out.json]
  *
  * Exit: 0 ok · 1 findings (nothing indexed, or the control term is not found) · 3 invalid
  */

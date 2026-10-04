@@ -4,7 +4,7 @@ Read this reference before drafting or reviewing the overview page.
 
 ## Observed reference features
 
-The Scioflex Hydrogen reference page demonstrates this complete flow:
+One client reference page demonstrates this complete flow:
 
 1. Branded intro hero with version, system purpose, main claim, and material visual.
 2. Contrast evidence that separates protected logo color from accessible functional color.

@@ -8,11 +8,11 @@ series was found; the 8/24/48-hour admission limits and three-state matrix stay 
 
 ## New evidence available
 
-The seven checked-out HEADs remain those recorded on September 16. The newer Saferinternet mail/DOI
-commits on other refs were already covered. Watchlist has additional **uncommitted** RTE configuration
+The seven checked-out HEADs remain those recorded on September 16. The newer Site D mail/DOI
+commits on other refs were already covered. Site G has additional **uncommitted** RTE configuration
 and audit-report work; it must not be presented as committed, deployed or fully backend-verified.
 
-Internal evidence, relative to `watchlist-internet`:
+Internal evidence, relative to the Site G checkout:
 
 - `reports/rte-content-blocks-20260916/README.md`, field inventory and content-block inventory;
 - the working-tree diff for `packages/theme/ContentBlocks/ContentElements/text_icon/config.yaml`,

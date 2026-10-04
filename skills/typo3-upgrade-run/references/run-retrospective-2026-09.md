@@ -7,7 +7,7 @@ selected latest task results and existing test reports. No customer installation
 production systems or old run verdicts were changed. Paths below are relative to the operator's
 projects directory. Versions are local lockfile evidence, not proof of what is currently deployed.
 
-Nine sites have a Git-recorded v12→v14 requirement transition. Scioflex is an additional v14 site
+Nine sites have a Git-recorded v12→v14 requirement transition. Site F is an additional v14 site
 migration in the prior run review; its original v12 requirement was not independently recoverable
 from this checkout. Do not count extension forks, fresh v14 demo installs or duplicate worktrees
 as additional upgraded websites.
@@ -16,16 +16,16 @@ as additional upgraded websites.
 
 | Project | Local Core / upgrade anchor | What worked | Problems / last recorded closure |
 |---|---|---|---|
-| OEII (`oeii`) | 14.3.6; `9ddef93e`, later `4692658c` | Native JS `ba3bcc24`; cached-page Solr indexing `99ee08d0`; editorial links preserved `e8f1f222`; September sync and 18 interaction tests | Run state still P05 open. September report uses 0.1% pixels, excluded dynamic regions and single-run Lighthouse; not the strict A certificate |
-| FMW (`fmw`) | 14.3.5; `cd76374` | Content Blocks, CKEditor modules `1f46d9f`, Playwright `83dad19`, configurable sync `898b088`, deploy archive exclusions `abdc056` | State P11 blocked, loop 300 invalid. Later task retained jQuery intentionally; do not call it jQuery-free. Sync still has unsafe dotenv sourcing/header stripping |
-| Gütezeichen (`guetezeichen-relaunch`) | 14.3.5; `31506560` | Native JS `58ea367e`, Bootstrap Package extraction `3e3bf9cc`, retired BS4 compatibility `ee07741f`, repeatable RTE cleanup `d0234360` | State P11 open with findings. Old sync helper is not the modern safe template. Earlier random/GIF comparisons and data/YAML semantics caused rework |
-| Saferinternet (`saferinternet`) | 14.3.6; `191d9e4c` | Content Blocks and large-route parity work; later correct backend front-controller routing `27a908ef` | State P10 open. Mobile facet button failed after AJAX (`584e5b63`), resized sticky navigation, backend FAQ previews (`9a7eb407`); screenshots missed real journeys |
-| ÖIAT (`oiat`) | 14.3.5; `7a22ec7` | Upgrade branch and later visual parity repair `434cf2b`; completion/MR documentation | No `.typo3-update` state in this checkout. Git completion text is not a reproducible closure |
-| Scioflex Hydrogen (`scioflex-hydrogen`) | 14.3.6; `7941e37` | Isolated theme, custom Content Blocks `102481c`, migrated legacy content `7774627` | Initial empty/wrong dataset in prior review; no graph state. Source-v12 provenance incomplete; redesign must not be described as unchanged appearance |
-| Combsol (`combsol`) | 14.3.5; `fc5f08e` → `8d7ed0e` | Explicit 12.4→13.4→14.3 ladder, Mask/native Fluid migration `15bf696`, Deployer 8 recipe port `a683a79` | No graph state. Broad DB cleanup `39524ac` needs exact-scope approvals/restore proof; code success does not establish frontend/rights parity |
-| Ernährung/Nutrition (`ernaehrung-nutrition`) | 14.3.5; `796f870` | Preserved content in redesign, subscription flow/staging work `970c190` | Legacy settings migration `c603174`, deployment memory `2febb27`, backend routing `f823258`; no graph closure, mixed redesign/upgrade scope |
-| Fischereiverband (`fischerei-verband.at`) | 14.3.5; `8748fc2` | Forms, language attributes and metadata migrated | State P00 open despite v14 code; later redesign/staging branches are distinct from verified invariance |
-| Watchlist Internet (`watchlist-internet`) | 14.3.6; `51029a7d`, staging `d067f495`, promotion `7efb7dc6` | Extensive migration and subsequent regression tests; PHP web-runtime correction `04d8b45d` | No graph state. RTE preset/link-handler `417a341b`, import-map cache `f624e5be`, Record/FlexForm previews `3622dc61`/`bf5b31a7`, news/FAL/Solr `54018702`, facet setting `c7b07218`, FSD authentication `780cec45` |
+| Site A (`site-a`) | 14.3.6; `9ddef93e`, later `4692658c` | Native JS `ba3bcc24`; cached-page Solr indexing `99ee08d0`; editorial links preserved `e8f1f222`; September sync and 18 interaction tests | Run state still P05 open. September report uses 0.1% pixels, excluded dynamic regions and single-run Lighthouse; not the strict A certificate |
+| Site B (`site-b`) | 14.3.5; `cd76374` | Content Blocks, CKEditor modules `1f46d9f`, Playwright `83dad19`, configurable sync `898b088`, deploy archive exclusions `abdc056` | State P11 blocked, loop 300 invalid. Later task retained jQuery intentionally; do not call it jQuery-free. Sync still has unsafe dotenv sourcing/header stripping |
+| Site C (`site-c`) | 14.3.5; `31506560` | Native JS `58ea367e`, Bootstrap Package extraction `3e3bf9cc`, retired BS4 compatibility `ee07741f`, repeatable RTE cleanup `d0234360` | State P11 open with findings. Old sync helper is not the modern safe template. Earlier random/GIF comparisons and data/YAML semantics caused rework |
+| Site D (`site-d`) | 14.3.6; `191d9e4c` | Content Blocks and large-route parity work; later correct backend front-controller routing `27a908ef` | State P10 open. Mobile facet button failed after AJAX (`584e5b63`), resized sticky navigation, backend FAQ previews (`9a7eb407`); screenshots missed real journeys |
+| Site E (`site-e`) | 14.3.5; `7a22ec7` | Upgrade branch and later visual parity repair `434cf2b`; completion/MR documentation | No `.typo3-update` state in this checkout. Git completion text is not a reproducible closure |
+| Site F (`site-f`) | 14.3.6; `7941e37` | Isolated theme, custom Content Blocks `102481c`, migrated legacy content `7774627` | Initial empty/wrong dataset in prior review; no graph state. Source-v12 provenance incomplete; redesign must not be described as unchanged appearance |
+| Site I (`site-i`) | 14.3.5; `fc5f08e` → `8d7ed0e` | Explicit 12.4→13.4→14.3 ladder, Mask/native Fluid migration `15bf696`, Deployer 8 recipe port `a683a79` | No graph state. Broad DB cleanup `39524ac` needs exact-scope approvals/restore proof; code success does not establish frontend/rights parity |
+| Site J (`site-j`) | 14.3.5; `796f870` | Preserved content in redesign, subscription flow/staging work `970c190` | Legacy settings migration `c603174`, deployment memory `2febb27`, backend routing `f823258`; no graph closure, mixed redesign/upgrade scope |
+| Site H (`site-h`) | 14.3.5; `8748fc2` | Forms, language attributes and metadata migrated | State P00 open despite v14 code; later redesign/staging branches are distinct from verified invariance |
+| Site G (`site-g`) | 14.3.6; `51029a7d`, staging `d067f495`, promotion `7efb7dc6` | Extensive migration and subsequent regression tests; PHP web-runtime correction `04d8b45d` | No graph state. RTE preset/link-handler `417a341b`, import-map cache `f624e5be`, Record/FlexForm previews `3622dc61`/`bf5b31a7`, news/FAL/Solr `54018702`, facet setting `c7b07218`, FSD authentication `780cec45` |
 
 These are ten local implementation records, **not ten proven completed runs**. Five inspected state
 files remain open/blocked; five sites have no state file. None of those labels was upgraded to green.
@@ -34,7 +34,7 @@ readiness/closure reconciliation; a missing original baseline cannot be fabricat
 
 ## Latest concrete measurements and their limits
 
-OEII `tmp/live-sync-2026-09-05/README.md` supersedes earlier stale-data performance claims:
+Site A `tmp/live-sync-2026-09-05/README.md` supersedes earlier stale-data performance claims:
 262 live/local sitemap pages, 789 visual checks, first command 788 passes plus one DDEV connection
 failure, and 18/18 interactions. Three isolated identical-input rechecks of that navigation passed;
 the original command remains exit 1. Visual tolerance was 0.1%, not strict zero, and dynamic regions
@@ -44,7 +44,7 @@ The same report records Lighthouse 13.4.1 **single-run** mobile scores: homepage
 category live 75/local 94. Hosting differs from DDEV and the refresh changed derivative images;
 these are indicative measurements, not a controlled speedup or proof of repeatability.
 
-Watchlist task `01a05c89-cae5-7412-a4b5-2eacd98bc065` (“Fix TYPO3 Solr search errors”) reports seven
+Site G task (“Fix TYPO3 Solr search errors”) reports seven
 multilingual searches and the exact suggest endpoint returning 200 after a scoped UTF-8 correction
 retry guard; deleted/missing FAL references received a render fallback. This prevents crashes, but
 does not restore missing media or replace data cleanup. Task `01a060ef-7315-74a1-873c-ff0ab4de866b`
