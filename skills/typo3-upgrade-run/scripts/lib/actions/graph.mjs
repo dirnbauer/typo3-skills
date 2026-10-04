@@ -22,6 +22,7 @@ import {
   forbiddenMeasurementChanges, measurementInputs, overBudget, parseReview, projectChangeSince, reviewRequired,
   untrackedSnapshot,
 } from '../run/guards.mjs';
+import { formatDuration, selftestExpiryWarning, selftestValidity } from '../cli/command.mjs';
 export { validClosureAcceptance } from './closure.mjs';
 
 const GRAPH_SCHEMA = 'typo3-upgrade-run/graph@1';
@@ -58,13 +59,26 @@ export async function graphInit({ values, paths, log, journal }) {
   return { exitCode: EXIT.PASS, verdict: 'pass', definitionHash: hash, ready: [...start], message: 'graph initialised' };
 }
 
-export async function graphStatus({ values, paths, log }) {
+export async function graphStatus({ values, paths, log, now = Date.now }) {
   const { state, definition } = await graphContext(paths);
   refreshReady(state.graph, definition);
   const summary = summarize(state.graph, definition);
+  // The 24-hour self-test lock gates every comparison and closure. Show what is left of it, and
+  // warn while there is still time to re-run it rather than after a final compare was refused.
+  summary.selftest = selftestValidity(await readSelftestLock(paths), now());
   if (!values.json) process.stdout.write(`${renderGraphStatus(summary)}\n`);
+  const expiry = selftestExpiryWarning(summary.selftest);
+  if (expiry) log.warn?.(expiry);
   log.debug(`Graph ${summary.status}: ${summary.counts.ready ?? 0} ready, ${summary.counts.running ?? 0} running.`);
   return { exitCode: EXIT.PASS, verdict: 'pass', ...summary, message: `graph ${summary.status}` };
+}
+
+async function readSelftestLock(paths) {
+  try {
+    return JSON.parse(await readFile(paths.selftestLock, 'utf8'));
+  } catch (error) {
+    return error.code === 'ENOENT' ? null : { verdict: 'unreadable' };
+  }
 }
 
 export async function graphNext({ paths, log }) {
@@ -688,11 +702,28 @@ function summarize(graph, definition) {
   };
 }
 
+export function renderSelftestValidity(validity) {
+  const workers = validity?.visualWorkers ? `; ${validity.visualWorkers} visual worker(s)` : '';
+  switch (validity?.status) {
+    case 'valid':
+      return `valid until ${validity.expiresAt} (${formatDuration(validity.remainingMs)} left${workers})`;
+    case 'expiring':
+      return `EXPIRES SOON: ${formatDuration(validity.remainingMs)} left, until ${validity.expiresAt}${workers}`;
+    case 'expired':
+      return `EXPIRED${validity.expiresAt ? ` at ${validity.expiresAt}` : ''}; comparisons and closure refuse until it is re-run`;
+    case 'not-passed':
+      return 'no passing lock; comparisons refuse until it passes';
+    default:
+      return 'not run';
+  }
+}
+
 function renderGraphStatus(summary) {
   return [
     `# Upgrade graph: ${summary.status}`,
     '',
     `Definition: \`${summary.definitionHash}\``,
+    `Self-test: ${renderSelftestValidity(summary.selftest)}`,
     `Ready: ${summary.ready.join(', ') || '—'}`,
     `Running: ${summary.running.join(', ') || '—'}`,
     `Locks: ${Object.entries(summary.locks).map(([key, value]) => `${key}=${lockOwners(value).join('+')} (${typeof value === 'string' ? 'exclusive' : 'shared'})`).join(', ') || '—'}`,

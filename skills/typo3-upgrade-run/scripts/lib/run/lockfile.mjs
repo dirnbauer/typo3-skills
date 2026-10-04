@@ -55,6 +55,8 @@ export async function sealBaseline(dir, {
   harnessVersion = '2.1.0',
   sealedBy = 't3u',
   now = () => new Date().toISOString(),
+  // Last refusal before anything is written, e.g. the development-server guard.
+  beforeSeal = null,
 } = {}) {
   const lockPath = path.join(dir, 'LOCK.json');
   try {
@@ -69,6 +71,7 @@ export async function sealBaseline(dir, {
   if (!files.length) {
     throw new PreconditionError(`Nothing to seal in ${dir} — capture the baseline first.`);
   }
+  if (beforeSeal) await beforeSeal({ dir, files });
 
   const sums = renderSums(files);
   await mkdir(dir, { recursive: true });
