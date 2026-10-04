@@ -205,7 +205,7 @@ no second cap on final HTTP/DOM, because those stages are parallel and do not st
 Run loop 000's deterministic intermediate diagnostic before its first exhaustive proof:
 
 ```bash
-t3u selftest-determinism --sample intermediate --visual-workers 12
+t3u selftest-determinism --sample intermediate
 ```
 
 The diagnostic uses the normal affected/critical/seeded URL selection, every configured viewport,
@@ -217,12 +217,14 @@ The exhaustive command already produces two complete HTTP/DOM/visual passes. Whe
 zero, the harness atomically promotes pass B to the unsealed `baseline/A-original`. Sealing reuses
 that proven capture instead of running an identical third full browser matrix.
 
-Visual captures use a fixed pool of twelve independent Chromium processes (range 1–12). A
+Visual captures use a pool of independent Chromium processes (range 1–12). Without
+`--visual-workers` the self-test picks min(12, max(2, available CPUs − 2)), capped by
+`T3U_BROWSER_SLOTS`, prints the count and records where it came from (8 on a 10-core machine). A
 multi-worker pool must not share one Chromium process:
 isolated contexts still share renderer-global state and can produce workload-dependent fractional
-layout. Twelve workers are **licensed, never assumed**: only when the exhaustive double-shoot proves
-zero at that count does the lock seal `visualWorkers: 12` —
-from then on every authoritative capture must use exactly twelve, and `compare-visual` refuses (exit 3)
+layout. The count is **licensed, never assumed**: only when the exhaustive double-shoot proves
+zero at that count does the lock seal `visualWorkers: N` —
+from then on every authoritative capture must use exactly N, and `compare-visual` refuses (exit 3)
 when the lock and either side's capture index disagree on the count. A machine where parallel
 load flakes fails the self-test at N and falls back to serial; the proof is per-machine and
 expires with the lock. Record the count in capture metadata, capture indexes, self-test reports,

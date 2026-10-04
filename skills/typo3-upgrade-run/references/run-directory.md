@@ -160,6 +160,13 @@ a run whose audit trail exists only on one laptop cannot be reviewed later.
 
 ## Resuming
 
+`t3u init` writes an empty `.metadata_never_index` into the run directory so macOS Spotlight and
+media analysis leave the screenshots alone (several GB per run; indexing them drove the load past 50
+during captures). A run directory created before that: `touch .typo3-update/.metadata_never_index`.
+`t3u graph-status` shows how long the self-test stays valid and warns when less than 3 h remain;
+re-running it with unchanged inputs reproduces the same lock hash.
+
+
 A new session resumes by reading `state.json`, validating the graph hash/locks, and running
 `t3u graph-next`. Then read evidence only for ready/running nodes and the last relevant bounded loop.
 

@@ -182,7 +182,7 @@ report is a fabrication.
 | `--lighthouse-sample` | `3` | Fixed final set: homepage plus two seeded random non-home pages |
 | `--runs` | `3` | Lighthouse runs per URL, median reported |
 | `--reshoots` | `1` | Immediate reproduction check; non-zero still blocks |
-| `--visual-workers` | `12` | Isolated Chromium process pool (max 12); final evidence must be licensed by an exhaustive self-test at exactly that count |
+| `--visual-workers` | self-test: min(12, max(2, CPUs − 2)); final captures: the licensed count | Isolated Chromium process pool (max 12); final evidence must be licensed by an exhaustive self-test at exactly that count |
 | `--http-workers` | `6` | Stage 1/2 fetch pool (max 16); renderer-free, order-stable output |
 | `--compare-workers` | `8` | odiff/pixelmatch pool (max 16); order-stable findings |
 | `--redaction-profile` | `local` | `local` or `share` (for the KPI document) |

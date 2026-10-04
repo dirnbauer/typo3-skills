@@ -182,6 +182,9 @@ t3u content-fingerprint --write-target --transition .typo3-update/nodes/<node>/c
 `target-content-epoch` (P11) then reconciles the ledger accumulated over all rungs against Baseline A.
 A command run after an interim seal (a retried `extension:setup`, say) is proven by a
 `t3u content-fingerprint --assert` against that seal, not by a later per-column diff.
+A table the harness cannot read (a `ddev mysql` call that fails twice, or output beyond the 256 MiB
+buffer) is reported `unavailable` with exit 2, not as drift: check DDEV and the machine load and
+re-run. Only a table that still exists and reads differently is content drift.
 
 ## Proof scripts: journeys, sweeps and row diffs
 
