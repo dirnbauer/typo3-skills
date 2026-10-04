@@ -38,6 +38,9 @@ The controller closes `intake-join` with your sealed `manifests/feature-contract
 
 Your input is the node brief. Write its evidence file, return one allowed outcome, and never run
 `node-open`/`node-close` or edit run state. Details: [graph runner](../typo3-upgrade-run/references/graph-runner.md).
+Keep the evidence lean: about 120 lines of proof, earlier artifacts cited by path and hash, one probe
+artifact; at twice the brief's forecast, stop and return what is proven plus the open question
+([lean profile](../typo3-upgrade-run/references/graph-runner.md#evidence-file)).
 
 ## Preconditions
 
@@ -91,8 +94,14 @@ Your input is the node brief. Write its evidence file, return one allowed outcom
     their source artifacts in `nodes/intake/runtime-size.json`; select no profile yourself. Let
     `t3u runtime-seal` calculate and seal the smallest fitting small/large/huge profile.
 11. Produce risk/cost order, graph applicability outcomes, and a smallest-decision list for the user.
-12. Resolve known approvals before unattended execution. Forecast work from measured capture/test
-    throughput as well as site size. Read `../typo3-upgrade-run/references/overnight-controller.md`,
+    Run the read-only [TYPO3 14 fix-pack probe](../typo3-upgrade-run/references/typo3-14-fix-pack.md#the-probe-and-the-evidence)
+    and record every item as present or not present. A dev-server render (item 9) is settled now,
+    before the baseline.
+12. Ask every known decision in one [question round](../typo3-upgrade-run/references/overnight-controller.md#batch-the-owner-decisions)
+    before unattended execution: dataset, PHP, Lighthouse floors, Bootstrap/jQuery, extension
+    removals, the fix-pack approvals, delegation and commits. Forecast work from measured capture/test
+    throughput as well as site size ([fleet durations](../typo3-upgrade-run/references/runtime-sizing.md#measured-fleet-durations)).
+    Read `../typo3-upgrade-run/references/overnight-controller.md`,
     write the selected-route runtime plan and run `t3u graph-forecast` before the baseline. A missing
     or non-fitting estimate blocks admission. The size-dependent 8/24/48h caps are not completion guarantees.
 

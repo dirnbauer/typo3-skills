@@ -78,6 +78,45 @@
       ]
     },
     {
+      "id": "fix-pack-applied-at-rung-14",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Next fleet site goes to 14.3 now. Last time we lost hours on the dead /typo3/ rewrite, escaped RTE tags and a broken captcha image. Just start the rung and fix whatever breaks as it comes up.",
+      "assertions": [
+        "Applies the TYPO3 14 fix pack before the rung's first proof loop instead of waiting for symptoms node by node",
+        "Runs one read-only detection probe into one artifact and applies only the items whose detection matches, recording the others as not present",
+        "Records per item what was detected, the commit that applied it, its proof and any approval id, with the approvals taken from the intake question round",
+        "Places the earlier items in their own nodes: dev-server check before Baseline A, compress keys kept on 13.4, the 13.4 parseFunc copied before the 14.3 vendor replaces it",
+        "Routes a symptom whose detection does not match to the rung's recovery node rather than patching blind"
+      ]
+    },
+    {
+      "id": "lean-evidence-not-exhaustive",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "The mechanical migration worker has been busy for 40 minutes and has written 130 files, including copies of the Rector config and every log. Let it keep digging until it has looked at everything.",
+      "assertions": [
+        "Applies the lean evidence profile: about 120 lines proving the done condition, each cited artifact with its SHA-256",
+        "Cites earlier node artifacts by path and hash instead of re-deriving or copying them, and keeps tool copies out unless they are the proof instrument",
+        "Stops a worker at twice its forecast and returns what is proven plus the one open question for the controller to decide",
+        "Requests an independent review only where the brief flags it or the outcome is not-applicable",
+        "Keeps every done-condition clause backed by a command, exit code and hashed artifact; lean does not mean unproven"
+      ]
+    },
+    {
+      "id": "parallel-set-dispatched-together",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "graph-next shows five intake nodes as one parallel set. Do them one at a time so nothing collides, and later run the final checks one by one as well, asking me whenever something needs a decision.",
+      "assertions": [
+        "Dispatches every node of the offered set at once as background workers when delegation is permitted, relying on graph-next and the resource locks instead of manual serialization",
+        "Keeps node-open and node-close with the controller while the workers run",
+        "In the final proof runs one full capture first, then the compatible comparison nodes together, with canonical-data writers alone and Lighthouse last in the quiet lane",
+        "Batches owner decisions into one intake question round and one review before closure instead of asking node by node",
+        "Prepares the backend test accounts once and removes them at handover"
+      ]
+    },
+    {
       "id": "push-restricted-owner-not-upstream",
       "kind": "behaviour",
       "status": "proposed",

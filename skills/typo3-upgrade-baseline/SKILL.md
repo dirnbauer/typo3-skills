@@ -33,12 +33,19 @@ refuses any edit to baseline seals, the URL manifest or the feature plan.
 
 Your input is the node brief. Write its evidence file, return one allowed outcome, and never run
 `node-open`/`node-close` or edit run state. Details: [graph runner](../typo3-upgrade-run/references/graph-runner.md).
+Keep the evidence lean: about 120 lines of proof, earlier artifacts cited by path and hash, one probe
+artifact; at twice the brief's forecast, stop and return what is proven plus the open question
+([lean profile](../typo3-upgrade-run/references/graph-runner.md#evidence-file)).
 
 ## Preconditions
 
 - Intake identity and accepted dataset evidence are green.
 - No site/configuration/dependency repair has happened before capture.
 - The host renderer and DDEV application environment pass `t3u doctor`.
+- The local site renders its production asset build, as live does: no `/@vite/client` or other
+  dev-server URL in the DOM. A dev-server render seals an unstyled baseline that no later node can
+  repair; intake settles it as an environment decision
+  ([fix pack item 9](../typo3-upgrade-run/references/typo3-14-fix-pack.md#9-dev-server-render-before-baseline-a)).
 
 ## Workflow
 
@@ -61,8 +68,11 @@ Your input is the node brief. Write its evidence file, return one allowed outcom
 5. Stabilize clocks/randomness/animations, fonts, image decode, lazy content, scrollbar, consent,
    video, and two stable layout frames. Configuration is hashed evidence, not hidden test code.
 6. Run a seeded diagnostic, then one exhaustive unchanged double-capture with fresh isolated browser
-   processes. Require zero HTTP, DOM, and pixel differences.
+   processes. Require zero HTTP, DOM, and pixel differences. Look at two diagnostic screenshots and
+   grep its DOM for a dev-server client before the double capture starts.
 7. Seal the second exhaustive pass as `A-original` with manifest/checksums/lock. There is no unseal.
+   Before sealing, the promoted pass's DOM must show no dev-server client; a hit leaves it unsealed
+   and the node returns `harness-error`, so `harness-recovery` settles the render environment.
 
 ## Failure routing
 

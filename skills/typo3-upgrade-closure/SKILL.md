@@ -44,6 +44,9 @@ Start every node from `t3u node-brief --node <id>`; it carries the contract, rou
 
 Your input is the node brief. Write its evidence file, return one allowed outcome, and never run
 `node-open`/`node-close` or edit run state. Details: [graph runner](../typo3-upgrade-run/references/graph-runner.md).
+Keep the evidence lean: about 120 lines of proof, earlier artifacts cited by path and hash, one probe
+artifact; at twice the brief's forecast, stop and return what is proven plus the open question
+([lean profile](../typo3-upgrade-run/references/graph-runner.md#evidence-file)).
 
 ## Preconditions
 
@@ -62,7 +65,9 @@ cannot hide an untested finisher, provider state, authenticated module or warmed
 1. Reconcile every expected DB/file/schema/generated-asset change in the content-transition ledger;
    seal the target editorial epoch. Unledgered content drift is `INVALID`.
 2. Capture target with the exact sealed renderer, origins, URLs, seed, viewports, states, workers, and
-   stabilization inputs.
+   stabilization inputs, once, inside `visual-proof`. `http-dom-proof` and `visual-proof` then compare
+   that capture side by side and `axe-proof` follows; `component-sentinels` and `backend-operations`
+   run alone, Lighthouse last ([final-proof order](../typo3-upgrade-run/references/parallel-execution.md#dispatch-what-the-graph-offers)).
 3. Compare HTTP/metadata for all URLs, normalized DOM for all HTML, and pixels for the sealed tiered
    sample. Missing evidence is not zero.
 4. Run component sentinels before/after: cookie consent first/reject/accept/settings, sliders settled

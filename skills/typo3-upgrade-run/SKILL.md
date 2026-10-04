@@ -51,8 +51,10 @@ Then repeat until `t3u graph-status` reports `complete`, `blocked` or a terminal
    records the result and activates exactly the matching edges.
 8. At checkpoints, `t3u graph-report --write` stores measured minutes per node for the next forecast.
 
-Run nodes of one parallel set concurrently only when the runtime and user permit delegation. The
-controller alone opens and closes nodes; locks and state writes stay central. Read
+When the runtime and user permit delegation (asked once at intake), dispatch every node of an
+offered parallel set at once as background workers; serializing an offered set only costs time
+([dispatch](references/parallel-execution.md#dispatch-what-the-graph-offers)). The controller alone
+opens and closes nodes; locks and state writes stay central. Read
 [the graph runner](references/graph-runner.md) for dispatch, evidence and review templates.
 
 Exit codes are evidence: **0** pass · **1** site findings · **2** harness failure · **3** invalid
@@ -67,9 +69,11 @@ t3u runtime-seal --evidence .typo3-update/nodes/intake/runtime-size.json
 t3u graph-forecast --evidence nodes/intake/runtime-plan.json
 ```
 
-Use measured minutes from earlier `graph-report` files as forecast sources when they exist. Read
-[`references/recent-run-lessons.md`](references/recent-run-lessons.md) at intake. Resume from
-`.typo3-update/state.json`, never from the transcript or an old `STATUS.md`.
+Use measured minutes from earlier `graph-report` files as forecast sources when they exist, the
+[fleet durations](references/runtime-sizing.md#measured-fleet-durations) otherwise. Read
+[`references/recent-run-lessons.md`](references/recent-run-lessons.md) at intake and ask the owner's
+decisions in one [question round](references/overnight-controller.md#batch-the-owner-decisions).
+Resume from `.typo3-update/state.json`, never from the transcript or an old `STATUS.md`.
 
 ### Closure and handover
 
@@ -115,6 +119,9 @@ A worker is you after a context reset, or a sub-agent. Its whole input is the no
 - Work only on the brief's objective. One cause per attempt, normally ≤10 files or ≤400 lines.
 - Write the evidence file named in the brief: restated objective, commands with exit codes,
   artifacts with hashes, findings, decision and the proposed outcome. "Checked" is not evidence.
+- Keep it lean: about 120 lines that prove the done condition, earlier artifacts cited by path and
+  hash, read-only checks in one probe artifact ([lean profile](references/graph-runner.md#evidence-file)).
+  At twice the brief's forecast minutes, stop and return what is proven plus the one open question.
 - Return one allowed outcome and the evidence path. Start no retry loop; the graph routes.
 - Never run `node-open`/`node-close`, edit `state.json`, the graph, or measurement inputs.
 - Return `blocked` on identity, credential, backup, approval or scope doubt. Never mutate to find out.
@@ -175,7 +182,9 @@ Read [`rules/20-baseline-integrity.md`](rules/20-baseline-integrity.md),
 [`references/harness-contract.md`](references/harness-contract.md) and
 [`references/visual-regression.md`](references/visual-regression.md).
 
-- Capture before sitemap repair, Vite/Bootstrap work, accessibility fixes, or the core update.
+- Capture before sitemap repair, Vite/Bootstrap work, accessibility fixes, or the core update, and
+  from the production asset build: no `/@vite/client` or other dev-server URL in Baseline A's DOM
+  ([fix pack item 9](references/typo3-14-fix-pack.md#9-dev-server-render-before-baseline-a)).
 - Determinism uses strict zero. Never raise thresholds, shrink samples, quarantine pages, or
   refresh the baseline to make a difference disappear. Stabilise nondeterminism — server-side
   random regions, animated GIFs, blend-mode SVGs — with the sealed, ADR-backed adapters in
@@ -218,6 +227,10 @@ and [extension strategy](references/extension-strategy.md).
   `--db-export` for database TypoScript) in the rung-14 node: zero errors, every warning explained.
   After the first 14.3 capture, its `relative-links` check against Baseline A catches Breaking-108114
   ([readiness checks](references/typo3-14-readiness-checks.md)).
+- Apply the [TYPO3 14 fix pack](references/typo3-14-fix-pack.md) proactively, never item by item as
+  symptoms appear: its probe runs at intake and again when `rung-14` starts, and the rung applies
+  every applicable item before its first proof loop and records per item what applied. Earlier items
+  (fsc's parseFunc copied on 13.4, compress keys kept until 14.3, powermail 13) go to the nodes it names.
 
 Use the **latest stable compatible version** of every in-scope dependency and tool; read the
 [version policy](references/latest-version-policy.md). Move hard-coded credentials into env files
@@ -236,7 +249,9 @@ evidence when absent or unrequested.
 Read [the unattended controller](references/overnight-controller.md) and
 [runtime sizing](references/runtime-sizing.md). Intake seals the smallest fitting profile: small 8 h
 (migration cutoff T+6 h), large 24 h (T+18 h), huge 48 h (T+36 h). These are caps, not targets;
-resumption never extends them. Resolve known decisions before going unattended.
+resumption never extends them. Ask the known decisions in one intake round and the acceptances in
+one review before closure ([batched decisions](references/overnight-controller.md#batch-the-owner-decisions));
+forecast scope added mid-run against the deadline before starting it.
 
 Approval to try a change and acceptance of its observed result are separate records. A user can
 approve a dataset, a declared change, a destructive scope or a specialist resolution; nobody can
@@ -277,5 +292,6 @@ deployment was performed. Distinguish **implemented**, **verified awaiting accep
   and [2026-09-30](references/run-retrospective-2026-09-30.md); [fleet harness pins](references/fleet-profile.md#harness-pins-across-a-fleet)
 - [`references/quality-bars.md`](references/quality-bars.md) · [`references/deployment-handover.md`](references/deployment-handover.md)
 - [TYPO3 14 readiness checks](references/typo3-14-readiness-checks.md) — INCLUDE_TYPOSCRIPT/@import, relative links, class names outside PHP, parseFunc overrides, site-package class shapes
+- [TYPO3 14 fix pack](references/typo3-14-fix-pack.md) — fourteen fleet-known breakers with detection, fix, proof and approval, applied at the rung
 - Overview: [`assets/typo3-upgrade-run-infographic.png`](assets/typo3-upgrade-run-infographic.png) and the
   interactive [Archify workflow](assets/typo3-upgrade-run.archify.html); the YAML graph and executable checks are authoritative

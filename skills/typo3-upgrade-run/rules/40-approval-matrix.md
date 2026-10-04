@@ -91,4 +91,11 @@ An approval covers the action it names, in the loop it names, once. It does not 
 - the same action in a different loop,
 - a broader version of the same action.
 
+A question may name its scope in advance: a difference class asked at intake with its exact
+before/after form (the [batched intake round](../references/overnight-controller.md#batch-the-owner-decisions)),
+or one core-mandated class on every site of a fleet. The answer then covers exactly that named scope.
+Record it in the run when the run reaches the step: the question and answer as given, what the owner
+saw when answering, and the run's own before/after evidence. A difference wider than the form the
+question showed is a new question.
+
 When in doubt, ask again. The cost of one extra question is far below the cost of a change nobody agreed to.

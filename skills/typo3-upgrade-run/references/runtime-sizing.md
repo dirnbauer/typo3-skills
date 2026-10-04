@@ -54,6 +54,27 @@ The plan shape and checkpoint procedure are in [the unattended controller](overn
 Verification must finish within the window; a hash-bound `closure-verify` receipt separates this
 work from later human acceptance without allowing late initial proof or silent scope expansion.
 
+## Measured fleet durations
+
+Planning anchors from fleet runs on one machine. Measured `graph-report` minutes of comparable
+nodes win whenever they exist; cite either in `runtime-plan.json` as the node's source.
+
+| Work | Measured | Note |
+|---|---:|---|
+| Migration nodes `rung-13` → `mechanical-migration` → `manual-migration` → `rung-14`, ~150-URL site | ≈ 3 h | with the [fix pack](typo3-14-fix-pack.md) applied at the rung, not rediscovered per node |
+| Self-test, two exhaustive captures | 21–27 min | [2026-09-30 retrospective](run-retrospective-2026-09-30.md) |
+| One full capture | ≈ 7–12 min | at 4 visual workers; one capture at a time per machine |
+| One worker node | 10–15 min target | [lean evidence](graph-runner.md#evidence-file); at twice the forecast the worker stops and returns |
+| Final proof P11–P13 | ≈ 2–3 h | one capture, then the [offered sets](parallel-execution.md#dispatch-what-the-graph-offers) together |
+| Bootstrap 3 → 5 with pixel parity | + ≈ 4–6 h | decided at intake ([migration intake](bootstrap-5-migration.md#intake-inventory-estimate-ask)) |
+
+**Target:** a ~150-URL site with a Bootstrap 3 frontend and no scope change during the run takes
+**6–8 h wall clock** from intake to the Contract A acceptance. The same site usually seals the small
+profile (8 h cap, migration cutoff T+6 h), so a Bootstrap 3 → 5 migration on top of the upgrade
+does not fit: decide at intake whether it becomes a separately authorized follow-up run. One fleet
+run of this size took a day and a half for three hours of migration; the
+[lessons](recent-run-lessons.md#where-a-day-and-a-half-went) name where the rest went.
+
 ## Classification
 
 Select the smallest profile whose limit contains **every** measured dimension:

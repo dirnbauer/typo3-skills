@@ -24,9 +24,9 @@ Start every node from `t3u node-brief --node <id>`; it carries the contract, rou
 | `dependency-plan` | Composer target for ^14.3 with latest stable versions; flagged **R** for the resolution choices |
 | `dependency-resolution` | Exactly one blocker per attempt, behind a Git anchor |
 | `rung-13` | 13.4 compatibility rung; snapshot first; wizards/schema to a fixed point; evidence loop. Core already on ^14.3: read-only `not-applicable` (below) |
-| `mechanical-migration` | Rector, Fractor, scanner; rebuild caches; second pass reports no changes |
-| `manual-migration` | Removed APIs and stored data before registration; snapshot first; evidence loop |
-| `rung-14` | ^14.3 at the latest 14.3.x patch, fixed point, DI container, backend opens; snapshot first; evidence loop |
+| `mechanical-migration` | Rector, Fractor, scanner; rebuild caches; second pass reports no changes; keep the compress/concatenate keys Fractor removes too early |
+| `manual-migration` | Removed APIs and stored data before registration; snapshot first; evidence loop; copy fsc's 13.4 parseFunc while 13.4 is installed |
+| `rung-14` | ^14.3 at the latest 14.3.x patch, fixed point, DI container, backend opens; snapshot first; the [TYPO3 14 fix pack](../typo3-upgrade-run/references/typo3-14-fix-pack.md) before the first proof loop; evidence loop |
 | `rung13-recovery` | Diagnose the one blocking cause and plan the repair for the retried rung |
 | `mechanical-recovery` | Diagnose the cause the tools left behind; plan the fix for the retry |
 | `manual-recovery` | Diagnose one data/API/registration-order failure; plan the fix |
@@ -45,6 +45,9 @@ and an independent review; the graph skips `mechanical-migration` and `manual-mi
 
 Your input is the node brief. Write its evidence file, return one allowed outcome, and never run
 `node-open`/`node-close` or edit run state. Details: [graph runner](../typo3-upgrade-run/references/graph-runner.md).
+Keep the evidence lean: about 120 lines of proof, earlier artifacts cited by path and hash, one probe
+artifact; at twice the brief's forecast, stop and return what is proven plus the open question
+([lean profile](../typo3-upgrade-run/references/graph-runner.md#evidence-file)).
 
 ## Preconditions
 
@@ -67,6 +70,10 @@ Your input is the node brief. Write its evidence file, return one allowed outcom
 - Each extension ends with a supported upgrade, replacement, compatibility fork + exit plan, local
   migration, or approved removal. Never silently drop a feature.
 - Prefer 13.4 as the compatibility rung, then mechanical and manual work, then 14.3.
+- Apply the [TYPO3 14 fix pack](../typo3-upgrade-run/references/typo3-14-fix-pack.md) at the nodes
+  it names instead of rediscovering its items: one read-only probe artifact, a fix only where the
+  detection matches, one commit per item, and the pack table in the evidence. A symptom whose
+  detection does not match is a finding, not a blind patch.
 - Run Rector/Fractor/scanner a second time after registry/cache rebuild; preserve exact output.
 - Migrate stored data before new registration. Preserve CType/list-type identities, parent/child and
   FAL relations, nullable meaning, translations, and YAML scalar types.
