@@ -23,6 +23,39 @@ journeys can modify canonical content. A browser context or separate login does 
 shared database records. Only tailor those nodes to shared reads before sealing when their write
 fixtures have a separately approved, isolated application/database clone and cleanup proof.
 
+## Dispatch what the graph offers
+
+One fleet run took a day and a half for three hours of migration work, partly because nodes ran one
+after another where `graph-next` offered them as one set. With delegation permission (asked in the
+[intake question round](overnight-controller.md#batch-the-owner-decisions)), open every node of an
+offered set and start all its workers at once, in the background. The controller still opens and
+closes nodes one at a time; the resource claims, not caution, decide what overlaps. In the shipped
+graph:
+
+| Phase | Offered together | What keeps the rest apart |
+|---|---|---|
+| Intake | `project-identity`, `extension-inventory`, `backend-group-model-decision`, `dataset-freshness` and one browser node (`url-discovery`, then `structured-data-inventory`, then `webmcp-inventory`) | the browser nodes take `browser-proof` one at a time |
+| Migration and P10 | one node at a time | every code or stateful node takes `project-write` exclusively ([P10 order](bootstrap-5-migration.md#sequence-inside-the-run)) |
+| Final proof | `http-dom-proof` with `visual-proof`, then `http-dom-proof` with `axe-proof` | `component-sentinels` and `backend-operations` write canonical data; `lighthouse-proof` waits for every other proof and owns the quiet lane |
+
+Reviews hold no lock: start the verifier as soon as the evidence exists, beside the next node. While
+one node holds an exclusive lock, prepare the next brief instead of a second writer.
+
+**Final proof in order.** One full capture first, then the comparisons concurrently:
+
+1. Seal the target content epoch and run `closure-start`. Open `visual-proof` (it owns the browser
+   lane) and run the one full capture there: `t3u capture --label after`. Nobody captures again.
+2. When the capture index is complete, open `http-dom-proof` beside it; both nodes compare that
+   capture against Baseline A ([one producer per output directory](#independent-implementation-preparation)).
+3. When `visual-proof` closes, open `axe-proof`, a shared browser reader, beside the HTTP/DOM work.
+4. `component-sentinels`, then `backend-operations`, each alone, with the test accounts prepared
+   once ([test accounts](overnight-controller.md#prepare-test-accounts-once)).
+5. `lighthouse-proof` last, on a quiet machine.
+
+A backend or module defect belongs to the rung's early admin and editor sweep
+([fix pack item 7](typo3-14-fix-pack.md#7-backend-modules-refused-to-admins)): a code fix after
+`closure-start` makes the epoch stale ([epoch order](closure-currentness.md#epoch-order-what-makes-a-new-epoch-stale)).
+
 ## One machine budget
 
 The harness shares a private per-user resource ledger across processes and projects. It defaults

@@ -50,7 +50,10 @@ You execute exactly one node of a TYPO3 upgrade evidence graph. Your whole input
 <paste the output of: t3u node-brief --node <id>>
 
 Load the owner skill named in the brief. Work only on its objective and stop when the done
-condition is proven or cannot be proven. Write the evidence file named in the brief. Return:
+condition is proven or cannot be proven. Write the evidence file named in the brief, lean: about
+120 lines, only artifacts that prove the done condition (each with its SHA-256), earlier nodes'
+artifacts cited by path and hash, read-only checks in one probe artifact. At twice the brief's
+forecast minutes, stop and return what is proven plus the one open question. Return:
   outcome: <one allowed outcome>
   evidence: <path>
   summary: <three lines at most>
@@ -58,32 +61,57 @@ Do not run node-open or node-close. Do not edit state.json, config/, manifests/,
 graph. Do not start a retry loop. Return blocked on identity, credential, backup, approval or scope doubt.
 ```
 
-The node is already open when the worker starts. For read-only nodes of one parallel set, several
-workers may run at once; each gets only its own brief.
+The node is already open when the worker starts. Workers of one parallel set run at once, each in
+the background with only its own brief ([parallel sets](#parallel-sets)).
 
 ## Evidence file
 
 Write `nodes/<id>/evidence.md` (or the path the brief names). The harness hashes it at close and
-`graph-validate` rechecks the hash, so write it once, completely:
+`graph-validate` rechecks the hash, so write it once, completely, and **lean**: the evidence proves
+the done condition; it is not a diary of the investigation. Fleet workers that wrote more than 100
+files and spent 20–40 minutes on a node proved no more than the ones that wrote ten.
+
+- **About 120 lines at most.** A reviewer reads all of it.
+- **Only artifacts that prove a done-condition clause or a finding**, each with its SHA-256. Output
+  that nothing cites stays out of the node directory.
+- **Cite, do not re-derive.** Name an earlier node's artifact by run-relative path and hash; its node
+  already proved it. Re-running its commands costs minutes and invites drift.
+- **One probe, one artifact.** Collect the read-only checks in one script and its output in one file,
+  each command with its exit code (the [fix-pack probe](typo3-14-fix-pack.md#the-probe-and-the-evidence)
+  is the pattern), not one file per command.
+- **No copies of tools, configs or vendor files**, unless the copy is the proof instrument itself;
+  the repository and the harness pin them already.
+- **Stop at twice the forecast.** The brief prints `forecast N min`. At twice that, stop and return
+  the outcome the evidence supports so far (`findings` with the open cause, or `blocked` when only a
+  decision can continue) and name the one open question. Exploring further is the controller's call.
+- **Review only where the brief asks**: flag **R** or a `not-applicable` outcome. An unrequested
+  review doubles the cost and proves nothing new.
 
 ```markdown
 # <node id> — attempt <n>
 Objective: <copied from the brief>
 Done when: <copied from the brief>
 
-## Commands
-| Command | Exit | Output artifact | SHA-256 |
+## Proof
+| Done-condition clause | Command (exit) | Artifact | SHA-256 |
 |---|---|---|---|
+| <clause> | `<command>` (0) | nodes/<id>/probe.txt | sha256:<digest> |
+| <clause> | cited | nodes/<earlier node>/<artifact> | sha256:<digest> |
+
+## Changes
+<one line per commit or snapshot; "none" for a read-only node>
 
 ## Findings
-<numbered, each with its first differing stage or cause class>
+<numbered: cause class, first differing stage, affected URLs as a count plus one list artifact>
 
 ## Decision
 Proposed outcome: <outcome>. Reason: <why the done condition is met, or which cause blocks it>.
+Open question: <only when the node stopped at twice its forecast>
 ```
 
 A narrative without commands, exit codes and artifacts is not evidence; fluent success reports that
-hide a failed step are the most dangerous failure mode of agent systems.
+hide a failed step are the most dangerous failure mode of agent systems. Lean is not thin: every
+done-condition clause still needs its command, exit code and hashed artifact.
 
 ## Independent review
 
@@ -105,7 +133,9 @@ Objections: <none, or the specific gap>
 
 `node-close` refuses a missing review, a `disagree` verdict, a review of different evidence bytes, and
 a review file that is the evidence file itself. A disagreement is data: close with the outcome the
-review supports, or let the worker produce better evidence in a new attempt.
+review supports, or let the worker produce better evidence in a new attempt. A review needs no
+resource lock: start it as soon as the evidence exists, beside the next node. It stays lean too:
+each done-condition clause checked against its cited artifact and hash, in about 20 lines.
 
 ## Choosing the outcome
 
@@ -124,10 +154,13 @@ worker to the wrong repair.
 
 ## Parallel sets
 
-`graph-next` groups ready nodes whose resource claims are compatible. Run a set concurrently only
-with delegation permission; otherwise run it sequentially in the listed order. Shared readers may
-overlap; writers, stateful work, quiet Lighthouse measurement and backend sessions stay exclusive.
-Read [parallel execution](parallel-execution.md) before running concurrent browser proof.
+`graph-next` groups ready nodes whose resource claims are compatible. With delegation permission
+(asked once, in the intake question round), open every node of the offered set and start all its
+workers at once, in the background; without it, run the set in the listed order. Do not serialize an
+offered set to be careful: the locks already keep writers, stateful work, strict pixels, quiet
+Lighthouse measurement and backend sessions exclusive, and a fleet run lost hours by running offered
+sets one node at a time. Where the shipped graph offers sets, and the final-proof order, are in
+[parallel execution](parallel-execution.md#dispatch-what-the-graph-offers).
 
 ## Resume and calibration
 

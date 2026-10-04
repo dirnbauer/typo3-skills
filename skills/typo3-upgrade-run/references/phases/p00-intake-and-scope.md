@@ -29,7 +29,9 @@ shortened proof or a false pass.
    repeat themselves, and most of its checks take seconds. Record every answer in the intake,
    including the negatives — "checked, not present" is what stops the next run re-checking it.
    Confirm each item against this project: it is a list of likely findings, not a description of
-   any particular site.
+   any particular site. Run the read-only [TYPO3 14 fix-pack probe](../typo3-14-fix-pack.md#the-probe-and-the-evidence)
+   in the same pass: its output tells each later node which items apply, and a dev-server render
+   (item 9) must be settled before any capture.
 1. Determine the target: **project**, **sitepackage**, or **extension**. For a standalone extension
    with no host project, create a disposable TYPO3 14.3 DDEV installation to prove installation and
    behaviour.
@@ -189,7 +191,11 @@ shortened proof or a false pass.
    [quality bars](../quality-bars.md#contract-a-lighthouse-floors-decided-at-intake).
 17. Create the run directory and fill `config/run.yml`: trusted origin (scheme included), every site,
    languages as the site's real prefixes, golden paths, budgets.
-18. Ask once whether the run directory should be committed, and record the answer.
+18. **Ask the owner once.** Put every decision this playbook raised into one
+   [question round](../overnight-controller.md#batch-the-owner-decisions) (dataset and freeze, PHP,
+   Lighthouse floors, Bootstrap/jQuery, extension removals, the fix-pack approvals, delegation,
+   commits and whether the run directory may be committed) and record each answer as given. Scope
+   added later is forecast against the deadline before it starts.
 19. Write `ADR-001-scope.md`.
 
 ## Evidence

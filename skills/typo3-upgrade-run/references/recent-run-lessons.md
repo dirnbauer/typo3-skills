@@ -10,7 +10,24 @@ without adding global states or nested workflows. Their plan/result accounting i
 new graphs through [feature evidence](feature-evidence.md); older sealed runs remain historical.
 The [September 17 delta](run-retrospective-2026-09-17.md) adds effective RTE/save-load contracts and
 the user's verified push-destination boundary. Apply [native tools first](native-tools-first.md)
-before new scripts/dependencies; this does not add phases or global browser states.
+before new scripts/dependencies; this does not add phases or global browser states. Run the intake
+detections of the [TYPO3 14 fix pack](typo3-14-fix-pack.md) and put the approvals it needs into the
+[intake question round](overnight-controller.md#batch-the-owner-decisions).
+
+## Where a day and a half went
+
+On one fleet site the TYPO3 migration itself (13.4 rung to 14.3 rung) took about three hours and
+the whole run about a day and a half. Five causes took the rest:
+
+| Cause | Cost | Counter-measure |
+|---|---|---|
+| Scope added mid-run: jQuery removal and Bootstrap 5, proven pixel-identical | Correct work, but it pushed the run past its window | Decide Bootstrap and jQuery at intake ([migration intake](bootstrap-5-migration.md#intake-inventory-estimate-ask)). A mid-run addition is weighed against the deadline first: re-forecast with its estimate, state the cost to the owner, and prefer a separately authorized follow-up run when it does not fit before the migration cutoff |
+| Baseline A captured from a dev-server render, unstyled | A whole run lost: a sealed baseline cannot be repaired | [Fix pack item 9](typo3-14-fix-pack.md#9-dev-server-render-before-baseline-a) before `deterministic-baseline`: production build, manifest mode, no `/@vite/client` in the DOM, one look at a pilot screenshot |
+| Over-detailed worker evidence: more than 100 files and 20–40 minutes per node | Hours across the graph for proof that ten files gave | The [lean evidence profile](graph-runner.md#evidence-file): about 120 lines, hashed proof artifacts only, earlier artifacts cited, one probe artifact, stop at twice the forecast |
+| Nodes run one after another although `graph-next` offered them together | Intake and final proof took their serial sum | [Dispatch every offered set at once](parallel-execution.md#dispatch-what-the-graph-offers); in the final proof one full capture first, then the comparisons together |
+| Known TYPO3 14 problems, solved on an earlier fleet site, rediscovered node by node | One diagnosis round per problem per node | The [TYPO3 14 fix pack](typo3-14-fix-pack.md) applied at the start of the rung, its approvals asked at intake |
+
+Planning anchors for the next run are in [runtime sizing](runtime-sizing.md#measured-fleet-durations).
 
 ## What failed and what now prevents a repeat
 

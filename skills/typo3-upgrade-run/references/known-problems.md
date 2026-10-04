@@ -6,6 +6,9 @@ Each one cost time to diagnose once; none should cost it twice.
 None of these is a reason to skip a diagnosis. Confirm the cause before applying the fix — a
 matching symptom with a different cause is exactly how a wrong fix gets applied confidently.
 
+The [TYPO3 14 fix pack](typo3-14-fix-pack.md) turns the entries fleet sites keep meeting into a
+checklist with detection, fix, proof and approval, applied proactively at the nodes it names.
+
 ## Contents
 
 - [Frontend 500 with an SQL syntax error](#frontend-500-with-an-sql-syntax-error)

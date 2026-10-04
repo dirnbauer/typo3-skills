@@ -6,7 +6,9 @@ Do not scaffold a seven-document work loop for this phase. The manifest, capture
 lock and seal are the structured evidence.
 
 ## Preconditions
-Loop 000 green. **No site change of any kind has been made yet.**
+Loop 000 green. **No site change of any kind has been made yet.** The site renders its production
+asset build, not a dev server: an unstyled baseline is sealed for good and loses the run
+([fix pack item 9](../typo3-14-fix-pack.md#9-dev-server-render-before-baseline-a)).
 
 ## Allowed
 *Read-only* sitemap inventory — validate but **do not fix**. URL discovery, sampling, capture,
@@ -29,7 +31,8 @@ exists can never be audited. **Seal first, remediate second.**
    and state matrix and was proven identical to pass A. The harness promotes it atomically to the
    unsealed `baseline/A-original`; do not capture an identical third browser pass.
 5. Seal: `MANIFEST.sha256` over every artifact, `LOCK.json`, and `SEAL.md` recording who, when, both
-   fingerprints and the sample hash.
+   fingerprints and the sample hash. Right before the seal,
+   `grep -rlE '/@vite/client|:5173/' .typo3-update/baseline/A-original/dom | wc -l` must print 0.
 6. Set the Contract A Lighthouse floors the way intake agreed: measure the sealed, still unchanged
    site, show the medians to the owner and write the floors into `config/thresholds.yml` → `contract_a`
    ([quality bars](../quality-bars.md#contract-a-lighthouse-floors-decided-at-intake)). Every

@@ -50,7 +50,12 @@ comparison or specific accepted visible changes. Broad SCSS redesign remains Con
 
 - Use a relative base such as `./` when assets live below content-addressed extension paths.
 - On older Core rungs, inherited Bootstrap Package settings may re-enable legacy concatenation;
-  preserve the source pipeline during baseline and disable those flags only in the assets node.
+  preserve the source pipeline during baseline and keep those flags while 13.4 still honours them.
+  Remove them from the 14.3 rung on, where they do nothing ([fix pack item 5](../../typo3-upgrade-run/references/typo3-14-fix-pack.md#5-core-compress-and-concatenate-keys)).
+- Vite 5 → 8 changes the CSS bundle (Lightning CSS minifier, newer targets, modern Sass API) in ways
+  screenshots miss, such as a collapsed `transition` list: keep Vite 5's output with the
+  [fix pack item 10](../../typo3-upgrade-run/references/typo3-14-fix-pack.md#10-vite-5-to-8-rewrites-the-css)
+  configuration and compare the bundles as CSS tuples.
 - Avoid re-minifying already-minified legacy CSS during parity work; measure before switching.
 - Rebuild once per source change; invalidate/warm the local TYPO3 page cache so old asset hashes
   do not survive. Verify both cold and warm requests, not only files on disk.

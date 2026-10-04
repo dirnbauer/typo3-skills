@@ -143,7 +143,7 @@ nodes:
 
   deterministic-baseline:
     objective: "Capture Baseline A twice, unchanged, with zero HTTP, DOM and pixel differences, then seal it."
-    done: "baseline/A-original is sealed with MANIFEST.sha256 and LOCK.json and the determinism loop is green."
+    done: "baseline/A-original is sealed with MANIFEST.sha256 and LOCK.json, its DOM shows the production asset build (no dev-server client), and the determinism loop is green."
     evidence: nodes/deterministic-baseline/evidence.md
     skill: typo3-upgrade-baseline
     phase: P02
@@ -221,7 +221,7 @@ nodes:
     outcomes: [pass, findings, blocked]
   rung-14:
     objective: "Install ^14.3 at the latest 14.3.x patch with compatible dependencies, run wizards and schema updates to a fixed point and rebuild the DI container."
-    done: "14.3 is installed, the fixed point is proven, the backend opens, and the evidence loop is green."
+    done: "14.3 is installed, every applicable TYPO3 14 fix-pack item is applied and recorded, the fixed point is proven, the backend opens, and the evidence loop is green."
     evidence: nodes/rung-14/evidence.md
     skill: typo3-upgrade-migration
     phase: P09

@@ -15,25 +15,29 @@ Write journey and sweep scripts by the [proof-script rules](../measurement-recip
 ### A disposable backend user
 
 The sweep and the write round-trip both need a real login. Do not reuse a client's account and
-do not guess one — create a throwaway admin at the start of the loop and **delete it when the
-loop closes**:
+do not guess one — create a throwaway admin **once per run**, when `rung-14` has passed and the
+14.3 backend opens, together with the non-admin editors the feature plan names. Every backend node
+reuses them, and the handover **deletes them**
+([test accounts](../overnight-controller.md#prepare-test-accounts-once)):
 
 ```bash
-# create
+# create, once per run
 ddev typo3 backend:user:create --username=_t3u_upgrade_probe \
-  --password="$(openssl rand -base64 24)" --email=probe@example.invalid \
+  --password="$(cat "$PROBE_PW_FILE")" --email=probe@example.invalid \
   --admin --no-interaction
 
-# … run the sweep and the write round-trip …
+# … every backend node: sweeps, write round-trips, editor journeys …
 
-# delete — this is part of the loop, not an afterthought
+# delete at handover, before any database leaves the machine: part of the run, not an afterthought
 ddev mysql -e "DELETE FROM be_users WHERE username='_t3u_upgrade_probe';"
 ```
 
-Keep the password out of shell history (a leading space in `bash`/`zsh`, or read it from a
-`600` file) and destroy the file afterwards. On the older `TYPO3_BE_USER_*` environment-variable
-form: it is documented in `--help` but is **not accepted on every 14.x build** — if the command
-answers with its usage block and exit 255, pass `--username/--password` explicitly instead.
+Generate the password into one mode-`600` file outside Git and the run directory
+(`(umask 077; openssl rand -base64 24 > "$PROBE_PW_FILE")`) and keep it out of shell history and
+logs. At handover, delete the accounts with their `sys_log` and `sys_history` rows and destroy the
+file. On the older `TYPO3_BE_USER_*` environment-variable form: it is documented in `--help` but is
+**not accepted on every 14.x build** — if the command answers with its usage block and exit 255,
+pass `--username/--password` explicitly instead.
 
 Verify the teardown rather than assuming it:
 
