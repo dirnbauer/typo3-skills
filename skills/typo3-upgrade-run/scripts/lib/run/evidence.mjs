@@ -75,6 +75,7 @@ export async function assertLiveInputs(paths, {
   environmentCollector = collectEnvironment,
   contentCollector = collectContent,
   launchArgs = [],
+  log,
 } = {}) {
   const context = await readEvidenceContext(paths);
   const { state, sealed } = context;
@@ -84,11 +85,13 @@ export async function assertLiveInputs(paths, {
       ddevProject: state.project?.ddev_project || null,
       launchArgs,
     }),
+    // A table the database cannot answer throws exit 2 here (harness error), never drift.
     contentCollector({
       ddevProject: state.project?.ddev_project || null,
       fileadmin: sealed.content.files?.root ?? 'fileadmin',
       tables,
       allowMissing: sealed.content.degraded === true,
+      ...(log ? { log } : {}),
     }),
   ]);
 

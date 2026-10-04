@@ -23,6 +23,14 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const TEMPLATES = path.resolve(HERE, '../../../templates/run-directory');
 const exec = promisify(execFile);
 
+/**
+ * A run writes gigabytes of screenshots. macOS Spotlight and media analysis index every new file
+ * in a folder they watch, and doing so during captures drove the machine load to ~60, which
+ * slows and flakes the very renders being proven. Spotlight skips a folder holding this empty
+ * file; other systems ignore it.
+ */
+export const SPOTLIGHT_MARKER = '.metadata_never_index';
+
 export async function init({ values, paths, log, journal }) {
   const baseUrl = values['base-url'];
   if (!baseUrl) throw new HarnessError('--base-url is required for init');
@@ -61,6 +69,8 @@ export async function init({ values, paths, log, journal }) {
                      paths.loopsDir, paths.nodesDir, paths.approvalsDir, paths.decisionsDir, paths.reportDir]) {
     await mkdir(dir, { recursive: true });
   }
+  // Before the first capture writes a screenshot; 'a' creates it and never truncates on --force.
+  await writeFile(path.join(paths.root, SPOTLIGHT_MARKER), '', { flag: 'a' });
 
   await copyTemplate('config/run.yml', paths.runConfig);
   await copyTemplate('config/upgrade-graph.yml', paths.graphDefinition);
@@ -296,6 +306,7 @@ export async function contentFingerprint({ values, paths, log, journal }) {
       : (writeTarget ? null : sealed?.database?.tables?.map((table) => table.table) ?? null),
     allowMissing: values['allow-missing'] ?? false,
     excludeTables: projectExcludes,
+    log,
   });
 
   if (writeBaseline) {

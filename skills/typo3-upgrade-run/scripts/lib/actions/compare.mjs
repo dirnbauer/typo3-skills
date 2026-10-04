@@ -27,6 +27,7 @@ import {
 } from '../compare/declared-changes.mjs';
 import { envelope, writeReport } from '../report/write.mjs';
 import { sealBaseline, verifyBaseline, renderSeal } from '../run/lockfile.mjs';
+import { assertProductionCapture } from '../run/dev-server-guard.mjs';
 import { StateStore } from '../run/state.mjs';
 import { intOpt } from '../cli/args.mjs';
 import { sha256 } from '../run/paths.mjs';
@@ -538,8 +539,7 @@ export async function selftestDeterminism({ values, paths, log, journal }) {
   const { UrlGuard } = await import('../net/url-guard.mjs');
   const {
     captureAll,
-    DEFAULT_VISUAL_WORKERS,
-    DIAGNOSTIC_VISUAL_WORKERS,
+    selftestVisualWorkers,
     DEFAULT_HTTP_WORKERS,
   } = await import('./capture.mjs');
   const guard = await UrlGuard.create({ allowedOrigins: manifest.allowedOrigins });
@@ -552,11 +552,14 @@ export async function selftestDeterminism({ values, paths, log, journal }) {
     throw new PreconditionError('--sample must be "all" or "intermediate"');
   }
   const scope = sampleMode === 'intermediate' ? 'intermediate' : 'final';
-  const visualWorkers = intOpt(
-    values,
-    'visual-workers',
-    sampleMode === 'intermediate' ? DIAGNOSTIC_VISUAL_WORKERS : DEFAULT_VISUAL_WORKERS,
-  );
+  // Without --visual-workers the count comes from the machine (capture.mjs machineVisualWorkers).
+  // Whatever count runs here is the one the lock licenses for final evidence.
+  const workers = selftestVisualWorkers(values);
+  const { visualWorkers } = workers;
+  log.info(workers.source === 'flag'
+    ? `self-test visual workers: ${visualWorkers} (--visual-workers)`
+    : `self-test visual workers: ${visualWorkers} (machine default from ${workers.parallelism} logical CPUs; `
+      + 'pass --visual-workers to prove another count)');
 
   // A different sample must never inherit files from a previous run. Stale screenshots
   // would silently turn an 81-capture diagnostic back into a 798-capture comparison.
@@ -688,6 +691,7 @@ export async function selftestDeterminism({ values, paths, log, journal }) {
         pixelColorTolerance: PIXEL_COLOR_TOLERANCE,
         pixelDustFloor: PIXEL_DUST_FLOOR,
         visualWorkers,
+        visualWorkersSource: workers.source,
       },
       diagnostic: { sample: sampleMode, canUnlockComparisons: sampleMode === 'all' },
     },
@@ -755,6 +759,9 @@ export async function selftestDeterminism({ values, paths, log, journal }) {
     repeats: intOpt(values, 'repeats', 2),
     captures: pairs.length,
     visualWorkers,
+    // Provenance only: the count itself is what licenses final evidence.
+    visualWorkersSource: workers.source,
+    ...(workers.parallelism ? { availableParallelism: workers.parallelism } : {}),
     maxAgeMs: 24 * 60 * 60 * 1000,
     harnessVersion: '2.1.0',
   };
@@ -846,6 +853,8 @@ export async function sealBaselineAction({ values, paths, log }) {
     manifestHash: manifest?.manifestHash ?? null,
     environmentFingerprintHash: env?.fingerprintHash ?? null,
     contentFingerprintHash: content?.fingerprintHash ?? null,
+    // A baseline rendered by a Vite/webpack dev server is refused before anything is written.
+    beforeSeal: () => assertProductionCapture(dir, { id, log }),
   });
 
   let sampleHash = null;

@@ -8,6 +8,13 @@
  * Self-changing tables are excluded, or the fingerprint would never match itself.
  * _processed_ is excluded from the INPUT hash on purpose — it is a rendering result, not an
  * input — but its warm/cold state is recorded separately because it changes timing.
+ *
+ * A query that fails is not drift. A `ddev mysql` call that timed out under capture load, or
+ * whose output was cut off at the buffer, used to drop its table from the fingerprint, and the
+ * comparison then reported that table as changed: every comparison void, and a re-baseline one
+ * step away. Each statement now retries once, every failed call is logged with its table, exit
+ * code and duration, and a table that still cannot be read is reported `unavailable` with exit 2
+ * (harness error). Output beyond the buffer is refused, never hashed.
  */
 
 import { execFile } from 'node:child_process';
@@ -15,9 +22,10 @@ import { promisify } from 'node:util';
 import { readdir, stat, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { sha256 } from '../run/paths.mjs';
-import { InvalidRunError } from '../cli/exit-codes.mjs';
+import { EXIT, HarnessError, InvalidRunError } from '../cli/exit-codes.mjs';
+import { createLogger } from '../cli/logger.mjs';
 
-const exec = promisify(execFile);
+const execFileAsync = promisify(execFile);
 
 export const TRACKED_TABLES = Object.freeze([
   'pages', 'tt_content', 'sys_file', 'sys_file_reference', 'sys_file_metadata',
@@ -34,6 +42,20 @@ export const EXCLUDED_FILE_DIRS = Object.freeze(['_processed_', '_temp_']);
 
 const CONTENT_HASH_MAX_BYTES = 8 * 1024 * 1024;
 
+/**
+ * Limits of one `ddev mysql` call. The complete ordered tt_content dump of a mid-size site was
+ * ~860 KB, 82% of execFile's 1 MiB default buffer; one more page of content and the dump would
+ * have been cut off. 256 MiB covers every table this fingerprint reads, and output beyond it
+ * fails loudly. One retry absorbs a transient timeout or a container blip; a second failure is
+ * reported, not guessed around.
+ */
+export const FINGERPRINT_QUERY = Object.freeze({
+  timeoutMs: 20_000,
+  maxBuffer: 256 * 1024 * 1024,
+  attempts: 2,
+  retryDelayMs: 1_000,
+});
+
 export async function collectContent({
   ddevProject = null,
   fileadmin = 'fileadmin',
@@ -41,10 +63,22 @@ export async function collectContent({
   allowMissing = false,
   excludeTables = [],
   runner = ddevSql,
+  log = createLogger(),
+  retryDelayMs = FINGERPRINT_QUERY.retryDelayMs,
 } = {}) {
-  const database = await collectDatabase({ ddevProject, tables, excludeTables, runner });
+  const database = await collectDatabase({ ddevProject, tables, excludeTables, runner, log, retryDelayMs });
 
   if (!database.available && !allowMissing) {
+    if (database.unavailable) {
+      throw new HarnessError(
+        `Content fingerprint unavailable: the database could not be queried (${unavailableSummary(database.unavailable)}). `
+        + 'A database the harness cannot read is a harness or input failure, not content drift; nothing was compared. '
+        + 'Check that DDEV is running and the machine is not overloaded, then re-run. '
+        + 'Pass --allow-missing only to record a degraded fingerprint on purpose; the report records that you did.',
+        EXIT.HARNESS_ERROR,
+        { reason: database.error, unavailable: database.unavailable },
+      );
+    }
     throw new InvalidRunError(
       'Content fingerprint unavailable: the database could not be queried. '
       + 'Without it a mid-run content change is indistinguishable from a regression. '
@@ -78,73 +112,203 @@ export async function collectContent({
   };
 }
 
-async function collectDatabase({ ddevProject, tables, excludeTables = [], runner }) {
+async function collectDatabase({ ddevProject, tables, excludeTables = [], runner, log, retryDelayMs }) {
+  const query = (sql, table, statement) => queryWithRetry({ runner, sql, ddevProject, table, statement, log, retryDelayMs });
+  let present;
+  try {
+    present = parseTable(await query('SHOW TABLES', '(all tables)', 'SHOW TABLES'))
+      .map((row) => String(Object.values(row)[0] ?? ''))
+      .filter(Boolean);
+  } catch (error) {
+    if (!(error instanceof TableUnavailable)) throw error;
+    // Not one statement answered: the database itself is unreachable. --allow-missing may record
+    // that as a degraded fingerprint; the hashed error text stays deterministic.
+    return { available: false, error: 'no tables could be queried', unavailable: [error.report] };
+  }
+
+  const selected = (tables?.length ? tables : trackedTables(present))
+    .filter((table) => safeIdentifier(table) && !excluded(table) && !excludeTables.includes(table));
   const rows = [];
-  try {
-    const selected = tables?.length ? tables : await discoverTrackedTables(runner, ddevProject);
-    for (const table of selected) {
-      if (!safeIdentifier(table) || excluded(table) || excludeTables.includes(table)) continue;
-      const columnsRaw = await runner(`SHOW COLUMNS FROM \`${table}\``, ddevProject);
-      const columns = parseTable(columnsRaw).map((row) => ({
-        name: row.Field,
-        type: row.Type,
-        key: row.Key,
-      })).filter((column) => column.name);
-      if (!columns.length) continue;
-
-      const names = new Set(columns.map((column) => column.name));
-      const maxTstamp = names.has('tstamp') ? 'COALESCE(MAX(`tstamp`),0)' : '0';
-      const maxUid = names.has('uid') ? 'COALESCE(MAX(`uid`),0)' : '0';
-      const statsRaw = await runner(
-        `SELECT COUNT(*) AS row_count, ${maxTstamp} AS max_tstamp, ${maxUid} AS max_uid FROM \`${table}\``,
-        ddevProject,
-      );
-      const stats = parseTable(statsRaw)[0];
-      if (!stats) continue;
-
-      const order = columns.filter((column) => column.key === 'PRI').map((column) => column.name);
-      if (!order.length) order.push(...columns.map((column) => column.name));
-      const select = columns.map((column) => `\`${column.name}\``).join(',');
-      const orderBy = order.map((column) => `\`${column}\``).join(',');
-      const data = await runner(`SELECT ${select} FROM \`${table}\` ORDER BY ${orderBy}`, ddevProject);
-      if (data === null) continue;
-      rows.push({
-        table,
-        rowCount: Number(stats.row_count ?? 0),
-        maxTstamp: Number(stats.max_tstamp ?? 0),
-        maxUid: Number(stats.max_uid ?? 0),
-        schemaHash: `sha256:${sha256(JSON.stringify(columns))}`,
-        rowHash: `sha256:${sha256(String(data))}`,
-        method: 'sha256 over complete ordered row serialization',
-      });
+  for (const [index, table] of selected.entries()) {
+    // A table that no longer exists is not queried: compareContent reports it as drift, which is
+    // what a vanished table is. Only a table that exists and cannot be read is unavailable.
+    if (!present.includes(table)) {
+      log?.warn?.(`content fingerprint: table ${table} does not exist in the database; it is not fingerprinted.`);
+      continue;
     }
-    if (!rows.length) return { available: false, error: 'no tables could be queried' };
-    return { available: true, tables: rows, via: 'ddev mysql' };
-  } catch (err) {
-    return { available: false, error: String(err.message ?? err) };
+    try {
+      rows.push(await fingerprintTable(table, query));
+    } catch (error) {
+      if (!(error instanceof TableUnavailable)) throw error;
+      throw new HarnessError(
+        `Content fingerprint incomplete: table ${table} is unavailable (${unavailableSummary([error.report])}). `
+        + 'A table the harness cannot read is a harness or input failure, not content drift; no fingerprint was '
+        + 'written or compared. Check DDEV and the machine load, then re-run.',
+        EXIT.HARNESS_ERROR,
+        { unavailable: [error.report], notQueried: selected.slice(index + 1) },
+      );
+    }
+  }
+  if (!rows.length) return { available: false, error: 'no tables could be queried' };
+  return { available: true, tables: rows, via: 'ddev mysql' };
+}
+
+async function fingerprintTable(table, query) {
+  const columns = parseTable(await query(`SHOW COLUMNS FROM \`${table}\``, table, 'SHOW COLUMNS')).map((row) => ({
+    name: row.Field,
+    type: row.Type,
+    key: row.Key,
+  })).filter((column) => column.name);
+  if (!columns.length) throw unreadable(table, 'SHOW COLUMNS', 'the output listed no columns');
+
+  const names = new Set(columns.map((column) => column.name));
+  const maxTstamp = names.has('tstamp') ? 'COALESCE(MAX(`tstamp`),0)' : '0';
+  const maxUid = names.has('uid') ? 'COALESCE(MAX(`uid`),0)' : '0';
+  const stats = parseTable(await query(
+    `SELECT COUNT(*) AS row_count, ${maxTstamp} AS max_tstamp, ${maxUid} AS max_uid FROM \`${table}\``,
+    table, 'SELECT COUNT',
+  ))[0];
+  if (!stats) throw unreadable(table, 'SELECT COUNT', 'the output held no result row');
+
+  const order = columns.filter((column) => column.key === 'PRI').map((column) => column.name);
+  if (!order.length) order.push(...columns.map((column) => column.name));
+  const select = columns.map((column) => `\`${column.name}\``).join(',');
+  const orderBy = order.map((column) => `\`${column}\``).join(',');
+  // An empty table prints nothing at all; '' is a valid dump, only a failed call is not.
+  const data = await query(`SELECT ${select} FROM \`${table}\` ORDER BY ${orderBy}`, table, 'SELECT rows');
+  return {
+    table,
+    rowCount: Number(stats.row_count ?? 0),
+    maxTstamp: Number(stats.max_tstamp ?? 0),
+    maxUid: Number(stats.max_uid ?? 0),
+    schemaHash: `sha256:${sha256(JSON.stringify(columns))}`,
+    rowHash: `sha256:${sha256(String(data))}`,
+    method: 'sha256 over complete ordered row serialization',
+  };
+}
+
+/** A statement that could not be answered after its retry. Internal: callers see exit 2. */
+class TableUnavailable extends Error {
+  constructor(report) {
+    super(`${report.table} (${report.statement}) unavailable`);
+    this.report = report;
   }
 }
 
-async function ddevSql(sql, project) {
-  // Two bugs lived here and both made every content fingerprint report "the database
-  // could not be queried", which surfaces as INVALID for a reason that was never the
-  // database: `--no-tablespaces` is a mysqldump flag the mysql client rejects outright,
-  // and promisified execFile has no `input` option (that belongs to execFileSync), so
-  // the statement was never delivered to stdin. Pass the SQL with -e instead.
-  const args = ['mysql'];
-  args.push('-e', `${sql};`);
-  try {
-    const { stdout } = await exec('ddev', args, { timeout: 20000, encoding: 'utf8' });
-    return String(stdout);
-  } catch {
-    return null;
-  }
+function unreadable(table, statement, reason) {
+  return new TableUnavailable({
+    table, statement, status: 'unavailable',
+    calls: [{ attempt: 1, exitCode: 0, signal: null, timedOut: false, durationMs: null, error: reason }],
+  });
 }
 
-async function discoverTrackedTables(runner, project) {
-  const raw = await runner('SHOW TABLES', project);
-  const rows = parseTable(raw);
-  const present = rows.map((row) => Object.values(row)[0]).filter(Boolean);
+/**
+ * Run one statement, retrying a failed call once. A call fails when the runner throws or returns
+ * nothing; an empty string is a valid answer (an empty table prints no header). Truncated output
+ * is never retried or hashed: the same dump would be cut off again.
+ */
+async function queryWithRetry({ runner, sql, ddevProject, table, statement, log, retryDelayMs,
+  attempts = FINGERPRINT_QUERY.attempts, now = Date.now }) {
+  const calls = [];
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    const started = now();
+    let output = null;
+    let failure = null;
+    try {
+      output = await runner(sql, ddevProject);
+    } catch (error) {
+      if (error?.truncated) throw truncatedOutput(table, statement, error);
+      failure = error;
+    }
+    if (failure === null && output !== null && output !== undefined) return String(output);
+    const call = {
+      attempt,
+      exitCode: Number.isInteger(failure?.exitCode) ? failure.exitCode : null,
+      signal: failure?.signal ?? null,
+      timedOut: failure?.timedOut === true,
+      durationMs: now() - started,
+      error: firstLine(failure?.message ?? 'the runner returned no output'),
+    };
+    calls.push(call);
+    const retrying = attempt < attempts;
+    log?.warn?.(`content fingerprint: ddev mysql failed for ${table} (${statement}), attempt ${attempt}/${attempts}: `
+      + `${describeCall(call)}${retrying ? '; retrying once' : ''}`);
+    if (retrying && retryDelayMs > 0) await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+  }
+  throw new TableUnavailable({ table, statement, status: 'unavailable', calls });
+}
+
+function truncatedOutput(table, statement, error) {
+  const limit = error.maxBuffer ?? FINGERPRINT_QUERY.maxBuffer;
+  return new HarnessError(
+    `Content fingerprint refused: the ddev mysql output for ${table} (${statement}) exceeded the `
+    + `${Math.round(limit / (1024 * 1024))} MiB buffer and was cut off. A truncated dump would hash as a changed `
+    + 'table, so nothing was fingerprinted. This table is larger than the fingerprint reads in one call; report it as a '
+    + 'harness limit instead of excluding it.',
+    EXIT.HARNESS_ERROR,
+    { table, statement, status: 'truncated', maxBuffer: limit },
+  );
+}
+
+function describeCall(call) {
+  return `exit code ${call.exitCode ?? 'none'}${call.signal ? `, signal ${call.signal}` : ''}`
+    + `${call.timedOut ? ', timed out' : ''}${Number.isFinite(call.durationMs) ? `, ${call.durationMs} ms` : ''}: ${call.error}`;
+}
+
+function unavailableSummary(reports) {
+  return reports.map((report) => `${report.table} ${report.statement}: ${report.calls.map(describeCall).join('; ')}`).join(' | ');
+}
+
+function firstLine(text) {
+  return String(text ?? '').trim().split('\n').find(Boolean)?.slice(0, 240) ?? '';
+}
+
+/**
+ * The `ddev mysql` runner. Returns stdout, or throws an error carrying the exit code, signal and
+ * whether the call timed out or overran the buffer.
+ *
+ * Two bugs lived here and both made every content fingerprint report "the database could not be
+ * queried": `--no-tablespaces` is a mysqldump flag the mysql client rejects outright, and
+ * promisified execFile has no `input` option (that belongs to execFileSync), so the statement
+ * was never delivered to stdin. The SQL goes in with -e instead.
+ */
+export function createDdevSqlRunner({
+  exec = execFileAsync,
+  timeoutMs = FINGERPRINT_QUERY.timeoutMs,
+  maxBuffer = FINGERPRINT_QUERY.maxBuffer,
+} = {}) {
+  return async function ddevMysql(sql) {
+    try {
+      const { stdout } = await exec('ddev', ['mysql', '-e', `${sql};`], { timeout: timeoutMs, encoding: 'utf8', maxBuffer });
+      return String(stdout);
+    } catch (error) {
+      throw execFailure(error, { timeoutMs, maxBuffer });
+    }
+  };
+}
+
+const ddevSql = createDdevSqlRunner();
+
+/** Normalise an execFile rejection into the fields the retry log and the refusal report. */
+export function execFailure(error, { timeoutMs = FINGERPRINT_QUERY.timeoutMs, maxBuffer = FINGERPRINT_QUERY.maxBuffer } = {}) {
+  if (error?.code === 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER' || /maxBuffer length exceeded/i.test(String(error?.message ?? ''))) {
+    const failure = new Error(`output exceeded the ${maxBuffer}-byte buffer`);
+    failure.truncated = true;
+    failure.maxBuffer = maxBuffer;
+    return failure;
+  }
+  // execFile kills a call that outlives `timeout` and reports killed + signal, with no exit code.
+  const timedOut = error?.killed === true && Boolean(error?.signal);
+  const failure = new Error(timedOut
+    ? `timed out after ${timeoutMs} ms`
+    : (firstLine(error?.stderr) || firstLine(error?.message ?? error) || 'ddev mysql failed'));
+  failure.exitCode = Number.isInteger(error?.code) ? error.code : null;
+  failure.signal = error?.signal ?? null;
+  failure.timedOut = timedOut;
+  return failure;
+}
+
+function trackedTables(present) {
   const wanted = new Set(TRACKED_TABLES);
   for (const table of present) {
     if (String(table).startsWith('tx_') && !excluded(String(table))) wanted.add(String(table));

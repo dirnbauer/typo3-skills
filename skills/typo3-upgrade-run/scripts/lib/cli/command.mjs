@@ -31,6 +31,8 @@ const REQUIRES_SELFTEST = new Set([
 ]);
 
 const SELFTEST_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+/** Below this much remaining validity graph-status warns: a final capture and compare can outlast it. */
+export const SELFTEST_EXPIRY_WARNING_MS = 3 * 60 * 60 * 1000;
 const AFTER_DEADLINE_COMMANDS = new Set(['status', 'report', 'validate-run', 'graph-report']);
 
 /** Leases for single-browser page work and file hashing; capture, axe, pixels and Lighthouse lease their own pools. */
@@ -131,7 +133,7 @@ export async function runCommand({ command, values, positionals, argv, actions, 
     if (REQUIRES_SELFTEST.has(command) && !values['dry-run']) {
       await assertSelftestValid(paths, now);
       const { browserArgs } = await import('../browser/launch.mjs');
-      const check = () => liveInputs(paths, { launchArgs: browserArgs() });
+      const check = () => liveInputs(paths, { launchArgs: browserArgs(), log });
       await (resources.preflight
         ? reserve({ ...resources.preflight, owner: 'live-input-preflight', log, deadlineAt: runState?.runtime?.deadline_at }, check)
         : check());
@@ -230,11 +232,10 @@ export async function assertSelftestValid(paths, now = Date.now) {
     throw new PreconditionError('The determinism self-test did not pass; comparisons are not trustworthy.');
   }
 
-  const age = now() - Date.parse(lock.passedAt ?? 0);
-  const maxAge = lock.maxAgeMs ?? SELFTEST_MAX_AGE_MS;
-  if (!Number.isFinite(age) || age > maxAge) {
+  const validity = selftestValidity(lock, now());
+  if (validity.status === 'expired') {
     throw new InvalidRunError(
-      `The determinism self-test is older than ${Math.round(maxAge / 3.6e6)}h. Re-run it.`,
+      `The determinism self-test is older than ${Math.round(validity.maxAgeMs / 3.6e6)}h. Re-run it.`,
       { passedAt: lock.passedAt },
     );
   }
@@ -248,6 +249,50 @@ export async function assertSelftestValid(paths, now = Date.now) {
     );
   }
   return lock;
+}
+
+/**
+ * How long a self-test lock still licenses comparisons. assertSelftestValid refuses on exactly
+ * this arithmetic; graph-status reports it ahead of time, so a 24-hour lock does not lapse in
+ * the middle of a final capture and compare.
+ * @returns {{status:'missing'|'not-passed'|'valid'|'expiring'|'expired', passedAt?:string|null,
+ *   expiresAt?:string|null, maxAgeMs?:number, remainingMs?:number|null, visualWorkers?:number|null}}
+ */
+export function selftestValidity(lock, now = Date.now()) {
+  if (!lock || typeof lock !== 'object') return { status: 'missing' };
+  if (lock.verdict !== 'pass') return { status: 'not-passed' };
+  const passed = Date.parse(lock.passedAt ?? 0);
+  const maxAgeMs = Number(lock.maxAgeMs ?? SELFTEST_MAX_AGE_MS);
+  const age = now - passed;
+  const expires = passed + maxAgeMs;
+  const known = {
+    passedAt: lock.passedAt ?? null,
+    expiresAt: Number.isFinite(expires) ? new Date(expires).toISOString() : null,
+    maxAgeMs,
+    remainingMs: Number.isFinite(age) && Number.isFinite(maxAgeMs) ? maxAgeMs - age : null,
+    visualWorkers: Number.isInteger(lock.visualWorkers) ? lock.visualWorkers : null,
+  };
+  if (!Number.isFinite(age) || age > maxAgeMs) return { status: 'expired', ...known };
+  const expiring = Number.isFinite(known.remainingMs) && known.remainingMs < SELFTEST_EXPIRY_WARNING_MS;
+  return { status: expiring ? 'expiring' : 'valid', ...known };
+}
+
+/** The operator warning for a lock that expires soon or has expired; null otherwise. */
+export function selftestExpiryWarning(validity) {
+  if (!['expiring', 'expired'].includes(validity?.status)) return null;
+  const rerun = `t3u selftest-determinism${validity.visualWorkers ? ` --visual-workers ${validity.visualWorkers}` : ''}`;
+  const when = validity.status === 'expired'
+    ? `expired${validity.expiresAt ? ` at ${validity.expiresAt}` : ''}${Number.isFinite(validity.remainingMs) ? ` (${formatDuration(-validity.remainingMs)} ago)` : ''}`
+    : `expires in ${formatDuration(validity.remainingMs)} (at ${validity.expiresAt})`;
+  return `Determinism self-test ${when}. compare-all, the loop gates and closure refuse an expired lock: `
+    + `re-run "${rerun}"${validity.status === 'expiring' ? ' before it lapses' : ''}. Inside an unchanged epoch (same `
+    + 'environment, content and manifest) the re-run reproduces the same lock hash, so a started closure epoch stays current.';
+}
+
+export function formatDuration(ms) {
+  const minutes = Math.max(0, Math.floor(Number(ms) / 60_000));
+  const hours = Math.floor(minutes / 60);
+  return hours ? `${hours}h ${minutes % 60}m` : `${minutes}m`;
 }
 
 async function currentSelftestInputs(paths) {

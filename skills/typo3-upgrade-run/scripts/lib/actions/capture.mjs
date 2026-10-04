@@ -7,6 +7,7 @@
  */
 
 import { mkdir, writeFile, readFile, access, rm } from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { sample } from '../util/rng.mjs';
 import { EXIT, HarnessError, PreconditionError } from '../cli/exit-codes.mjs';
@@ -124,7 +125,8 @@ export const SAMPLING = Object.freeze({
   INTERMEDIATE_MAX: 100,
 });
 
-// Authoritative full captures default to twelve isolated Chromium processes. That count is
+// Authoritative full captures use the count sealed in selftest.lock.json, at most twelve isolated
+// Chromium processes; without a lock they ask for twelve and are refused. That count is
 // LICENSED: only a count that an exhaustive determinism double-shoot has proven to
 // zero (and sealed into selftest.lock.json as `visualWorkers`) may produce final evidence,
 // and every later authoritative capture and comparison must use that same count. The
@@ -135,6 +137,37 @@ export const SAMPLING = Object.freeze({
 export const DEFAULT_VISUAL_WORKERS = 12;
 export const DIAGNOSTIC_VISUAL_WORKERS = 12;
 export const MAX_VISUAL_WORKERS = 12;
+
+/**
+ * The renderer count a self-test proves when no --visual-workers is given, taken from the
+ * machine instead of a fixed twelve: min(12, max(2, logical CPUs - 2)), and never above the
+ * machine's T3U_BROWSER_SLOTS budget. A fixed twelve ignores the host: on a ten-core machine
+ * twelve Chromium processes compete with DDEV for every core. Two cores stay free for the
+ * application server and the harness, and at least two renderers keep the proof parallel.
+ *
+ * This only picks the count to PROVE. The licensing rule is unchanged: the self-test seals the
+ * count it proved into selftest.lock.json `visualWorkers`, and final evidence uses exactly that
+ * count (captureAll refuses any other count above 1). Pass --visual-workers to prove another.
+ */
+export function machineVisualWorkers({
+  parallelism = os.availableParallelism(),
+  browserSlots = machineCapacity().browsers,
+} = {}) {
+  const fromCores = Math.max(2, Math.floor(Number(parallelism) || 0) - 2);
+  return Math.max(1, Math.min(MAX_VISUAL_WORKERS, browserSlots, fromCores));
+}
+
+/** --visual-workers when given, else the machine default; says which, for the log and the lock. */
+export function selftestVisualWorkers(values = {}, machine = {}) {
+  const flagged = intOpt(values, 'visual-workers', null);
+  if (flagged !== null) return { visualWorkers: flagged, source: 'flag' };
+  const parallelism = machine.parallelism ?? os.availableParallelism();
+  return {
+    visualWorkers: machineVisualWorkers({ ...machine, parallelism }),
+    source: 'machine',
+    parallelism,
+  };
+}
 
 /** Intermediate checks reserve room for unrelated pages that detect an underestimated blast radius. */
 export const INTERMEDIATE_SENTINEL_MIN = 5;
