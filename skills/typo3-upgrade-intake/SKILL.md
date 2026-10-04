@@ -79,9 +79,12 @@ Your input is the node brief. Write its evidence file, return one allowed outcom
    journeys and named assertions in the [feature plan](../typo3-upgrade-run/references/feature-evidence.md).
 8. Record credential origins without reading/printing values. Reject committed/hard-coded secrets,
    ambiguous origins, production sessions, or cross-origin credential flows as security findings.
-   Inventory the env loader, Bootstrap version, jQuery/plugin dependencies and the live-sync helper
-   without executing it. Plan their scoped modernization; read the orchestrator's
+   Inventory the env loader, jQuery/plugin dependencies and the live-sync helper without executing
+   it. Plan their scoped modernization; read the orchestrator's
    [project environment](../typo3-upgrade-run/references/project-environment.md) for the dotenv/config-handling distinction.
+   Every Bootstrap site ends on the latest stable 5.x: inventory the Bootstrap version and its use,
+   estimate a 3/4 → 5 migration, and ask the owner for the intent approval and a review slot, all
+   per the [migration intake](../typo3-upgrade-run/references/bootstrap-5-migration.md#intake-inventory-estimate-ask).
 9. Verify backup capability: artifact type, timestamp, checksum, target identity, restore command,
    and storage path. This is readiness evidence; take snapshots only immediately before stateful nodes.
 10. Read `../typo3-upgrade-run/references/runtime-sizing.md`. Record all nine sizing metrics and

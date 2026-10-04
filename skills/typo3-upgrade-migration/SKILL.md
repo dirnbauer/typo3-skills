@@ -99,8 +99,10 @@ Your input is the node brief. Write its evidence file, return one allowed outcom
 If `typo3/cms-redirects` is absent, dependency resolution installs a constraint compatible with the
 locked 14.3 core, inside DDEV. Snapshot before setup/schema. The later rights node proves intended
 editor access and least privilege.
-Also require `spooner/deployer-information`, current stable Bootstrap 5.x when used, and native
-project JavaScript where compatible. Preserve existing functionality and prove any approved exception.
+Also require `spooner/deployer-information`, the latest stable Bootstrap 5.x for every Bootstrap
+site, and native project JavaScript where compatible. A Bootstrap 3/4 site migrates in `vite-assets`
+after the invariance loop, not in a migration node ([procedure](../typo3-upgrade-run/references/bootstrap-5-migration.md)).
+Preserve existing functionality and prove any approved exception.
 
 ## Evidence and exit
 

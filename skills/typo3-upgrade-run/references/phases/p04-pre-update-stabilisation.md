@@ -20,7 +20,7 @@ creates more parity work. Measure before deciding and record the decision:
 | Recipe | Skip when | How to know |
 |---|---|---|
 | 020 Vite | the site uses no core concatenation or compression | `compressCss`, `compressJs`, `concatenateCss`, `concatenateJs` appear in no TypoScript file and no `sys_template` row. v14 removes those features — if they are unused, the removal breaks nothing and a build would be introduced solely to have one. |
-| 030 Bootstrap | Bootstrap is not used | zero Bootstrap class names or variables in the shipped CSS and templates. A `bootstrap*` entry in `package.json` proves nothing: unused npm dependencies outlive their use, and a **Bootstrap 3** package is not a Bootstrap 5 upgrade waiting to happen. |
+| 030 Bootstrap | Bootstrap is not used | zero Bootstrap class names or variables in the shipped CSS and templates. A `bootstrap*` entry in `package.json` proves nothing: unused npm dependencies outlive their use. A site that does use **Bootstrap 3 or 4** moves to the latest 5.x, but in `vite-assets` after the invariance loop ([procedure](../bootstrap-5-migration.md)), not here. |
 | 010 sitemap | guarded sitemap or page-tree discovery already yields an adequate declared set | degraded discovery is allowed only with its limitations recorded in the closure claim |
 
 Use an ADR only for a consequential limitation or trade-off. A normal not-applicable decision goes

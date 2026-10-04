@@ -17,7 +17,7 @@ This covers layout, spacing, sizes, fonts, font sizes, line heights, colours, im
 
 `baseline/A-original/` is captured **before the first change of any kind**. Specifically, before:
 
-sitemap or routing fixes · the Vite pipeline change · the Bootstrap 5 update · accessibility corrections · the TYPO3 core update · extension updates · the PHP change · any image-processing change · the Solr update · the CKEditor migration · the Visual Editor migration · SEO adjustments · performance work · security-header changes that could reach the frontend.
+sitemap or routing fixes · the Vite pipeline change · the Bootstrap 5.x update or 3/4 → 5 migration · accessibility corrections · the TYPO3 core update · extension updates · the PHP change · any image-processing change · the Solr update · the CKEditor migration · the Visual Editor migration · SEO adjustments · performance work · security-header changes that could reach the frontend.
 
 The order is not negotiable, and it is the reverse of the intuitive one. Fixing the sitemaps first feels sensible — but a baseline captured after a fix cannot show what the fix broke. **A change made before the baseline exists is a change nobody can ever audit.**
 
@@ -69,6 +69,8 @@ Each of these describes a **cause**, and a cause is where the repair starts — 
 If the user wants a redesign or a visible improvement alongside the update, that is a **separate change scope** with its own requirements, its own before/after documentation, its own explicit approval, its own baseline, and its own commit series.
 
 The TYPO3 update itself stays visually neutral. Contract B exists precisely so that improvement work has a legitimate, documented home instead of being smuggled through as "the update changed it".
+
+The owner-required move of every site to the latest Bootstrap 5.x (2026-10-04) is not a redesign and stays inside the run. It keeps the old look through Bootstrap 5 variables and a compatibility layer, starts only after a full loop has proven the TYPO3 update itself invariant, and its remaining differences are declared only after the owner has accepted a before/after review ([procedure](../references/bootstrap-5-migration.md)). The handover names the invariance proof and the accepted Bootstrap change separately.
 
 ## 20.7 Accessibility and visible change
 

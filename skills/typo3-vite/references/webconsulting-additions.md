@@ -26,9 +26,13 @@ in the production build. Preserve CSP nonces through the actual integration.
 
 ## Bootstrap and native JavaScript gate
 
-When Bootstrap 5 is used, resolve the latest stable **5.x** from official releases at the start
-of the assets node, update older 5.x dependencies and commit the lockfile/production assets.
-Do not add Bootstrap to unrelated frontends or jump majors implicitly; dated examples are not pins.
+Every site that uses Bootstrap ends on the latest stable **5.x** (owner preference 2026-10-04).
+Resolve it from the official version list at the start of the assets node, not from a dist-tag or
+a dated example, update older 5.x dependencies and commit the lockfile/production assets. A
+Bootstrap 3 or 4 site migrates to 5.x in this node after the invariance loop, following the
+[migration procedure](../../typo3-upgrade-run/references/bootstrap-5-migration.md): old-look Sass
+variables, a small compatibility layer, a before/after review of every URL and a separately
+recorded owner acceptance. Do not add Bootstrap to a frontend that does not use it.
 
 Inventory imports, globals, inline snippets and plugins before removing jQuery. Convert
 project-owned selectors/events/AJAX to DOM APIs and fetch; preserve delegation, abort/error

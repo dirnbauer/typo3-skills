@@ -1,17 +1,21 @@
 # Latest stable is the default
 
-User preference, 2026-09-18. Apply to every dependency and tool in the authorized update scope:
-Core/extensions, Vite and its plugins, Bootstrap, Sass/PostCSS, loaders, PHPStan, Rector/Fractor,
-Deployer and project runtimes. Do not add unused packages or update unrelated host/global tools.
+User preference, 2026-09-18; Bootstrap target family, owner preference 2026-10-04. Apply to every
+dependency and tool in the authorized update scope: Core/extensions, Vite and its plugins, Bootstrap,
+Sass/PostCSS, loaders, PHPStan, Rector/Fractor, Deployer and project runtimes. Do not add unused
+packages or update unrelated host/global tools.
 
 ## Select from current releases, not old constraints
 
 - Resolve the newest **stable, maintained, compatible** release from the official project and
   registry at execution time. Dated examples, a working old installation, an imported skill's
   version heading and the current lockfile are not target versions.
-- Preserve explicit target families: this run targets TYPO3 14.3 LTS and, when used, Bootstrap 5.x;
-  choose their latest eligible releases. Preserve the selected PHP target/rung policy. Do not turn
-  a general latest-version preference into an unrequested TYPO3/Bootstrap major or product change.
+- Preserve explicit target families: this run targets TYPO3 14.3 LTS and Bootstrap 5.x; choose their
+  latest eligible releases. Every site that uses Bootstrap ends on the latest 5.x, a Bootstrap 3 or
+  4 site included: it migrates in `vite-assets` after the invariance loop
+  ([procedure](bootstrap-5-migration.md)). Preserve the selected PHP target/rung policy. Do not turn
+  a general latest-version preference into an unrequested TYPO3 major or other product change: no
+  other CSS framework, and no Bootstrap for a frontend that does not use it.
 - For packages without an explicit target-family restriction, assess the newest stable major too.
   Update inherited manifest constraints when the reviewed migration permits it. An old Vite/plugin
   pin alone is not proof that a newer release is incompatible: assess its Node engine, peer ranges,
@@ -25,7 +29,9 @@ Use official package-manager discovery rather than a custom version scraper. Ins
 `ddev composer why-not <package> <candidate>` for PHP dependencies. In the existing frontend
 workspace/runtime, use its package manager's outdated and package metadata commands. For npm,
 `wanted` is constrained by the existing manifest; `latest` is a publisher-managed tag, not proof
-of the highest stable compatible release. Compare release metadata and requirements before selecting.
+of the highest stable compatible release. Family tags are no better: on 2026-10-04 Bootstrap's
+`latest-5` tag still named 5.3.3 while 5.3.8 was the newest 5.x. Resolve a family from the version
+list (`npm view 'bootstrap@>=5 <6' version`). Compare release metadata and requirements before selecting.
 See [Composer's commands](https://getcomposer.org/doc/03-cli.md#outdated),
 [npm's version columns](https://docs.npmjs.com/cli/v11/commands/npm-outdated/#description)
 and [Vite's release policy](https://vite.dev/releases).
@@ -47,8 +53,10 @@ security checks or global stability settings to claim the newest version works.
 
 Select and record versions at dependency planning or the bounded assets node, then lock exact
 resolved versions and test the actual production build/runtime. Keep pixel, interaction, backend
-and Lighthouse gates; latest does not authorize redesign or removal of used features. An installed
-but outdated frontend is applicable work, not a reason for `vite-assets` to return not-applicable.
+and Lighthouse gates; latest does not authorize redesign or removal of used features. The Bootstrap
+3/4 → 5 migration keeps the old look as far as variables and a compatibility layer reach; what still
+differs needs the owner's acceptance of a before/after review. An installed but outdated frontend,
+or a Bootstrap 3/4 frontend, is applicable work, not a reason for `vite-assets` to return not-applicable.
 
 Choose current stable compatible measurement tools before Baseline A, then pin the same browser,
 Lighthouse and harness environment across source/target proof. Do not chase releases during each
@@ -57,5 +65,6 @@ compatibility change requires explicit replanning and affected-evidence invalida
 overwritten baseline or a deadline extension. Re-resolve releases for the next run.
 
 Behavior checks: `latest-stable-default-not-old-example`, `latest-not-mid-proof-moving-target`,
-`latest-unavailable-or-blocked-not-guessed` and `migration-latest-tooling-with-proof` in the owned
-eval suites. They are proposed cases, not an automated proof of model behavior or current versions.
+`latest-unavailable-or-blocked-not-guessed`, `bootstrap-latest-5x-not-kept-on-3x` and
+`migration-latest-tooling-with-proof` in the owned eval suites. They are proposed cases, not an
+automated proof of model behavior or current versions.
