@@ -21,7 +21,7 @@ const context = await browser.newContext({
 The browser itself runs with `--disable-gpu` and `--disable-partial-raster` (software raster, whole
 tiles). Without the second flag a late repaint re-rasterises only part of a tile, and the edge pixels
 of antialiased shapes depend on that timing: a rounded box's corners came out one colour level apart at
-random, on TYPO3 12.4 and 13.4 alike (fakeshop, 2026-09-29: 5/8 vs 3/8 without the flag, 8/8 with it).
+random, on TYPO3 12.4 and 13.4 alike (a fleet site, 2026-09-29: 5/8 vs 3/8 without the flag, 8/8 with it).
 
 ## The init script — run before any page code
 

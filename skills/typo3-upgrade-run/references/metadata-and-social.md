@@ -63,7 +63,7 @@ Two more that are **not** in the minimum set, deliberately:
 ### The `websiteTitle` trap
 
 `og:site_name` is usually wired to the site configuration's `websiteTitle`, which is very often
-still the **project slug** from the day the site was scaffolded — `fischerei-verband`,
+still the **project slug** from the day the site was scaffolded — `verein-website`,
 `kunde-relaunch-2019`. It is invisible in the frontend and appears in every social share.
 Check it, and check what the `<title>` uses, because the two are frequently different and one of
 them is wrong.

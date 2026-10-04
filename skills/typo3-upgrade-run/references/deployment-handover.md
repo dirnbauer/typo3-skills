@@ -102,6 +102,6 @@ unverified remote consequences in handover. Do not run remote commands as part o
   does not preserve an application fix. If the release root changes while preparing an authorized
   operation, stop and re-resolve identity/hashes; do not apply to the remembered symlink target.
 
-See the [September follow-up](run-retrospective-2026-09-16.md) for FMW archive exclusions,
-Scioflex/Gütezeichen/ÖIAT runtime differences, Saferinternet DI cache behavior and Watchlist cache
+See the [September follow-up](run-retrospective-2026-09-16.md) for Site B archive exclusions,
+Site F/Site C/Site E runtime differences, Site D DI cache behavior and Site G cache
 invalidation. These are bounded release checks, not permission to deploy.

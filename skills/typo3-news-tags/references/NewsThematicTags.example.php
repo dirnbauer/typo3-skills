@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 /**
  * Reference: 65 single-concept German tags for EXT:news in an Austrian internet-fraud
- * watchlist corpus (~1500 news on a single storage PID).
+ * client news corpus (~1500 news on a single storage PID).
  *
  * Each tag is ONE concept (not "X & Y" combinations) — this is deliberate so that
  * `/<tag-slug>/` URLs read cleanly and so that backend editors can compose multiple

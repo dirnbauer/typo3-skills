@@ -38,7 +38,7 @@ Source: [TYPO3 14.3 custom-plugin integration](https://docs.typo3.org/c/typo3/cm
 ## Upgrade regression gate
 
 Use the installed TYPO3 source to verify plugin registration and every legacy link-handler class.
-Do not rely on a quick-reference snippet across Core versions. Watchlist's September failures came
+Do not rely on a quick-reference snippet across Core versions. Site G's September failures came
 from a removed Recordlist link handler and legacy presets, despite a working backend landing page.
 Exercise page/record/file link dialogs, toolbar plugins, save/reopen and frontend link rendering as
 a non-admin editor with `typo3-playwright`. Also test actual plugin/FlexForm previews and media.

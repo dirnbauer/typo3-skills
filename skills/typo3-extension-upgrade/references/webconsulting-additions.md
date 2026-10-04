@@ -44,7 +44,7 @@ TCA, backend modules or runtime paths work. Inspect installed interfaces, run Sc
 analysis, then render/execute every used surface. Lock fork commits and Composer patches exactly,
 make patches fail on context drift, and record their removal condition.
 
-Recheck this after patch-level Core updates too: the September 2026 Saferinternet and Watchlist
+Recheck this after patch-level Core updates too: the September 2026 Site D and Site G
 repairs exposed an inline page-controller constructor dependency on installed backend internals.
 Verify the target constructor/factory in vendor source, compile DI, then open the actual
 authenticated module with a representative record. A login-page 200 is not that test. Prefer an

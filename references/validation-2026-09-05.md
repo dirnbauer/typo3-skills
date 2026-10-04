@@ -84,7 +84,7 @@ refer to `/tmp/typo3-skill-trials.X8ufvc`; the retained copies are byte-identica
 ## Still open — not covered by these results
 
 1. **Measured whole-upgrade performance.** Read-only inspection found paired pre-upgrade Git
-   anchors and database/media archives for FMW, OEII and Saferinternet, dated 28 July / 9–10 August.
+   anchors and database/media archives for Site B, Site A and Site D, dated 28 July / 9–10 August.
    The inspected archives match their historical SHA-256 manifests. They have not been restored
    or benchmarked here. Exact disposable-clone/dataset approval was requested and remains pending.
    Recover recorded code/config overlays, verify isolated outbound-safe restore, then measure all

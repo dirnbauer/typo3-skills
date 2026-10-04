@@ -132,7 +132,7 @@ export const SAMPLING = Object.freeze({
 // and every later authoritative capture and comparison must use that same count. The
 // self-test itself passes its own count as `provenWorkers` — it is the proof instrument.
 // Intermediate diagnostics deliberately trade authority for fast feedback.
-// Proven on the exhaustive Saferinternet 1,357-URL / 360-capture matrix on 2026-08-10.
+// Proven on an exhaustive client 1,357-URL / 360-capture matrix on 2026-08-10.
 // Final evidence still requires the exact count recorded by selftest.lock.json.
 export const DEFAULT_VISUAL_WORKERS = 12;
 export const DIAGNOSTIC_VISUAL_WORKERS = 12;

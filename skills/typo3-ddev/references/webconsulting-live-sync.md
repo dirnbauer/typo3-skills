@@ -12,12 +12,12 @@ adding custom mapping/orchestration. The low-adoption `b13/content-sync` is not 
 
 ## What the fleet actually taught
 
-- Gütezeichen's July helper still contains embedded configuration, a shared remote `/tmp` dump,
+- Site C's July helper still contains embedded configuration, a shared remote `/tmp` dump,
   and a broad local temp-directory cleanup. Do not copy it as a modern safe reference.
-- FMW commit `898b088` (2026-08-16) improved configuration and `mktemp` cleanup, but still sources
+- Site B commit `898b088` (2026-08-16) improved configuration and `mktemp` cleanup, but still sources
   `.env` as shell code, uses a fixed remote dump filename, strips line one unconditionally and lacks
   a verified local rollback. Adopt the configuration idea, not the helper verbatim.
-- OEII's 2026-09-05 refresh preserved local code/settings, exported a local rollback database,
+- Site A's 2026-09-05 refresh preserved local code/settings, exported a local rollback database,
   retained overwritten media, avoided deleting local-only files, and verified with a second dry
   run. That is the safer recovery model. The refresh changed image derivatives and invalidated
   prior Lighthouse measurements: sync is an evidence-epoch change, not a harmless cache action.
@@ -57,7 +57,7 @@ adding custom mapping/orchestration. The low-adoption `b13/content-sync` is not 
 
 ## Incremental refresh after source and target diverged
 
-The September Saferinternet implementation (`c41994df`, `40dfc5f1`,
+The September Site D implementation (`c41994df`, `40dfc5f1`,
 `scripts/content-sync.py` and `scripts/content_sync/`) is a newer design reference. Inspect it,
 but do not execute/copy its customer-specific host names, accounts, table allowlist or baselines.
 Use a simple verified import for a disposable initial clone; use this stronger pattern only when
