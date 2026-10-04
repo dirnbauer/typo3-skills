@@ -31,8 +31,10 @@ exists can never be audited. **Seal first, remediate second.**
    and state matrix and was proven identical to pass A. The harness promotes it atomically to the
    unsealed `baseline/A-original`; do not capture an identical third browser pass.
 5. Seal: `MANIFEST.sha256` over every artifact, `LOCK.json`, and `SEAL.md` recording who, when, both
-   fingerprints and the sample hash. Right before the seal,
-   `grep -rlE '/@vite/client|:5173/' .typo3-update/baseline/A-original/dom | wc -l` must print 0.
+   fingerprints and the sample hash. `seal-baseline` refuses (exit 4, nothing written) when a captured
+   DOM carries a development-server client (`/@vite/client`, `@react-refresh`, `/__vite_ping`,
+   `webpack-dev-server`, a `vite.*`/`:5173` asset host): switch to the production build, re-run the
+   self-test, then seal.
 6. Set the Contract A Lighthouse floors the way intake agreed: measure the sealed, still unchanged
    site, show the medians to the owner and write the floors into `config/thresholds.yml` → `contract_a`
    ([quality bars](../quality-bars.md#contract-a-lighthouse-floors-decided-at-intake)). Every

@@ -10,7 +10,7 @@ Harness configuration, stabilisation settings, masking. **No site code changes a
 
 ## Procedure
 Shoot the untouched site twice — same sample, same viewports, same settings, browser fully closed
-between passes — with twelve isolated browser workers and exactly `default`, `keyboard-focus`, and
+between passes — with the machine's licensed pool of isolated browser workers (default min(12, max(2, CPUs − 2))) and exactly `default`, `keyboard-focus`, and
 `nav-open` — and require **zero** differences.
 
 Assertions, all of which must hold:
