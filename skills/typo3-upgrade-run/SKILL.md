@@ -222,10 +222,14 @@ and [extension strategy](references/extension-strategy.md).
 Use the **latest stable compatible version** of every in-scope dependency and tool; read the
 [version policy](references/latest-version-policy.md). Move hard-coded credentials into env files
 per [project environment](references/project-environment.md); require `spooner/deployer-information`
-next to Redirects. Update Bootstrap 5 sites to the latest 5.x; replace project-owned jQuery with
-native code where behavior is preserved and proven. The `vite-assets` node uses the `typo3-vite`
-overlay. Optional branches follow [specialist branches](references/specialist-branches.md) and
-return `not-applicable` with reviewed evidence when absent or unrequested.
+next to Redirects. Every site targets the latest stable Bootstrap 5.x (owner preference 2026-10-04):
+Bootstrap 5 sites update within 5.x; Bootstrap 3/4 sites migrate to 5.x in the `vite-assets` node,
+after a full loop proved the upgrade invariant, with a before/after review and a separately recorded
+acceptance ([procedure](references/bootstrap-5-migration.md)). Replace project-owned jQuery and jQuery
+plugins with native code whose behavior is proven identical; Bootstrap 5 needs no jQuery. The
+`vite-assets` node uses the `typo3-vite` overlay. Optional branches follow
+[specialist branches](references/specialist-branches.md) and return `not-applicable` with reviewed
+evidence when absent or unrequested.
 
 ## Deadlines, approvals and stopping
 

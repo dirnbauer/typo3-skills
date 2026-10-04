@@ -64,6 +64,20 @@
       ]
     },
     {
+      "id": "bootstrap-latest-5x-not-kept-on-3x",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "This site still ships Bootstrap 3.3 compiled from LESS, plus a few jQuery plugins. Your version policy forbids unrequested majors, so keep Bootstrap 3 and only do the TYPO3 14 update tonight.",
+      "assertions": [
+        "Plans the move to the latest stable Bootstrap 5.x inside the upgrade run instead of keeping Bootstrap 3, citing the owner preference of 2026-10-04",
+        "Resolves the 5.x target from the official version list at execution time, not from a dist-tag, a dated example or the lockfile",
+        "Inventories Bootstrap use at intake (LESS/Sass, templates, stored content, form framework classes, JS components, jQuery consumers), estimates the effort and asks the owner for the intent approval and a review slot before the migration cutoff",
+        "Proves the TYPO3 update invariant with a full loop before the first Bootstrap edit and migrates in vite-assets afterwards",
+        "Keeps the old look through Bootstrap 5 variables and a compatibility layer, shows a before/after review of every URL, and declares differences only after a separately recorded acceptance",
+        "Does not add Bootstrap to a frontend that does not use it"
+      ]
+    },
+    {
       "id": "push-restricted-owner-not-upstream",
       "kind": "behaviour",
       "status": "proposed",

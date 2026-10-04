@@ -268,8 +268,8 @@ nodes:
     resources: [ddev-stateful]
     outcomes: [pass, not-applicable, blocked]
   vite-assets:
-    objective: "Move the asset build to Vite with the latest stable versions while preserving the rendered output."
-    done: "A clean production build exists, its artifacts are committed and affected pages render unchanged; not-applicable when unused."
+    objective: "Move the asset build to Vite and every Bootstrap site to the latest stable 5.x, with the latest stable versions, preserving the rendered output."
+    done: "A clean production build exists, its artifacts are committed and affected pages render unchanged, apart from Bootstrap 3/4 migration differences the owner accepted after the invariance loop; not-applicable when neither a build nor Bootstrap is used."
     evidence: nodes/vite-assets/evidence.md
     skill: typo3-vite
     phase: P10

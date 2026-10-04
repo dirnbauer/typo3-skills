@@ -26,8 +26,10 @@ The deterministic baseline node passed. P03/P04 optional improvements are not pr
 9. Require compatible `spooner/deployer-information` and verify registration/toolbar at P12.
    Apply the same latest-version policy to existing PHPStan and Deployer CLI dependencies; review
    major migrations and preserve analysis quality. Neither is the information extension.
-   Require the latest stable Bootstrap 5.x and compatible Vite/build packages when present; migrate
-   project jQuery to native JS with tested, explicit exceptions only for unavoidable dependencies.
+   Plan the latest stable Bootstrap 5.x for every site that uses Bootstrap, a Bootstrap 3/4 site
+   included (it migrates later in `vite-assets`, see the [procedure](../bootstrap-5-migration.md)),
+   and compatible Vite/build packages when present; migrate project jQuery to native JS with tested,
+   explicit exceptions only for unavoidable dependencies.
 10. `ddev composer validate --strict`, update with the narrowest justified command, inspect the
    lockfile diff.
 
