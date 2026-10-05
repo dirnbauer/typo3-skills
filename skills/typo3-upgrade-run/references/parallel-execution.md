@@ -52,6 +52,20 @@ one node holds an exclusive lock, prepare the next brief instead of a second wri
    once ([test accounts](overnight-controller.md#prepare-test-accounts-once)).
 5. `lighthouse-proof` last, on a quiet machine.
 
+What else fits beside these steps, as measured on a fleet closure (about three hours from `closure-start`
+to `closure-verify`):
+
+- The read-only closure checks that are not graph nodes (dependencies, deployer, environment, schema
+  and the content journeys; then assets and redirects) run as background workers beside steps 1–3. Let
+  the database comparisons finish before `backend-operations` starts writing and restoring snapshots,
+  and start the asset and redirect requests after the capture.
+- The quality loop needs an authoritative report for its gate. Captures are stored by label, so run
+  `compare-all --loop <quality loop> --after <capture label>` on the epoch's one capture instead of
+  capturing again.
+- When a backend fix is expected, give `backend-operations` attempt 1 a short read-only scope (admin
+  sweep, module lists, runtime checks) and defer the writing journeys to the rerun: the recovery's
+  commit lands before `closure-start`, and the full rerun runs inside the epoch.
+
 A backend or module defect belongs to the rung's early admin and editor sweep
 ([fix pack item 7](typo3-14-fix-pack.md#7-backend-modules-refused-to-admins)): a code fix after
 `closure-start` makes the epoch stale ([epoch order](closure-currentness.md#epoch-order-what-makes-a-new-epoch-stale)).

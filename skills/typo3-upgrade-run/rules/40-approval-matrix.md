@@ -98,4 +98,10 @@ Record it in the run when the run reaches the step: the question and answer as g
 saw when answering, and the run's own before/after evidence. A difference wider than the form the
 question showed is a new question.
 
+A fleet-wide answer given in another project's run is not yet this project's record. Writing a project's
+approval that quotes another run's answer was refused by the agent's permission classifier as
+instruction poisoning, and the owner had to answer again in the middle of the closure. Put every
+fleet-wide decision into this project's intake carry-over question, so the owner answers it once for this
+project, directly, before the run reaches the step.
+
 When in doubt, ask again. The cost of one extra question is far below the cost of a change nobody agreed to.

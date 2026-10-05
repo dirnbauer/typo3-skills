@@ -105,3 +105,16 @@ unverified remote consequences in handover. Do not run remote commands as part o
 See the [September follow-up](run-retrospective-2026-09-16.md) for Site B archive exclusions,
 Site F/Site C/Site E runtime differences, Site D DI cache behavior and Site G cache
 invalidation. These are bounded release checks, not permission to deploy.
+
+## Database-only changes and test accounts
+
+Approved editor-rights grants (the Redirects module, the Info sub-modules) live in `be_groups`, not in
+the code, so a deploy does not carry them. Ship each one as an idempotent tool that bootstraps from the
+working directory and offers `dry-run` (a rolled-back transaction) before `apply`, and list the exact
+commands in the handover for staging and later live, after the upgrade wizards.
+
+Before any database leaves the machine, delete the DDEV-only test accounts with every trace, after a
+fresh snapshot: the `be_users` rows, `be_sessions` (`ses_userid`), `sys_lockedrecords`, `sys_log` and
+`sys_history` (`userid`), `sys_registry` `core / formProtectionSessionToken:<uid>` and the
+reference-index rows. `referenceindex:update --check` then reports a perfect index; delete the run's
+credential files as well.

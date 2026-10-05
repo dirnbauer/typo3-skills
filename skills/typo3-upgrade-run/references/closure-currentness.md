@@ -96,6 +96,20 @@ The plan is the passed `intake-join` artifact. Every planned assertion must have
 and evidence bound to its parent check; missing or altered inventory/plan files refuse closure.
 No extra top-level checks, global browser states or full-capture loops are introduced.
 
+## Target content epoch: one cumulative ledger
+
+Seal the target content epoch against a ledger that covers every stage since Baseline A (13.4 rung,
+manual migration, 14.3 rung and any later approved grant), not against the last stage's ledger: a stage
+ledger only diffs against the stage before it. Build the cumulative ledger as a new file and pass that
+file to the seal. Do not pass the sealed `manifests/content-transition.json` back: it carries its own
+`transitionHash` key, the harness hashes the input as given, and every later proof node then rejects
+the ledger as edited.
+
+Ledger derived files as well. The target body counts the `_processed_` images, and they grow whenever a
+node renders pages (one fleet run went from 576 to 762 between two seals while the database stayed
+byte-identical). Record the time windows, counts, cause and the matching `sys_file_processedfile` rows
+as a generated-asset entry; an independent reviewer refused the seal without it.
+
 ## Residual findings do not block closure
 
 `closure-check` requires zero unresolved run findings. That count follows the loop gate (`loopVerdict`): only

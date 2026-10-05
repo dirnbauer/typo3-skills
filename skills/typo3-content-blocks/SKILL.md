@@ -277,6 +277,11 @@ Guidelines:
 </html>
 ```
 
+Migrated previews (Mask importer, `make:content-block`) dump raw fields; collections drawn with the
+`PageLayout/Grid` partial show empty cards for non-`tt_content` children. For one shared preview design,
+item lists with side-panel editing, link-field values and inline record labels, read
+[backend previews](references/19-backend-previews.md).
+
 
 ## Detailed Reference
 
