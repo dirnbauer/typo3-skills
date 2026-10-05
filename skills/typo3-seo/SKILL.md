@@ -317,4 +317,6 @@ page.headerData.100 {
 
 ## Detailed Reference
 
+Read [the Lighthouse pass](references/11-lighthouse-pass.md) when Lighthouse scores of an existing site must rise: what to change on every site, what to check per site, and how to prove nothing else changed.
+
 Read [the full guide](references/full-guide.md) when the task needs detailed examples, long templates, troubleshooting matrices, appendices, or sections not included above. Keep this file unloaded for narrow tasks so the skill follows progressive disclosure.
