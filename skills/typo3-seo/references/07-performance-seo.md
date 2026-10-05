@@ -10,10 +10,12 @@ Continues `typo3-seo` from [full guide](full-guide.md).
 # Preload critical resources
 page.headerData.50 = TEXT
 page.headerData.50.value (
-<link rel="preload" href="/typo3conf/ext/site_package/Resources/Public/Fonts/raleway.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preload" href="/_assets/<hash>/Fonts/raleway.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="dns-prefetch" href="https://www.google-analytics.com">
 )
+
+# Self-host web fonts instead of fonts.googleapis.com: a CSS @import of Google Fonts is a
+# render-blocking chain and sends the visitor's IP to Google (see 11-lighthouse-pass.md).
 
 # Lazy load images (built-in TYPO3 v14)
 lib.contentElement {
@@ -38,6 +40,10 @@ $GLOBALS['TYPO3_CONF_VARS']['GFX']['imageFileConversionFormats'] = [
 ];
 // WebP output itself is available since v13 (Feature #88537) when
 // ImageMagick/GraphicsMagick supports it.
+// Existing processed files keep their format: TYPO3 reuses a processed file whose processing
+// configuration is unchanged. After switching, run once per environment:
+//   vendor/bin/typo3 cleanup:localprocessedfiles --all --force && vendor/bin/typo3 cache:flush
+// Keep og:image as JPEG for social networks: f:uri.image(..., fileExtension: 'jpg').
 ```
 
 > **Responsive images:** configure image processing via your site package, `fluid_styled_content`, and FAL — there is no stable Core TypoScript path `tt_content.image.settings.responsive_image_rendering`; avoid copy-pasting fabricated keys.

@@ -62,6 +62,20 @@ comparison or specific accepted visible changes. Broad SCSS redesign remains Con
 - Test with no HMR process, zero failed assets/console errors and pinned Lighthouse runs against
   predeclared budgets. Optimize after the appropriate approved graph decision, not in every loop.
 
+## Web fonts: self-host, never inline
+
+- Self-host Google Fonts instead of `@import url(https://fonts.googleapis.com/…)` in Sass: the import
+  is a render-blocking request chain and sends every visitor's IP to Google. Fetch Google's CSS with
+  a current Chrome user agent, keep its `@font-face` rules unchanged (all subsets with their
+  `unicode-range`), store the `woff2` files under `Resources/Private/Fonts/`, and rewrite the URLs
+  relative to the Sass file; Vite emits and hashes them.
+- Never let Vite inline a font. Google's subset files are often under the 4 KB default
+  `assetsInlineLimit`, and each `@font-face` rule that uses one gets its own base64 copy in the
+  render-blocking CSS (+24 KB measured on one site). Keep other assets on the default:
+  `assetsInlineLimit: (file) => (/\.(woff2?|ttf|eot|otf)$/.test(file) ? false : undefined)`.
+  Check the built CSS for `url(data:font` before committing.
+- More Lighthouse fixes: [typo3-seo Lighthouse pass](../../typo3-seo/references/11-lighthouse-pass.md).
+
 ## Credits & Attribution
 
 This skill is based on the excellent work by **Netresearch DTT GmbH**.

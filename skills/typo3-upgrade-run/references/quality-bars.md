@@ -67,6 +67,13 @@ loading; preload **only** resources critical to the measured LCP, with exactly m
 AVIF via `GFX/imageFileConversionFormats` and `avif_quality` when the processor reports AVIF write
 support; keep minification in the Vite build — v14 removed the core equivalents.
 
+Measure locally with production-like caching (a DDEV `additional.php` that sets every cache to
+`NullBackend` renders every request uncached), and judge staging only without a backend session in
+the browser (Lighthouse sends `Cache-Control: no-cache`, which makes TYPO3 skip the page cache for a
+logged-in backend user) and without an expensive Basic-auth hash (bcrypt cost 12 costs about 230 ms
+on every request, static files included). The site-independent fixes and their traps are in the
+[typo3-seo Lighthouse pass](../../typo3-seo/references/11-lighthouse-pass.md).
+
 ## Loop 510 — SEO and structured data
 
 | Bar | Target | Local caveat |
@@ -116,7 +123,7 @@ Automated and manual results are reported **separately** and never merged into o
 |---|---|---|
 | LCP image | not lazy-loaded, `fetchpriority="high"`, preloaded only when it is the measured LCP with an exactly matching URL | The LCP element differs per viewport — check all three. |
 | Dimensions | width/height or `aspect-ratio` on every content image; 0 image-caused shift | — |
-| Modern formats | ≥80% of image bytes AVIF or WebP, where the processor supports it | Depends on the local ImageMagick/GraphicsMagick build. If production differs, this is a handover item, not a claim. |
+| Modern formats | ≥80% of image bytes AVIF or WebP, where the processor supports it | Depends on the local ImageMagick/GraphicsMagick build. If production differs, this is a handover item, not a claim. Existing processed files keep their format after a `GFX/imageFileConversionFormats` change: run `cleanup:localprocessedfiles --all --force` and `cache:flush` per environment (a deploy step). |
 | Oversizing | 0 images delivered above 1.5× rendered CSS size at DPR 1 | — |
 | Responsive images | `srcset` + `sizes` on every responsive image | — |
 | Page cache | 100% of cacheable sampled pages hit on the second request | Local cache warms differently. Measure the hit *rate*, not the timing. |
