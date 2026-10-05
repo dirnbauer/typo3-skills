@@ -27,6 +27,16 @@ the whole run about a day and a half. Five causes took the rest:
 | Nodes run one after another although `graph-next` offered them together | Intake and final proof took their serial sum | [Dispatch every offered set at once](parallel-execution.md#dispatch-what-the-graph-offers); in the final proof one full capture first, then the comparisons together |
 | Known TYPO3 14 problems, solved on an earlier fleet site, rediscovered node by node | One diagnosis round per problem per node | The [TYPO3 14 fix pack](typo3-14-fix-pack.md) applied at the start of the rung, its approvals asked at intake |
 
+The closure of a later fleet run added five lessons, each now in its reference:
+
+| Cause | Cost | Counter-measure |
+|---|---|---|
+| A monitoring module rewrote `settings.php` on every open | Every admin sweep dirtied the epoch's worktree | Back it up and restore it around admin steps; commit the synced file before staging ([known problem](known-problems.md#a-backend-module-is-gone-for-admins-or-fails-on-a-protected-method)) |
+| The target was sealed against the last stage's ledger, and `_processed_` grew between seals | One review round-trip | [One cumulative ledger](closure-currentness.md#target-content-epoch-one-cumulative-ledger) with derived files |
+| `keyboard-focus` and `nav-open` silently equalled `default` | The open menu was never in the pixel proof | [Check that the states differ](visual-regression.md) at intake |
+| A fleet-wide answer could not be recorded for another project | An owner round-trip during the closure | [Ask every fleet decision per project](../rules/40-approval-matrix.md#404-scope-of-an-approval) at intake |
+| The staging host existed only in `.hosts.yaml` | No staging deploy after acceptance | [Check the host at intake](live-dataset-and-staging.md#publishing-to-staging) |
+
 Planning anchors for the next run are in [runtime sizing](runtime-sizing.md#measured-fleet-durations).
 
 ## What failed and what now prevents a repeat

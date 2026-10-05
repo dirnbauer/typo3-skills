@@ -34,6 +34,19 @@ the owner sets them, and never lower a floor after a failing run:
   hero image that the old site already had, with markup and pixels identical before and after.
   Contract A cannot repair a pre-existing property, so the run met a failing floor it could not fix.
 
+Two instrument facts to state with every Lighthouse result. The harness `desktop` form factor uses a
+desktop viewport with mobile throttling and the mobile user agent, so compare it only with the same
+harness profile on Baseline A, never with a standard desktop score. Third-party fonts are fetched during
+the Lighthouse runs on both sides; a floor comment that says they are blocked is wrong.
+
+**axe findings when the CSS changed on purpose.** Contract A asks for no new critical or serious
+violation compared with Baseline A, and the harness flags every serious cluster. When an approved change
+replaced the stylesheet (Bootstrap 5, a new build), identical CSS bytes cannot carry the proof. Render the
+captured Baseline A DOM offline with the source commit's assets (`git show <source>:<built css>`), run the
+same axe rules there and on the target capture, and compare each flagged node's rendered colours, font
+size and weight, and its accessible-name inputs. The offline target rendering must reproduce the
+harness clusters first; otherwise the comparison proves nothing.
+
 Runs that started before this check kept their floors in a separate
 `decisions/lighthouse-contract-a-budget.yml` and passed that file as `--budget`.
 

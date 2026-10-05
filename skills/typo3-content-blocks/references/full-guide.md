@@ -18,6 +18,7 @@ Read only the section that matches the current task. These files continue the ma
 - [17. Version constraints](17-version-constraints.md)
 - [Related Skills](related-skills.md)
 - [18. Package Management for v14 Compatibility](18-package-management-for-v14-compatibility.md)
+- [19. Backend previews that editors can read](19-backend-previews.md)
 - [References](references.md)
 - [v14-Only Changes](v14-only-changes.md)
 - [Common Pitfalls & Hard-Won Lessons](common-pitfalls-and-hard-won-lessons.md)

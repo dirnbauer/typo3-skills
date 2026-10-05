@@ -84,4 +84,15 @@ node skills/typo3-upgrade-run/scripts/deploy-staging.mjs --project . \
   <staging> --record …`, with `--hosts-file` describing the staging target when the project has none.
 - Staging runs its own database. Before replacing it with the upgraded local dataset, check what
   staging holds (relaunch previews, editor drafts) and get an exact-scope approval.
+- Check at intake, read-only, that the staging host exists: `dig +short <host>`, an SSH login with
+  strict host-key checking, the deploy path and the PHP binary of `bin/php`. A `.hosts.yaml` entry is not a
+  server. One fleet project's staging host was written into `.hosts.yaml` but never created in the
+  hosting panel, and the run found out only after Contract A was accepted. A missing host is an owner
+  prerequisite, asked in the intake round: the subdomain with document root `<host>/current/public`, its PHP
+  version, an empty database with its own user, the credentials in the server's `shared/.env`, and access
+  protection. The agent never creates database users, panel users or passwords.
+- On the first deploy to a new host: if the hosting panel created `current` as a real directory for the
+  document root, remove it (Deployer replaces `current` with a symlink). Deployer's `deploy:shared`
+  copies a shared file such as `public/.htaccess` from the release into `shared/` when `shared/` lacks it;
+  later deploys keep the server's copy, so a changed rule must then be edited on the server.
 - A staging publication is not Contract A acceptance. The human acceptance names the closure hash.

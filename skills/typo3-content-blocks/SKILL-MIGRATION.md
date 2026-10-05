@@ -497,7 +497,7 @@ fields:
 ## For Each Content Type
 - [ ] Create config.yaml with field mappings
 - [ ] Create frontend.fluid.html template
-- [ ] Create backend-preview.fluid.html (optional)
+- [ ] Replace the generated backend-preview with a readable one ([backend previews](references/19-backend-previews.md)); set `labelField` on every Collection
 - [ ] Create labels.xlf translations
 - [ ] Run cache:flush and extension:setup
 

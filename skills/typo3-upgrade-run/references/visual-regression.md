@@ -109,6 +109,14 @@ per plugin/CType of every package whose major version it changes
 determinism, and final closure capture exactly `default`, `keyboard-focus`, and `nav-open`.
 Dropdown, accordion, form, modal, and consent behaviour use targeted flows only when affected.
 
+**Check that the states really differ.** A state the harness cannot reach is recorded as
+not-applicable, and its screenshot is then byte-identical to `default`. On one fleet site the nav-open
+selector did not match the site's own menu trigger (`a.nav-trigger`) and the first Tab stop was an
+invisible skip link: every `keyboard-focus` and `nav-open` capture equalled `default` on Baseline A and
+target alike, and every loop stayed green. Compare each state's shots with `default` at intake. When they
+match, prove the menu and visible focus with behaviour journeys (old against new, a screenshot per step)
+and name the limit in the closure certificate; a sealed baseline cannot be extended afterwards.
+
 Those targeted flows are not optional when inventory finds the component. Use the sealed
 `config/interactions.yml`: fresh-context consent (initial/details/reject/accept with local tracker
 interception), each slider's settled first item plus one next/return action, search ordering/empty/

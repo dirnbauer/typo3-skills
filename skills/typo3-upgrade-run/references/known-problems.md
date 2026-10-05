@@ -558,6 +558,14 @@ permission naming an old identifier silently stops applying.
 
 **Fix.** Migrate page TSconfig, user TSconfig and `be_groups` module access to the new identifiers.
 
+**Info is a parent now.** The core migration turns a stored `web_info` right into `content_status`, the
+new parent, but grants none of its sub-modules. Editors keep an empty Status entry and lose the page and
+translation overviews. With the owner's approval, grant `web_info_overview` and `web_info_translations`
+through DataHandler (dry-run inside a rolled-back transaction, apply, re-apply as a no-op) and repeat it
+after the upgrade wizards on staging and live: the right lives in the database, not in the code. Write
+the grant tool so it bootstraps from the working directory (`require getcwd() . '/vendor/autoload.php'`),
+not from `/var/www/html`, so the same file runs in DDEV and in a Deployer release.
+
 **It is invisible to the invariance gate.** Nothing about it shows in the frontend, and a permission
 model that quietly widened is a security regression a pixel comparison cannot see. Only the backend
 sweep and a real permission review catch it.
@@ -973,6 +981,15 @@ In the same listener, point the module's `controllerActions` at a public site-pa
 vendor controller that calls the method with the request (a bound closure) and restores
 `$GLOBALS['TYPO3_REQUEST']` in a `finally` block. Prove access per user (admin yes, non-admins only
 through a group), the rendered module and zero new log lines. Remove both once the vendor fixes them.
+
+**The same package rewrites `config/system/settings.php`.** It reads its extension configuration on every
+module open and on every monitoring eID request. When `settings.php` holds no entry for it, TYPO3 syncs the
+extension settings into the file, the same fixed point Admin Tools writes. Inside a closure epoch this
+dirties the tracked worktree at every admin sweep, so back the file up before the first admin step and
+restore it after each one (never with Git when it carries an approved local change). On a server that
+deploys `settings.php` from Git (a Deployer 8 project that does not share it), the first monitoring
+request after every deploy rewrites the release, or fails where the file is read-only. Before the first
+staging deploy, let the owner trigger the sync once on a clean checkout, review the diff and commit it.
 
 ---
 
