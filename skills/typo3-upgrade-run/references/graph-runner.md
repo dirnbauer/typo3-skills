@@ -52,8 +52,9 @@ You execute exactly one node of a TYPO3 upgrade evidence graph. Your whole input
 Load the owner skill named in the brief. Work only on its objective and stop when the done
 condition is proven or cannot be proven. Write the evidence file named in the brief, lean: about
 120 lines, only artifacts that prove the done condition (each with its SHA-256), earlier nodes'
-artifacts cited by path and hash, read-only checks in one probe artifact. At twice the brief's
-forecast minutes, stop and return what is proven plus the one open question. Return:
+artifacts cited by path and hash, read-only checks in one probe artifact. Your time box is the
+brief's forecast: stop at the forecast when it is 15 minutes or less, otherwise at twice it, and
+return what is proven plus the one open question. Return:
   outcome: <one allowed outcome>
   evidence: <path>
   summary: <three lines at most>
@@ -63,6 +64,41 @@ graph. Do not start a retry loop. Return blocked on identity, credential, backup
 
 The node is already open when the worker starts. Workers of one parallel set run at once, each in
 the background with only its own brief ([parallel sets](#parallel-sets)).
+
+### Trivial nodes run in the controller
+
+A fresh worker has a fixed cost: it loads its skill, re-measures what earlier nodes proved and
+writes 60–120 lines. In one fleet run each trivial node took 14–23 minutes that way;
+`solr-search` was forecast at 1 minute. When a node's outcome follows from closed evidence plus at
+most about five read-only commands, the controller runs it itself: one probe artifact, about 30
+lines of evidence, a few minutes. No fresh worker.
+
+- `solr-search` or `webmcp-parity` is `not-applicable` because the closed inventory proved the
+  feature absent (no search extension, no WebMCP declaration).
+- `structured-data-parity` passes because the source emitted no structured data and one target scan
+  shows none.
+
+Work that changes code, data or a measurement input, or needs judgement beyond the cited evidence,
+still goes to a worker.
+
+**Time box.** A worker gets the brief's forecast as its limit. A node forecast at 15 minutes or less
+stops at 1×, not 2×; a longer node stops at twice its forecast.
+
+**Short review.** A trivial node keeps its independent review, but a short one: the evidence hash
+plus three spot checks, at most 30 lines. A smaller, faster model is acceptable for it. Nodes
+flagged **R** and every node that changed code or data keep a full reviewer
+([independent review](#independent-review)).
+
+```text
+You review one trivial node of a TYPO3 upgrade evidence graph. Your whole input is the brief and
+the evidence file. Check three claims the outcome rests on against their cited artifacts and
+hashes. Write nodes/<id>/review.md, 30 lines at most:
+  verdict: agree|disagree
+  evidence_sha256: sha256:<shasum -a 256 of the evidence file>
+  reviewer: <agent/session id>
+  Checked: <the three claims and what each artifact showed>
+  Objections: <none, or the specific gap>
+```
 
 ## Evidence file
 
@@ -81,9 +117,10 @@ files and spent 20–40 minutes on a node proved no more than the ones that wrot
   is the pattern), not one file per command.
 - **No copies of tools, configs or vendor files**, unless the copy is the proof instrument itself;
   the repository and the harness pin them already.
-- **Stop at twice the forecast.** The brief prints `forecast N min`. At twice that, stop and return
-  the outcome the evidence supports so far (`findings` with the open cause, or `blocked` when only a
-  decision can continue) and name the one open question. Exploring further is the controller's call.
+- **Stop at the time box.** The brief prints `forecast N min`. At N when N is 15 or less, otherwise
+  at 2N ([time box](#trivial-nodes-run-in-the-controller)), stop and return the outcome the evidence
+  supports so far (`findings` with the open cause, or `blocked` when only a decision can continue)
+  and name the one open question. Exploring further is the controller's call.
 - **Review only where the brief asks**: flag **R** or a `not-applicable` outcome. An unrequested
   review doubles the cost and proves nothing new.
 
@@ -106,7 +143,7 @@ Done when: <copied from the brief>
 
 ## Decision
 Proposed outcome: <outcome>. Reason: <why the done condition is met, or which cause blocks it>.
-Open question: <only when the node stopped at twice its forecast>
+Open question: <only when the node stopped at its time box>
 ```
 
 A narrative without commands, exit codes and artifacts is not evidence; fluent success reports that
@@ -135,7 +172,8 @@ Objections: <none, or the specific gap>
 a review file that is the evidence file itself. A disagreement is data: close with the outcome the
 review supports, or let the worker produce better evidence in a new attempt. A review needs no
 resource lock: start it as soon as the evidence exists, beside the next node. It stays lean too:
-each done-condition clause checked against its cited artifact and hash, in about 20 lines.
+each done-condition clause checked against its cited artifact and hash, in about 20 lines. A
+trivial node gets the [short review](#trivial-nodes-run-in-the-controller).
 
 ## Choosing the outcome
 

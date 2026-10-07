@@ -79,8 +79,21 @@ answer as given ([approval matrix](../rules/40-approval-matrix.md)).
 | Bootstrap and jQuery: migrate in this run or record an exception, and the review slot | [migration intake](bootstrap-5-migration.md#intake-inventory-estimate-ask) |
 | Extension removals and forks the inventory names | [extension strategy](extension-strategy.md) |
 | Fix-pack approvals: split bundles, restored module rights, renamed asset files, the powermail `Basic.css` URL, the shared `.htaccess` on staging and live | [fix pack](typo3-14-fix-pack.md#where-each-item-applies) |
+| Backend test accounts: a DDEV-only throwaway admin and the non-admin editors | [test accounts](#prepare-test-accounts-once) |
 | Delegation: how many parallel workers (`parallel_approval`, `max_workers`) | [admission](#admission-and-prediction) |
 | Commits per phase batch, and whether the run directory may be committed; pushes stay separate | [approval matrix](../rules/40-approval-matrix.md#401-the-matrix), rows 26–27 |
+
+Round 1 **must** include the predictable approvals below, before any symptom shows: each one asked
+mid-run stops an open node until the owner answers.
+
+- **Renamed or split asset bundles** after Breaking #108055 ([fix pack item 5](typo3-14-fix-pack.md#5-core-compress-and-concatenate-keys)).
+  On a shop site `/typo3temp/assets/compressed/merged-<hash>.css` became `/_assets/<hash>/app.css`
+  (the same for JS); asked at `rung-14`, the question held that node for about an hour.
+- **Restored module rights** the 14.3 wizards drop ([item 8](typo3-14-fix-pack.md#8-renamed-modules-and-editor-rights)).
+- **The shared `.htaccess`** on staging and live, for the first 14.3 deploy ([item 1](typo3-14-fix-pack.md#1-legacy-backend-rewrite-in-htaccess)).
+- **The P12 test accounts**: the DDEV-only throwaway admin and the non-admin editors, deleted at
+  handover. The same shop run approved the editor at intake and asked for the admin mid-run, like
+  two earlier fleet runs.
 
 Ask a declared-change approval with the exact form of the change (the rule's before/after pattern
 and one example) and let the owner name its scope. When the run reaches the step, record the
@@ -98,8 +111,8 @@ authorized follow-up run ([lessons](recent-run-lessons.md#where-a-day-and-a-half
 
 ## Prepare test accounts once
 
-Create the backend test accounts once, right after `rung-14` passes and the 14.3 backend opens, so
-no later restore of an earlier snapshot removes them: the throwaway admin of
+Create the backend test accounts, approved in round 1, once, right after `rung-14` passes and the
+14.3 backend opens, so no later restore of an earlier snapshot removes them: the throwaway admin of
 [P12](phases/p12-backend-operations-quality.md#a-disposable-backend-user) and one DDEV-only non-admin
 editor per role the feature plan names, each in its real editor groups. Keep the generated passwords
 in one mode-600 file outside Git and outside the run directory; every backend worker reads that file

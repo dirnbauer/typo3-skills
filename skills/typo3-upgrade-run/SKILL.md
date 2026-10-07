@@ -44,9 +44,11 @@ Then repeat until `t3u graph-status` reports `complete`, `blocked` or a terminal
    commit for `--rollback-ref git:<sha>` on code nodes, a granted approval for approval nodes.
 4. `t3u node-open --node <id> …` opens the node, records the anchor and freezes the measurement inputs.
 5. A worker with a **fresh context** receives only the brief and loads the owner skill. It writes the
-   evidence file and returns one allowed outcome. See [worker protocol](#worker-protocol).
+   evidence file and returns one allowed outcome. See [worker protocol](#worker-protocol). A trivial
+   node runs in the controller instead ([trivial nodes](references/graph-runner.md#trivial-nodes-run-in-the-controller)).
 6. Brief flag **R** or outcome `not-applicable`: a second fresh verifier reads only the brief and the
-   evidence and writes `nodes/<id>/review.md` with `verdict:` and `evidence_sha256:`.
+   evidence and writes `nodes/<id>/review.md` with `verdict:` and `evidence_sha256:`; a trivial
+   node gets the short review.
 7. `t3u node-close --node <id> --outcome <o> --evidence <path> [--review …] [--evidence-loop NNN]`
    records the result and activates exactly the matching edges.
 8. At checkpoints, `t3u graph-report --write` stores measured minutes per node for the next forecast.
@@ -121,7 +123,8 @@ A worker is you after a context reset, or a sub-agent. Its whole input is the no
   artifacts with hashes, findings, decision and the proposed outcome. "Checked" is not evidence.
 - Keep it lean: about 120 lines that prove the done condition, earlier artifacts cited by path and
   hash, read-only checks in one probe artifact ([lean profile](references/graph-runner.md#evidence-file)).
-  At twice the brief's forecast minutes, stop and return what is proven plus the one open question.
+  At the brief's forecast (15 minutes or less) or twice it (longer nodes), stop and return what is
+  proven plus the one open question.
 - Return one allowed outcome and the evidence path. Start no retry loop; the graph routes.
 - Never run `node-open`/`node-close`, edit `state.json`, the graph, or measurement inputs.
 - Return `blocked` on identity, credential, backup, approval or scope doubt. Never mutate to find out.

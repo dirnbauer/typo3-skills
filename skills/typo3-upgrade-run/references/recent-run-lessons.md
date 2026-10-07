@@ -23,7 +23,7 @@ the whole run about a day and a half. Five causes took the rest:
 |---|---|---|
 | Scope added mid-run: jQuery removal and Bootstrap 5, proven pixel-identical | Correct work, but it pushed the run past its window | Decide Bootstrap and jQuery at intake ([migration intake](bootstrap-5-migration.md#intake-inventory-estimate-ask)). A mid-run addition is weighed against the deadline first: re-forecast with its estimate, state the cost to the owner, and prefer a separately authorized follow-up run when it does not fit before the migration cutoff |
 | Baseline A captured from a dev-server render, unstyled | A whole run lost: a sealed baseline cannot be repaired | [Fix pack item 9](typo3-14-fix-pack.md#9-dev-server-render-before-baseline-a) before `deterministic-baseline`: production build, manifest mode, no `/@vite/client` in the DOM, one look at a pilot screenshot |
-| Over-detailed worker evidence: more than 100 files and 20–40 minutes per node | Hours across the graph for proof that ten files gave | The [lean evidence profile](graph-runner.md#evidence-file): about 120 lines, hashed proof artifacts only, earlier artifacts cited, one probe artifact, stop at twice the forecast |
+| Over-detailed worker evidence: more than 100 files and 20–40 minutes per node | Hours across the graph for proof that ten files gave | The [lean evidence profile](graph-runner.md#evidence-file): about 120 lines, hashed proof artifacts only, earlier artifacts cited, one probe artifact, stop at the [time box](graph-runner.md#trivial-nodes-run-in-the-controller) |
 | Nodes run one after another although `graph-next` offered them together | Intake and final proof took their serial sum | [Dispatch every offered set at once](parallel-execution.md#dispatch-what-the-graph-offers); in the final proof one full capture first, then the comparisons together |
 | Known TYPO3 14 problems, solved on an earlier fleet site, rediscovered node by node | One diagnosis round per problem per node | The [TYPO3 14 fix pack](typo3-14-fix-pack.md) applied at the start of the rung, its approvals asked at intake |
 
@@ -38,6 +38,35 @@ The closure of a later fleet run added five lessons, each now in its reference:
 | The staging host existed only in `.hosts.yaml` | No staging deploy after acceptance | [Check the host at intake](live-dataset-and-staging.md#publishing-to-staging) |
 
 Planning anchors for the next run are in [runtime sizing](runtime-sizing.md#measured-fleet-durations).
+
+## Where the minutes went on a small shop site (2026-10-07)
+
+A 60-URL shop site on 12.4 reached the 14.3 rung with four parallel workers approved. The TYPO3
+work was quick (`rung-13` 35 min, `manual-migration` with Mask → Content Blocks 45 min); the node
+overhead was not. The owner, mid-run: "timelimit MUST be much faster!! whats going on here?"
+Measured from the run's journal:
+
+| Cause | Measured cost | Counter-measure |
+|---|---|---|
+| Every node, trivial ones included, went to a fresh full worker that loaded its skill, re-measured and wrote 58–124 lines of evidence | 14–23 min per small intake node; `solr-search` on a site without any search extension 15 min against a 1-min forecast | [Trivial nodes run in the controller](graph-runner.md#trivial-nodes-run-in-the-controller); a node forecast at 15 min or less stops at 1× its forecast |
+| Each `not-applicable` and **R** node got a full fresh reviewer, 25–63-line reviews | 4–7 min per `not-applicable` review, about 14 min per **R** review | The [short review](graph-runner.md#trivial-nodes-run-in-the-controller) for trivial nodes: hash plus three spot checks, 30 lines at most, a smaller model is acceptable |
+| All P10 nodes hold `project-write` | One chain: `solr-search` alone took 15 min of it before `vite-assets` could start | [Serialized P10 nodes](parallel-execution.md#dispatch-what-the-graph-offers): trivial ones back to back, `vite-assets` last |
+| Two predictable approvals asked mid-run: the asset-bundle URLs after Breaking #108055 (listed for round 1, not asked) and the DDEV throwaway admin (two earlier fleet runs asked the same) | `rung-14` held `project-write` 64 min waiting for the first answer | [Round 1 must include them](overnight-controller.md#batch-the-owner-decisions) |
+| A worker was stopped in the middle of a capture | Orphaned harness browsers and a capture without an index: 17 min to a usable capture instead of 6.5 | Below |
+
+**After an interrupted capture** the stopped capture has no `capture-index.json`, so no comparison
+can use it. Kill the orphaned browsers of the pinned harness first, and only those: its own
+Playwright build, matched by path. Playwright's Chromium runs as "Google Chrome for Testing", so a
+match by name can hit the user's Chrome. Then recapture under a new label (`<label>-r2`); the
+harness reclaims the dead process's visual lock itself. On macOS, from the pinned harness's
+`scripts/` directory:
+
+```bash
+rev=$(node -p "require('./node_modules/playwright-core/browsers.json').browsers.find(b => b.name === 'chromium').revision")
+ps -A -o pid=,ppid=,args= | awk -v p="ms-playwright/chromium-$rev/" '$2 == 1 && index($0, p)'   # orphans only; read them first
+pids=$(ps -A -o pid=,ppid=,args= | awk -v p="ms-playwright/chromium-$rev/" '$2 == 1 && index($0, p) { print $1 }')
+[ -n "$pids" ] && kill $pids
+```
 
 ## What failed and what now prevents a repeat
 
