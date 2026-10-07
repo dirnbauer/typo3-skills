@@ -145,3 +145,6 @@ Pick the format from that evidence — **AVIF if writable, else WebP, else leave
 why** — and write the answer into the run notes. See
 [`references/image-formats.md`](../image-formats.md).
 
+The derivatives must also look like live's before Baseline A: same processor, ImageMagick only with
+`sRGB`, proven by `scripts/gfx-colour-parity.mjs` ([intake item 12](../../../typo3-upgrade-intake/SKILL.md#evidence-checklist)).
+

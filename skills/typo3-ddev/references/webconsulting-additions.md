@@ -31,6 +31,33 @@ local rendering baseline; an unavailable set or unresolved set dependency blocks
 Do these checks before frontend debugging so a configuration precondition does not masquerade as a
 template or routing fault.
 
+## Image processing like production
+
+A clone regenerates every processed image (`_processed_/` is never copied from live) with its own
+`GFX` configuration. Give DDEV the processor live uses, with a colourspace that processor reads as
+production does: GraphicsMagick with `RGB`, or ImageMagick with `sRGB`. ImageMagick 6.7.7+ reads
+`RGB` as linear RGB and renders every derivative darker. TYPO3 12.4 defaults `processor_colorspace`
+to `RGB` for both processors; 13.4 and 14.3 resolve an empty value to `sRGB` for ImageMagick and
+`RGB` for GraphicsMagick, and an explicit value wins in every version. A DDEV override that only
+switches `processor` to ImageMagick therefore darkens a 12.4 site. The DDEV v1.25 web image ships
+both `gm` and ImageMagick 7; add `graphicsmagick` to `webimage_extra_packages` on an older image.
+
+```bash
+ddev exec gm version                                   # GraphicsMagick present?
+ddev typo3 configuration:show GFX --type=active        # 14.x; on 12.4/13.4 read settings.php + additional.php
+ddev typo3 cleanup:localprocessedfiles --all --force   # 13.4+; on 12.4: Maintenance > Remove Temporary Assets
+ddev typo3 cache:flush
+node skills/typo3-upgrade-run/scripts/gfx-colour-parity.mjs \
+  --live https://www.example.org/<page>/ --local https://<project>.ddev.site/<page>/
+```
+
+Both `typo3` commands come with EXT:lowlevel. The check fetches one page from both sides (read-only
+GETs) and compares the processed images as a browser shows them; exit 0 means the local derivatives
+match live. Regenerate after every `GFX` change: a processed file's name hashes the file and the
+processing instruction, not the processor, so stale derivatives survive until the cleanup. In an
+upgrade run, settle this before Baseline A
+([intake checklist item 12](../../typo3-upgrade-intake/SKILL.md#evidence-checklist)).
+
 ## Credits & Attribution
 
 This skill is based on the excellent work by **Netresearch DTT GmbH**.

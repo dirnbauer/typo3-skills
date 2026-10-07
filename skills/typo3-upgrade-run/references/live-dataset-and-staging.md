@@ -47,7 +47,9 @@ node skills/typo3-upgrade-run/scripts/pull-live-dataset.mjs \
   volume, or accept the loss with `--accept-case-collisions <evidence-file>` (the owner's decision);
   `live-dataset.json` records the file's SHA-256 and the collision list, and the count check expects the
   lost files. A dataset accepted with such gaps goes through `dataset-acceptance-decision`.
-- `_processed_/` and `_temp_/` are not copied; TYPO3 regenerates them. Caches, sessions, locks,
+- `_processed_/` and `_temp_/` are not copied; TYPO3 regenerates them with the local `GFX`
+  configuration, so compare them with live before Baseline A
+  ([intake item 12](../../typo3-upgrade-intake/SKILL.md#evidence-checklist)). Caches, sessions, locks,
   `sys_log` and `sys_http_report` are not exported.
 - The script compares server and local file counts and writes `live-dataset.json` with release,
   timestamps, counts and the dump's SHA-256. Use it as `dataset-freshness` or `data-recovery` evidence.

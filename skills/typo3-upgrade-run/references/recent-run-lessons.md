@@ -68,6 +68,17 @@ pids=$(ps -A -o pid=,ppid=,args= | awk -v p="ms-playwright/chromium-$rev/" '$2 =
 [ -n "$pids" ] && kill $pids
 ```
 
+## Processed images darker locally than live (2026-10-07)
+
+On a two-language shop-check site DDEV ran ImageMagick where live runs GraphicsMagick, with TYPO3
+12.4's default `processor_colorspace` `RGB`, which ImageMagick reads as linear: the same 64×64 PNG
+icons were 28–44 % darker locally (`identify` means: red 129 → 92, green 100 → 56, a grey icon
+104 → 61, saved as Gray). Baseline A came from that render, so before and after were equally dark;
+the stale derivatives survived both rungs (a processed file's name ignores the processor). With
+GraphicsMagick in DDEV and the files regenerated, `scripts/gfx-colour-parity.mjs` passed (12 pairs,
+at most 0.8 L* apart). Run it at [intake item 12](../../typo3-upgrade-intake/SKILL.md#evidence-checklist),
+before Baseline A; item 12 also covers a run whose baseline is already sealed.
+
 ## What failed and what now prevents a repeat
 
 | Failure mode | Cost or risk | Mandatory correction |

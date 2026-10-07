@@ -98,7 +98,25 @@ plus the open question ([lean profile](../typo3-upgrade-run/references/graph-run
     and record every item as present or not present. A dev-server render (item 9) is settled now,
     before the baseline. So are item 15's golden paths: a `strict` (or unset) translated language
     with Extbase list plugins needs its translated list and detail URLs in Baseline A.
-12. Ask every known decision in one [question round](../typo3-upgrade-run/references/overnight-controller.md#batch-the-owner-decisions)
+12. Compare processed images live against local on one or two pages that show `csm_*` images
+    (read-only GETs on live):
+
+    ```bash
+    node skills/typo3-upgrade-run/scripts/gfx-colour-parity.mjs \
+      --live https://www.example.org/<page>/ --local https://<project>.ddev.site/<page>/
+    ```
+
+    Exit 1 means the local derivatives differ in colour from live, typically through another `GFX`
+    processor or colourspace: Baseline A would prove a wrong local render, and before and after stay
+    equally wrong. Exit 3 means no pair was measured; pick another page. Settle a difference now like
+    the dev-server render, as a DDEV-only environment decision recorded in the intake evidence: the
+    processor of live, ImageMagick only with `sRGB` ([image processing like production](../typo3-ddev/references/webconsulting-additions.md#image-processing-like-production)),
+    then `ddev typo3 cleanup:localprocessedfiles --all --force` (12.4 lacks `--all`: Maintenance >
+    Remove Temporary Assets), `ddev typo3 cache:flush` and the check again until it exits 0.
+    Baseline A already sealed: never re-baseline. Fix DDEV in the next code node, regenerate the
+    processed files, and declare the image difference to Baseline A as one owner-approved class with
+    a before/after pair ([rule 30.8](../typo3-upgrade-run/rules/30-finding-classification.md#308-declared-changes-are-rules-not-edits)).
+13. Ask every known decision in one [question round](../typo3-upgrade-run/references/overnight-controller.md#batch-the-owner-decisions)
     before unattended execution: dataset, PHP, Lighthouse floors, Bootstrap/jQuery, extension
     removals, the fix-pack approvals, delegation and commits. Forecast work from measured capture/test
     throughput as well as site size ([fleet durations](../typo3-upgrade-run/references/runtime-sizing.md#measured-fleet-durations)).
