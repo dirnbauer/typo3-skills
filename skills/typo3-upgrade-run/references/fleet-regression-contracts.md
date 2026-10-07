@@ -111,6 +111,14 @@ Keep at most three global visual states; additional states stay inside one repre
 - Keep a route if either baseline or target serves it. A target 404 is a finding, not a reason to
   remove that URL from coverage. Non-HTML resources remain HTTP evidence; capture pixels only where
   applicable. Record invalid seed exclusions before sealing, never retroactively to get green.
+- **Extbase list records per language** is required when EXT:news or another Extbase list plugin
+  (blog, powermail, tt_address, a site-package plugin) runs on a multi-language site. Plan the
+  `routes` journey `extbase-records-per-language` (`http-dom`): the items on every translated list
+  page, the category and tag labels per item, and the HTTP status of detail URLs per language. The
+  before values come from Baseline A's sealed DOM and HTTP records of the 12.4/13.4 source, the after
+  values from the target capture ([recipe](measurement-recipes.md#count-list-records-per-language)).
+  An unequal count or status is a finding until the owner decides: translate, a restoring listener,
+  or `fallbackType` ([fix pack item 15](typo3-14-fix-pack.md#15-extbase-follows-fallbacktype-1436)).
 - Preserve stable UIDs/slugs, translations, FAL/IRRE relations, historical orders and workflow state
   during import or migration. Compare inventories plus representative content hashes, not only row
   totals. Use a scoped mapping/upsert and fixed-point proof; never blindly replace the target DB or

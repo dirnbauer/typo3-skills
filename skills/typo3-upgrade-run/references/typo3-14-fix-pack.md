@@ -1,7 +1,8 @@
 # TYPO3 14 fix pack
 
-Fourteen problems of the move to TYPO3 14 that earlier fleet sites met, diagnosed and solved. Sites
-of one generation repeat them, and each one found late cost a diagnosis round in every node it reached.
+Fifteen problems of the move to TYPO3 14: fourteen that earlier fleet sites met, diagnosed and
+solved, and one Core change of 14.3.6 that silently changes what translated pages show. Sites of one
+generation repeat them, and each one found late cost a diagnosis round in every node it reached.
 Apply the pack **proactively**: run the detections at the node the table names, apply every hit
 before that node's first proof loop, and record per item what applied. The background and the
 longer recipes stay in [known problems](known-problems.md); this file is the checklist.
@@ -28,6 +29,7 @@ No hit means "checked, not present": keep the output, so no later node checks ag
 - [12. powermail 12 to 13 with Bootstrap 3 forms](#12-powermail-12-to-13-with-bootstrap-3-forms)
 - [13. typo3-console 9 schema keywords](#13-typo3-console-9-schema-keywords)
 - [14. Caches on NullBackend in DDEV](#14-caches-on-nullbackend-in-ddev)
+- [15. Extbase follows fallbackType (14.3.6)](#15-extbase-follows-fallbacktype-1436)
 
 ## Where each item applies
 
@@ -50,6 +52,7 @@ item still open. Items marked for an earlier node are cheaper there.
 | 12 | powermail 12 → 13 | intake | the rung that installs powermail 13 | yes: the `Basic.css` URL is declared |
 | 13 | typo3-console keywords | intake | schema steps of `rung-13`/`rung-14` | destructive objects: one by one |
 | 14 | NullBackend caches | intake | the node that runs a cache journey | no |
+| 15 | Extbase follows `fallbackType` | intake, before Baseline A is sealed | proof in `rung-14`; the chosen option before `rung-14` closes | yes: every option, and what it means for future content |
 
 Ask every approval in the [intake question round](overnight-controller.md#batch-the-owner-decisions),
 with the exact form of the change, so no node waits for an answer.
@@ -109,6 +112,12 @@ q "SELECT COUNT(*) FROM tx_powermail_domain_model_form WHERE deleted=0"
 grep -rn 'tx_powermail.settings.styles' packages/ config/; x
 h "14 caches on NullBackend"
 grep -n 'NullBackend' config/system/additional.php; x
+h "15 site languages (no fallbackType = strict), plugins in content, news per language"
+for f in config/sites/*/config.yaml; do echo "== $f"; grep -nE '^\s*(-\s*)?(languageId|enabled|fallbackType|fallbacks):' "$f"; done
+q "SELECT CType, COUNT(*) FROM tt_content WHERE deleted=0 GROUP BY CType"
+q "SELECT list_type, COUNT(*) FROM tt_content WHERE deleted=0 AND list_type <> '' GROUP BY list_type"
+q "SELECT sys_language_uid, COUNT(*), SUM(l10n_parent > 0) FROM tx_news_domain_model_news
+   WHERE deleted=0 AND hidden=0 AND t3ver_wsid=0 GROUP BY sys_language_uid"
 ```
 
 A missing table or package prints its error into the artifact; that is an answer, not a failure.
@@ -412,3 +421,42 @@ rung; a fix that grows past the item's description is a finding for `rung14-reco
 - **Proof.** A positive control first (the page's cache entry exists after one request), then the
   journey's assertion; `shasum -a 256 config/system/additional.php` equals the value recorded before.
 - **Approval.** None.
+
+## 15. Extbase follows fallbackType (14.3.6)
+
+- **Symptom.** After `rung-14`, or a patch update from 14.3.0–14.3.5, a translated language
+  changes without a log line: detail URLs of untranslated news answer 404 where Baseline A rendered
+  the default-language text, translated news lose category labels, tags and related news, a
+  powermail form is missing, a selected-news list is shorter. Lists of the same plugin keep their
+  counts.
+- **Cause.** Important-88886, released with 14.3.6: Extbase takes the overlay type from the site
+  language. On `strict`, and on a language without `fallbackType`, identity lookups, relations and
+  queries without the language restriction return only records that exist in that language
+  ([v14 reference](../../typo3-v14-reference/references/13-v14-only-changes-manual-not-handled-by-rector.md#extbase-follows-fallbacktype-v1436)).
+- **Detect.** At intake, probe item 15. The item applies when a non-default language is `strict`
+  or has no `fallbackType`, and an Extbase plugin with translatable records sits in `tt_content`:
+  EXT:news, blog, powermail, tt_address or the site package's own `list_type`/CType plugins. Then,
+  before Baseline A is sealed, add to the golden paths (`discover-urls --golden-file`): every
+  translated list page of those plugins, with its pagination pages, and per language a sample of
+  detail URLs of translated **and** untranslated records (the language menu of a default-language
+  detail page names them). At `rung-14` the readiness check `extbase-language` reports the same.
+- **Fix.** None by default. At intake the owner chooses, for today's content and for future
+  content (an untranslated new record never appears on that language):
+  1. translate the records, with their categories, tags and related records;
+  2. a site-package listener that restores the 13.4 result for identity lookups and relations of
+     the named extensions, lists unchanged (the
+     [listener](../../typo3-v14-reference/references/13-v14-only-changes-manual-not-handled-by-rector.md#extbase-follows-fallbacktype-v1436));
+  3. `fallbackType: fallback` for that language, which makes page content fall back as well.
+
+  Apply none of them without the approval, and never change `fallbackType` silently.
+- **Proof.** Required whenever the item applies: the `extbase-records-per-language` journey
+  ([feature contracts](fleet-regression-contracts.md#routes-and-persisted-content--http-dom-redirects-schema)).
+  Per translated list URL the item count, and the category and tag labels per item, from Baseline
+  A's sealed DOM and from the target capture ([recipe](measurement-recipes.md#count-list-records-per-language));
+  the HTTP status of every detail URL from both HTTP records. Equal counts and statuses pass. A
+  difference is a finding until the owner decides: with the listener the counts equal Baseline A;
+  translations or `fallback` make it a declared change shown before and after. A URL that Baseline A
+  lacks is a coverage gap: name it, and explain the target from the visible records per language.
+- **Approval.** Yes, for each option. A `fallbackType` change is a declared change with before/after
+  evidence of every affected page, content fallback included, and the approval names the
+  consequence for future content.

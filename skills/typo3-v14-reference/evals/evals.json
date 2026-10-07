@@ -107,6 +107,20 @@
         "Does not equate cache warm-up with unused-template compilation"
       ],
       "files": []
+    },
+    {
+      "status": "proposed",
+      "id": "typo3-v14-reference-beh-02",
+      "kind": "behaviour",
+      "prompt": "Since the 14.3.7 patch update our repository's findByUid() returns null on the Polish site for records nobody translated. Is that a bug, and how do I get the old result back for this one query?",
+      "expected_output": "Explains Important-88886: from 14.3.6 Extbase follows the site language's fallbackType, and a language without the key is strict. Restores the old result for that query with an OVERLAYS_MIXED language aspect on its query settings instead of changing the site configuration.",
+      "assertions": [
+        "Identifies the 14.3.6 change and that a language without fallbackType is strict",
+        "Sets a LanguageAspect with OVERLAYS_MIXED on the one query's settings",
+        "Does not switch the language to fallbackType: fallback, because that also changes page content",
+        "Warns that OVERLAYS_MIXED on a list query that keeps the language restriction adds untranslated records"
+      ],
+      "files": []
     }
   ]
 }

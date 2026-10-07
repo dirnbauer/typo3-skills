@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 /**
- * TYPO3 14 readiness: five silent breakers that Rector, Fractor and the extension scanner miss.
+ * TYPO3 14 readiness: five silent breakers that Rector, Fractor and the extension scanner miss, and
+ * one silent behaviour change of 14.3.6 that only the owner can settle.
  *
- * Each check comes from a real 13 → 14.3 run where the site broke while every tool was green:
+ * Each of the first five comes from a real 13 → 14.3 run where the site broke while every tool was green:
  *
  *   includes        `<INCLUDE_TYPOSCRIPT:` is dropped without a log entry by 14.0 (Breaking-105377).
  *                   Fractor's TypoScript processor reads .typoscript, .tsconfig and .ts by default, so
@@ -21,8 +22,14 @@
  *   php-classes     Site-package PHP against the INSTALLED core: classes that moved or vanished,
  *                   parents that became final or readonly, constructors that gained a required
  *                   argument which makeInstance() outside DI never passes.
+ *   extbase-language  From 14.3.6 Extbase follows the site language's fallbackType (Important-88886).
+ *                   A translated language that is `strict`, or sets no fallbackType at all, loses
+ *                   untranslated records from Extbase detail views, uid lookups and relations. Warns
+ *                   per such language when an Extbase plugin registered outside the core is in use
+ *                   (tt_content CType / list_type rows in --db-export) or, without those rows, exists.
  *
- * includes, relative-links and parsefunc read files only. class-refs and php-classes ask the project's
+ * includes, relative-links, parsefunc and extbase-language read files only (extbase-language reads the
+ * site configuration with the harness's yaml package). class-refs and php-classes ask the project's
  * own autoloader through class-exists-check.php and site-package-class-check.php, which are copied to
  * --tools-dir so that a container prefix (--php "ddev exec php") can reach them. Neither helper boots
  * TYPO3, reads the database or instantiates anything: class declarations are loaded, no code path
@@ -40,6 +47,8 @@
  * "value": "..."}; "pid" and "title" are optional, a null value is skipped. Meant for
  * sys_template.config/constants and the TSconfig field of pages, be_users and be_groups; the reference
  * gives a `ddev mysql -N -B -r` query that writes JSON Lines (-r keeps backslashes and newlines).
+ * Rows of table tt_content with field CType or list_type name the plugins content uses; they feed
+ * extbase-language and are not read as TypoScript.
  *
  * --dom-dir DIR: a capture of the 14 rung (`captures/<label>` or its `dom/`). The sibling `http/`
  * records supply each page's URL, so a finding states what the browser actually requested.
@@ -61,7 +70,7 @@ const SCHEMA = 'typo3-upgrade-run/typo3-14-readiness@1';
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const PHP_HELPERS = Object.freeze({ probe: 'class-exists-check.php', facts: 'site-package-class-check.php' });
 
-export const CHECKS = Object.freeze(['includes', 'relative-links', 'class-refs', 'parsefunc', 'php-classes']);
+export const CHECKS = Object.freeze(['includes', 'relative-links', 'class-refs', 'parsefunc', 'php-classes', 'extbase-language']);
 const PHP_CHECKS = new Set(['class-refs', 'php-classes']);
 
 // Test fixtures, documentation, build tooling and installed dependencies never run as this site's
@@ -926,6 +935,107 @@ export function phpClassFindings(facts, probe) {
   return findings;
 }
 
+/* ------------------------------------------------------------------ Extbase and fallbackType (14.3.6) */
+
+const EXTBASE_LANGUAGE_DOCS = 'https://docs.typo3.org/permalink/t3coreapi:extbase-localisation-site-configuration';
+const CONFIGURE_PLUGIN = /ExtensionUtility::configurePlugin\(\s*(['"])([A-Za-z0-9_]+)\1\s*,\s*(['"])([A-Za-z0-9_]+)\3/g;
+
+/** The CType (14) or list_type (12/13) an Extbase plugin renders as, as configurePlugin() derives it. */
+export function pluginSignature(extensionName, pluginName) {
+  return `${extensionName.replace(/_/g, '')}_${pluginName}`.toLowerCase();
+}
+
+/** Signatures of the literal configurePlugin() calls in an ext_localconf.php; comments do not count. */
+export function configuredPlugins(phpSource) {
+  const code = String(phpSource).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*(?:\/\/|#).*$/gm, '');
+  return [...new Set([...code.matchAll(CONFIGURE_PLUGIN)].map((match) => pluginSignature(match[2], match[4])))];
+}
+
+/** A --db-export row that names a plugin content uses, not TypoScript. */
+export const isPluginRow = (row) => row.table === 'tt_content' && (row.field === 'CType' || row.field === 'list_type');
+
+/**
+ * Translated languages that Extbase treats as strict from 14.3.6: `fallbackType: strict`, or no
+ * fallbackType at all (SiteLanguage defaults to strict, and an empty value counts as none).
+ * `fallback` and `free` behave as before; a disabled language is not served.
+ */
+export function strictLanguages(config, text = '') {
+  const languages = Array.isArray(config?.languages) ? config.languages : [];
+  const lines = String(text).split('\n');
+  return languages.flatMap((language) => {
+    const languageId = Number(language?.languageId);
+    if (!Number.isInteger(languageId) || languageId <= 0 || language?.enabled === false) return [];
+    const configured = typeof language.fallbackType === 'string' ? language.fallbackType.trim() : '';
+    if (configured && configured !== 'strict') return [];
+    const at = new RegExp(`^\\s*(?:-\\s*)?languageId:\\s*['"]?${languageId}['"]?\\s*(?:#.*)?$`);
+    return [{
+      languageId, title: String(language.title ?? ''), defaulted: !configured,
+      line: lines.findIndex((line) => at.test(line)) + 1 || 1,
+    }];
+  });
+}
+
+/** config/sites/<id>/config.yaml (and classic typo3conf/sites/), parsed with the harness's yaml package. */
+async function readSiteConfigurations(project) {
+  let parseYaml;
+  try {
+    ({ parse: parseYaml } = await import('yaml'));
+  } catch (error) {
+    throw new PreconditionError(`extbase-language reads site configuration with the yaml package (run npm ci in the harness): ${error.message}`);
+  }
+  const sites = [];
+  const problems = [];
+  const seen = new Set();
+  for (const directory of [path.join(project.root, 'config', 'sites'), path.join(project.webDir, 'typo3conf', 'sites')]) {
+    for (const siteDir of await subdirectories(directory)) {
+      const file = path.join(siteDir, 'config.yaml');
+      const real = await realpathOrNull(file);
+      if (!real || seen.has(real)) continue;
+      seen.add(real);
+      const text = await readText(file);
+      const display = toPosix(path.relative(project.root, file));
+      try {
+        const config = parseYaml(text ?? '') ?? {};
+        if (!Array.isArray(config.languages) && Array.isArray(config.imports)) problems.push(`${display}: languages come from imports, which are not followed`);
+        sites.push({ identifier: path.basename(siteDir), display, config, text });
+      } catch (error) {
+        problems.push(`${display}: not readable YAML (${String(error.message).split('\n')[0]})`);
+      }
+    }
+  }
+  return { sites, problems };
+}
+
+/** Plugin signature → extension key for every Extbase plugin an extension outside the core configures. */
+async function extbasePluginSignatures(project) {
+  const signatures = new Map();
+  for (const [key, directory] of [...project.extensionPaths].sort(([a], [b]) => byText(a, b))) {
+    if (project.coreExtensions?.has(key)) continue;
+    const source = await readText(path.join(directory, 'ext_localconf.php'));
+    if (source === null) continue;
+    for (const signature of configuredPlugins(source)) if (!signatures.has(signature)) signatures.set(signature, key);
+  }
+  return signatures;
+}
+
+export function extbaseLanguageFindings(sites, plugins) {
+  const findings = [];
+  for (const site of sites) {
+    for (const language of strictLanguages(site.config, site.text)) {
+      const name = language.title ? ` (${language.title})` : '';
+      const why = language.defaulted ? 'sets no fallbackType, so it is strict' : 'is strict';
+      findings.push(finding('extbase-language', 'extbase-strict-language', 'warning', site.display, language.line,
+        `Site "${site.identifier}" language ${language.languageId}${name} ${why}. From TYPO3 14.3.6 Extbase follows it: `
+        + 'an untranslated record is no longer found by findByUid() or a detail view (EXT:news answers 404), and relations '
+        + `lose untranslated children; lists keep their items. Extbase plugins: ${plugins.join(', ')}.`,
+        'Count the list items and detail statuses of these plugins per language in Baseline A and on 14.3 (fix pack item 15). '
+        + `The owner decides: translate, a restoring listener, or fallbackType: fallback. ${EXTBASE_LANGUAGE_DOCS}`,
+        { site: site.identifier, languageId: language.languageId, fallbackType: 'strict', defaulted: language.defaulted, plugins }));
+    }
+  }
+  return findings;
+}
+
 /* ------------------------------------------------------------------ PHP bridge */
 
 /** Split a command prefix such as `ddev exec php` or `"/opt/php 8/bin/php"`. */
@@ -1214,19 +1324,28 @@ export async function discoverProject(projectRoot, { packageDirs = [] } = {}) {
   packages.sort((a, b) => byText(a.rel, b.rel));
 
   const extensionPaths = new Map();
+  const coreExtensions = new Set();
   const installed = await readJsonIfExists(path.join(vendorDir, 'composer', 'installed.json'), { lenient: true });
   const installedList = Array.isArray(installed) ? installed : installed?.packages;
   for (const pkg of Array.isArray(installedList) ? installedList : []) {
     if (!pkg?.['install-path'] || !/^typo3-cms-(extension|framework)$/.test(pkg.type ?? '')) continue;
     const key = pkg.extra?.['typo3/cms']?.['extension-key'] ?? String(pkg.name ?? '').split('/')[1]?.replace(/-/g, '_');
-    if (key) extensionPaths.set(key, path.resolve(vendorDir, 'composer', pkg['install-path']));
+    if (!key) continue;
+    extensionPaths.set(key, path.resolve(vendorDir, 'composer', pkg['install-path']));
+    if (pkg.type === 'typo3-cms-framework') coreExtensions.add(key);
   }
   const sysext = path.join(webDir, 'typo3', 'sysext');
-  for (const directory of await subdirectories(sysext)) extensionPaths.set(path.basename(directory), directory);
-  for (const pkg of packages) extensionPaths.set(pkg.key, pkg.dir);
+  for (const directory of await subdirectories(sysext)) {
+    extensionPaths.set(path.basename(directory), directory);
+    coreExtensions.add(path.basename(directory));
+  }
+  for (const pkg of packages) {
+    extensionPaths.set(pkg.key, pkg.dir);
+    coreExtensions.delete(pkg.key);
+  }
 
   return {
-    root, composer, vendorDir, webDir, packages, extensionPaths,
+    root, composer, vendorDir, webDir, packages, extensionPaths, coreExtensions,
     extensionMapComplete: Array.isArray(installedList) || await isDir(sysext),
   };
 }
@@ -1436,6 +1555,8 @@ export async function runReadiness(options = {}, deps = {}) {
     }
     dbRows.push(...parseDbExport(text, exportFile));
   }
+  const pluginRows = dbRows.filter(isPluginRow);
+  const typoscriptRows = dbRows.filter((row) => !isPluginRow(row));
   const domDir = options.domDir ? await resolveDomDirectory(options.domDir, '--dom-dir') : null;
   const baselineDomDir = options.baselineDomDir ? await resolveDomDirectory(options.baselineDomDir, '--baseline-dom-dir') : null;
   if (!project.packages.length && !sources.typoscript.length && !dbRows.length && !domDir) {
@@ -1448,7 +1569,7 @@ export async function runReadiness(options = {}, deps = {}) {
     if (text === null || (source.file.endsWith('.ts') && looksLikeTypeScript(text))) continue;
     documents.push({ origin: 'file', file: source.file, display: relative(source.file), lineOffset: 0, context: source.context, text, followed: false });
   }
-  for (const row of dbRows) documents.push(dbDocument(row));
+  for (const row of typoscriptRows) documents.push(dbDocument(row));
   const classTexts = [];
   for (const source of sources.classFiles) {
     const text = await readText(source.file);
@@ -1512,6 +1633,23 @@ export async function runReadiness(options = {}, deps = {}) {
       if (document.context === 'tsconfig') continue; // RTE.default.proc.allowTags is RTE TSconfig, not parseFunc
       findings.push(...parseFuncFindings(document, findParseFuncOverrides(document.text)));
     }
+  }
+
+  let siteLanguages = 0;
+  if (checks.has('extbase-language')) {
+    const { sites, problems } = await readSiteConfigurations(project);
+    siteLanguages = sites.reduce((sum, site) => sum + (Array.isArray(site.config.languages) ? site.config.languages.length : 0), 0);
+    const registered = await extbasePluginSignatures(project);
+    const used = new Set(pluginRows.map((row) => row.value.trim().toLowerCase()));
+    const plugins = [...registered.keys()].filter((signature) => !pluginRows.length || used.has(signature)).sort(byText);
+    const own = plugins.length ? extbaseLanguageFindings(sites, plugins) : [];
+    findings.push(...own);
+    const remarks = [...problems];
+    if (!sites.length) remarks.push('No site configuration (config/sites/*/config.yaml) was found.');
+    if (own.length && !pluginRows.length) {
+      remarks.push('Plugin usage unknown: every registered Extbase plugin is named; add the tt_content CType/list_type rows to --db-export.');
+    }
+    if (remarks.length) notes['extbase-language'] = remarks.join(' ');
   }
 
   let classNames = 0;
@@ -1585,7 +1723,8 @@ export async function runReadiness(options = {}, deps = {}) {
     scanned: {
       packages: project.packages.map((pkg) => pkg.rel),
       typoscriptFiles: documents.filter((document) => document.origin === 'file' && !document.followed).length,
-      followedIncludes: include.followed, dbRows: dbRows.length, templates: templateCount, domFiles,
+      followedIncludes: include.followed, dbRows: typoscriptRows.length, pluginRows: pluginRows.length, siteLanguages,
+      templates: templateCount, domFiles,
       classSources: sources.classFiles.length, phpFiles, classNames, probeRuns,
     },
     checks: checkReport,
@@ -1601,7 +1740,8 @@ export async function runReadiness(options = {}, deps = {}) {
 const USAGE = `Usage: node typo3-14-readiness.mjs [options]
   --project-root DIR       TYPO3 project to check (default: current directory)
   --checks LIST            comma list of ${CHECKS.join(', ')} (default: all)
-  --db-export FILE         database TypoScript/TSconfig rows as JSON or JSON Lines (repeatable)
+  --db-export FILE         database TypoScript/TSconfig rows, and tt_content CType/list_type rows,
+                           as JSON or JSON Lines (repeatable)
   --dom-dir DIR            DOM capture of the 14 rung: captures/<label> or its dom/
   --baseline-dom-dir DIR   DOM capture of the baseline; references relative there already are warnings
   --asset-prefix PREFIX    another relative resource prefix such as media/ (repeatable)
@@ -1671,7 +1811,7 @@ export function formatSummary(report) {
   for (const [check, state] of Object.entries(report.checks)) {
     const summary = state.status === 'skipped' ? 'skipped'
       : state.status === 'pass' ? 'pass' : `${plural(state.errors, 'error')}, ${plural(state.warnings, 'warning')}`;
-    lines.push(`  ${check.padEnd(16)}${summary}${state.note ? `  (${state.note})` : ''}`);
+    lines.push(`  ${check.padEnd(18)}${summary}${state.note ? `  (${state.note})` : ''}`);
   }
   for (const item of report.findings) {
     const where = !item.line ? item.file : item.file.startsWith('db:') ? `${item.file} line ${item.line}` : `${item.file}:${item.line}`;

@@ -51,6 +51,14 @@
       "prompt": "Import 500 pages from JSON with correct parent references.",
       "expect_skill": "typo3-datahandler",
       "note": "Generic record writing."
+    },
+    {
+      "id": "typo3-news-tags-trigger-pos-05",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "Since we moved to TYPO3 14.3, untranslated English articles from EXT:news give a 404 and the translated ones show no categories any more. How can we prove how many articles each language listed before and lists now?",
+      "expect_skill": "typo3-news-tags",
+      "note": "Owner request 2026-10-07: Extbase follows fallbackType from 14.3.6; the news skill owns the per-language count."
     }
   ]
 }

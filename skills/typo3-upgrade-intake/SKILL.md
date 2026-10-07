@@ -96,7 +96,8 @@ plus the open question ([lean profile](../typo3-upgrade-run/references/graph-run
 11. Produce risk/cost order, graph applicability outcomes, and a smallest-decision list for the user.
     Run the read-only [TYPO3 14 fix-pack probe](../typo3-upgrade-run/references/typo3-14-fix-pack.md#the-probe-and-the-evidence)
     and record every item as present or not present. A dev-server render (item 9) is settled now,
-    before the baseline.
+    before the baseline. So are item 15's golden paths: a `strict` (or unset) translated language
+    with Extbase list plugins needs its translated list and detail URLs in Baseline A.
 12. Ask every known decision in one [question round](../typo3-upgrade-run/references/overnight-controller.md#batch-the-owner-decisions)
     before unattended execution: dataset, PHP, Lighthouse floors, Bootstrap/jQuery, extension
     removals, the fix-pack approvals, delegation and commits. Forecast work from measured capture/test
