@@ -529,6 +529,31 @@ configuration and literal values, never an old toolchain version.
 The difference classes and the per-URL pairs follow. The owner's acceptance cites this page; an
 acceptance given on screenshots alone does not cover a migration.
 
+### What the checklist found on a real site
+
+A two-language site, Bootstrap 4.6 → 5.3.8. Screenshots were identical at every viewport; the
+checklist still found differences they did not show. Each was measured, then fixed:
+
+1. Bootstrap 4's `a:hover` colour on linked cards was lost: restored in the compat layer.
+2. Bootstrap 5 adds a 0.15 s colour transition on nav links and pagination links: removed.
+3. Pagination focus and hover colours and the focus ring differ: Bootstrap 4 values restored.
+4. An open dropdown toggle (`.btn.show`, `.btn.active`) lost its active shade while focused: restored.
+5. Popper 1 set `will-change: transform` on open dropdown menus, which changes rendering: restored.
+6. `form-group` was left in form partials (felogin included): replaced by `mb-3`; unused compat
+   rules removed.
+7. The native slider replacement kept the old plugin's quirks: autoplay despite
+   `prefers-reduced-motion`, and the plugin's loading-class step that requests its loading GIF
+   (otherwise undeclarable media-source findings, see section 4).
+
+Dart Sass newer than 1.78 rounds tint and shade colours differently. The fix was a
+`_bs4-literal-shades.scss` layer with the literal Bootstrap 4 button and alert shades, not a pinned
+compiler (Sass 1.105.1 stayed in use).
+
+Result after the fixes: database 0 Bootstrap 4 occurrences, 24/24 behaviour journeys identical at 3
+viewports, 36/36 component fixture pairs identical, 360/360 screenshots identical. A
+computed-style hover comparison over every link and button found items 1 and 2; run that check
+explicitly, since neither shows in a screenshot of the resting state.
+
 ## Proof and handover
 
 - The run's own loops: the invariance loop before the change, the final `compare-all` of the
