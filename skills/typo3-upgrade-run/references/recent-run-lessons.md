@@ -79,6 +79,14 @@ GraphicsMagick in DDEV and the files regenerated, `scripts/gfx-colour-parity.mjs
 at most 0.8 L* apart). Run it at [intake item 12](../../typo3-upgrade-intake/SKILL.md#evidence-checklist),
 before Baseline A; item 12 also covers a run whose baseline is already sealed.
 
+## A Bootstrap 5 review rejected: renames are not a migration (2026-10-07)
+
+A Bootstrap 4.6 → 5.3 migration went to the owner as pixel-identical screenshots plus a list of class
+renames. He rejected it: "are you sure that changing the classes is enough?" Stored content, untouched
+templates, scripts, behaviour and components outside the sample were unproven. The review now waits for
+the [migration checklist](bootstrap-5-migration.md#renaming-classes-is-not-enough--the-migration-checklist):
+leftover audit over sources and database, behaviour matrix, fixture page, Contract A identity for JS.
+
 ## What failed and what now prevents a repeat
 
 | Failure mode | Cost or risk | Mandatory correction |
