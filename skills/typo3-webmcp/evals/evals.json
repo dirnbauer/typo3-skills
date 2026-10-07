@@ -109,12 +109,13 @@
       "kind": "behaviour",
       "status": "proposed",
       "prompt": "Add WebMCP readiness to every TYPO3 upgrade without changing what visitors see during the core migration.",
-      "expected_output": "Inventories WebMCP in P00, preserves an existing surface in P10, and starts approved implementation only in P14 after Contract A, with both elevation branches joining before handover.",
+      "expected_output": "Inventories WebMCP in P00, preserves an existing surface in P10, and implements the standard tool set in every run only in P14 after Contract A, with both elevation branches joining before handover.",
       "assertions": [
         "P00 inventories packages, APIs, headers, tools, endpoints and candidate journeys read-only",
         "P10 parity is required only for a pre-existing surface and joins Contract A migration proof",
         "New tools and dependencies stay outside Contract A",
         "P14 requires intent approval, Git rollback and a green evidence loop",
+        "P14 readiness is standard in every upgrade run: read-only navigation/lookup tools, prepare-only form tools without autosubmit after a security review, and a Permissions-Policy decision; not-applicable only for a reviewed impossibility",
         "WebMCP and structured-data elevation converge through an explicit join before handover"
       ],
       "files": []

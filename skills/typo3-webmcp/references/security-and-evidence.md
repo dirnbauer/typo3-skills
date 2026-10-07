@@ -73,14 +73,17 @@ fix the tool boundary/description instead of adding model-specific prompt patche
 
 ## Upgrade evidence
 
-P00 records the existing/candidate surface without mutation. P10 proves exact parity only when a
-surface existed before. P14 creates a B baseline and records:
+P00 records the existing/candidate surface without mutation and proposes the P14 tool scope for the
+round-1 intake questions. P10 proves exact parity only when a surface existed before. P14 runs in
+every upgrade (it is standard, not optional), creates a B baseline and records:
 
 - approval, repository/DDEV/Core identity, Git rollback, and affected Vite artifacts;
 - specification snapshot, browser build, sitepackage commit, and feature enablement;
 - tool inventory with side effects, sources of truth, annotations, sessions, and origins;
 - deterministic tests and agent-eval outcomes;
 - before/after HTTP, DOM, pixels, components, axe, Lighthouse, console, network, and logs;
+- the security review of every prepare-only form tool (no autosubmit) and the Permissions-Policy
+  decision;
 - privacy/analytics decision and remaining experimental risks.
 
 No origin-trial enrolment, staging/live deployment, or external-origin sharing is implied by a local

@@ -26,11 +26,15 @@ Open with `t3u node-open`; close with `t3u node-close --outcome … --evidence �
 or stable report reference, never “the agent checked it.” `not-applicable` needs evidence explaining
 why the node does not apply.
 
-Use `node-open --applicability-only` only for an optional node whose absence or unrequested
-scope was established at intake, or for `rung-13` when the installed core already satisfies
-`^14.3`. It permits read-only inspection without a mutation approval, snapshot or rollback
-anchor, and can close only `not-applicable` or `blocked`, never `pass`.
+Use `node-open --applicability-only` only for a conditional node whose absence was established
+at intake, or for `rung-13` when the installed core already satisfies `^14.3`. It permits
+read-only inspection without a mutation approval, snapshot or rollback anchor, and can close only
+`not-applicable` or `blocked`, never `pass`.
 Do not start implementation in this mode. Choose the normal guarded open when the feature applies.
+
+The standard Contract B nodes `structured-data-enrichment` and `webmcp-readiness` are not
+conditional: they run in every upgrade. They never close `not-applicable` for unrequested scope;
+only a reviewed impossibility (no public frontend, for example) qualifies.
 
 The shipped graph requires a real, nonempty run-relative artifact at node closure and records its
 SHA-256. `graph-validate` checks passed/skipped node artifacts against those recorded hashes.

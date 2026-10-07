@@ -94,6 +94,7 @@
         "Inventories the absence before Baseline A but does not add enrichment inside Contract A.",
         "Keeps the source baseline immutable and records missing types as a P14 candidate.",
         "Starts enrichment only after Contract A closure with intent approval and a derived B baseline.",
+        "Treats P14 enrichment as standard in every upgrade run, with at least Organization/WebSite, WebPage and BreadcrumbList, and never closes it not-applicable because it was not requested.",
         "Verifies visible HTML and interactions remain unchanged apart from the declared JSON-LD addition."
       ],
       "note": "Keeps structured-data improvement from invalidating the upgrade invariance proof."

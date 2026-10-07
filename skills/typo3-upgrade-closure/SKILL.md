@@ -37,7 +37,7 @@ Start every node from `t3u node-brief --node <id>`; it carries the contract, rou
 | `closure-join` | All final proofs passed on the current epoch |
 | `closure-reconcile` | Stale evidence, missing assertions or unaccepted changes; flagged **R** |
 | `contract-a-gate` | Closure certificate plus recorded human acceptance of its hash; evidence loop |
-| `elevation-join` | Optional Contract B branches passed or reviewed `not-applicable` |
+| `elevation-join` | Both standard Contract B branches (structured data, WebMCP) passed; `not-applicable` only with a reviewed impossibility reason, never "not requested" |
 | `handover` | Local handover including the graph report and the audit-trail location |
 
 ## Worker protocol
@@ -107,7 +107,8 @@ project/remote/branch/HEAD, core/PHP, dataset date, source/target hashes, graph 
 commands and exit codes, coverage, declared changes, residual risks, and exact next local step. When
 the run moved Bootstrap to 5.x, name the invariance loop/commit and the accepted Bootstrap change
 (intent and acceptance ids, declared-change ids) as separate items ([procedure](../typo3-upgrade-run/references/bootstrap-5-migration.md#sequence-inside-the-run)).
-State that no staging/live action occurred. Contract B remains locked until countersigned.
+State that no staging/live action occurred. Contract B remains locked until countersigned; after
+that, the standard structured-data and WebMCP branches run in every upgrade before handover.
 Use `closure-verify` before the deadline to record complete proof awaiting actual human acceptance.
 This receipt can be accepted later only while its source/data/renderer inputs and artifacts remain
 current. Never set contract fields manually. `node-close --node contract-a-gate` validates proof and

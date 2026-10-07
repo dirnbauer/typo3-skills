@@ -35,7 +35,8 @@ a local DDEV clone, under two sequential contracts.
   differences against a baseline frozen before any change, proven at three levels: HTTP metadata,
   normalised DOM, and pixels.
 - **Elevation** — performance, SEO, accessibility and security work, each separately approved and
-  separately baselined, starting only after invariance closes.
+  separately baselined, starting only after invariance closes. Structured data (JSON-LD) and native
+  WebMCP tools are standard in every run; their scope is decided at intake.
 
 The parent controller is a sealed directed graph: results activate cause-specific recovery paths,
 independent nodes can run in parallel, resource locks protect Composer/DDEV/browser/Solr/backend

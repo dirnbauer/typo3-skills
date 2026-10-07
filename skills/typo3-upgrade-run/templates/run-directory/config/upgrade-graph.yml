@@ -75,16 +75,16 @@ nodes:
     phase: P00
     outcomes: [pass, not-applicable, blocked]
   structured-data-inventory:
-    objective: "Record the structured data (JSON-LD, microdata) the source site emits per template and language."
-    done: "Emitted types and properties are stored per template and language as the parity reference."
+    objective: "Record the structured data (JSON-LD, microdata) the source site emits per template and language, and the eligible visible page types for the standard P14 enrichment."
+    done: "Emitted types and properties are stored per template and language as the parity reference, and the P14 enrichment scope (Organization/WebSite, WebPage, BreadcrumbList plus eligible types) is proposed for the round-1 questions."
     evidence: nodes/structured-data-inventory/evidence.md
     skill: typo3-structured-data
     phase: P00
     resources: [browser-proof]
     outcomes: [pass, blocked]
   webmcp-inventory:
-    objective: "Record the browser-agent (WebMCP) tools and declarations the source site exposes, if any."
-    done: "Existing WebMCP surfaces are listed with their behaviour, or their absence is evidenced."
+    objective: "Record the browser-agent (WebMCP) tools and declarations the source site exposes, if any, and the visitor journeys for the standard P14 tool set."
+    done: "Existing WebMCP surfaces are listed with their behaviour, or their absence is evidenced, and the P14 tool scope (read-only navigation/lookup, prepare-only forms, Permissions-Policy) is proposed for the round-1 questions."
     evidence: nodes/webmcp-inventory/evidence.md
     skill: typo3-webmcp
     phase: P00
@@ -565,8 +565,8 @@ nodes:
     evidence_loop: required
     outcomes: [pass, findings, invalid, blocked]
   structured-data-enrichment:
-    objective: "Add approved structured-data improvements after Contract A as Contract B work."
-    done: "Approved enrichment validates and leaves Contract A pages unchanged; not-applicable when not requested."
+    objective: "Implement the standard structured-data enrichment after Contract A as Contract B work: Organization/WebSite, WebPage and BreadcrumbList mirroring visible content, plus every eligible type from the inventory, against a derived B baseline."
+    done: "The intake-approved scope validates against visible content, B baseline and loop are green, Contract A pages are unchanged except the declared JSON-LD; not-applicable only for a reviewed impossibility (no public frontend), never because it was not requested."
     evidence: nodes/structured-data-enrichment/evidence.md
     skill: typo3-structured-data
     phase: P14
@@ -587,8 +587,8 @@ nodes:
     approval: required
     outcomes: [pass, blocked]
   webmcp-readiness:
-    objective: "Add approved native WebMCP tools after Contract A as Contract B work."
-    done: "The approved tools respond as declared and Contract A pages stay unchanged; not-applicable when not requested."
+    objective: "Implement the standard native WebMCP tools after Contract A as Contract B work: read-only navigation/lookup tools, prepare-only form tools without autosubmit after a security review, and a recorded Permissions-Policy decision, against a derived B baseline."
+    done: "The intake-approved tools respond as declared, security review and B baseline exist, the loop is green, Contract A pages are unchanged except the declared tools; not-applicable only for a reviewed impossibility (no public frontend), never because it was not requested."
     evidence: nodes/webmcp-readiness/evidence.md
     skill: typo3-webmcp
     phase: P14
@@ -609,8 +609,8 @@ nodes:
     approval: required
     outcomes: [pass, blocked]
   elevation-join:
-    objective: "Join the optional Contract B branches."
-    done: "Both branches passed or are not-applicable with evidence."
+    objective: "Join the two standard Contract B branches, structured data and WebMCP, before handover."
+    done: "Both branches passed; a not-applicable branch carries a reviewed impossibility reason, never a missing request."
     evidence: nodes/elevation-join/evidence.md
     skill: typo3-upgrade-closure
     phase: P14

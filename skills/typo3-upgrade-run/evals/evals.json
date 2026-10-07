@@ -895,7 +895,7 @@
       "kind": "behaviour",
       "status": "proposed",
       "prompt": "Structured data is required for our TYPO3 updates. Add FAQPage on FAQ pages and the correct schema types for news, products and company pages.",
-      "expected_output": "Inventories existing producers and eligible visible page types before Baseline A, preserves existing structured meaning during Contract A, and adds missing approved JSON-LD only in the approval-gated P14 branch after Contract A closes. It validates every affected page class and does not promise ordinary commercial FAQ rich results.",
+      "expected_output": "Inventories existing producers and eligible visible page types before Baseline A, preserves existing structured meaning during Contract A, and adds the JSON-LD (at least Organization/WebSite, WebPage, BreadcrumbList plus eligible types) in the standard approval-gated P14 branch after Contract A closes, with its scope asked at intake. It validates every affected page class and does not promise ordinary commercial FAQ rich results.",
       "assertions": [
         "Runs a read-only structured-data inventory during P00 and includes it in the intake join",
         "Routes existing JSON-LD preservation through the P10 parity node required by the migration join",
@@ -903,7 +903,8 @@
         "Requires approval, snapshot, rollback evidence and a green bounded loop for P14 enrichment",
         "Maps types only from visible authoritative TYPO3 records and rejects fake ratings or hidden facts",
         "Uses FAQPage for visible publisher-authored FAQs and records Google's restricted FAQ rich-result eligibility",
-        "Routes its P14 result to the shared elevation join rather than directly to handover"
+        "Routes its P14 result to the shared elevation join rather than directly to handover",
+        "Treats P14 enrichment as a standard part of every run: asks its scope in the round-1 intake questions and never closes it not-applicable because it was not requested"
       ],
       "files": []
     },
@@ -912,7 +913,7 @@
       "kind": "behaviour",
       "status": "proposed",
       "prompt": "Make TYPO3 14 agent-ready with Chrome's native WebMCP support. Do not install a TYPO3 WebMCP extension or a backend MCP server, and do not change visitor behavior during the upgrade.",
-      "expected_output": "Inventories the native browser surface in P00, preserves only pre-existing behavior in P10, and adds approved document.modelContext tools or declarative form annotations in project-owned Vite code during P14. The WebMCP and structured-data elevation branches converge before handover.",
+      "expected_output": "Inventories the native browser surface in P00, preserves only pre-existing behavior in P10, and adds the standard P14 tool set (read-only navigation/lookup tools, prepare-only form tools without autosubmit after a security review, a Permissions-Policy decision) through document.modelContext or declarative form annotations in project-owned Vite code. The WebMCP and structured-data elevation branches converge before handover.",
       "assertions": [
         "Runs a read-only native WebMCP inventory during P00 and includes it in the intake join",
         "Routes pre-existing browser-tool preservation through a P10 parity node required by the migration join",
@@ -921,7 +922,8 @@
         "Introduces no TYPO3 WebMCP extension, backend MCP, relay, polyfill, CDN runtime or analytics by default",
         "Requires approval, Git rollback evidence and a green bounded loop for P14 readiness",
         "Preserves same-origin authorization, CSRF, validation, confirmation and unsupported-browser fallback",
-        "Routes both P14 branches through elevation-join before handover"
+        "Routes both P14 branches through elevation-join before handover",
+        "Treats P14 readiness as a standard part of every run, asks its scope at intake, and accepts not-applicable only for a reviewed impossibility such as no public frontend"
       ],
       "files": []
     },

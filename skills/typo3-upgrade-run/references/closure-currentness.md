@@ -29,7 +29,7 @@ t3u validate-run
 t3u node-open --node contract-a-gate
 t3u node-close --node contract-a-gate --outcome pass --evidence-loop 301 \
   --evidence nodes/contract-a-gate/evidence.md --approval APR-399
-# ... Contract B branches (not-applicable unless requested), elevation-join ...
+# ... standard Contract B branches (structured-data-enrichment, webmcp-readiness), elevation-join ...
 t3u node-open --node handover
 t3u node-close --node handover --outcome pass --evidence report/handover.md
 ```

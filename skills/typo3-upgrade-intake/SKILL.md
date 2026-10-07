@@ -118,7 +118,11 @@ plus the open question ([lean profile](../typo3-upgrade-run/references/graph-run
     a before/after pair ([rule 30.8](../typo3-upgrade-run/rules/30-finding-classification.md#308-declared-changes-are-rules-not-edits)).
 13. Ask every known decision in one [question round](../typo3-upgrade-run/references/overnight-controller.md#batch-the-owner-decisions)
     before unattended execution: dataset, PHP, Lighthouse floors, Bootstrap/jQuery, extension
-    removals, the fix-pack approvals, delegation and commits. Forecast work from measured capture/test
+    removals, the fix-pack approvals, delegation and commits, and the scope of the two standard
+    Contract B branches: structured data (at least Organization/WebSite, WebPage, BreadcrumbList,
+    plus the eligible types found) and WebMCP (read-only navigation/lookup tools, prepare-only form
+    tools, the Permissions-Policy decision). Ask which types and tools, never whether: both run in
+    every upgrade. Forecast work from measured capture/test
     throughput as well as site size ([fleet durations](../typo3-upgrade-run/references/runtime-sizing.md#measured-fleet-durations)).
     Read `../typo3-upgrade-run/references/overnight-controller.md`,
     write the selected-route runtime plan and run `t3u graph-forecast` before the baseline. A missing
