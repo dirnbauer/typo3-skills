@@ -45,8 +45,8 @@ Start every node from `t3u node-brief --node <id>`; it carries the contract, rou
 Your input is the node brief. Write its evidence file, return one allowed outcome, and never run
 `node-open`/`node-close` or edit run state. Details: [graph runner](../typo3-upgrade-run/references/graph-runner.md).
 Keep the evidence lean: about 120 lines of proof, earlier artifacts cited by path and hash, one probe
-artifact; at twice the brief's forecast, stop and return what is proven plus the open question
-([lean profile](../typo3-upgrade-run/references/graph-runner.md#evidence-file)).
+artifact; at the brief's forecast (15 minutes or less) or twice it, stop and return what is proven
+plus the open question ([lean profile](../typo3-upgrade-run/references/graph-runner.md#evidence-file)).
 
 ## Preconditions
 

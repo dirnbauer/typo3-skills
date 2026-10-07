@@ -41,6 +41,14 @@ graph:
 Reviews hold no lock: start the verifier as soon as the evidence exists, beside the next node. While
 one node holds an exclusive lock, prepare the next brief instead of a second writer.
 
+**Serialized P10 nodes.** Every P10 node holds `project-write`, so they run one after another and
+each node's overhead adds up; reordering does not shorten that chain, cutting the overhead does.
+Run the trivial nodes [in the controller](graph-runner.md#trivial-nodes-run-in-the-controller), back
+to back in minutes, then the long one, `vite-assets` ([P10 order](bootstrap-5-migration.md#sequence-inside-the-run)).
+Never leave a worker idle inside an open node, waiting for an owner answer that
+[round 1](overnight-controller.md#batch-the-owner-decisions) could have collected: the node keeps
+its lock and every P10 node behind it waits as well.
+
 **Final proof in order.** One full capture first, then the comparisons concurrently:
 
 1. Seal the target content epoch and run `closure-start`. Open `visual-proof` (it owns the browser

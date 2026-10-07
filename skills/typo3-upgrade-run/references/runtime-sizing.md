@@ -64,7 +64,8 @@ nodes win whenever they exist; cite either in `runtime-plan.json` as the node's 
 | Migration nodes `rung-13` → `mechanical-migration` → `manual-migration` → `rung-14`, ~150-URL site | ≈ 3 h | with the [fix pack](typo3-14-fix-pack.md) applied at the rung, not rediscovered per node |
 | Self-test, two exhaustive captures | 21–27 min | [2026-09-30 retrospective](run-retrospective-2026-09-30.md) |
 | One full capture | ≈ 7–12 min | at 4 visual workers; one capture at a time per machine |
-| One worker node | 10–15 min target | [lean evidence](graph-runner.md#evidence-file); at twice the forecast the worker stops and returns |
+| One worker node | 10–15 min target | [lean evidence](graph-runner.md#evidence-file); the worker stops at its [time box](graph-runner.md#trivial-nodes-run-in-the-controller) |
+| One trivial node | minutes, in the controller | as a fresh worker, with its review where required, it took 14–23 min ([trivial nodes](graph-runner.md#trivial-nodes-run-in-the-controller)) |
 | Final proof P11–P13 | ≈ 2–3 h | one capture, then the [offered sets](parallel-execution.md#dispatch-what-the-graph-offers) together |
 | Bootstrap 3 → 5 with pixel parity | + ≈ 4–6 h | decided at intake ([migration intake](bootstrap-5-migration.md#intake-inventory-estimate-ask)) |
 
@@ -74,6 +75,21 @@ profile (8 h cap, migration cutoff T+6 h), so a Bootstrap 3 → 5 migration on t
 does not fit: decide at intake whether it becomes a separately authorized follow-up run. One fleet
 run of this size took a day and a half for three hours of migration; the
 [lessons](recent-run-lessons.md#where-a-day-and-a-half-went) name where the rest went.
+
+A 60-URL shop site with 14 non-Core extensions and five compatibility blockers (huge profile),
+12.4 → 14.3 on the same machine, four workers approved (2026-10). Wall clock per node from the
+journal, review included:
+
+| Node | Measured | Note |
+|---|---:|---|
+| Intake, from `t3u init` to `intake-join` | ≈ 2 h | small inventories 14–23 min each as fresh workers (the trivial ones now [run in the controller](graph-runner.md#trivial-nodes-run-in-the-controller)), `extension-inventory` 42 min with its review; includes a 57-min dataset recovery |
+| `deterministic-baseline` | 32 min | the self-test (two exhaustive captures of 360 shots) took 17 min of it |
+| `rung-13` | 35 min | |
+| `mechanical-migration` | 25 min | |
+| `manual-migration` | 45 min | including Mask → Content Blocks |
+| `rung-14` with one recovery | ≈ 2 h | 68 + 23 (`rung14-recovery`) + 96 min, less 64 min waiting for an owner answer that belonged in round 1 |
+| `rung-13` → `rung-14` together | ≈ 3 h 45 min | the same four nodes, without that wait |
+| One full capture, 60 URLs, 360 shots | 6.3–6.5 min | at 4 visual workers |
 
 ## Classification
 
