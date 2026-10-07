@@ -8,6 +8,133 @@ Continues `typo3-v14-reference` from [full guide](full-guide.md).
 > They are NOT fully covered by `ssch/typo3-rector` (check your installed version; the TYPO3 14 rule set counts **tens** of rules and changes between releases).
 > For automated migrations, run `Typo3LevelSetList::UP_TO_TYPO3_14` first, then address these manually.
 
+### Extbase follows fallbackType **[v14.3.6+]**
+
+A **patch update** changes what translated pages show. Where Extbase overlays a record with its
+translation, 12.4, 13.4 and 14.3.0–14.3.5 do it the `fallback` way, whatever the site language says;
+from **14.3.6** Extbase takes the overlay type from the site language ([Important-88886](https://docs.typo3.org/c/typo3/cms-core/main/en-us/Changelog/14.3.x/Important-88886-ExtbasePersistenceRespectsLanguageOverlayType.html),
+[review 66694](https://review.typo3.org/c/Packages/TYPO3.CMS/+/66694)). Rector, Fractor and the
+extension scanner do not flag it. A translated language without a `fallbackType` key is `strict`:
+`SiteLanguage` defaults to it.
+
+| `fallbackType` | Overlay type (`LanguageAspect::`) | Extbase from 14.3.6 |
+|---|---|---|
+| `strict`, or not set | `OVERLAYS_ON_WITH_FLOATING` | Only records that exist in that language: translations and records created in it. **Changed** |
+| `fallback` | `OVERLAYS_MIXED` | Translations, and the default-language record where none exists. Unchanged |
+| `free` | `OVERLAYS_OFF` | Only records stored in that language; `findByUid()` and relations still overlay mixed. Unchanged |
+
+Records with `sys_language_uid = -1` appear in every language; the default language is not affected.
+The change sits in the overlay step, not in the SQL of a list. On a `strict` language:
+
+- **Identity lookups** return `null` for a default-language record without a translation, where
+  13.4 returned that record: `Repository::findByUid()`, `findByIdentifier()` and every action
+  argument mapped from a uid (detail views).
+- **Relations** of a translated record lose children without a translation in that language:
+  categories, tags, related records.
+- **Queries with `setRespectSysLanguage(false)`** drop untranslated default-language rows.
+- **Lists with the default query settings keep their items.** Their SQL already left untranslated
+  default-language records out on `strict` before 14.3.6; the Core's functional tests for the
+  change only changed relation expectations.
+- A record an Extbase frontend form creates is stored with `sys_language_uid = 0` and stays
+  invisible on a `strict` language until somebody translates it.
+
+Measured on 14.3.7 with EXT:news 14.1.1 (42 news, 22 translated into the probed language): the
+`strict` list returned 22 items, the `fallback` list 42; `findByUid()` of an untranslated news
+returned `null`; a translated news lost its untranslated category. The listener below restored
+the lookup and the category and left the list at 22.
+
+**Who meets it.** Every Extbase plugin with translatable records on a `strict` language.
+EXT:news (`georgringer/news`): a detail URL of an untranslated news item that 13.4 rendered in the
+default language now answers 404 (news's default `detail.errorHandling`); the selected-list plugin
+without `orderBy` and the selected tags of a tag-filtered list lose untranslated records;
+translated news lose untranslated categories, tags and related news. News's
+`disableLanguageOverlayMode` forces `OVERLAYS_OFF` (`free`), not the old result. powermail loads
+the form a plugin selects by uid: an untranslated form is not found, and untranslated pages and
+fields drop out of a translated form. Blog, tt_address and custom repositories follow the same
+rules.
+
+**Detect.**
+
+```bash
+# Translated languages and their fallbackType; a language without the key is strict
+grep -nE '^\s*(-\s*)?(languageId|fallbackType):' config/sites/*/config.yaml
+# Extbase plugins in content: CType on 14, list_type (with CType 'list') on 12.4/13.4
+ddev mysql -e "SELECT CType, COUNT(*) FROM tt_content WHERE deleted=0 GROUP BY CType"
+# Visible records per language: own records and translations
+ddev mysql -e "SELECT sys_language_uid, COUNT(*), SUM(l10n_parent > 0) FROM tx_news_domain_model_news
+  WHERE deleted=0 AND hidden=0 AND t3ver_wsid=0 GROUP BY sys_language_uid"
+```
+
+Then request every translated list page and a sample of detail URLs per language, before and after
+the update, and compare item counts and HTTP status codes (the [news count check](../../typo3-news-tags/SKILL.md#11-news-in-translated-languages-from-typo3-1436-fallbacktype)).
+
+**Options.** The owner decides per project, before the update reaches production:
+
+1. **Translate the records**, with their categories, tags and related records. `strict` then does
+   what the site configuration says. New content needs the same: an untranslated new record does
+   not appear on that language.
+2. **Keep the 13.4 result in code**, scoped to the plugins that need it. Only queries without the
+   language restriction changed, so `OVERLAYS_MIXED` on exactly those restores the old identity
+   lookups and relations, and lists stay as they are:
+
+   ```php
+   <?php
+
+   declare(strict_types=1);
+
+   namespace Vendor\Sitepackage\EventListener;
+
+   use TYPO3\CMS\Core\Attribute\AsEventListener;
+   use TYPO3\CMS\Core\Context\LanguageAspect;
+   use TYPO3\CMS\Extbase\Event\Persistence\ModifyQueryBeforeFetchingObjectDataEvent;
+
+   /** Keeps the pre-14.3.6 overlay for EXT:news lookups and relations on strict languages. */
+   #[AsEventListener(identifier: 'sitepackage/news-mixed-overlay')]
+   final class NewsMixedOverlay
+   {
+       public function __invoke(ModifyQueryBeforeFetchingObjectDataEvent $event): void
+       {
+           $query = $event->getQuery();
+           $settings = $query->getQuerySettings();
+           $aspect = $settings->getLanguageAspect();
+           if ($settings->getRespectSysLanguage()
+               || $aspect->getOverlayType() !== LanguageAspect::OVERLAYS_ON_WITH_FLOATING
+               || !str_starts_with($query->getType(), 'GeorgRinger\\News\\')
+           ) {
+               return;
+           }
+           $settings->setLanguageAspect(new LanguageAspect(
+               $aspect->getId(),
+               $aspect->getContentId(),
+               LanguageAspect::OVERLAYS_MIXED,
+               $aspect->getFallbackChain(),
+           ));
+       }
+   }
+   ```
+
+   The event fires before every Extbase fetch, relations included; a relation query's type is the
+   related model (`GeorgRinger\News\Domain\Model\Category`, `Tag`, `News`), so the namespace check
+   keeps the listener to one extension. In your own repository, set the same aspect on one query
+   (the changelog's snippet). On a list query that keeps the language restriction `OVERLAYS_MIXED`
+   is **not** the old result: it adds the untranslated default-language records (`fallback`), and
+   so does setting it through news's `ModifyDemandRepositoryEvent`.
+3. **Set `fallbackType: fallback`** on that language. Extbase then shows default-language records
+   where no translation exists, and **page content falls back the same way**: untranslated content
+   elements appear in the default language. That is a visible change for the whole language: owner
+   approval and a before/after proof of the affected pages, never a silent edit during an update.
+
+Outside the frontend (backend modules, CLI commands, middlewares) no site language sets the aspect:
+Extbase reads only default-language records until code sets one, through
+`LanguageAspectFactory::createFromSiteLanguage()` or a constructed `LanguageAspect`.
+
+Sources: [Extbase and Translations: The Full Picture](https://news.typo3.com/article/extbase-and-translations-the-full-picture)
+(TYPO3 news, 2026-10-07), [Localization in Extbase: site configuration](https://docs.typo3.org/permalink/t3coreapi:extbase-localisation-site-configuration),
+[setting the language per query](https://docs.typo3.org/permalink/t3coreapi:extbase-localisation-query-settings),
+[outside the frontend](https://docs.typo3.org/permalink/t3coreapi:extbase-localisation-no-frontend),
+[records shared across sites](https://docs.typo3.org/permalink/t3coreapi:extbase-cross-site) (language
+IDs are site-specific; match languages by locale).
+
 ### Fluid 5.0 Template Changes **[v14 only]**
 
 Rector handles PHP-side ViewHelper declarations (`UseStrictTypesInFluidViewHelpersRector`), but Fluid **template** changes require manual review:

@@ -88,6 +88,31 @@ Fluid cache warm-up is not render coverage. A custom ViewHelper namespace must b
 independently parsed template or partial that uses it; render every retained CType, plugin/list type
 and page template at least once.
 
+## Extbase repositories on translated sites from 14.3.6
+
+From 14.3.6 Extbase takes the overlay type from the site language's `fallbackType`; a language
+without the key is `strict`. There `findByUid()`, `findByIdentifier()` and uid-mapped action
+arguments return `null` for an untranslated record, relations lose untranslated children, and a
+query with `setRespectSysLanguage(false)` drops untranslated default-language rows. Queries with the
+default language restriction return what they did. An extension that relied on the default-language
+record as a fallback gets fewer records on 14.3.6 than on 14.3.5, with no deprecation or log entry.
+
+- Do not tell site owners to change `fallbackType`: that changes page-content fallback for the whole
+  language.
+- Give a repository method that must keep the old result an explicit aspect:
+  `$query->getQuerySettings()->setLanguageAspect(new LanguageAspect($aspect->getId(),
+  $aspect->getContentId(), LanguageAspect::OVERLAYS_MIXED, $aspect->getFallbackChain()))`. On a
+  query that keeps the language restriction, `OVERLAYS_MIXED` adds untranslated records the list
+  did not show before.
+- Outside the frontend (backend module, CLI command, middleware) set the aspect from the site
+  language with `LanguageAspectFactory::createFromSiteLanguage()`; without it Extbase reads only
+  default-language records.
+- Test a translated `strict` language: a functional test with an untranslated record, its
+  translated relation and a detail lookup.
+
+Mechanism, a site-level listener and the sources:
+[typo3-v14-reference](../../typo3-v14-reference/references/13-v14-only-changes-manual-not-handled-by-rector.md#extbase-follows-fallbacktype-v1436).
+
 ## #109585 applies to direct v13 → 14.3 too
 
 Upstream `upgrade-v13-to-v14.md` §2 says to skip the #109585 wizard when upgrading directly from

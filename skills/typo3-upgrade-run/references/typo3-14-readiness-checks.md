@@ -3,8 +3,9 @@
 `scripts/typo3-14-readiness.mjs` finds five breakers that every tool of the mechanical pass misses.
 Rector reads PHP code, Fractor reads the files its processors accept, the extension scanner matches
 Core API calls — none of them reads `.txt` TypoScript, database TypoScript, class names inside strings,
-or the rendered page. Each check below comes from a real 13 → 14.3 run where the site broke while the
-tools were green.
+or the rendered page. Each of those five checks comes from a real 13 → 14.3 run where the site broke
+while the tools were green. A sixth check, `extbase-language`, warns about a 14.3.6 behaviour change
+that only the owner can settle ([fix pack item 15](typo3-14-fix-pack.md#15-extbase-follows-fallbacktype-1436)).
 
 The script is evidence, not a fixer: it changes no project file. It copies its two PHP helpers into
 `.typo3-update/tools/` (as the extension scanner adapter does) so a container command can reach them.
@@ -22,8 +23,9 @@ The script is evidence, not a fixer: it changes no project file. It copies its t
 
 | Node | Run | Why there |
 |---|---|---|
+| intake | `--checks extbase-language` with the `tt_content` export below | Fix pack item 15 needs its golden paths before Baseline A is sealed |
 | `mechanical-migration` | `--checks includes,relative-links,parsefunc` plus `--db-export`, after the second Rector/Fractor pass | File and database findings are known before any 14 code is installed; they are code work for `manual-migration` |
-| `rung-14` | all five checks with `--php "ddev exec php"` and a fresh `--db-export`, after Composer, wizards and the DI rebuild, **before the first 14.3 smoke run** | `class-refs` and `php-classes` judge against the installed code, so only the installed 14.3 core gives the 14 answer |
+| `rung-14` | all checks with `--php "ddev exec php"` and a fresh `--db-export`, after Composer, wizards and the DI rebuild, **before the first 14.3 smoke run** | `class-refs` and `php-classes` judge against the installed code, so only the installed 14.3 core gives the 14 answer |
 | first 14.3 capture (rung-14 evidence loop, then `http-dom-proof`) | `--checks relative-links --dom-dir … --baseline-dom-dir …` | Relative links built at runtime exist only in the rendered page |
 
 Run it again after every fix in the same node; the report is the node's evidence. A node is done with
@@ -54,6 +56,22 @@ UNION ALL SELECT JSON_OBJECT('table','be_groups','uid',uid,'field','TSconfig','v
 
 `--db-export` also accepts a JSON array of rows or `{"rows": [...]}`; `pid` and `title` are optional
 and a `null` value is skipped. A malformed row fails the run (exit 2) instead of being ignored.
+
+The plugins content uses, for `extbase-language`, go into a second export, one row per CType:
+
+```bash
+ddev mysql -N -B -r -e "
+SELECT JSON_OBJECT('table','tt_content','uid',MIN(uid),'field','CType','value',CType)
+  FROM tt_content WHERE deleted=0 GROUP BY CType" > .typo3-update/nodes/intake/db-plugins.jsonl
+```
+
+On 12.4/13.4 a plugin sits in `list_type` (CType `list`): append
+`UNION ALL SELECT JSON_OBJECT('table','tt_content','uid',MIN(uid),'field','list_type','value',list_type)
+FROM tt_content WHERE deleted=0 AND list_type <> '' GROUP BY list_type`. After the 14.3 schema update
+the column is gone and that part fails.
+
+`tt_content` rows with the field `CType` or `list_type` only name plugins; they are never read as
+TypoScript. Pass both files: `--db-export …/db-typoscript.jsonl --db-export …/db-plugins.jsonl`.
 
 Run every check against the project's own PHP, from the project root on the host:
 
@@ -93,7 +111,7 @@ not resolve into `vendor/`; site TypoScript, TSconfig and YAML come from `config
 line without a log entry. Fractor's TypoScript processor reads `.typoscript`, `.tsconfig` and `.ts` by
 default, so the construct survives in `.txt` static templates, which 14's static-template loader still
 reads. `@import` loads only `*.typoscript` (TSconfig: also `*.tsconfig`). See
-[known problems](known-problems.md#typoscript-silently-stops-loading-after-the-v14-rung).
+[known problems](known-problems.md#typoscript-silently-stops-loading-after-the-v14-rung-or-every-page-answers-500).
 
 | Rule | Severity | Meaning |
 |---|---|---|
@@ -163,6 +181,19 @@ so PHP itself reports incompatible signatures. Tests, documentation and build di
 | `php-class-not-autoloadable` | warning | Declared in the package, not found by the autoloader (PSR-4 mapping) |
 | `php-parse-error` | error | The file does not parse with the project PHP |
 
+**extbase-language** — from 14.3.6 Extbase follows the site language's `fallbackType`
+(Important-88886). On a `strict` language, and on one that sets no `fallbackType`, identity lookups,
+detail views and relations lose untranslated records; lists keep their items. It reads every
+`config/sites/*/config.yaml` (and classic `typo3conf/sites/`) and the literal
+`ExtensionUtility::configurePlugin()` calls in `ext_localconf.php` of every extension outside the core.
+
+| Rule | Severity | Meaning |
+|---|---|---|
+| `extbase-strict-language` | warning | A translated, enabled language is `strict` (`detail.defaulted`: no `fallbackType` set) and an Extbase plugin is in use: the `tt_content` rows of `--db-export`, or every registered plugin when those rows are missing (the check's `note` says so). `detail.plugins` lists their signatures |
+
+`fallback` and `free` languages behave as before and stay silent. The warning is explained only by the
+per-language proof and the owner's decision, never by switching `fallbackType` to make it go away.
+
 ## Reading the report
 
 ```json
@@ -213,3 +244,6 @@ so PHP itself reports incompatible signatures. Tests, documentation and build di
 - `.ts` and `.txt` files count as TypoScript only below TypoScript or TSconfig directories (or as
   `setup`/`constants` static templates); a `.ts` file that reads as TypeScript is skipped.
 - Type hints, `instanceof` and `catch` clauses are not resolved; their imports are.
+- `extbase-language` needs the harness's `yaml` package (`npm ci`). It follows no site `imports`
+  (the check's `note` names such a site) and sees only literal `configurePlugin()` arguments; a plugin
+  registered in a loop or through a variable is missing from `detail.plugins`.

@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import {
   classNamesIn,
   classReferenceFindings,
+  configuredPlugins,
   createPhpBridge,
   discoverProject,
   extractClassReferences,
@@ -20,10 +21,12 @@ import {
   parseInclude,
   phpClassFindings,
   phpStringLiterals,
+  pluginSignature,
   resolveImport,
   resolveRelativeReference,
   runReadiness,
   splitCommand,
+  strictLanguages,
   suggestImport,
   typoscriptContext,
   typoscriptLines,
@@ -605,6 +608,116 @@ describe('inputs and the command line', () => {
     assert.equal(run('--project-root', root, '--checks', 'php-classes', '--php', 'php-binary-that-does-not-exist').status, 4);
     // No class name to verify, so class-refs never starts PHP and a missing binary does not matter.
     assert.equal(run('--project-root', root, '--checks', 'class-refs', '--php', 'php-binary-that-does-not-exist').status, 0);
+  });
+});
+
+describe('Extbase follows fallbackType from 14.3.6 (extbase-language)', () => {
+  const SITE = {
+    'composer.json': JSON.stringify({ repositories: [{ type: 'path', url: 'packages/*' }], extra: { 'typo3/cms': { 'web-dir': 'public' } } }),
+    'vendor/composer/installed.json': JSON.stringify({ packages: [
+      { name: 'georgringer/news', type: 'typo3-cms-extension', 'install-path': '../georgringer/news', extra: { 'typo3/cms': { 'extension-key': 'news' } } },
+      { name: 'typo3/cms-felogin', type: 'typo3-cms-framework', 'install-path': '../typo3/cms-felogin', extra: { 'typo3/cms': { 'extension-key': 'felogin' } } },
+    ] }),
+    'vendor/georgringer/news/ext_localconf.php': [
+      '<?php',
+      'ExtensionUtility::configurePlugin(',
+      "    'News',",
+      "    'Pi1',",
+      "    [NewsController::class => 'list,detail'],",
+      ');',
+      "ExtensionUtility::configurePlugin('News', 'NewsDetail', [NewsController::class => 'detail']);",
+      "// ExtensionUtility::configurePlugin('News', 'Retired', []);",
+      '',
+    ].join('\n'),
+    'vendor/typo3/cms-felogin/ext_localconf.php': "<?php\nExtensionUtility::configurePlugin('Felogin', 'Login', []);\n",
+    'packages/site_package/composer.json': JSON.stringify({ type: 'typo3-cms-extension', extra: { 'typo3/cms': { 'extension-key': 'site_package' } } }),
+    'packages/site_package/ext_localconf.php': '<?php\n\\TYPO3\\CMS\\Extbase\\Utility\\ExtensionUtility::configurePlugin("Site_Package", "Jobs", []);\n',
+    'config/sites/main/config.yaml': [
+      'rootPageId: 1',
+      'base: /',
+      'languages:',
+      '  -',
+      '    title: Deutsch',
+      '    languageId: 0',
+      '    fallbackType: strict',
+      '  -',
+      '    title: English',
+      '    languageId: 1',
+      '    base: /en/',
+      '  - title: Français',
+      '    languageId: 2',
+      '    fallbackType: fallback',
+      '  - title: Italiano',
+      '    languageId: 3',
+      '    fallbackType: free',
+      '  - title: Polski',
+      "    languageId: '4'",
+      '    fallbackType: strict',
+      "    fallbacks: '0'",
+      '  - title: Magyar',
+      '    languageId: 5',
+      '    enabled: false',
+      '',
+    ].join('\n'),
+  };
+  const rows = (...values) => values.map(([field, value], index) => JSON.stringify({ table: 'tt_content', uid: index + 1, field, value })).join('\n');
+
+  test('signatures mirror configurePlugin(); commented calls and core extensions do not count', () => {
+    assert.equal(pluginSignature('News', 'Pi1'), 'news_pi1');
+    assert.equal(pluginSignature('tt_address', 'ListView'), 'ttaddress_listview');
+    assert.deepEqual(configuredPlugins(SITE['vendor/georgringer/news/ext_localconf.php']), ['news_pi1', 'news_newsdetail']);
+    assert.deepEqual(configuredPlugins('<?php /* ExtensionUtility::configurePlugin("A", "B", []); */ $x = 1;'), []);
+  });
+
+  test('a translated language is strict when it says so or sets no fallbackType; fallback, free and disabled are not', () => {
+    const config = { languages: [
+      { languageId: 0 }, { languageId: 1, fallbackType: '' }, { languageId: 2, fallbackType: 'fallback' },
+      { languageId: 3, fallbackType: 'free' }, { languageId: '4', fallbackType: 'strict' }, { languageId: 5, enabled: false },
+    ] };
+    assert.deepEqual(strictLanguages(config).map((language) => [language.languageId, language.defaulted]), [[1, true], [4, false]]);
+    assert.deepEqual(strictLanguages({}), []);
+  });
+
+  test('warns per strict language and names the Extbase plugins content uses', async (t) => {
+    const root = await project(t, {
+      ...SITE,
+      'db-plugins.jsonl': rows(['CType', 'news_pi1'], ['CType', 'felogin_login'], ['list_type', 'sitepackage_jobs'], ['CType', 'text']),
+      'db-typoscript.jsonl': JSON.stringify({ table: 'sys_template', uid: 1, field: 'config', value: "@import 'EXT:site_package/missing.typoscript'" }),
+    });
+    const dbExports = [path.join(root, 'db-plugins.jsonl'), path.join(root, 'db-typoscript.jsonl')];
+    const report = await runReadiness({ projectRoot: root, checks: ['includes', 'extbase-language'], dbExports });
+    const own = report.findings.filter((item) => item.check === 'extbase-language');
+    assert.deepEqual(own.map((item) => [item.rule, item.severity, item.file, item.line]), [
+      ['extbase-strict-language', 'warning', 'config/sites/main/config.yaml', 10],
+      ['extbase-strict-language', 'warning', 'config/sites/main/config.yaml', 19],
+    ]);
+    assert.deepEqual(own.map((item) => [item.detail.languageId, item.detail.defaulted]), [[1, true], [4, false]]);
+    assert.deepEqual(own[0].detail.plugins, ['news_pi1', 'sitepackage_jobs']);
+    assert.match(own[0].message, /English\) sets no fallbackType, so it is strict/);
+    assert.match(own[0].fix, /fix pack item 15/);
+    // tt_content rows feed the plugin list and are never read as TypoScript; the template row still is.
+    assert.deepEqual(report.findings.filter((item) => item.check === 'includes').map((item) => item.file), ['db:sys_template:1:config']);
+    assert.deepEqual([report.scanned.dbRows, report.scanned.pluginRows, report.scanned.siteLanguages], [1, 4, 6]);
+    assert.equal(report.checks['extbase-language'].status, 'warnings');
+    assert.equal(report.checks['extbase-language'].note, undefined);
+    const strict = await runReadiness({ projectRoot: root, checks: ['extbase-language'], dbExports, strict: true });
+    assert.equal(strict.exitCode, 1);
+  });
+
+  test('without plugin rows every registered plugin is named; no plugin in use or no site passes', async (t) => {
+    const root = await project(t, { ...SITE, 'db-plugins.jsonl': rows(['CType', 'text'], ['CType', 'felogin_login']) });
+    const unknown = await runReadiness({ projectRoot: root, checks: ['extbase-language'] });
+    assert.deepEqual(unknown.findings[0].detail.plugins, ['news_newsdetail', 'news_pi1', 'sitepackage_jobs']);
+    assert.match(unknown.checks['extbase-language'].note, /Plugin usage unknown/);
+    assert.equal(unknown.exitCode, 0);
+    const unused = await runReadiness({ projectRoot: root, checks: ['extbase-language'], dbExports: [path.join(root, 'db-plugins.jsonl')] });
+    assert.equal(unused.checks['extbase-language'].status, 'pass');
+    assert.deepEqual(unused.findings, []);
+    const { 'config/sites/main/config.yaml': _site, ...withoutSite } = SITE;
+    const bare = await project(t, withoutSite);
+    const none = await runReadiness({ projectRoot: bare, checks: ['extbase-language'] });
+    assert.equal(none.checks['extbase-language'].status, 'pass');
+    assert.match(none.checks['extbase-language'].note, /No site configuration/);
   });
 });
 

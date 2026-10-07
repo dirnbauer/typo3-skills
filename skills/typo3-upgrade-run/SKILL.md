@@ -197,6 +197,10 @@ Read [`rules/20-baseline-integrity.md`](rules/20-baseline-integrity.md),
 - Authoritative global states are `default`, `keyboard-focus`, and `nav-open`.
 - Component sentinels come from the inventory: cookie consent (fresh reject/accept/settings),
   sliders, accordions, dropdowns, modals, forms, search, login/reset, 404, media and language.
+- A multi-language site with EXT:news or another Extbase list plugin requires the per-language
+  record proof: list items and detail statuses per translated language, Baseline A against the
+  target. From 14.3.6 a `strict` (or unset) `fallbackType` hides untranslated records
+  ([fix pack item 15](references/typo3-14-fix-pack.md#15-extbase-follows-fallbacktype-1436)).
 - Compare HTTP → DOM → pixels. The first differing stage names the cause and the recovery node.
 - Lighthouse and axe are mandatory verification before closure (`--mode verify`). A green axe run
   is automated evidence, not a WCAG conformance claim. Agree the Contract A Lighthouse floors at
@@ -227,7 +231,8 @@ and [extension strategy](references/extension-strategy.md).
 - Schema analyzer output is quarantine, not deletion permission.
 - Search order is behavioral output: add deterministic tie-breakers and test counts and order.
 - Before the first 14.3 smoke run, run `scripts/typo3-14-readiness.mjs --php "ddev exec php"` (with
-  `--db-export` for database TypoScript) in the rung-14 node: zero errors, every warning explained.
+  `--db-export` for database TypoScript) in the rung-14 node: zero errors, every warning explained;
+  its `extbase-language` warning names `strict` languages with Extbase plugins (fix pack item 15).
   After the first 14.3 capture, its `relative-links` check against Baseline A catches Breaking-108114
   ([readiness checks](references/typo3-14-readiness-checks.md)).
 - Apply the [TYPO3 14 fix pack](references/typo3-14-fix-pack.md) proactively, never item by item as

@@ -1,6 +1,6 @@
 ---
 name: "typo3-news-tags"
-description: "Bulk-generates thematic tags for georgringer/news (EXT:news) and assigns them to existing news records via keyword matching. Use when tagging large news corpora, defining a generic tag catalogue, building a Symfony console command for tag assignment, working with tx_news_domain_model_tag / tx_news_domain_model_news_tag_mm, or installing b13/tag as a generic site-wide tagging capability alongside news tags."
+description: "Bulk-generates thematic tags for georgringer/news (EXT:news) and assigns them to existing news records via keyword matching. Use when tagging large news corpora, defining a generic tag catalogue, building a Symfony console command for tag assignment, working with tx_news_domain_model_tag / tx_news_domain_model_news_tag_mm, or installing b13/tag as a generic site-wide tagging capability alongside news tags. Also use when, after a TYPO3 14.3 update, news detail pages answer 404 or lose their categories in a translated language (fallbackType strict), to count the news per language before and after."
 compatibility: "TYPO3 14.x (EXT:news ^14)"
 metadata:
   skill_type: preference
@@ -21,6 +21,9 @@ license: "MIT / CC-BY-SA-4.0"
 > the orthogonal generic tag system from `b13/tag` (`sys_tag`).
 >
 > **Not in scope.** Frontend rendering of tags in Fluid templates, tag translations, or tag merging.
+>
+> **Also here.** What TYPO3 14.3.6 changed for news in translated languages, and the frontend count
+> check that proves it before and after an update (§11).
 
 ## When to use this skill
 
@@ -327,6 +330,64 @@ private function buildKeywordPattern(string $keyword): string
 Score by **count of distinct matched keywords** — not total occurrences. A single keyword
 repeated 50 times should not outweigh four different keywords matching once each.
 
+## 11. News in translated languages from TYPO3 14.3.6 (fallbackType)
+
+From **14.3.6**, also reached by a patch update from 14.3.0–14.3.5, Extbase and with it EXT:news
+follow each site language's `fallbackType`. A language that sets **no** `fallbackType` is `strict`.
+`fallback` and `free` languages behave as before. On a `strict` language:
+
+- a detail URL of an untranslated news item answers **404** (news's default `detail.errorHandling`)
+  where 13.4 rendered the default-language text;
+- translated news lose untranslated categories, tags and related news;
+- the selected-list plugin without `orderBy`, and the tags of a tag-filtered list, lose untranslated
+  records;
+- lists keep their items: on a `strict` language they never showed untranslated news.
+
+The owner decides: translate the news with their categories, tags and related news; a listener that
+keeps the 13.4 overlay for EXT:news only; or `fallbackType: fallback`, which lets untranslated page
+content fall back as well. Mechanism, the tested listener and the sources:
+[typo3-v14-reference](../typo3-v14-reference/references/13-v14-only-changes-manual-not-handled-by-rector.md#extbase-follows-fallbacktype-v1436).
+
+**Count the news in the frontend, before and after the update.**
+
+1. Per site language, collect every news list page with its pagination pages, and a sample of detail
+   URLs: translated news and untranslated ones. The language menu of a default-language detail page
+   names the untranslated ones. One URL per line in `news-urls.txt`.
+2. Count the rendered items with a stable selector from the site's **own** list template, the item
+   wrapper (news default: `class="article articletype-`), and the category labels per page
+   (default: `news-list-category`). Keep the HTTP status: a detail URL may turn into a 404.
+
+   ```bash
+   RUN=before   # after the update: RUN=after
+   ITEM='class="article articletype-'; LABEL='news-list-category'
+   while read -r url; do
+     page=$(mktemp); code=$(curl -sk -o "$page" -w '%{http_code}' "$url")
+     printf '%s\t%s\t%s\t%s\n' "$url" "$code" "$(grep -o "$ITEM" "$page" | wc -l | tr -d ' ')" \
+       "$(grep -o "$LABEL" "$page" | wc -l | tr -d ' ')"
+     rm -f "$page"
+   done < news-urls.txt > "news-count-$RUN.tsv"
+   # once both runs exist: URL, HTTP status, items, category labels
+   diff news-count-before.tsv news-count-after.tsv
+   ```
+
+3. Explain every difference from the database, visible news per language:
+
+   ```sql
+   SELECT sys_language_uid, COUNT(*) AS visible, SUM(l10n_parent > 0) AS translations,
+          SUM(l10n_parent = 0) AS own_records
+     FROM tx_news_domain_model_news
+    WHERE deleted = 0 AND hidden = 0 AND t3ver_wsid = 0
+      AND (starttime = 0 OR starttime <= UNIX_TIMESTAMP())
+      AND (endtime = 0 OR endtime > UNIX_TIMESTAMP())
+    GROUP BY sys_language_uid;
+   ```
+
+   Default-language news without a visible translation are what a `strict` language hides. A list
+   also filters by storage folder, categories and archive settings: compare per plugin, not per site.
+4. An unexplained difference or a new 404 goes to the owner before the update goes live. In a
+   `typo3-upgrade-run` the "before" comes from the sealed Baseline A, not from a new request
+   ([fix pack item 15](../typo3-upgrade-run/references/typo3-14-fix-pack.md#15-extbase-follows-fallbacktype-1436)).
+
 ## Files in this skill
 
 - `references/AssignNewsTagsCommand.example.php` — complete, idempotent Symfony console
@@ -347,6 +408,7 @@ repeated 50 times should not outweigh four different keywords matching once each
 | `tx_news_domain_model_news.tags` counter is wrong | Counter not updated after MM writes | Run an `UPDATE news SET tags = (SELECT COUNT(*) FROM mm WHERE mm.uid_local = news.uid)` once, then ensure command writes it |
 | Frontend `/<tag-slug>/` 404s | Route enhancer missing in site config | Add the `News` route with the `NewsTag` aspect (§3) and flush caches |
 | Identical tag created twice on re-run | Lookup-before-insert missing | `SELECT uid FROM tag WHERE slug = ?` before each DataHandler `NEW_x`; reuse UID if found |
+| After a TYPO3 14.3 update, translated news detail pages answer 404 or lose their tags | Extbase follows `fallbackType` from 14.3.6; the language is `strict` or sets none | Count per language and let the owner decide (§11) |
 
 ## Acceptance checklist
 

@@ -34,6 +34,21 @@ Use meaningful stable assertion IDs, not `looks-good`. Backend and routes are ma
 whole site. Mark other features absent only with inventory evidence and an empty `journeys` array.
 Do not encode credentials, recipient addresses, tokens or customer records in the plan.
 
+A multi-language site with EXT:news or another Extbase list plugin adds this `routes` journey; the
+14.3.6 change in [fix pack item 15](typo3-14-fix-pack.md#15-extbase-follows-fallbacktype-1436) can
+empty detail pages and relations on a `strict` language without a log line:
+
+```json
+{
+  "id": "extbase-records-per-language",
+  "check": "http-dom",
+  "targets": ["every translated news list page", "news detail URLs per language, translated and untranslated"],
+  "assertions": ["list-item-count-per-language", "relation-labels-per-item", "detail-status-per-language"]
+}
+```
+
+Its counts come from Baseline A and the target capture, never from a new source capture.
+
 Finish the other intake prerequisites and sizing/forecast admission, then:
 
 ```bash

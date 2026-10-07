@@ -175,6 +175,12 @@ final class ItemController extends ActionController
 }
 ```
 
+> **Translated sites, 14.3.6+:** Extbase follows the site language's `fallbackType`, and a language
+> without the key is `strict`. There `findByUid()` and uid-mapped action arguments return `null` for
+> an untranslated record, and relations lose untranslated children; 13.4 and 14.3.0–14.3.5 returned
+> the default-language record. Read [Extbase follows fallbackType](references/13-v14-only-changes-manual-not-handled-by-rector.md#extbase-follows-fallbacktype-v1436)
+> before writing a repository or a detail action for a translated site, or updating one past 14.3.5.
+
 ### Backend Module Controller
 
 ```php

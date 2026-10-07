@@ -9,6 +9,16 @@ and the [RTE round trip](#rte-round-trip-proof).
 Record each command and its exit code in `05-evidence.md` and `journal.jsonl`. A metric without a
 recorded command is not evidence.
 
+## Contents
+
+- [Ground rules](#ground-rules) · [Performance and Core Web Vitals](#performance-and-core-web-vitals) ·
+  [SEO and structured data](#seo-and-structured-data) · [Accessibility](#accessibility) ·
+  [Security](#security) · [Media and cache](#media-and-cache) · [Code quality](#code-quality)
+- [Intermediate loops on stateful rungs](#intermediate-loops-on-stateful-rungs)
+- [Proof scripts: journeys, sweeps and row diffs](#proof-scripts-journeys-sweeps-and-row-diffs),
+  with [count list records per language](#count-list-records-per-language)
+- [RTE round-trip proof](#rte-round-trip-proof)
+
 ## Ground rules
 
 - **Warm first, then measure.** Crawl the sample once and discard the result, so caches, processed
@@ -221,6 +231,39 @@ comes from a fleet run:
   text → int retype and once hid a real change.
 - **Leave no test accounts.** Delete DDEV-only test editors and admins, with their `sys_log` and
   `sys_history` rows, before any database leaves the machine.
+
+### Count list records per language
+
+For the `extbase-records-per-language` journey ([fix pack item 15](typo3-14-fix-pack.md#15-extbase-follows-fallbacktype-1436)).
+Captures keep the whole DOM and the HTTP status per URL, so the "before" comes from the sealed
+Baseline A without a new capture. The script only reads; keep it under `nodes/<node>/`:
+
+```js
+// count-list-items.mjs <capture dir> <item regex> [URL regex] → URL, status, matches per page
+import { readdir, readFile } from 'node:fs/promises';
+import path from 'node:path';
+const [dir, item, only = ''] = process.argv.slice(2);
+const marker = new RegExp(item, 'g'), wanted = new RegExp(only), rows = [];
+for (const file of (await readdir(path.join(dir, 'dom'))).filter((f) => f.endsWith('.html'))) {
+  const http = JSON.parse(await readFile(path.join(dir, 'http', file.replace(/\.html$/, '.json')), 'utf8'));
+  if (!wanted.test(http.requestedUrl)) continue;
+  const html = await readFile(path.join(dir, 'dom', file), 'utf8');
+  rows.push([http.requestedUrl, http.status, (html.match(marker) ?? []).length].join('\t'));
+}
+console.log(rows.sort().join('\n'));
+```
+
+```bash
+N=.typo3-update/nodes/rung-14
+ITEM='class="article articletype-'   # the item wrapper of the site's own list template
+node $N/count-list-items.mjs .typo3-update/baseline/A-original "$ITEM" '/(en|fr)/' > $N/news-before.tsv
+node $N/count-list-items.mjs .typo3-update/captures/<label> "$ITEM" '/(en|fr)/' > $N/news-after.tsv
+diff $N/news-before.tsv $N/news-after.tsv && echo "items and statuses equal"
+```
+
+Run it again with the category and tag label markers (`news-list-category`, `news-list-tags` in
+the news default templates). A list with more items than one page holds needs its pagination
+URLs in the manifest, or both sides show the same first page.
 
 ## RTE round-trip proof
 

@@ -12,4 +12,6 @@ Read only the section that matches the current task. These files continue the ma
 - [11. Upgrade Process](11-upgrade-process.md)
 - [12. Resources](12-resources.md)
 - [13. v14-Only Changes (Manual — Not Handled by Rector)](13-v14-only-changes-manual-not-handled-by-rector.md)
+  — starts with [Extbase follows fallbackType](13-v14-only-changes-manual-not-handled-by-rector.md#extbase-follows-fallbacktype-v1436):
+  from 14.3.6 a `strict` (or unset) language hides untranslated records from Extbase
 - [Credits & Attribution](credits-and-attribution.md)
