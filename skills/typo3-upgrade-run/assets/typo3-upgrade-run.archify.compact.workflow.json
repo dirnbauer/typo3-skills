@@ -27,16 +27,16 @@
         "note": "Failure takes a separate cause-specific route with rollback and bounded retries."
       },
       {
-        "id": "optional-elevation",
-        "label": "Optional elevation",
+        "id": "standard-elevation",
+        "label": "Standard elevation",
         "focus": ["contract_a", "structured_data", "native_webmcp", "handover"],
-        "note": "Only a proven upgrade may add honest JSON-LD or native browser WebMCP capabilities."
+        "note": "Every proven upgrade then adds honest JSON-LD and native browser WebMCP tools."
       }
     ]
   },
   "lanes": [
     { "id": "upgrade", "label": "Upgrade contract" },
-    { "id": "branches", "label": "Recovery + optional elevation" }
+    { "id": "branches", "label": "Recovery + standard elevation" }
   ],
   "phases": [
     { "id": "discover", "label": "Discover + seal", "fromCol": 0, "toCol": 2, "variant": "security" },

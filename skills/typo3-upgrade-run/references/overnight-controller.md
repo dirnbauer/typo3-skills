@@ -82,6 +82,7 @@ answer as given ([approval matrix](../rules/40-approval-matrix.md)).
 | Backend test accounts: a DDEV-only throwaway admin and the non-admin editors | [test accounts](#prepare-test-accounts-once) |
 | Delegation: how many parallel workers (`parallel_approval`, `max_workers`) | [admission](#admission-and-prediction) |
 | Commits per phase batch, and whether the run directory may be committed; pushes stay separate | [approval matrix](../rules/40-approval-matrix.md#401-the-matrix), rows 26–27 |
+| Standard Contract B scope: the structured-data types (at least Organization/WebSite, WebPage, BreadcrumbList, plus the eligible types found) and the WebMCP tools (read-only navigation/lookup, prepare-only forms, Permissions-Policy); the scope, never whether | `structured-data-inventory`, `webmcp-inventory`, [standard branches](specialist-branches.md#standard-contract-b-branches) |
 
 Round 1 **must** include the predictable approvals below, before any symptom shows: each one asked
 mid-run stops an open node until the owner answers.
@@ -94,6 +95,9 @@ mid-run stops an open node until the owner answers.
 - **The P12 test accounts**: the DDEV-only throwaway admin and the non-admin editors, deleted at
   handover. The same shop run approved the editor at intake and asked for the admin mid-run, like
   two earlier fleet runs.
+- **The P14 intent approvals for structured data and WebMCP** with their scope. Both branches run
+  in every upgrade; asking at intake keeps them from waiting after Contract A, and an unanswered
+  scope holds the node rather than skipping it.
 
 Ask a declared-change approval with the exact form of the change (the rule's before/after pattern
 and one example) and let the owner name its scope. When the run reaches the step, record the

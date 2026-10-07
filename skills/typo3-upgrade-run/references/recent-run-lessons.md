@@ -87,6 +87,78 @@ templates, scripts, behaviour and components outside the sample were unproven. T
 the [migration checklist](bootstrap-5-migration.md#renaming-classes-is-not-enough--the-migration-checklist):
 leftover audit over sources and database, behaviour matrix, fixture page, Contract A identity for JS.
 
+## Closure, deploy and backend-proof traps from a fleet run (2026-10-07)
+
+Eight traps from one fleet run's closure and deploy preparation. Each cost a stale epoch, a false
+finding or a lost hour; each counter-measure below is cheap when applied before the trap.
+
+1. **A DDEV snapshot restore rewrites tracked DDEV-generated files.** `ddev snapshot restore`
+   (through the restart it triggers) regenerates `.ddev/traefik/certs/<project>.crt` and `.key`
+   and reorders the routers in `.ddev/traefik/config/<project>.yaml`. When the project tracks them,
+   the first stateful proof makes the working tree dirty and the closure epoch goes **STALE**.
+   Before `closure-start`, mark the certificate files local-only and restore the router file after
+   every restore:
+
+   ```bash
+   git update-index --skip-worktree .ddev/traefik/certs/<project>.crt .ddev/traefik/certs/<project>.key
+   git checkout -- .ddev/traefik/config/<project>.yaml   # after every snapshot restore
+   ```
+
+   Recommend untracking these generated files in the project; that is an owner decision, recorded
+   in the handover, not a change the run makes on its own.
+2. **`t3u content-fingerprint --assert` needs the real fileadmin path.** Pass
+   `--fileadmin public/fileadmin` (and `--ddev-project <name>`). Without it the harness resolves
+   `fileadmin` relative to the working directory, finds nothing, hashes an empty file tree (the
+   empty-string hash) and reports content drift that does not exist. Check the file count in the
+   fingerprint before believing a drift report.
+3. **Redirects sharing host and path: the lowest uid wins.** EXT:redirects serves the first match:
+   `RedirectCacheService` orders by `respect_query_parameters` descending, then `uid` ascending, and
+   `matchRedirect()` returns the first hit. 12.4 and 14.3 behave identically, so a shadowed row is
+   not an upgrade regression. Redirect sentinels must expect the winning row's target for every
+   shadowed row; report the duplicates to the owner as data cleanup.
+4. **Deployer 8 changes the shared files, and deploys run no upgrade wizards.** The Deployer 8
+   `typo3` recipe shares `config/system/settings.php` by default (Deployer 7 shared
+   `public/.htaccess`), and a project's `add('shared_files', ['.env'])` keeps that default. When
+   `settings.php` is tracked, restore the 12.4 behaviour explicitly with
+   `set('shared_files', ['public/.htaccess', '.env'])`. Deploy recipes usually run no upgrade
+   wizards: add a task after `typo3:extension:setup` that runs the explicit list of wizard
+   identifiers the DDEV run executed (the scheduler wizard needs `extension:setup` first). Never a
+   blanket `upgrade:run`: on CLI it marks every wizard whose `updateNecessary()` is false as done,
+   and `formFileFormsToDatabaseMigration` reports "No file-based form definitions found" on CLI
+   (ConfigurationManager not initialised, "No request given") even when file-based forms exist,
+   so a blanket run marks it done without migrating anything. After the first deploy, the
+   deploying party runs `upgrade:list` on the server ([deployment handover](deployment-handover.md)).
+5. **EXT:form on 14.3 loses the editors' Forms module.** `web_FormFormbuilder` is now a container
+   with the submodules `form_manager` and `form_editor` (access `user`), and the core
+   `UserPermissionsForRenamedModulesMigration` grants neither, so an editor's "Forms" entry
+   redirects to the page module. Fix it with an idempotent project upgrade wizard (DataHandler, admin
+   CLI context) that adds both identifiers to the group's `groupMods`, after the owner's approval
+   (the same class as [fix pack item 8](typo3-14-fix-pack.md#8-renamed-modules-and-editor-rights)).
+6. **Backend proof scripts on 14.3.**
+   - The Install Tool modules (`system_maintenance`, `system_settings`, `system_upgrade`,
+     `system_environment`) answer **303** to
+     `<siteUrl>?__typo3_install&install[controller]=…&install[context]=backend`. Accept exactly that
+     hand-over, nothing broader. Each needs about 18 s.
+   - A Playwright step time limit must **abort** the step. An overrun step that kept running raced
+     the later steps and looked like a lost session.
+   - The element browser (`wizard/record/browse?mode=file`) opens with no folder selected for a fresh
+     editor: choose the mount in the folder tree first.
+   - A FormEngine field on a non-default tab needs that tab activated before the click.
+   - CKEditor 47's `getData()` differs from the stored field (attribute order, entities,
+     whitespace). Compare text strictly and markup with documented normalisations; record both
+     hashes and the first difference ([RTE round-trip proof](measurement-recipes.md#rte-round-trip-proof)).
+7. **Measure the cache journey with an unrelated content edit.** A page-title change invalidates
+   every cached page whose menu renders that page (`pageId_<uid>` tags), so "no full purge" cannot be
+   proven after a title change. Edit a content element on an unrelated page instead. DDEV puts the
+   core caches on `NullBackend` ([fix pack item 14](typo3-14-fix-pack.md#14-caches-on-nullbackend-in-ddev)):
+   inside a snapshot, enable `Typo3DatabaseBackend` temporarily (an `additional.php` block plus
+   `ddev typo3 database:updateschema '*.add'`) when the journey needs database cache tags, then
+   restore the snapshot and the file byte-identically.
+8. **axe verify mode without a 12.4 axe baseline reports every serious cluster.** Prove a cluster
+   pre-existing rather than accepting it on sight: compare the computed colours with the source CSS
+   from Git and with the Baseline A DOM markup. Matching values on both sides make it
+   `pre-existing`; any difference is classified like every other finding.
+
 ## What failed and what now prevents a repeat
 
 | Failure mode | Cost or risk | Mandatory correction |

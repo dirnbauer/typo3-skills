@@ -1,7 +1,10 @@
 # P14 — Elevation (loops 500–560)
 
-Track `elevation`. Contract B. Entirely optional and run only after the user explicitly requests a
-separate improvement programme. A normal TYPO3 upgrade ends after Contract A and its handover.
+Track `elevation`. Contract B. Two branches are standard in every upgrade run: the graph nodes
+`structured-data-enrichment` and `webmcp-readiness` ([standard branches](../specialist-branches.md#standard-contract-b-branches)),
+scoped in the round-1 intake questions and joined at `elevation-join` before handover. The loops
+below are optional and run only after the user explicitly requests a separate improvement
+programme.
 
 Targets in `references/quality-bars.md`; commands in `references/measurement-recipes.md`.
 
@@ -12,7 +15,7 @@ Each track has its own approval and its own derived baseline `B-<n>`.
 | Loop | Track |
 |---|---|
 | 500 | performance and Core Web Vitals — `t3u lighthouse` |
-| 510 | technical SEO and structured data — see `references/metadata-and-social.md` |
+| 510 | technical SEO and metadata — see `references/metadata-and-social.md`; structured data beyond the standard branch |
 | 520 | accessibility beyond automated-green — `scripts/a11y-audit.mjs` |
 | 530 | security posture, including CSP and other security headers |
 | 540 | media and cache |

@@ -84,7 +84,7 @@ on every request, static files included). The site-independent fixes and their t
 | Sitemap | 100% of entries 200, 0 redirects, 0 `noindex`, no excluded doktypes leaking | Content parity with live depends on the sync freshness recorded in P01. |
 | Titles / descriptions | 100% unique; 30–60 and 70–160 characters | — |
 | `<html lang>` | matches the page language everywhere | — |
-| JSON-LD | valid on every page type; `Organization` + `WebSite` + `BreadcrumbList` sitewide | Validate **offline** against the schema.org vocabulary. Google's Rich Results Test is a remote service needing a public URL and explicit approval — say plainly that only syntax and vocabulary were checked. |
+| JSON-LD | valid on every page type; `Organization` + `WebSite` + `WebPage` + `BreadcrumbList` sitewide — delivered by the standard `structured-data-enrichment` node in every run, not only in loop 510 | Validate **offline** against the schema.org vocabulary. Google's Rich Results Test is a remote service needing a public URL and explicit approval — say plainly that only syntax and vocabulary were checked. |
 | OG / X cards | complete; image ≥1200×630 | Absolute image URLs are local. |
 
 ## Loop 520 — Accessibility beyond automated-green

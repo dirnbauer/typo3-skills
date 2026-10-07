@@ -11,7 +11,10 @@ recipe and its imported recipes for:
 - project tasks that now collide with built-in task names or duplicate built-in behavior;
 - removed/renamed configuration and custom overrides that are no longer needed;
 - the selected PHP binary (`bin/php`) on the target hosts;
-- `shared_files`, `shared_dirs`, writable paths and whether `settings.php` is actually shared;
+- `shared_files`, `shared_dirs`, writable paths and whether `settings.php` is actually shared
+  (Deployer 8's `typo3` recipe shares it by default, and `add('shared_files', …)` keeps that);
+- whether the deploy runs the upgrade wizards at all: name the exact wizard identifiers the DDEV run
+  executed, never a blanket `upgrade:run` ([fleet trap 4](recent-run-lessons.md#closure-deploy-and-backend-proof-traps-from-a-fleet-run-2026-10-07));
 - cleanup/rollback expectations and release retention; and
 - database commands: schema and reviewed non-destructive migrations must precede cache warm-up,
   while destructive cleanup remains a separately approved operator action.

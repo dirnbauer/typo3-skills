@@ -105,7 +105,7 @@ test('structured data preserves Contract A before an approval-gated P14 enrichme
     'elevation-join');
 });
 
-test('native WebMCP is inventoried, preserved, then optionally added after Contract A', async () => {
+test('native WebMCP is inventoried, preserved, then added after Contract A in every run', async () => {
   const definition = parseYaml(await readFile(DEFAULT_GRAPH, 'utf8'));
   const inventory = definition.nodes['webmcp-inventory'];
   const parity = definition.nodes['webmcp-parity'];
@@ -134,6 +134,31 @@ test('native WebMCP is inventoried, preserved, then optionally added after Contr
     ['structured-data-enrichment', 'webmcp-readiness']);
   assert.equal(definition.edges.find((edge) => edge.id === 'elevation-joined').to,
     'handover');
+});
+
+test('structured data and WebMCP are standard Contract B branches, never skipped as unrequested', async () => {
+  const definition = parseYaml(await readFile(DEFAULT_GRAPH, 'utf8'));
+  const standard = ['structured-data-enrichment', 'webmcp-readiness'];
+  for (const id of standard) {
+    const node = definition.nodes[id];
+    assert.doesNotMatch(`${node.objective} ${node.done}`, /optional|when not requested|unless requested/i, id);
+    assert.match(node.done, /never because it was not requested/, id);
+    assert.match(node.done, /reviewed impossibility/, id);
+    assert.match(node.done, /B baseline/, id);
+    assert.equal(node.approval, 'required', id);
+    assert.equal(node.evidence_loop, 'required', id);
+  }
+  assert.match(definition.nodes['structured-data-enrichment'].objective, /Organization\/WebSite, WebPage and BreadcrumbList/);
+  assert.match(definition.nodes['webmcp-readiness'].objective, /read-only navigation\/lookup/);
+  assert.match(definition.nodes['webmcp-readiness'].objective, /without autosubmit/);
+  assert.match(definition.nodes['webmcp-readiness'].objective, /Permissions-Policy/);
+  assert.doesNotMatch(definition.nodes['elevation-join'].objective, /optional/i);
+  for (const inventory of ['structured-data-inventory', 'webmcp-inventory']) {
+    assert.match(definition.nodes[inventory].done, /round-1 questions/, inventory);
+  }
+  // A not-applicable close of either branch still needs an independent review.
+  assert.equal(definition.policy.require_independent_review, true);
+  assert.deepEqual(definition.edges.find((edge) => edge.id === 'contract-pass').to, standard);
 });
 
 test('an unbounded cycle is rejected', () => {

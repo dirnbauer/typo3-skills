@@ -3,12 +3,15 @@
 Track `report`.
 
 ## Preconditions
-P13 closed. Any separately requested Contract B tracks are green or explicitly stopped.
+P13 closed. The standard structured-data and WebMCP branches passed `elevation-join` (or carry a
+reviewed impossibility reason). Any separately requested Contract B tracks are green or explicitly
+stopped.
 
 ## Steps
 1. Update only README, Documentation, changelog, or operator instructions directly made inaccurate
    by the migration. Do not rewrite the documentation system as a completion prerequisite.
-2. If Contract B ran, write its concise summary.
+2. Write the concise Contract B summary: the structured-data types and WebMCP tools added, their
+   B baselines and evidence loops, and any further tracks that ran.
 3. Generate the evidence summary, **including the run-statistics
    section**: loops run, iterations per loop, aborts and their triggers, self-test re-runs,
    wall-clock per phase, repaired against approved findings, and everything the run did not cover.

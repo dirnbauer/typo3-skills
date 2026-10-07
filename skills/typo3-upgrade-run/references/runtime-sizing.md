@@ -20,9 +20,10 @@ handover may use the reserve. The hard deadline cannot produce a green Contract 
 is missing. These are maximum elapsed wall-clock windows from initialization, not target durations
 or new retry allowances. Small sites should fit overnight; larger sites may need one or two days.
 Stop as soon as verified or blocked. Waiting, interruption, a new session and resumption do not
-pause or reset the clock. No profile exceeds 48 hours. Optional Contract B work is not automatically
-part of this job; schedule it only with separate authority and a stated budget. Never silently
-extend the current job because A closed early.
+pause or reset the clock. No profile exceeds 48 hours. The standard structured-data and WebMCP
+branches are part of this job and of its forecast. Other Contract B work is not automatically part
+of it; schedule it only with separate authority and a stated budget. Never silently extend the
+current job because A closed early.
 
 New seals record `runtime.budget_policy: site-size-v2`. Previously sealed runs without a policy
 marker (or with `overnight-v1`) retain their original 8/12/14-hour deadlines and 2/3/4-hour reserves.

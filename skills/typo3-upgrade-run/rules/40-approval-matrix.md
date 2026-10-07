@@ -40,7 +40,7 @@ Use `t3u approval --stage intent ...` and `t3u approval --stage acceptance --evi
 | 20 | Accept a residual finding at loop exit | no | user | per finding |
 | 21 | Contract A closure certificate | no | user countersign | once |
 | 22 | Unlock Contract B | no | user | once |
-| 23 | Each Contract B track | no | user | per track |
+| 23 | Each Contract B track (the standard structured-data and WebMCP tracks: their scope, asked in round 1; they always run) | no | user | per track |
 | 24 | Derive a new baseline `B-<n>` | no | user | per track |
 | 25 | Apply IA / content recommendations | no | user | per recommendation (default: recommend only) |
 | 26 | Create a commit | no | user | per phase batch |

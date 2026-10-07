@@ -1,7 +1,35 @@
-# Conditional specialist branches
+# Specialist branches
 
 Load only the branch needed by the current node. Standalone specialist programmes do not restart
 the parent workflow; each returns one evidence-backed result inside the shared deadline.
+
+Most specialist branches are conditional: Solr, Content Blocks or an RTE branch closes
+`not-applicable` when the feature is absent. The P14 structured-data and WebMCP branches are not:
+they are a standard part of every run.
+
+## Standard Contract B branches
+
+After the countersigned Contract A gate the graph always runs `structured-data-enrichment` and
+`webmcp-readiness`, each with its own intent approval, derived B baseline and green evidence loop,
+and joins them at `elevation-join` before handover. Contract A pages stay unchanged except the
+declared enrichment (the added JSON-LD, the WebMCP registrations or form annotations).
+
+- **Scope at intake.** The P00 inventories propose the scope; the controller asks for it in the
+  [round-1 questions](overnight-controller.md#batch-the-owner-decisions) — which entity types and
+  which tools, not whether. The owner may extend the scope; the minimum below stays.
+  An unanswered question holds the P14 node at `node-open` like any approval node; it never turns
+  into `not-applicable`.
+- **Minimum structured data.** Organization (or the specific LocalBusiness subtype) and WebSite,
+  WebPage on every page class, and BreadcrumbList wherever a breadcrumb is visible, all mirroring
+  visible content; plus every eligible type the inventory found (Article/NewsArticle, FAQPage,
+  Product, Event, JobPosting and the like).
+- **Minimum WebMCP.** Read-only navigation and lookup tools (site search, page/section lookup,
+  language switch) and prepare-only form tools that fill a visible form and leave submission to the
+  human: no `toolautosubmit`, and a recorded security review per form tool. The Permissions-Policy
+  decision (`tools=(self)` unless a named cross-origin use is approved) is recorded either way.
+- **`not-applicable`** only for a genuine impossibility with a reviewed reason, for example a
+  project with no public frontend. "Not requested", "no time" and "nobody asked" are not reasons;
+  a missing approval waits, and a deadline problem is re-forecast and reported.
 
 ## Redirect module and backend rights
 
@@ -37,9 +65,10 @@ Route structured data to `typo3-structured-data` in three different graph states
    canonical identities, languages, and validation findings before Baseline A.
 2. **P10 parity** proves that existing structured meaning and values survived TYPO3 14 unchanged.
    It repairs only upgrade-induced breakage; missing opportunities do not enter Contract A.
-3. **P14 enrichment** starts after the countersigned Contract A gate with an intent approval,
-   snapshot, rollback reference, and derived B baseline. It maps visible TYPO3 data to appropriate
-   entities, verifies the output, and then waits at `elevation-join` for the WebMCP branch.
+3. **P14 enrichment** (standard, every run) starts after the countersigned Contract A gate with
+   the intent approval asked at intake, snapshot, rollback reference, and derived B baseline. It
+   maps visible TYPO3 data to the minimum entities above plus the eligible types of the inventory,
+   verifies the output, and then waits at `elevation-join` for the WebMCP branch.
 
 Use `FAQPage` for genuine visible publisher-authored FAQ questions and answers, never `QAPage`
 unless one question accepts user-submitted alternative answers. Record that Google regularly limits
@@ -62,9 +91,11 @@ Route browser-side agent readiness to `typo3-webmcp` in three graph states:
    names, schemas, page/session/language availability, results, side effects, human-interface
    fallback, and security behavior. A site with no prior WebMCP closes this node as
    `not-applicable`; missing new tools are not a Contract A regression.
-3. **P14 readiness** starts after the countersigned Contract A gate and an intent approval. Add the
-   smallest useful native tool set in the existing project-owned sitepackage/Vite source, seal a
-   derived B baseline, run the bounded evidence gate, and then wait at `elevation-join`.
+3. **P14 readiness** (standard, every run) starts after the countersigned Contract A gate and the
+   intent approval asked at intake. Add the minimum tool set above (read-only navigation/lookup,
+   prepare-only forms after a security review, the Permissions-Policy decision) in the existing
+   project-owned sitepackage/Vite source, seal a derived B baseline, run the bounded evidence gate,
+   and then wait at `elevation-join`.
 
 Chrome supplies the browser API; the TYPO3 project supplies the semantic forms, registrations,
 services, and authorization. Do not add a TYPO3 WebMCP extension, backend MCP, relay, polyfill, CDN

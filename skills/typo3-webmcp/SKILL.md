@@ -119,9 +119,15 @@ Return bounded evidence to the graph; do not run an independent repeat-until-cle
   analytics, browser support, and candidate visitor journeys.
 - **P10 parity:** when WebMCP already exists, preserve tool names, availability conditions, schemas,
   behavior, side effects, and fallback behavior through TYPO3 14. Missing capability is P14 work.
-- **P14 readiness:** after Contract A closes and intent is approved, implement the smallest useful
-  tool set, seal a derived B baseline, and prove human UI, visual behavior, accessibility, privacy,
-  performance, and server authorization remain correct.
+- **P14 readiness (standard in every upgrade run, not optional):** after Contract A closes and the
+  intent approval (scoped in the round-1 intake questions) is granted, implement at least the
+  read-only navigation/lookup tools (`search_site`, `navigate_site`, `get_current_page` where the
+  journey exists) and prepare-only tools for the visible forms, with no `toolautosubmit` and a
+  recorded security review per form tool, plus the recorded Permissions-Policy decision. Seal a
+  derived B baseline, run the green evidence loop, and prove human UI, visual behavior,
+  accessibility, privacy, performance, and server authorization remain correct. Return
+  `not-applicable` only for a reviewed impossibility such as a project with no public frontend,
+  never because the tools were not requested.
 
 ## Evidence gate
 

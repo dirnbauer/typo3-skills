@@ -49,9 +49,14 @@ loop.
 - **Contract A parity:** preserve the exact pre-upgrade structured meaning and rendered values.
   Repair only upgrade-induced breakage. Missing opportunities become P14 candidates; adding them
   here would change the immutable DOM contract.
-- **P14 enrichment:** start only after Contract A closes and the track has an intent approval.
-  Implement the approved page-type matrix, derive a B baseline, and verify that visible HTML and
-  interaction behavior stay unchanged apart from the declared JSON-LD addition.
+- **P14 enrichment (standard in every upgrade run, not optional):** start only after Contract A
+  closes and the track has its intent approval, whose scope the controller asks in the round-1
+  intake questions. Implement at least Organization (or the LocalBusiness subtype) and WebSite,
+  WebPage, and BreadcrumbList wherever a breadcrumb is visible, all mirroring visible content, plus
+  every eligible type of the inventory's page-type matrix. Derive a B baseline, run the green
+  evidence loop, and verify that visible HTML and interaction behavior stay unchanged apart from the
+  declared JSON-LD addition. Return `not-applicable` only for a reviewed impossibility such as a
+  project with no public frontend, never because enrichment was not requested.
 
 ## Select types from visible page purpose
 

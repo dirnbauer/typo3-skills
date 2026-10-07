@@ -141,6 +141,16 @@ site change. Every unexplained difference blocks.
 design, structured-data and browser-agent-readiness improvements. It starts only after Contract A
 has a countersigned closure and uses a derived `B-*` baseline. It never overwrites `A-original`.
 
+Two Contract B branches are a **standard part of every run**, not options: after Contract A
+acceptance the graph always implements structured data (`structured-data-enrichment`: at least
+Organization/WebSite, WebPage and BreadcrumbList mirroring visible content, plus the eligible types
+the inventory names) and native WebMCP tools (`webmcp-readiness`: read-only navigation/lookup tools,
+prepare-only form tools without autosubmit after a security review, and a recorded
+Permissions-Policy decision). Each gets its derived B baseline and a green evidence loop; Contract A
+pages stay unchanged except the declared enrichment. Ask for their scope in the round-1 intake
+questions. `not-applicable` is only for a reviewed impossibility (no public frontend, for example),
+never for "not requested" ([specialist branches](references/specialist-branches.md)).
+
 ## Node owners
 
 Load only the skill the brief names:
@@ -248,9 +258,10 @@ Bootstrap 5 sites update within 5.x; Bootstrap 3/4 sites migrate to 5.x in the `
 after a full loop proved the upgrade invariant, with a before/after review and a separately recorded
 acceptance ([procedure](references/bootstrap-5-migration.md)). Replace project-owned jQuery and jQuery
 plugins with native code whose behavior is proven identical; Bootstrap 5 needs no jQuery. The
-`vite-assets` node uses the `typo3-vite` overlay. Optional branches follow
+`vite-assets` node uses the `typo3-vite` overlay. Specialist branches follow
 [specialist branches](references/specialist-branches.md) and return `not-applicable` with reviewed
-evidence when absent or unrequested.
+evidence when the feature is absent. The structured-data and WebMCP Contract B branches are never
+skipped as unrequested.
 
 ## Deadlines, approvals and stopping
 
@@ -280,9 +291,10 @@ manifest (by default the one `closure-verify` recorded) and its recorded human a
 
 The handover names project/branch/HEAD, core/PHP versions, dataset date, backup and restore
 references, graph hash/status, tests with exit codes, declared changes, residual risks, the graph
-report, and where the audit trail is committed or archived. It states that no staging/live
-deployment was performed. Distinguish **implemented**, **verified awaiting acceptance**,
-**closed locally** and **stale/incomplete**; never promise zero undiscovered bugs.
+report, the structured-data and WebMCP Contract B results with their B baselines, and where the
+audit trail is committed or archived. It states that no staging/live deployment was performed.
+Distinguish **implemented**, **verified awaiting acceptance**, **closed locally** and
+**stale/incomplete**; never promise zero undiscovered bugs.
 
 ## Reference index
 
