@@ -28,8 +28,9 @@ The fingerprint has two roles and must not confuse them:
 - **Upgrade subject, recorded but not hashed:** application PHP version/extensions · TYPO3 version
   and context · TYPO3 `GFX` configuration · DDEV project type/database engine. These are the values
   the upgrade is expected to change. Hashing them makes every successful upgrade invalidate itself:
-  Core changes its `GFX` defaults between majors (12.4 → 13.4 added webp/avif and dropped the gdlib
-  keys), so a pixel effect of `GFX` is a visual finding, never environment drift.
+  Core changes its `GFX` defaults between majors (12.4 → 13.4 added webp/avif, dropped the gdlib
+  keys and resolves an empty `processor_colorspace` per processor), so a pixel effect of `GFX` is a
+  visual finding, never environment drift.
 
 CPU count, memory, hostname and uptime are also recorded only. Browser and fonts are collected on
 the host because that is where Playwright renders. PHP, Composer, TYPO3, database, image processor
