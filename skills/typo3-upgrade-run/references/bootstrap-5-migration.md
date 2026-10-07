@@ -18,6 +18,7 @@ owner and declared only after the owner has accepted it.
 - [Class mapping: Bootstrap 3 to 5](#class-mapping-bootstrap-3-to-5)
 - [Bootstrap 4 to 5 in short](#bootstrap-4-to-5-in-short)
 - [Pitfalls](#pitfalls)
+- [Renaming classes is not enough — the migration checklist](#renaming-classes-is-not-enough--the-migration-checklist)
 - [Proof and handover](#proof-and-handover)
 
 ## Intake: inventory, estimate, ask
@@ -31,7 +32,7 @@ gets it.
 | Version and source language | `package.json`, banners of vendored `bootstrap*.css`/`.js`, `bootstrap-sass`, LESS sources, a theme extension that ships Bootstrap | Bootstrap 5 ships Sass only, so a LESS site ports its own styles: the largest single effort. A theme extension's TYPO3 14 release decides its 5.x; a gap to the newest 5.x is a recorded exception |
 | Bootstrap mixins and variables in the site's styles | `@include`/`.mixin()` calls, `$screen-*`, `$brand-*`, `$gray-*`, `$line-height-computed` | each one needs the compatibility layer or a rewrite |
 | Classes in templates | Fluid templates, partial and layout overrides, Content Blocks templates, menu templates, TypoScript wraps | markup work in `vite-assets` |
-| Classes in stored content | `tt_content.bodytext` and other rich-text fields, the RTE preset's styles and `contentsCss` | stored content stays unchanged; the compatibility layer styles it |
+| Classes in stored content | `tt_content.bodytext` and other rich-text fields, the RTE preset's styles and `contentsCss` | stored content stays unchanged; the compatibility layer styles it. The full count over sources and database is [checklist item 1](#1-leftover-audit-over-every-source-the-database-included) |
 | Form framework classes | powermail `plugin.tx_powermail.settings.styles.framework.*`, EXT:form YAML (`*ClassAttribute`) and template overrides | forms change shape twice: TYPO3 14 templates, then Bootstrap 5 |
 | Bootstrap JS components | `data-toggle`, `data-target`, `data-ride`, `data-spy`, `data-dismiss`, plugin calls such as `.modal(` or `.affix(` in templates, stored content and scripts | each needs `data-bs-*` attributes and a behaviour journey |
 | jQuery consumers | project scripts, inline scripts in templates and TypoScript (files and `sys_template` rows), jQuery plugins | replaced by native code; a retained plugin is an explicit, accepted exception |
@@ -108,7 +109,10 @@ exit condition. It is never a silent skip.
    capture of the affected URLs (`t3u capture --scope intermediate --affected-file …`) with
    `pre-bootstrap` and read the diffs. Remove every difference you can before the review. A framework
    migration exceeds a worker's usual one-cause size; the intent approval names the scope and the
-   evidence lists the commits.
+   evidence lists the commits. Before the first edit, run the
+   [leftover audit](#1-leftover-audit-over-every-source-the-database-included) and the old half of the [behaviour matrix](#2-behaviour-matrix-in-a-real-browser) and build the
+   old [fixture page](#3-a-fixture-page-for-components-outside-the-sample): all three need the
+   `pre-bootstrap` state.
 4. **Compare every URL** at the run's viewports:
 
    ```bash
@@ -118,9 +122,10 @@ exit condition. It is never a silent skip.
 
    HTTP and DOM cover every URL, the screenshots the sealed sample in its states; repeat the extra
    screenshots of step 2 for the other URLs. The findings are the review's content, not a failure.
-5. **Review with the owner.** Build one page under `nodes/vite-assets/review/`: each difference class
-   first, with one before/after pair and its affected URLs (a class is one cause: one variable, one
-   component default, one markup pattern; [rule 40.2](../rules/40-approval-matrix.md#402-approval-granularity-for-rendering-changes)),
+5. **Review with the owner** only after the [migration checklist](#renaming-classes-is-not-enough--the-migration-checklist)
+   is complete. Build one page under `nodes/vite-assets/review/`: the audit, behaviour and fixture
+   results first, then each difference class with one before/after pair and its affected URLs (a
+   class is one cause: one variable, one component default, one markup pattern; [rule 40.2](../rules/40-approval-matrix.md#402-approval-granularity-for-rendering-changes)),
    then the pairs of every URL at every viewport. The owner decides class by class; a rejected class
    goes back to step 3. Record what the owner accepted as its own approval, separate from the intent.
    One record lists every accepted class with its pair, because each rule in step 6 cites exactly
@@ -332,11 +337,205 @@ tier up, and use `navbar-expand-md`.
   same with or without them. Silence them for the dependency (`quietDeps`, `silenceDeprecations`)
   instead of pinning an old Sass.
 
+## Renaming classes is not enough — the migration checklist
+
+Pixel-identical screenshots plus a list of class renames is not a finished migration. The owner
+rejected exactly that review with the question: are you sure that changing the classes is enough?
+It is not. Screenshots cover the sealed sample in three states; renames cover the templates
+somebody opened. Neither proves stored content, untouched templates, scripts, behaviour or
+components that the sample never showed. All six items below are done before the owner review of
+step 5, and the review page shows their results.
+
+### 1. Leftover audit over every source, the database included
+
+Count every Bootstrap-4-only class and attribute in every place markup comes from: Fluid
+templates, partials and layouts; Content Blocks templates; EXT:form YAML (form definitions in
+their storage folders, `*ClassAttribute` settings) and form partials; TypoScript and TSconfig
+(wraps, `ATagParams`, RTE class lists); XLIFF (labels with markup); PHP (ViewHelpers, TCA items
+such as frame classes); JavaScript; CSS and Sass. In the database: `tt_content.bodytext` (HTML
+elements included), `header_link` and `pi_flexform`, `sys_template` constants and setup,
+`pages` (TSconfig and rich-text fields), the form definitions, and every other text column, via a
+fresh dump.
+
+The list, with breakpoint infixes (`ml-md-3`, `text-lg-right`):
+
+| Group | Bootstrap-4-only tokens |
+|---|---|
+| JavaScript attributes | `data-toggle`, `data-target`, `data-dismiss`, `data-parent`, `data-ride`, `data-slide(-to)`, `data-spy`, and `dataset.toggle`/`.target`/`.dismiss`/`.parent` in scripts |
+| Spacing and direction | `ml-*`, `mr-*`, `pl-*`, `pr-*` (negative `mr-n1` included), `float-left/right`, `text-left/right`, `rounded-left/right`, `border-left/right(-0)`, `dropdown-menu-right/left` |
+| Typography and helpers | `sr-only`, `sr-only-focusable`, `font-weight-*`, `font-italic` |
+| Components | `badge-*` (colours, `badge-pill`), `btn-block`, `close`, `jumbotron(-fluid)`, `media`, `media-body`, `card-deck`, `card-columns`, `embed-responsive(-*)` |
+| Grid and forms | `no-gutters`, `form-group`, `form-row`, `form-inline`, `custom-select`, `custom-control`, `custom-checkbox`, `custom-radio`, `custom-switch`, `custom-file`, `custom-range` (with their `-input`/`-label` parts), `input-group-append`, `input-group-prepend` |
+
+```bash
+A=.typo3-update/nodes/vite-assets/audit; mkdir -p "$A"
+cat > "$A/bs4-leftovers.pl" <<'PL'
+#!/usr/bin/env perl
+# Prints "source<TAB>token" per Bootstrap-4-only occurrence. A mysqldump file is split per table.
+use strict; use warnings;
+my $tok = qr/data-(?:toggle|target|dismiss|parent|ride|slide(?:-to)?|spy)|dataset\.(?:toggle|target|dismiss|parent)
+  |[mp][lr](?:-(?:sm|md|lg|xl))?-(?:n?[0-5]|auto)|(?:float|text)(?:-(?:sm|md|lg|xl))?-(?:left|right)
+  |sr-only(?:-focusable)?|badge-(?:primary|secondary|success|danger|warning|info|light|dark|pill)
+  |btn-block|no-gutters|form-(?:group|row|inline)|custom-(?:select|control|checkbox|radio|switch|file|range)(?:-[a-z]+)*
+  |input-group-(?:append|prepend)|embed-responsive(?:-[a-z0-9]+)*|jumbotron(?:-fluid)?|media-body|card-(?:deck|columns)
+  |dropdown-menu(?:-(?:sm|md|lg|xl))?-(?:left|right)|font-weight-[a-z]+|font-italic|(?:rounded|border)-(?:left|right)(?:-0)?/x;
+my $noise = qr/^(?:cache_|cf_|sys_log|sys_history|sys_refindex|sys_http_report|index_|tx_solr_|be_sessions|fe_sessions)/;
+my ($file, $table) = ('', '');
+while (my $l = <>) {
+  ($file, $table) = ($ARGV, '') if $ARGV ne $file;
+  $table = $1 if $l =~ /^INSERT INTO `(\w+)`/;
+  next if $table =~ $noise;
+  my $src = $table ne '' ? "db:$table" : $file;
+  print "$src\t$1\n" while $l =~ /(?<![\w\$\@-])($tok)(?![\w-])/g;
+  # "media" and "close" are English words too: count them only as a class or a selector
+  while ($l =~ /class(?:Attribute|Name)?\s*[=:]\s*\\?["']([^"'\\]*)/g) {
+    print "$src\t$_\n" for grep { /^(?:media|close)$/ } split /\s+/, $1;
+  }
+  print "$src\t$1\n" while $l =~ /(?:\.|classList\.\w+\(\s*["'])(media|close)(?![\w(-])/g;
+}
+PL
+# Sources: own code and form storages; build output and the vendored framework are not sources
+{ find packages config -type f \( -name '*.html' -o -name '*.yaml' -o -name '*.yml' \
+      -o -name '*.typoscript' -o -name '*.tsconfig' -o -name '*.txt' -o -name '*.xlf' -o -name '*.php' \
+      -o -name '*.js' -o -name '*.mjs' -o -name '*.ts' -o -name '*.css' -o -name '*.scss' -o -name '*.less' \) \
+    -not -path '*/node_modules/*' -not -path '*/vendor/*' \
+    -not -path '<the build output directory>/*' -not -name 'bootstrap*' -print0
+  find public/fileadmin -type f -name '*.form.yaml' -print0; } \
+  | xargs -0 perl "$A/bs4-leftovers.pl" > "$A/hits.tsv"
+# Database: every table except caches, logs and indexes (the script skips them)
+ddev export-db --gzip=false --file="$A/db.sql"
+perl "$A/bs4-leftovers.pl" "$A/db.sql" >> "$A/hits.tsv"
+# Token x source kind (file extension or db:<table>) x count: the audit table of the review
+awk -F'\t' '{ k = $1; if (k !~ /^db:/) { n = split(k, p, "."); k = "*." p[n] } c[$2 "\t" k]++ }
+  END { for (x in c) print x "\t" c[x] }' "$A/hits.tsv" | sort > "$A/leftovers.tsv"
+```
+
+For the records behind a `db:` count, query the table itself. Workspace rows count as content:
+
+```bash
+ddev mysql -N -B -e "SELECT uid, pid, sys_language_uid, t3ver_wsid FROM tt_content WHERE deleted = 0
+  AND CONCAT_WS(' ', bodytext, header_link, pi_flexform) REGEXP '(^|[^a-z0-9_-])(data-(toggle|target|dismiss|parent)|[mp][lr]-((sm|md|lg|xl)-)?(n?[0-5]|auto)|(float|text)-((sm|md|lg|xl)-)?(left|right)|sr-only(-focusable)?|badge-[a-z]+|btn-block|no-gutters|form-(group|row|inline)|custom-(select|control|checkbox|radio|switch|file|range)(-[a-z]+)*|input-group-(append|prepend)|embed-responsive(-[a-z0-9]+)*|jumbotron(-fluid)?|media-body|card-(deck|columns)|dropdown-menu-((sm|md|lg|xl)-)?(left|right)|font-weight-[a-z]+|font-italic|(rounded|border)-(left|right))([^a-z0-9_-]|$)|class=\"([^\"]* )?(media|close)( [^\"]*)?\"'" \
+  > "$A/tt_content-rows.tsv"
+```
+
+Each row of `leftovers.tsv` gets exactly one disposition, and the audit runs again on the migrated
+state:
+
+- **Renamed** — template, script and style sources. The source count on the rerun is zero.
+- **Aliased** (preferred for editor content: no data change) — the compatibility layer carries the
+  class with Bootstrap 4.6's own rule, copied as for the Bootstrap 3 rules above, never an
+  `@extend` of the Bootstrap 5 successor. CSS cannot alias an attribute: stored `data-toggle` and
+  friends need either a small native shim in the site's script that sets the matching `data-bs-*`
+  attribute before first use, or the wizard below. Keep every aliased class allowed in the RTE
+  preset ([pitfall](#pitfalls)).
+- **Migrated** — only with an owner approval for the data change: an upgrade wizard that is
+  idempotent (a second run changes zero rows), covers workspace and translated rows, and is recorded
+  in the [content-transition ledger](closure-currentness.md#target-content-epoch-one-cumulative-ledger).
+  It runs in a data-migration node, never inside `vite-assets`. The rerun shows zero for those rows.
+- **Exception** — a token kept as it is, with its reason and owner approval.
+
+The audit is complete when no row lacks a disposition and the rerun matches every disposition.
+
+### 2. Behaviour matrix in a real browser
+
+Screenshots alone do not prove behaviour. Run every interaction in the pinned browser
+(`typo3-playwright`) at every viewport of the run, once on the `pre-bootstrap` commit and once on the
+migrated state, and record what is observable, not "works":
+
+| Component | Interactions | Observed per viewport, old and new |
+|---|---|---|
+| Navbar toggler | click, Enter, Space, Escape, Tab through the open menu | open state, `aria-expanded`, focus target after each key, whether Escape closes |
+| Every collapse and submenu | open, close, keyboard, open-one-closes-other (`data-parent`) | visible state, `aria-expanded`, transition time |
+| Dropdowns | click, Enter, arrow keys, Escape, click outside | open state, focused item, menu alignment |
+| Modals, tooltips, popovers (if present) | open, Tab inside, Escape, close button | focus trap, focus return, backdrop |
+| Sliders | autoplay, arrows, dots, swipe (touch emulation), hover | measured autoplay interval and transition time, active item, pause on hover |
+| Focus rings, skip links | Tab from page start | ring geometry and colour on links, buttons and inputs; skip target receives focus |
+| Forms | empty submit, one invalid field, valid submit | error classes and messages, summary or confirmation step |
+
+Measure timings instead of eyeballing them, for example a slider's autoplay interval:
+
+```js
+// Playwright: the intervals between three changes of the active slide, in ms
+const intervals = await page.evaluate(({ root, item, active }) => new Promise((resolve) => {
+  const box = document.querySelector(root), items = [...box.querySelectorAll(item)], stamps = [];
+  let last = items.findIndex((el) => el.classList.contains(active));
+  new MutationObserver(() => {
+    const now = items.findIndex((el) => el.classList.contains(active));
+    if (now === last) return;
+    last = now; stamps.push(performance.now());
+    if (stamps.length === 4) resolve(stamps.slice(1).map((t, i) => Math.round(t - stamps[i])));
+  }).observe(box, { subtree: true, attributeFilter: ['class'] });
+}), { root: '.carousel', item: '.carousel-item', active: 'active' });
+```
+
+A cell where old and new differ is a regression unless the owner accepts it as its own class in the
+review. Write the matrix to `nodes/vite-assets/review/behaviour.json` and put the same table on the
+review page.
+
+### 3. A fixture page for components outside the sample
+
+The captured sample shows what its pages contain. Dropdowns, pagination, badges, `custom-file`,
+alerts, input groups, form error states, summary or confirmation tables and similar components
+often appear on no sampled page, or only in a state that was never captured. List every component
+that the audit, the site's Sass or the templates name, then build an offline fixture page:
+
+- `fixture-old.html` holds the markup the old templates emit, linked to the CSS built at the
+  `pre-bootstrap` commit; `fixture-new.html` holds the migrated templates' markup, linked to the new
+  build. Take the markup from rendered output, not from the Bootstrap documentation.
+- Each component in its states: default, hover, focus, active, disabled, invalid (`is-invalid`,
+  `was-validated`), and open for dropdowns.
+- No network: local fonts, no CDN, served from a local static server or `file://`.
+- Screenshot each component's box at every viewport with the pinned browser, then compare old and
+  new with the harness's own comparator (`pixelmatch` and `pngjs` in the harness's `node_modules`).
+  Strict zero, or the difference becomes a review class like any other.
+
+### 4. Contract A identity for JavaScript behaviour
+
+A native replacement for a jQuery or Bootstrap 4 plugin reproduces the old plugin exactly, quirks
+included: timings and easing, start item, wrap-around, pause on hover, resize handling, the
+attributes and classes it wrote into the DOM (they are part of the DOM comparison), and its
+accessibility behaviour. A slider that ignored `prefers-reduced-motion` keeps ignoring it; honouring
+it is a separate, optional Contract B change with its own approval after Contract A closes.
+
+The same holds for incidental network requests. When the old plugin loaded a loading GIF or a
+sprite, the replacement requests the same resource at the same moment, for instance by keeping the
+CSS rule that referenced it. Otherwise the media adapters record a different source set and the
+comparison reports `visual-media-source` findings, which no declared-change rule can cover:
+declarations apply to the HTTP and DOM stages only.
+
+### 5. No toolchain version pins as a shortcut
+
+When the latest Sass (or PostCSS, Vite, Lightning CSS) computes a value differently, keep the latest
+compiler and encode the old output. Example: a newer Sass shifts a colour computed with
+`darken()`. Read the old value from the CSS built at `pre-bootstrap` and pin it as a literal in the
+compatibility layer, with the expression it replaces in a comment:
+
+```scss
+// _bootstrap4-compat.scss: values the old compiler produced, kept literally
+$link-hover-color: #1d5a8c; // was darken($primary, 15%) under the old Sass
+```
+
+The same rule applies to Vite's CSS output ([fix pack item 10](typo3-14-fix-pack.md#10-vite-5-to-8-rewrites-the-css)):
+configuration and literal values, never an old toolchain version.
+
+### 6. The review page shows the evidence, not only screenshots
+
+`nodes/vite-assets/review/index.html` opens with the three results, before any screenshot pair:
+
+1. the leftover audit: token × source × count before, count after, disposition;
+2. the behaviour matrix: every component × interaction × viewport, old and new, differences first;
+3. the fixture comparison: every component and state, with its pair and diff result.
+
+The difference classes and the per-URL pairs follow. The owner's acceptance cites this page; an
+acceptance given on screenshots alone does not cover a migration.
+
 ## Proof and handover
 
 - The run's own loops: the invariance loop before the change, the final `compare-all` of the
   Bootstrap loop against `A-original` with the declared rules, then P11 as for every run.
 - The before/after comparison of every URL that the owner accepted.
+- The [migration checklist](#renaming-classes-is-not-enough--the-migration-checklist) results: the
+  leftover audit with its rerun, the behaviour matrix and the fixture comparison.
 - Behaviour journeys through `typo3-playwright` for every interactive component the inventory found
   (navigation toggle, dropdowns, collapse and accordion, tabs, modals, carousel, tooltips, form
   validation): the sentinels intake registered in `config/interactions.yml`, run on the migrated

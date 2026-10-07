@@ -32,7 +32,11 @@ a dated example, update older 5.x dependencies and commit the lockfile/productio
 Bootstrap 3 or 4 site migrates to 5.x in this node after the invariance loop, following the
 [migration procedure](../../typo3-upgrade-run/references/bootstrap-5-migration.md): old-look Sass
 variables, a small compatibility layer, a before/after review of every URL and a separately
-recorded owner acceptance. Do not add Bootstrap to a frontend that does not use it.
+recorded owner acceptance. Renaming classes is not enough: before that review, complete the
+[migration checklist](../../typo3-upgrade-run/references/bootstrap-5-migration.md#renaming-classes-is-not-enough--the-migration-checklist)
+(leftover audit over sources and database, behaviour matrix, fixture page, Contract A identity for
+replaced plugins, literal values instead of toolchain pins). Do not add Bootstrap to a frontend that
+does not use it.
 
 Inventory imports, globals, inline snippets and plugins before removing jQuery. Convert
 project-owned selectors/events/AJAX to DOM APIs and fetch; preserve delegation, abort/error
