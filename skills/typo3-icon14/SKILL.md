@@ -231,6 +231,12 @@ The official docs state that icons must be registered in the icon registry throu
 `Configuration/Icons.php`, and that registration in `ext_localconf.php` is no longer
 possible in TYPO3 v14.
 
+Font Awesome icons are the exception to drawing your own SVGs: take them from
+[`friendsoftypo3/fontawesome-provider`](https://packagist.org/packages/friendsoftypo3/fontawesome-provider)
+(latest stable TYPO3 14 release) rather than a CDN icon font, a vendored Font Awesome copy or
+another icon package. Keep it installed when Mask is removed; migrated elements still use its
+identifiers.
+
 ## Migration Behavior
 
 When legacy SVGs already exist:

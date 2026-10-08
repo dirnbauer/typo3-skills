@@ -178,6 +178,24 @@ Record the resolved commit from `composer.lock`, run the full extension migratio
 and classify the resolution as `forked` with its approval and ADR. The Composer lock is the
 reproducibility anchor; never follow an unrecorded moving branch in a completed run.
 
+### Font Awesome icons: keep `friendsoftypo3/fontawesome-provider`
+
+Font Awesome icons in TYPO3 come from
+[`friendsoftypo3/fontawesome-provider`](https://packagist.org/packages/friendsoftypo3/fontawesome-provider)
+(source: `github.com/FriendsOfTYPO3/fontawesome-provider`). Treat it as a kept runtime dependency:
+
+- **Keep and upgrade it** to the latest stable release that declares TYPO3 14 support (v1.0.6 at the
+  time of writing allows `typo3/cms-core` and `typo3/cms-backend` `^14.0`); verify current Packagist
+  metadata at execution time like any other branch-1 package.
+- **Do not remove it as a Mask dependency.** Mask's icon picker pulls it in, but the stored icon
+  identifiers outlive Mask: elements migrated to Content Blocks keep resolving their Font Awesome
+  identifiers through the provider. An inventory that lists it under "remove with Mask" is wrong.
+- **Prefer it over alternatives** for backend and content-element icons: no CDN-loaded icon font, no
+  self-bundled Font Awesome copy and no other icon package as a replacement. Changing the icon source
+  is a separate, approved design change, not upgrade work.
+
+Resolution: `updated`.
+
 ### Declared compatibility is a solver claim
 
 Composer proving that a package *resolves* on TYPO3 14 says only that its metadata allows the graph.
