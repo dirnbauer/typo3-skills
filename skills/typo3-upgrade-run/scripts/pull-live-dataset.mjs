@@ -311,14 +311,15 @@ function streamToGzip(command, args, outFile) {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, { stdio: ['ignore', 'pipe', 'pipe'] });
     const out = createWriteStream(outFile);
-    let stderr = '';
+    // Keep the stderr tail as bytes and decode once, so a multibyte character is never split.
+    let stderrTail = Buffer.alloc(0);
     let exitCode = null, flushed = false;
     const settle = () => {
       if (exitCode === null || !flushed) return;
       if (exitCode === 0) resolve();
-      else reject(new Error(`Remote export failed (exit ${exitCode}): ${stderr.trim().slice(0, 400)}`));
+      else reject(new Error(`Remote export failed (exit ${exitCode}): ${stderrTail.toString('utf8').slice(-2000).trim().slice(0, 400)}`));
     };
-    child.stderr.on('data', (d) => { stderr = (stderr + d.toString()).slice(-2000); });
+    child.stderr.on('data', (d) => { stderrTail = Buffer.concat([stderrTail, Buffer.from(d)]).subarray(-8192); });
     child.stdout.pipe(createGzip()).pipe(out);
     child.on('error', reject);
     child.on('close', (code) => { exitCode = code ?? 1; settle(); });

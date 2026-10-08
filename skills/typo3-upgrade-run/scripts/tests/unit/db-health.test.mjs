@@ -1,11 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { EventEmitter } from 'node:events';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  CHECK_ORDER, CHECK_RISK, EXIT, buildCuratedTransaction, buildRecords, classifyGroups, compareInventories,
+  CHECK_ORDER, CHECK_RISK, EXIT, buildCuratedTransaction, defaultRunner, buildRecords, classifyGroups, compareInventories,
   exitForCheck, exitForCompare, ledgerKeysFrom, main, parseCheckOutput, parseSqlLog, recordsDocument, runApply, runProbe,
 } from '../../db-health.mjs';
 
@@ -238,4 +240,52 @@ test('the CLI parses saved output with the harness exit codes', async () => {
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
+});
+
+/** A fake child process that emits the given stdout/stderr byte chunks, then closes with code 0. */
+function chunkedSpawn({ stdout = [], stderr = [] }) {
+  return () => {
+    const child = new EventEmitter();
+    child.stdout = new EventEmitter();
+    child.stderr = new EventEmitter();
+    child.stdin = { end() {} };
+    child.kill = () => {};
+    setImmediate(() => {
+      for (const chunk of stdout) child.stdout.emit('data', chunk);
+      for (const chunk of stderr) child.stderr.emit('data', chunk);
+      child.emit('close', 0, null);
+    });
+    return child;
+  };
+}
+
+const sha256 = (text) => createHash('sha256').update(text).digest('hex');
+
+test('defaultRunner decodes a multibyte character split across two chunks, so the fingerprint is stable', async () => {
+  const text = 'uid\ttitle\n1\tGrüße 🚀 Ölfass\n';
+  const bytes = Buffer.from(text, 'utf8');
+  const umlaut = bytes.indexOf(Buffer.from('ü', 'utf8'));
+  const rocket = bytes.indexOf(Buffer.from('🚀', 'utf8'));
+  const hashes = new Set();
+  // Split inside the 2-byte ü, inside the 4-byte emoji, and at every byte position.
+  for (const cut of [umlaut + 1, rocket + 1, rocket + 2, rocket + 3, ...Array.from({ length: bytes.length - 1 }, (_, i) => i + 1)]) {
+    const result = await defaultRunner('ddev', ['mysql'], {
+      spawnFn: chunkedSpawn({ stdout: [bytes.subarray(0, cut), bytes.subarray(cut)], stderr: [bytes.subarray(0, cut), bytes.subarray(cut)] }),
+    });
+    assert.equal(result.code, 0);
+    assert.equal(result.stdout, text, `stdout split at byte ${cut}`);
+    assert.equal(result.stderr, text, `stderr split at byte ${cut}`);
+    assert.ok(!result.stdout.includes('\uFFFD'), 'no replacement character');
+    hashes.add(sha256(result.stdout));
+  }
+  assert.deepEqual([...hashes], [sha256(text)], 'one hash, whatever the chunk boundary');
+});
+
+test('defaultRunner decodes a real child process whose multibyte output arrives in two writes', async () => {
+  const script = "const b = Buffer.from('Grüße', 'utf8'); process.stdout.write(b.subarray(0, 3));"
+    + ' setTimeout(() => process.stdout.write(b.subarray(3)), 50);';
+  const result = await defaultRunner(process.execPath, ['-e', script], { timeoutMs: 10_000 });
+  assert.equal(result.code, 0);
+  assert.equal(result.stdout, 'Grüße');
+  assert.equal(sha256(result.stdout), sha256('Grüße'));
 });
