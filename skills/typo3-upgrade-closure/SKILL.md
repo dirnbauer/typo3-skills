@@ -22,7 +22,8 @@ Start every node from `t3u node-brief --node <id>`; it carries the contract, rou
 
 | Node | Focus |
 |---|---|
-| `target-content-epoch` | Workflow step 1; flagged **R**: a verifier checks the ledger explanations |
+| `db-health-target` | Before the epoch: dbdoctor 2.2.x check plus restored probe, compared on `(check, table, uid)` with the intake inventory; new → `content-recovery`, vanished → ledger, never execute ([database health](../typo3-upgrade-run/references/database-health.md#db-health-target-the-comparison)) |
+| `target-content-epoch` | Workflow step 1; flagged **R**: a verifier checks the ledger explanations, including every dbdoctor finding that vanished since intake |
 | `content-ledger-recovery` | Explain or revert unledgered drift; flagged **R** |
 | `http-dom-proof` | Step 3 for every discovered URL; evidence loop |
 | `visual-proof` | Step 3 for the sealed tiered sample; evidence loop; findings → `visual-classify` |

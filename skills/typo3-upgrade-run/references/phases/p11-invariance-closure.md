@@ -11,6 +11,10 @@ seal, and the active target content epoch matches its reviewed transition ledger
 **Repair only.** No new features, no improvements, no "while I am here".
 
 ## Steps
+0. `db-health-target`: run dbdoctor 2.2.x in check mode plus the restored probe and compare
+   `(check, table, uid)` with the intake inventory. New rows are migration defects
+   (`content-recovery`), vanished rows go into the ledger of step 1, nothing is executed on the target
+   ([database health](../database-health.md#db-health-target-the-comparison)).
 1. After the last approved stateful migration reaches a fixed point, complete
    `config/content-transition.example.json` and run `t3u content-fingerprint --write-target
    --transition <ledger>`. The source fingerprint is never overwritten; the command requires a

@@ -1,0 +1,9 @@
+
+In TtContentPidDeleted.php line 72:
+                                                                                                    
+  Record with uid="4711" on table "tt_content" has pid="99", but that page does not exist. A previous check  
+  should have found and fixed this. Please repeat.                                                  
+                                                                                                    
+
+dbdoctor:health [-m|--mode MODE] [-f|--file FILE]
+

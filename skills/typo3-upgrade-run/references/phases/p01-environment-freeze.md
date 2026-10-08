@@ -112,6 +112,11 @@ P00 complete.
    wizards that depend on it (file references, slugs) then migrate the wrong rows, and broken FAL
    references surface much later looking like an image-processing problem. Run
    `referenceindex:update` now, note how long it took, and budget that time for the reruns later.
+7b. **Database health inventory** (`db-health-intake`, after `intake-join`): pinned
+   `lolli/dbdoctor` as a dev dependency in its own commit, read-only check, then the restored snapshot
+   probe for every `(check, table, uid)`. Owner-approved groups are applied by `db-health-recovery` as
+   one dated dataset transition **before** the fingerprints below are sealed; everything else is
+   recorded as pre-existing ([database health](../database-health.md)).
 8. Run the repository's existing install, lint, static analysis and tests on the current branch.
    **Record pre-existing failures separately from regressions** — a failure that was already there is
    a `pre-existing` finding, not something this update caused.

@@ -157,10 +157,10 @@ Load only the skill the brief names:
 
 | Skill | Owns | Returns |
 |---|---|---|
-| `typo3-upgrade-intake` | identity, dataset, discovery, extensions, recovery of those | sealed intake evidence + routes |
+| `typo3-upgrade-intake` | identity, dataset, discovery, extensions, database health at intake, recovery of those | sealed intake evidence + routes |
 | `typo3-upgrade-baseline` | Baseline A, determinism, harness and session repair | immutable Baseline A or harness blocker |
 | `typo3-upgrade-migration` | dependency plan, 13.4/14.3 rungs, mechanical/manual migration | fixed-point evidence + findings |
-| `typo3-upgrade-closure` | target epoch, HTTP/DOM/pixel/quality proof, Contract A, handover | closure certificate or classified failures |
+| `typo3-upgrade-closure` | target database health, target epoch, HTTP/DOM/pixel/quality proof, Contract A, handover | closure certificate or classified failures |
 | `typo3-upgrade-retrospective` | audits of earlier runs; not a graph node | problem/cause/fix matrix + proposals |
 
 Specialist nodes name `typo3-content-blocks`, `typo3-vite`, `typo3-solr`, `typo3-ckeditor5`,
@@ -225,6 +225,10 @@ Read [`rules/20-baseline-integrity.md`](rules/20-baseline-integrity.md),
 - Real editor journeys run through `typo3-playwright`: save/reopen, RTE links, plugin previews,
   AJAX/UTF-8 search. Rich-text migrations need the [field round-trip](../typo3-content-blocks/references/rich-text-roundtrip.md).
 - After patch-level dependency changes, recheck used backend subclasses/DI and affected integrations.
+- Database health runs twice with a pinned `lolli/dbdoctor`: `db-health-intake` before Baseline A
+  (owner-approved fix groups only, as a dated dataset transition) and `db-health-target` before the
+  target epoch (new rows are migration defects, vanished rows are ledgered, never execute there):
+  [database health](references/database-health.md).
 
 ## Migration invariants
 
@@ -301,6 +305,7 @@ Distinguish **implemented**, **verified awaiting acceptance**, **closed locally*
 - [Graph runner](references/graph-runner.md) — dispatch, briefs, evidence and review templates, resume, calibration
 - [Graph nodes](references/graph-nodes.md) — generated contract of every node
 - [Live dataset and staging](references/live-dataset-and-staging.md) — read-only pull, delete-first fileadmin, staging-only deploy guard
+- [Database health](references/database-health.md) — lolli/dbdoctor at intake and on the target: pins, probe, classification, fix strategy
 - [Graph architecture](references/graph-architecture.md) — design rationale and the sources it was checked against
 - [`rules/10-graph-protocol.md`](rules/10-graph-protocol.md) · [`rules/10-loop-protocol.md`](rules/10-loop-protocol.md)
 - [`references/run-directory.md`](references/run-directory.md) · [`references/state-file.md`](references/state-file.md)
