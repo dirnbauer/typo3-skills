@@ -68,6 +68,24 @@ pids=$(ps -A -o pid=,ppid=,args= | awk -v p="ms-playwright/chromium-$rev/" '$2 =
 [ -n "$pids" ] && kill $pids
 ```
 
+## Why a small site took so long (2026-10-08)
+
+A 33-URL fleet site with one real migration (Mask → Content Blocks, 40 rows) was sealed huge and
+forecast at 18 hours. The owner: "why it takes soooo long". Six causes, each with its counter-measure:
+
+| Cause | Counter-measure |
+|---|---|
+| Dev-only packages, unused extensions and a wrapper swap counted as compatibility blockers | Only used blockers that need a fork, a local or a data migration count ([blocker rule](runtime-sizing.md#compatibility-blockers)) |
+| The forecast copied measured minutes from earlier runs whose nodes were dominated by rework and recoveries | Copy the work, not the wall clock: drop recovery attempts, rework and owner waits from a [measured node](runtime-sizing.md#measured-fleet-durations) before using its minutes |
+| Proof scripts written anew per site | Reuse the previous fleet run's component sentinels, backend operations, cache journey and closure-manifest builder, adapted per site (selectors, accounts, routes) |
+| Predictable decisions asked mid-run | [Round 1](overnight-controller.md#batch-the-owner-decisions) asks every decision the inventory already predicts |
+| Full captures after every intermediate step | Intermediate checks on affected routes plus a stable sample ([feasibility](runtime-sizing.md#feasibility-before-mutation)); one full capture per rung end |
+| Composer, Rector and code work waited for browser captures | Run them beside the capture: the capture reads the running site, the code work happens in [isolated preparation](parallel-execution.md#independent-implementation-preparation) and lands after the capture index is complete |
+
+Before the first stateful proof, mark the DDEV-generated tracked files skip-worktree
+([closure trap 1](#closure-deploy-and-backend-proof-traps-from-a-fleet-run-2026-10-07)); doing it
+only at `closure-start` is too late when an earlier snapshot restore already dirtied the tree.
+
 ## Processed images darker locally than live (2026-10-07)
 
 On a two-language shop-check site DDEV ran ImageMagick where live runs GraphicsMagick, with TYPO3
