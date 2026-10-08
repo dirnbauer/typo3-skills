@@ -27,6 +27,7 @@
 import { chromium } from 'playwright';
 import { writeFileSync, readFileSync } from 'node:fs';
 import { createRoutePolicy } from './lib/browser/route-policy.mjs';
+import { installExternalHandlerGuard } from './lib/browser/external-guard.mjs';
 import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 
@@ -113,6 +114,7 @@ const ctx = await browser.newContext({
   ignoreHTTPSErrors: true, viewport: { width: 1280, height: 900 }, proxy: await policy.egressProxy(),
 });
 await policy.attach(ctx);
+await installExternalHandlerGuard(ctx);
 const byRule = new Map();
 const perPage = [];
 

@@ -86,6 +86,17 @@ Before the first stateful proof, mark the DDEV-generated tracked files skip-work
 ([closure trap 1](#closure-deploy-and-backend-proof-traps-from-a-fleet-run-2026-10-07)); doing it
 only at `closure-start` is too late when an earlier snapshot restore already dirtied the tree.
 
+## A component sentinel opened the operator's mail client (2026-10-09)
+
+A closure sentinel clicked every spam-protected address (`a[data-mailto-token]`, TYPO3 core decoder)
+to prove it still decoded: 23 clicks, 23 compose windows in the developer's desktop mail client.
+Headless Chromium hands `mailto:`/`tel:`/`sms:`/`callto:` navigations to the operating system, and
+`page.route()` cannot intercept them. The owner: "don't open so many new emails". Never click such
+links; prove the decoder statically and keep the click guard in every context, as the
+[Playwright rule](../../typo3-playwright/references/external-scheme-links.md) describes. The
+harness installs the guard in all its capture, sweep, axe and backend contexts
+(`scripts/lib/browser/external-guard.mjs`); self-written journey scripts must install it too.
+
 ## Processed images darker locally than live (2026-10-07)
 
 On a two-language shop-check site DDEV ran ImageMagick where live runs GraphicsMagick, with TYPO3

@@ -11,6 +11,7 @@
 
 import { PolicyError } from '../cli/exit-codes.mjs';
 import { STABILIZE_CSS, initScript, settleScript } from './stabilize.mjs';
+import { installExternalHandlerGuard } from './external-guard.mjs';
 
 export const SAFE_BROWSER_ARGS = Object.freeze([
   '--disable-dev-shm-usage',
@@ -94,6 +95,8 @@ export async function newContext(browser, {
     ...(proxy ? { proxy } : {}),
   });
 
+  // mailto:/tel:/… clicks would open the operator's mail client or phone app (external-guard.mjs).
+  await installExternalHandlerGuard(context);
   await context.addInitScript(initScript(stabilize));
   return context;
 }
