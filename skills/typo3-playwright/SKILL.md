@@ -37,6 +37,14 @@ For a reported regression or a review of an existing journey suite, read
 [QA review patterns](references/qa-review-patterns.md): minimize the reproduction, distinguish
 missing requirements from weak assertions, and prioritize checks without waiving planned coverage.
 
+## Hard rules
+
+- **Never activate an external-scheme link.** A click, Enter or `goto` on `mailto:`, `tel:`, `sms:`,
+  `callto:` or a TYPO3 spam-protected `a[data-mailto-token]` hands the URL to the operating system,
+  even headless: real compose windows open on the operator's machine. `page.route()` cannot intercept
+  external schemes. Verify such links statically, and install the click guard in every context
+  before its first page ([external-scheme links](references/external-scheme-links.md)).
+
 ## Required journeys when the feature exists
 
 | Surface | Assertions |

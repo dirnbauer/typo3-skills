@@ -75,6 +75,13 @@ on disk that can be edited:
 `Authorization` and `Cookie` are dropped on any origin change. A cross-origin redirect is refused
 outright unless the target origin is allow-listed.
 
+External schemes (`mailto:`, `tel:`, `sms:`, `callto:`, any scheme the browser does not render) are
+handed to the operating system and never reach the route or the proxy. Every harness context
+therefore gets `lib/browser/external-guard.mjs` as an init script: a capture-phase `window`
+listener that cancels click/auxclick on such links and on TYPO3's `a[data-mailto-token]`, and
+submit to such a form action, before any page handler. It adds listeners only, so captures stay
+byte-identical ([Playwright rule](../../typo3-playwright/references/external-scheme-links.md)).
+
 ## Browser arguments
 
 ```js

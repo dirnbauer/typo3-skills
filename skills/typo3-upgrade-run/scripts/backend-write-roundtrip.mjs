@@ -34,6 +34,7 @@
 import { chromium } from 'playwright';
 import { writeFileSync } from 'node:fs';
 import { createRoutePolicy } from './lib/browser/route-policy.mjs';
+import { installExternalHandlerGuard } from './lib/browser/external-guard.mjs';
 import { execFileSync } from 'node:child_process';
 
 const MARK = '_t3u_probe_';
@@ -114,6 +115,7 @@ try {
     ignoreHTTPSErrors: true, viewport: { width: 1600, height: 1200 }, proxy: await policy.egressProxy(),
   });
   await policy.attach(ctx);
+  await installExternalHandlerGuard(ctx);
   const page = await ctx.newPage();
 
   const listFrame = async (waitMs = 1400) => {
