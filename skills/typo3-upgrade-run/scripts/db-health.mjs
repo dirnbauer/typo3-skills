@@ -441,16 +441,23 @@ export function statementCounts(statements) {
 
 /* ----------------------------------------------------------------------------- DDEV side */
 
-/** Run a command; resolve { code, stdout, stderr } and never throw on a non-zero exit. */
-export function defaultRunner(cmd, args, { cwd, input, timeoutMs } = {}) {
+/**
+ * Run a command; resolve { code, stdout, stderr } and never throw on a non-zero exit.
+ * Output is collected as Buffers and decoded once: decoding chunk by chunk corrupts a multibyte
+ * UTF-8 character split across two chunks, which made the probe's restore fingerprint differ on
+ * every call for large tables (exit 3 on an untouched database).
+ */
+export function defaultRunner(cmd, args, { cwd, input, timeoutMs, spawnFn = spawn } = {}) {
   return new Promise((resolve) => {
-    const child = spawn(cmd, args, { cwd, stdio: ['pipe', 'pipe', 'pipe'] });
-    let stdout = '', stderr = '', timer = null;
-    child.stdout.on('data', (d) => { stdout += d; });
-    child.stderr.on('data', (d) => { stderr += d; });
+    const child = spawnFn(cmd, args, { cwd, stdio: ['pipe', 'pipe', 'pipe'] });
+    const out = [], err = [];
+    let timer = null;
+    const text = (chunks) => Buffer.concat(chunks).toString('utf8');
+    child.stdout.on('data', (d) => { out.push(Buffer.from(d)); });
+    child.stderr.on('data', (d) => { err.push(Buffer.from(d)); });
     if (timeoutMs) timer = setTimeout(() => child.kill('SIGKILL'), timeoutMs);
-    child.on('error', (error) => { clearTimeout(timer); resolve({ code: 127, stdout, stderr: `${stderr}${error.message}` }); });
-    child.on('close', (code, signal) => { clearTimeout(timer); resolve({ code: signal ? 124 : code, stdout, stderr }); });
+    child.on('error', (error) => { clearTimeout(timer); resolve({ code: 127, stdout: text(out), stderr: `${text(err)}${error.message}` }); });
+    child.on('close', (code, signal) => { clearTimeout(timer); resolve({ code: signal ? 124 : code, stdout: text(out), stderr: text(err) }); });
     if (input !== undefined) child.stdin.end(input); else child.stdin.end();
   });
 }

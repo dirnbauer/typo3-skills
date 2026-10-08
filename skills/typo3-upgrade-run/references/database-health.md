@@ -155,6 +155,9 @@ finally: delete the container SQL files, ddev snapshot restore P, fingerprint ag
   `sys_log`, sessions, `sys_refindex`, `sys_history`), so tables beyond the default content fingerprint,
   for example `fe_users` or `sys_category`, are covered. `tstamp` is never touched by dbdoctor; only the
   row hash sees its changes.
+- A probe exit 3 on an untouched database caused by chunked decoding (a multibyte UTF-8 character split
+  across two output chunks changed the fingerprint of large tables) was fixed in the 2026-10-09 runner
+  update: `defaultRunner` collects Buffers and decodes once.
 - `records.json` lists one record per `(check, table, uid)` with its actions (`delete`, `soft-delete`,
   `update`) and the updated fields, sorted, plus one group per `(check, table)` with the risk and a
   default proposal, and its sha256. `probe.json` records the snapshot, passes, convergence and the
