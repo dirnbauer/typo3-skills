@@ -32,9 +32,12 @@ import {
   RUNTIME_PROFILES,
   RUNTIME_SIZE_SCHEMA,
   assertPhaseRuntime,
+  classifyCompatibilityBlockers,
   classifySiteSize,
   runtimeProfileIssues,
   runtimeWindow,
+  sizingEvidenceIssues,
+  sizingMetrics,
 } from '../../lib/run/runtime.mjs';
 import {
   captureAll,
@@ -797,6 +800,91 @@ describe('overnight comparison command', () => {
     assert.equal(classifySiteSize({ ...small, public_routes: 100, compatibility_blockers: 3 }), 'huge');
   });
 
+  describe('compatibility blockers count only used packages that need real work', () => {
+    const entry = (overrides) => ({
+      package: 'vendor/package', dev_only: false, usage: 0, resolution: 'removal',
+      source: 'nodes/extension-inventory/usage.json', ...overrides,
+    });
+
+    test('a dev-only removal counts 0', () => {
+      const result = classifyCompatibilityBlockers([
+        entry({ package: 'vendor/file-fill', dev_only: true, usage: 3, resolution: 'removal' }),
+      ]);
+      assert.equal(result.counted.length, 0);
+      assert.deepEqual(result.recorded, [{ package: 'vendor/file-fill', reason: 'dev-only' }]);
+    });
+
+    test('a zero-usage removal counts 0', () => {
+      const result = classifyCompatibilityBlockers([entry({ package: 'vendor/unused-ext', usage: 0 })]);
+      assert.equal(result.counted.length, 0);
+      assert.deepEqual(result.recorded, [{ package: 'vendor/unused-ext', reason: 'unused' }]);
+    });
+
+    test('a used Mask to Content Blocks migration counts 1', () => {
+      const result = classifyCompatibilityBlockers([
+        entry({ package: 'mask/mask', usage: 40, resolution: 'data-migration' }),
+      ]);
+      assert.deepEqual(result.counted, [{ package: 'mask/mask', resolution: 'data-migration' }]);
+      assert.deepEqual(result.recorded, []);
+    });
+
+    test('drop-in replacements and plain upgrades are recorded; a used removal counts', () => {
+      const result = classifyCompatibilityBlockers([
+        entry({ package: 'vendor/wrapper', usage: 8, resolution: 'drop-in-replacement' }),
+        entry({ package: 'vendor/plain', usage: 5, resolution: 'supported-release' }),
+        entry({ package: 'vendor/used-removal', usage: 2, resolution: 'removal' }),
+      ]);
+      assert.deepEqual(result.counted, [{ package: 'vendor/used-removal', resolution: 'removal' }]);
+      assert.deepEqual(result.recorded.map((item) => item.reason), ['drop-in-replacement', 'supported-release']);
+    });
+
+    test('a small site with one real migration is no longer sealed huge', () => {
+      const metrics = {
+        public_routes: 33, content_records: 900, fileadmin_files: 1_200,
+        sites: 1, languages: 1, active_non_core_extensions: 9, local_packages: 1,
+        stateful_migrations: 1,
+      };
+      const evidence = {
+        schema: RUNTIME_SIZE_SCHEMA,
+        metrics,
+        sources: Object.fromEntries([...Object.keys(metrics), 'compatibility_blockers']
+          .map((key) => [key, `nodes/intake/${key}.txt`])),
+        compatibility_blocker_inventory: [
+          entry({ package: 'vendor/file-fill', dev_only: true, usage: 0 }),
+          entry({ package: 'vendor/core-upgrader', dev_only: true, usage: 0 }),
+          entry({ package: 'vendor/unused-ext', usage: 0 }),
+          entry({ package: 'vendor/wrapper', usage: 6, resolution: 'drop-in-replacement' }),
+          entry({ package: 'mask/mask', usage: 40, resolution: 'data-migration' }),
+        ],
+      };
+      assert.deepEqual(sizingEvidenceIssues(evidence), []);
+      assert.equal(sizingMetrics(evidence).compatibility_blockers, 1);
+      assert.equal(classifySiteSize(sizingMetrics(evidence)), 'large');
+      assert.equal(classifySiteSize({ ...metrics, compatibility_blockers: 5 }), 'huge');
+    });
+
+    test('rejects a stated count that the inventory contradicts or does not itemize', () => {
+      const metrics = {
+        public_routes: 33, content_records: 900, fileadmin_files: 1_200,
+        sites: 1, languages: 1, active_non_core_extensions: 9, local_packages: 1,
+        stateful_migrations: 1, compatibility_blockers: 3,
+      };
+      const sources = Object.fromEntries(Object.keys(metrics).map((key) => [key, `nodes/intake/${key}.txt`]));
+      assert.ok(sizingEvidenceIssues({ schema: RUNTIME_SIZE_SCHEMA, metrics, sources })
+        .some((issue) => /must itemize every blocker/.test(issue)));
+      const contradicted = sizingEvidenceIssues({
+        schema: RUNTIME_SIZE_SCHEMA, metrics, sources,
+        compatibility_blocker_inventory: [entry({ package: 'mask/mask', usage: 40, resolution: 'data-migration' })],
+      });
+      assert.ok(contradicted.some((issue) => /inventory counts 1/.test(issue)));
+      const malformed = sizingEvidenceIssues({
+        schema: RUNTIME_SIZE_SCHEMA, metrics: { ...metrics, compatibility_blockers: 0 }, sources,
+        compatibility_blocker_inventory: [entry({ dev_only: 'no', usage: -1, resolution: 'maybe', source: '' })],
+      });
+      assert.equal(malformed.length, 4);
+    });
+  });
+
   test('seals evidence once and enforces migration cutoff separately from closure', async () => {
     const root = await tmp();
     const paths = new RunPaths('.typo3-update', root);
@@ -814,6 +902,9 @@ describe('overnight comparison command', () => {
       schema: RUNTIME_SIZE_SCHEMA,
       metrics,
       sources: Object.fromEntries(Object.keys(metrics).map((key) => [key, `nodes/intake/${key}.txt`])),
+      compatibility_blocker_inventory: [
+        { package: 'acme/legacy-slider', dev_only: false, usage: 12, resolution: 'fork', source: 'nodes/extension-inventory/usage.json' },
+      ],
     }));
     const quiet = { success() {} };
     const journal = { async append() {} };

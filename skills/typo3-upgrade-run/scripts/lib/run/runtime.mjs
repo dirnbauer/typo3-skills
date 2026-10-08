@@ -59,6 +59,79 @@ export const SIZE_LIMITS = Object.freeze({
   }),
 });
 
+/**
+ * How a package that blocks `composer why-not typo3/cms-core ^14.3` is resolved.
+ * Only work on a package the project uses counts toward the size profile: a fork, a local
+ * migration of templates/config/code, a migration of stored data, or removing a used package
+ * (its usages have to be migrated first).
+ */
+export const BLOCKER_RESOLUTIONS = Object.freeze([
+  'fork',
+  'local-migration',
+  'data-migration',
+  'drop-in-replacement',
+  'supported-release',
+  'removal',
+]);
+
+function blockerInventoryIssues(inventory) {
+  if (!Array.isArray(inventory)) return ['compatibility_blocker_inventory must be an array'];
+  const issues = [];
+  const seen = new Set();
+  inventory.forEach((entry, index) => {
+    const at = `compatibility_blocker_inventory[${index}]`;
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      issues.push(`${at} must be an object`);
+      return;
+    }
+    if (typeof entry.package !== 'string' || !entry.package.trim()) issues.push(`${at}.package must name the package`);
+    else if (seen.has(entry.package)) issues.push(`${at}.package ${entry.package} is listed twice`);
+    else seen.add(entry.package);
+    if (typeof entry.dev_only !== 'boolean') issues.push(`${at}.dev_only must be true or false`);
+    if (!Number.isInteger(entry.usage) || entry.usage < 0) {
+      issues.push(`${at}.usage must be a non-negative integer (content rows, config and code references)`);
+    }
+    if (!BLOCKER_RESOLUTIONS.includes(entry.resolution)) {
+      issues.push(`${at}.resolution must be one of ${BLOCKER_RESOLUTIONS.join(', ')}`);
+    }
+    if (typeof entry.source !== 'string' || !entry.source.trim()) issues.push(`${at}.source must name inspectable evidence`);
+  });
+  return issues;
+}
+
+/**
+ * Splits the blocker inventory into blockers that count toward the size profile and
+ * packages that are only recorded: dev-only packages, packages without any usage, and
+ * drop-in replacements or plain upgrades. A used package that is removed counts, because
+ * its content, configuration or code has to be migrated first.
+ */
+export function classifyCompatibilityBlockers(inventory) {
+  const counted = [];
+  const recorded = [];
+  for (const entry of inventory) {
+    let reason = null;
+    if (entry.dev_only) reason = 'dev-only';
+    else if (entry.usage === 0) reason = 'unused';
+    else if (entry.resolution === 'drop-in-replacement' || entry.resolution === 'supported-release') {
+      reason = entry.resolution;
+    }
+    if (reason) recorded.push({ package: entry.package, reason });
+    else {
+      counted.push({ package: entry.package, resolution: entry.resolution });
+    }
+  }
+  return { counted, recorded };
+}
+
+/** The metrics the profile is classified from: blockers derived from the inventory when present. */
+export function sizingMetrics(evidence) {
+  const metrics = { ...evidence.metrics };
+  if (Array.isArray(evidence.compatibility_blocker_inventory)) {
+    metrics.compatibility_blockers = classifyCompatibilityBlockers(evidence.compatibility_blocker_inventory).counted.length;
+  }
+  return metrics;
+}
+
 export function sizingEvidenceIssues(evidence) {
   const issues = [];
   if (evidence?.schema !== RUNTIME_SIZE_SCHEMA) issues.push(`schema must be ${RUNTIME_SIZE_SCHEMA}`);
@@ -68,11 +141,28 @@ export function sizingEvidenceIssues(evidence) {
   if (!evidence?.sources || typeof evidence.sources !== 'object' || Array.isArray(evidence.sources)) {
     issues.push('sources must be an object');
   }
+  const inventory = evidence?.compatibility_blocker_inventory;
+  const hasInventory = inventory !== undefined;
+  const inventoryIssues = hasInventory ? blockerInventoryIssues(inventory) : [];
+  issues.push(...inventoryIssues);
   for (const key of SIZE_METRICS) {
     const value = evidence?.metrics?.[key];
-    if (!Number.isInteger(value) || value < 0) issues.push(`metrics.${key} must be a non-negative integer`);
+    const derived = key === 'compatibility_blockers' && hasInventory;
+    if (!(derived && value === undefined) && (!Number.isInteger(value) || value < 0)) {
+      issues.push(`metrics.${key} must be a non-negative integer`);
+    }
     if (typeof evidence?.sources?.[key] !== 'string' || !evidence.sources[key].trim()) {
       issues.push(`sources.${key} must name inspectable evidence`);
+    }
+  }
+  const stated = evidence?.metrics?.compatibility_blockers;
+  if (!hasInventory && Number.isInteger(stated) && stated > 0) {
+    issues.push('compatibility_blocker_inventory must itemize every blocker when metrics.compatibility_blockers is above 0');
+  }
+  if (hasInventory && !inventoryIssues.length && stated !== undefined) {
+    const counted = classifyCompatibilityBlockers(inventory).counted.length;
+    if (stated !== counted) {
+      issues.push(`metrics.compatibility_blockers is ${stated} but the inventory counts ${counted}; omit the metric or state the counted value`);
     }
   }
   return issues;

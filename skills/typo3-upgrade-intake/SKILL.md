@@ -91,7 +91,9 @@ plus the open question ([lean profile](../typo3-upgrade-run/references/graph-run
 9. Verify backup capability: artifact type, timestamp, checksum, target identity, restore command,
    and storage path. This is readiness evidence; take snapshots only immediately before stateful nodes.
 10. Read `../typo3-upgrade-run/references/runtime-sizing.md`. Record all nine sizing metrics and
-    their source artifacts in `nodes/intake/runtime-size.json`; select no profile yourself. Let
+    their source artifacts in `nodes/intake/runtime-size.json`, with every TYPO3 14 blocker in its
+    [blocker inventory](../typo3-upgrade-run/references/runtime-sizing.md#compatibility-blockers)
+    (dev-only, unused and drop-in packages are recorded, not counted); select no profile yourself. Let
     `t3u runtime-seal` calculate and seal the smallest fitting small/large/huge profile.
 11. Produce risk/cost order, graph applicability outcomes, and a smallest-decision list for the user.
     Run the read-only [TYPO3 14 fix-pack probe](../typo3-upgrade-run/references/typo3-14-fix-pack.md#the-probe-and-the-evidence)

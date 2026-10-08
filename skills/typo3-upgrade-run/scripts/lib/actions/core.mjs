@@ -16,7 +16,8 @@ import { listOpt } from '../cli/args.mjs';
 import { renderStatus } from '../run/status.mjs';
 import { sha256 } from '../run/paths.mjs';
 import {
-  classifySiteSize, runtimeWindow, sizingEvidenceIssues, RUNTIME_BUDGET_POLICY,
+  classifySiteSize, classifyCompatibilityBlockers, runtimeWindow, sizingEvidenceIssues, sizingMetrics,
+  RUNTIME_BUDGET_POLICY,
 } from '../run/runtime.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -120,7 +121,11 @@ export async function runtimeSeal({ values, paths, log, journal }) {
   if (state.runtime?.sealed_at || state.runtime?.deadline_at) {
     throw new PreconditionError('The runtime profile is already sealed and cannot be changed or extended.');
   }
-  const sizeProfile = classifySiteSize(evidence.metrics);
+  const metrics = sizingMetrics(evidence);
+  const blockers = Array.isArray(evidence.compatibility_blocker_inventory)
+    ? classifyCompatibilityBlockers(evidence.compatibility_blocker_inventory)
+    : null;
+  const sizeProfile = classifySiteSize(metrics);
   const window = runtimeWindow(state.runtime.started_at, sizeProfile);
   const relativeEvidence = path.relative(paths.root, evidencePath);
   await store.update((next) => {
@@ -144,6 +149,8 @@ export async function runtimeSeal({ values, paths, log, journal }) {
     budget_policy: RUNTIME_BUDGET_POLICY,
     size_profile: sizeProfile,
     evidence_ref: relativeEvidence,
+    compatibility_blockers: metrics.compatibility_blockers,
+    ...(blockers ? { blockers_counted: blockers.counted, blockers_recorded_only: blockers.recorded } : {}),
     migration_cutoff_at: window.migrationCutoffAt,
     deadline_at: window.deadlineAt,
   });
@@ -151,11 +158,19 @@ export async function runtimeSeal({ values, paths, log, journal }) {
     `Runtime ${sizeProfile}: ${window.maxHours}h hard deadline, `
     + `${window.closureReserveHours}h closure reserve, migration cutoff ${window.migrationCutoffAt}.`,
   );
+  if (blockers) {
+    log.info?.(
+      `Compatibility blockers: ${blockers.counted.length} counted, `
+      + `${blockers.recorded.length} recorded only (dev-only, unused, drop-in or plain upgrade).`,
+    );
+  }
   return {
     exitCode: EXIT.PASS,
     verdict: 'pass',
     sizeProfile,
     evidence: relativeEvidence,
+    compatibilityBlockers: metrics.compatibility_blockers,
+    ...(blockers ? { blockersCounted: blockers.counted, blockersRecordedOnly: blockers.recorded } : {}),
     ...window,
     message: `${sizeProfile} runtime profile sealed`,
   };

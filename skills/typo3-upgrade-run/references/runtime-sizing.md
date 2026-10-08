@@ -58,7 +58,9 @@ work from later human acceptance without allowing late initial proof or silent s
 ## Measured fleet durations
 
 Planning anchors from fleet runs on one machine. Measured `graph-report` minutes of comparable
-nodes win whenever they exist; cite either in `runtime-plan.json` as the node's source.
+nodes win whenever they exist; cite either in `runtime-plan.json` as the node's source. Comparable
+means the work, not the wall clock: leave out recovery attempts, rework and owner waits before
+copying a node's minutes ([speed lessons](recent-run-lessons.md#why-a-small-site-took-so-long-2026-10-08)).
 
 | Work | Measured | Note |
 |---|---:|---|
@@ -77,7 +79,8 @@ does not fit: decide at intake whether it becomes a separately authorized follow
 run of this size took a day and a half for three hours of migration; the
 [lessons](recent-run-lessons.md#where-a-day-and-a-half-went) name where the rest went.
 
-A 60-URL shop site with 14 non-Core extensions and five compatibility blockers (huge profile),
+A 60-URL shop site with 14 non-Core extensions and five compatibility blockers (huge profile,
+counted before the [blocker rule](#compatibility-blockers)),
 12.4 → 14.3 on the same machine, four workers approved (2026-10). Wall clock per node from the
 journal, review included:
 
@@ -106,18 +109,44 @@ Select the smallest profile whose limit contains **every** measured dimension:
 | active non-Core extensions | 12 | 35 | above a large limit |
 | project-local packages | 2 | 8 | above a large limit |
 | stateful migration units | 1 | 4 | above a large limit |
-| unresolved compatibility blockers/forks | 0 | 2 | above a large limit |
+| compatibility blockers that need real work ([below](#compatibility-blockers)) | 0 | 2 | above a large limit |
 
-A project with 100 routes and three unresolved compatibility forks is huge. A project with 1,900
+A project with 100 routes and three used extensions that each need a fork is huge. A project with 1,900
 routes but otherwise moderate values is large. Do not average dimensions or trade one high-risk
 dimension against several small ones.
 
 Count a stateful migration unit per independently reversible data/schema operation such as a rung,
 Mask/Content Blocks data move, list_type→CType move, schema quarantine, Solr rebuild, or rights
-rewrite. Count blockers that still need a supported release, replacement, local port, compatibility
-fork, or approved removal. Count every package that blocks `composer why-not typo3/cms-core ^14.3`
-once, whether it sits in `require` or `require-dev`: a dev-only package that needs an approved removal
-is a blocker like a fork.
+rewrite. Stateful units count independently of the blocker dimension: a Mask → Content Blocks move
+is one stateful unit and, when Mask is used, one compatibility blocker.
+
+### Compatibility blockers
+
+Record every package that blocks `composer why-not typo3/cms-core ^14.3` once, whether it sits in
+`require` or `require-dev`, in `compatibility_blocker_inventory`. Every such package is still
+declared and resolved before the core jump ([extension strategy](extension-strategy.md)); the
+inventory only decides which of them make the run longer. A blocker **counts** toward the profile
+only when the project **uses** it (content rows, configuration or code reference it) **and** it
+needs a fork, a local migration (templates, TypoScript, TCA, PHP) or a data migration. A used
+package that is removed counts too, because its usages have to be migrated first. These are
+**recorded but not counted**:
+
+- dev-only packages (`require-dev`): a file-fill tool, the core-upgrader itself, a test helper;
+- packages with zero usage that the owner removes;
+- drop-in replacements with the same functionality (a wrapper package swapped for the plain
+  package it wraps) and plain upgrades to a supported release.
+
+Per entry: `package`, `dev_only`, `usage` (the number of content rows plus configuration and code
+references, from the [usage scan](../scripts/extension-usage.mjs)), `resolution` (`fork`,
+`local-migration`, `data-migration`, `removal`, `drop-in-replacement` or `supported-release`) and
+`source`. When the matching release does not exist yet and nobody has decided, record `fork`.
+`runtime-seal` derives `metrics.compatibility_blockers` from the inventory: omit the metric or state
+the counted value; a contradicting value is refused, and so is a count above 0 without an inventory.
+The seal's journal note lists the counted and the recorded-only packages.
+
+Why: a 33-URL site with one real migration (Mask → Content Blocks, 40 rows) was sealed huge
+(48-hour cap, 18-hour forecast) because dev-only packages, unused extensions and a wrapper swap
+counted like forks. Under this rule the same inventory counts one blocker.
 
 ## Evidence format
 
@@ -134,9 +163,16 @@ Every metric needs a source pointing to inspectable command output or a manifest
     "languages": 3,
     "active_non_core_extensions": 24,
     "local_packages": 5,
-    "stateful_migrations": 2,
-    "compatibility_blockers": 1
+    "stateful_migrations": 2
   },
+  "compatibility_blocker_inventory": [
+    { "package": "vendor/content-elements", "dev_only": false, "usage": 40,
+      "resolution": "data-migration", "source": "nodes/extension-inventory/usage.json" },
+    { "package": "vendor/file-fill", "dev_only": true, "usage": 0,
+      "resolution": "removal", "source": "nodes/extension-inventory/why-not-14.txt" },
+    { "package": "vendor/wrapper", "dev_only": false, "usage": 6,
+      "resolution": "drop-in-replacement", "source": "nodes/extension-inventory/usage.json" }
+  ],
   "sources": {
     "public_routes": "nodes/url-discovery/manifest-summary.json",
     "content_records": "nodes/dataset-freshness/row-counts.json",
