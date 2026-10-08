@@ -7,7 +7,7 @@ what to achieve, when it is done, and where its evidence goes. Flags: **R** inde
 **M** measurement node (may recalibrate config with an ADR), **A** approval required, **L** green evidence loop required.
 
 Policy: `require_artifacts: true`, `require_forecast: true`, `require_feature_contracts: true`, `require_node_contracts: true`, `require_independent_review: true`, `guard_change_scope: true`, `recovery_change_budget: {"files":10,"lines":400}`, `serialize_mutations: true`, `shared_proof_reads: true`, `max_node_attempts: 3`, `max_total_retries: 12`.
-Nodes: 68; edges: 193; bounded retry edges: 35.
+Nodes: 71; edges: 203; bounded retry edges: 37.
 
 ## Intake: identity, data, discovery and inventories (read-only)
 
@@ -27,6 +27,8 @@ Nodes: 68; edges: 193; bounded retry edges: 35.
 | `sitemap-recovery` | P00 | typo3-upgrade-intake | none | — | Diagnose the missing or broken sitemap and choose a read-only discovery source; the site stays unrepaired until Baseline A exists. | pass: discovery can rerun from a working source; not-applicable: the approved page-tree fallback is required. | `nodes/sitemap-recovery/evidence.md` |
 | `degraded-discovery` | P00 | typo3-upgrade-intake | none | — | Run the approved page-tree or crawl discovery for a site without a usable sitemap. | The fallback manifest, its approval and the named coverage gaps are recorded. | `nodes/degraded-discovery/evidence.md` |
 | `intake-join` | P01 | controller | none | — | Seal intake: all inventories agree, runtime sizing is sealed and the feature evidence plan is fixed. | manifests/feature-contracts.json validates and is hash-sealed as this node's evidence. | `manifests/feature-contracts.json` |
+| `db-health-intake` | P01 | typo3-upgrade-intake | stateful | R | Inventory database inconsistencies in the accepted dataset with the pinned lolli/dbdoctor: read-only check, then a restored snapshot probe for every (check, table, uid), each group classified with the owner. | check.json, records.json, the restore proof and the tool version are hashed in the evidence; every group is recorded as pre-existing or owner-approved for a fix; not-applicable only when dbdoctor cannot assess the source. | `nodes/db-health-intake/evidence.md` |
+| `db-health-recovery` | P01 | typo3-upgrade-intake | stateful | A | Apply only the owner-approved, curated dbdoctor SQL groups as one dated dataset transition before Baseline A: snapshot, one transaction, referenceindex:update, cache:flush, re-check. | apply.json records approval id, SQL sha256, statements per check, tool version and the fingerprints D0 to D0'; the re-check is clean or shows only recorded groups, and db-health-intake reruns. | `nodes/db-health-recovery/evidence.md` |
 
 ## Baseline A
 
@@ -72,7 +74,8 @@ Nodes: 68; edges: 193; bounded retry edges: 35.
 
 | Node | Phase | Owner | Mutation | Flags | Objective | Done when | Evidence |
 |---|---|---|---|---|---|---|---|
-| `target-content-epoch` | P11 | typo3-upgrade-closure | none | R | Reconcile expected content changes in the transition ledger and seal the target content epoch. | The ledger explains every database and file difference and the target fingerprint is sealed; unledgered drift is invalid. | `nodes/target-content-epoch/evidence.md` |
+| `db-health-target` | P11 | typo3-upgrade-closure | stateful | — | Re-run dbdoctor 2.2.x on the migrated target in check mode plus the restored probe and compare (check, table, uid) with the intake inventory; never execute fixes here. | compare.json is hashed: no new finding (a migration defect), unchanged ones are residuals, vanished ones go to the target epoch ledger, and target-only findings are proven pre-existing on Baseline A. | `nodes/db-health-target/evidence.md` |
+| `target-content-epoch` | P11 | typo3-upgrade-closure | none | R | Reconcile expected content changes in the transition ledger and seal the target content epoch. | The ledger explains every database and file difference, including each dbdoctor finding that vanished since intake, and the target fingerprint is sealed; unledgered drift is invalid. | `nodes/target-content-epoch/evidence.md` |
 | `content-ledger-recovery` | P11 | typo3-upgrade-closure | none | R | Explain or revert unledgered content drift found at the target epoch. | Every difference is ledgered or reverted so the epoch can be sealed again. | `nodes/content-ledger-recovery/evidence.md` |
 | `http-dom-proof` | P11 | typo3-upgrade-closure | none | L | Compare HTTP status, metadata and normalized DOM for every discovered URL against Baseline A. | Zero unexplained HTTP or DOM differences and a green evidence loop. | `nodes/http-dom-proof/evidence.md` |
 | `visual-proof` | P11 | typo3-upgrade-closure | none | L | Compare pixels for the sealed tiered sample in the authoritative states against Baseline A. | Strict zero pixel differences, or only accepted declared changes, and a green evidence loop. | `nodes/visual-proof/evidence.md` |
@@ -85,7 +88,7 @@ Nodes: 68; edges: 193; bounded retry edges: 35.
 | `visual-classify` | P11 | typo3-upgrade-closure | none | R | Classify every pixel-only difference by one cause: css, assets, markup, content, session or harness. | Each difference has exactly one class and the outcome names the matching recovery route. | `nodes/visual-classify/evidence.md` |
 | `css-recovery` | P11 | typo3-vite | code | — | Fix one stylesheet cause of a pixel difference. | The fix sits behind a rollback reference and visual-proof can rerun for the affected URLs. | `nodes/css-recovery/evidence.md` |
 | `asset-recovery` | P11 | typo3-vite | code | — | Fix one asset cause of a pixel difference (build artifact, path, font or image). | The fix sits behind a rollback reference and visual-proof can rerun for the affected URLs. | `nodes/asset-recovery/evidence.md` |
-| `content-recovery` | P11 | typo3-upgrade-migration | stateful | — | Repair one content or data difference found by visual classification, with a snapshot first. | The ledgered content change is applied and visual-proof can rerun. | `nodes/content-recovery/evidence.md` |
+| `content-recovery` | P11 | typo3-upgrade-migration | stateful | — | Repair one content or data difference found by visual classification or by db-health-target, with a snapshot first. | The ledgered content change is applied; the outcome names the proof to rerun: pass for visual-proof, db-health for db-health-target. | `nodes/content-recovery/evidence.md` |
 | `session-recovery` | P11 | typo3-upgrade-baseline | code | M | Repair the consent or session handling that made the visual proof compare different states. | Fresh-context consent and session setup match the sealed baseline states. | `nodes/session-recovery/evidence.md` |
 | `interaction-recovery` | P11 | typo3-upgrade-closure | code | — | Fix one failing journey step (consent, slider, form or search). | The step passes in a fresh context and component-sentinels can rerun. | `nodes/interaction-recovery/evidence.md` |
 | `backend-recovery` | P12 | typo3-backend-rights | stateful | — | Repair one backend rights or module failure, with a snapshot first. | The failing backend assertion passes and backend-operations can rerun. | `nodes/backend-recovery/evidence.md` |

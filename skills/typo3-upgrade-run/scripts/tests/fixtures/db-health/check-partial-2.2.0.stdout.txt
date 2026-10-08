@@ -1,0 +1,260 @@
+Find and fix database inconsistencies
+=====================================
+
+Scan for workspace records when ext:workspaces is not loaded
+------------------------------------------------------------
+
+ Class: WorkspacesNotLoadedRecordsDangling
+ Actions: remove
+ When extension "workspaces" is not loaded, there should be no workspace overlay
+ records (t3ver_wsid != 0). This check removes all workspace related records if
+ the extension is not loaded. Think about this twice: If workspaces is a thing
+ in your instance, the extension must be loaded, otherwise this check will
+ remove all existing workspace overlay records!
+
+ [OK] No affected records found
+
+Scan for workspace records of deleted sys_workspace's
+-----------------------------------------------------
+
+ Class: WorkspacesRecordsOfDeletedWorkspaces
+ Actions: remove
+ When a workspace (table "sys_workspace") is deleted, all existing workspace
+ overlays in all tables of this workspace are removed. When this goes wrong,
+ or if the workspace extension is removed, the system ends up with "dangling"
+ workspace records in tables. This health check finds those records and removes them.
+
+ [OK] No affected records found
+
+Scan for rows with delete field not "0" or "1"
+----------------------------------------------
+
+ Class: TcaTablesDeleteFlagZeroOrOne
+ Actions: soft-delete
+ Values of the "deleted" column of TCA tables with enabled soft-delete
+ (["ctrl"]["delete"] set to a column name) must be either zero (0) or one (1).
+ The default core database DeletedRestriction tests for equality with zero.
+ This scan finds records having a different value than zero or one and sets them to one.
+
+ [OK] No affected records found
+
+Scan for soft-deleted workspaces records
+----------------------------------------
+
+ Class: WorkspacesSoftDeletedRecords
+ Actions: workspace-remove
+ Records in workspaces (t3ver_wsid != 0) are not soft-delete aware since TYPO3 v11:
+ When "discarding" workspace changes, affected records are fully removed from the database.
+ This check looks for workspace overlays being soft-deleted and removes them.
+
+ [OK] No affected records found
+
+Scan for records with negative pid
+----------------------------------
+
+ Class: WorkspacesPidNegative
+ Actions: remove
+ Records must have a pid equal or greater than zero (0).
+ Until TYPO3 v10, workspace records where placed on pid=-1. This check removes leftovers.
+ If this check finds records, it may indicate the upgrade wizard "WorkspaceVersionRecordsMigration"
+ has not been run. ABORT NOW and run the wizard, it is included in TYPO3 core v10 and v11.
+
+ [OK] No affected records found
+
+Scan for records with t3ver_wsid=0 and t3ver_state!=0
+-----------------------------------------------------
+
+ Class: WorkspacesT3verStateNotZeroInLive
+ Actions: remove, soft-delete, update-fields
+ There should be no t3ver_state non-zero (0) records in live.
+ If this check finds records, ABORT NOW and run these upgrades wizards:
+ WorkspaceVersionRecordsMigration (TYPO3 v10 & v11),
+ WorkspaceNewPlaceholderRemovalMigration (TYPO3 v11 & v12),
+ WorkspaceMovePlaceholderRemovalMigration (TYPO3 v11 & v12).
+ If there are still affected records, this check will remove, soft-delete or update them,
+ depending on their specific t3ver_state value: Records typically shown in FE are kept,
+ others are deleted or soft-deleted.
+
+ [OK] No affected records found
+
+Scan for records with t3ver_state=-1
+------------------------------------
+
+ Class: WorkspacesT3verStateMinusOne
+ Actions: workspace-remove
+ The workspace related field state t3ver_state=-1 has been removed with TYPO3 v11.
+ Until TYPO3 v11, they were paired with a t3ver_state=-1 record. A core upgrade
+ wizard migrates affected records. This check removes left over records having t3ver_state=-1.
+ If this check finds records, it may indicate the upgrade wizard "WorkspaceNewPlaceholderRemovalMigration"
+ has not been run. ABORT NOW and run the wizard if it is still available in your TYPO3 version.
+
+ [OK] No affected records found
+
+Scan for records with t3ver_state=3
+-----------------------------------
+
+ Class: WorkspacesT3verStateThree
+ Actions: workspace-remove
+ The workspace related field state t3ver_state=3 has been removed with TYPO3 v11.
+ Until TYPO3 v11, they were paired with a t3ver_state=4 record. A core upgrade
+ wizard migrates affected records. This check removes left over records having t3ver_state=3.
+ If this check finds records, it may indicate the upgrade wizard "WorkspaceMovePlaceholderRemovalMigration"
+ has not been run. ABORT NOW and run the wizard if it is still available in your TYPO3 version.
+
+ [OK] No affected records found
+
+Scan for sys_redirect records on wrong pid
+------------------------------------------
+
+ Class: SysRedirectInvalidPid
+ Actions: update-fields
+ Redirect records should be located on pages having a site config, or pid 0.
+ A TYPO3 core upgrade wizard introduced in v12 deals with this. This check takes
+ care of affected records as well: Records on pages that have no site config
+ are moved to the first page up in rootline that has a site config, or to pid 0.
+
+ [OK] No affected records found
+
+Scan for records in default language not having language parent zero
+--------------------------------------------------------------------
+
+ Class: TcaTablesLanguageLessThanOneHasZeroLanguageParent
+ Actions: update-fields
+ TCA records in default or "all" language (typically sys_language_uid field having 0 or -1)
+ must have their "transOrigPointerField" (typically l10n_parent or l18n_parent) field
+ set to zero (0). This checks finds and updates violating records.
+
+ [OK] No affected records found
+
+Scan for records in default language not having language source zero
+--------------------------------------------------------------------
+
+ Class: TcaTablesLanguageLessThanOneHasZeroLanguageSource
+ Actions: update-fields
+ TCA records in default or "all" language (typically sys_language_uid field having 0 or -1)
+ must have their "translationSource" (typically l10n_source) field set to zero (0).
+ This checks finds and updates violating records.
+
+ [OK] No affected records found
+
+Check page tree integrity
+-------------------------
+
+ Class: PagesBrokenTree
+ Actions: remove
+ This health check finds "pages" records with their "pid" set to pages that do
+ not exist in the database. Pages without proper connection to the tree root are never
+ shown in the backend. They are removed.
+
+ [OK] No affected records found
+
+Check localized pages having language parent set to self
+--------------------------------------------------------
+
+ Class: PagesTranslatedLanguageParentSelf
+ Actions: soft-delete, workspace-remove
+ This health check finds not deleted but localized (sys_language_uid > 0) "pages" records
+ having their own uid set as their localization parent (l10n_parent = uid).
+ This is invalid, such page records are not listed in the BE list module and the Frontend
+ will most likely not render such pages.
+ They are soft-deleted in live and removed if they are workspace overlay records.
+
+ [OK] No affected records found
+
+Check pages with missing language parent
+----------------------------------------
+
+ Class: PagesTranslatedLanguageParentMissing
+ Actions: remove
+ This health check finds translated "pages" records (sys_language_uid > 0) with
+ their default language record (l10n_parent field) not existing in the database.
+ Those translated pages are never shown in backend and frontend and removed.
+
+ [OK] No affected records found
+
+Check pages with deleted language parent
+----------------------------------------
+
+ Class: PagesTranslatedLanguageParentDeleted
+ Actions: soft-delete, workspace-remove
+ This health check finds not deleted but translated (sys_language_uid > 0) "pages" records,
+ with their default language record (l10n_parent field) being soft-deleted.
+ Those translated pages are never shown in backend and frontend. They are soft-deleted in
+ live and removed if they are workspace overlay records.
+
+ [OK] No affected records found
+
+Check pages with different pid than their language parent
+---------------------------------------------------------
+
+ Class: PagesTranslatedLanguageParentDifferentPid
+ Actions: remove
+ This health check finds translated "pages" records (sys_language_uid > 0) with
+ their default language record (l10n_parent field) on a different pid.
+ Those translated pages are shown in backend at a wrong place. They are removed.
+
+ [OK] No affected records found
+
+Scan for duplicate page translations
+------------------------------------
+
+ Class: PagesTranslatedLanguageParentDuplicates
+ Actions: soft-delete
+ There must be only one translated "pages" record (sys_language_uid > 0) per
+ default language page (l10n_parent) and language. This check finds duplicates,
+ keeps the one with the lowest uid and soft-deletes others.
+
+ [OK] No affected records found
+
+Scan for record translations pointing to self
+---------------------------------------------
+
+ Class: TcaTablesTranslatedParentSelf
+ Actions: soft-delete, remove, workspace-remove, risky
+ Record translations ("translate" / "connected" mode, as opposed to "free" mode) use the
+ database field "transOrigPointerField" (field name usually "l10n_parent" or "l18n_parent").
+ This field should point to the default language record. This health check scans for not
+ soft-deleted and localized records that point to their own uid in "transOrigPointerField".
+ They are soft-deleted in live and removed if they are workspace overlay records.
+ This change is considered risky since depending on configuration, such records may still be
+ shown in the Frontend and will disappear when deleted.
+
+ [OK] No affected records found
+
+Scan for record translations pointing to non default language parent
+--------------------------------------------------------------------
+
+ Class: TcaTablesTranslatedParentInvalidPointer
+ Actions: update-fields
+ Record translations ("translate" / "connected" mode, as opposed to "free" mode) use the
+ database field "transOrigPointerField" (field name usually "l10n_parent" or "l18n_parent").
+ This field points to the default language record. This health check verifies that target
+ actually has sys_language_uid = 0. Violating localizations are set to the transOrigPointerField
+ of the current target record.
+
+ [OK] No affected records found
+
+Scan for tt_content on not existing pages
+-----------------------------------------
+
+ Class: TtContentPidMissing
+ Actions: remove
+ tt_content must have a "pid" page record that exists. Otherwise, they are most likely not editable
+ and can be removed. There are potential exceptions for tt_content records that are inline children
+ for example using "news" extension that may create such scenarios, but even then, those records
+ are most likely not shown in FE. You may want to look at some cases manually if this instance
+ has some weird scenarios where tt_content is used as inline child. Otherwise, it is usually ok
+ to let dbdoctor just REMOVE tt_content records that are located at a page that does not exist.
+
+ [WARNING] Found affected records in 1 tables:                                        
+                                                                                
+           "tt_content": 3 records                              
+
+Scan for tt_content on soft-deleted pages
+-----------------------------------------
+
+ Class: TtContentPidDeleted
+ Actions: soft-delete, workspace-remove
+ tt_content not soft-delete must have a "pid" page record that is not soft-deleted. Otherwise, they are
+ most likely not editable. This is similar to the previous check, affected records will be soft-deleted
+ if in live, and removed if in workspaces.

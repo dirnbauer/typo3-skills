@@ -140,6 +140,29 @@ nodes:
     phase: P01
     requires: [project-identity, dataset-freshness, extension-inventory, url-discovery, backend-group-model-decision, structured-data-inventory, webmcp-inventory]
     outcomes: [pass, blocked]
+  # After intake-join, so the read-only P00 branches never see the probe's temporary writes,
+  # and before Baseline A, so an approved fix is part of the dataset the baseline captures.
+  db-health-intake:
+    objective: "Inventory database inconsistencies in the accepted dataset with the pinned lolli/dbdoctor: read-only check, then a restored snapshot probe for every (check, table, uid), each group classified with the owner."
+    done: "check.json, records.json, the restore proof and the tool version are hashed in the evidence; every group is recorded as pre-existing or owner-approved for a fix; not-applicable only when dbdoctor cannot assess the source."
+    evidence: nodes/db-health-intake/evidence.md
+    review: required
+    skill: typo3-upgrade-intake
+    phase: P01
+    # Installs the dev-only tool in its own commit; the probe writes only inside its own restored snapshot.
+    mutation: stateful
+    resources: [composer, ddev-stateful]
+    outcomes: [pass, findings, not-applicable, blocked]
+  db-health-recovery:
+    objective: "Apply only the owner-approved, curated dbdoctor SQL groups as one dated dataset transition before Baseline A: snapshot, one transaction, referenceindex:update, cache:flush, re-check."
+    done: "apply.json records approval id, SQL sha256, statements per check, tool version and the fingerprints D0 to D0'; the re-check is clean or shows only recorded groups, and db-health-intake reruns."
+    evidence: nodes/db-health-recovery/evidence.md
+    skill: typo3-upgrade-intake
+    phase: P01
+    mutation: stateful
+    resources: [ddev-stateful]
+    approval: required
+    outcomes: [pass, blocked]
 
   deterministic-baseline:
     objective: "Capture Baseline A twice, unchanged, with zero HTTP, DOM and pixel differences, then seal it."
@@ -367,9 +390,19 @@ nodes:
     phase: P10
     requires: [content-blocks, vite-assets, solr-search, structured-data-parity, webmcp-parity, redirects-rights-merge, rte-visual-editor]
     outcomes: [pass, blocked]
+  db-health-target:
+    objective: "Re-run dbdoctor 2.2.x on the migrated target in check mode plus the restored probe and compare (check, table, uid) with the intake inventory; never execute fixes here."
+    done: "compare.json is hashed: no new finding (a migration defect), unchanged ones are residuals, vanished ones go to the target epoch ledger, and target-only findings are proven pre-existing on Baseline A."
+    evidence: nodes/db-health-target/evidence.md
+    skill: typo3-upgrade-closure
+    phase: P11
+    # The probe writes only inside its own snapshot, restores it and proves the restore.
+    mutation: stateful
+    resources: [ddev-stateful]
+    outcomes: [pass, findings, blocked]
   target-content-epoch:
     objective: "Reconcile expected content changes in the transition ledger and seal the target content epoch."
-    done: "The ledger explains every database and file difference and the target fingerprint is sealed; unledgered drift is invalid."
+    done: "The ledger explains every database and file difference, including each dbdoctor finding that vanished since intake, and the target fingerprint is sealed; unledgered drift is invalid."
     evidence: nodes/target-content-epoch/evidence.md
     review: required
     skill: typo3-upgrade-closure
@@ -486,14 +519,14 @@ nodes:
     mutation: code
     outcomes: [pass, blocked]
   content-recovery:
-    objective: "Repair one content or data difference found by visual classification, with a snapshot first."
-    done: "The ledgered content change is applied and visual-proof can rerun."
+    objective: "Repair one content or data difference found by visual classification or by db-health-target, with a snapshot first."
+    done: "The ledgered content change is applied; the outcome names the proof to rerun: pass for visual-proof, db-health for db-health-target."
     evidence: nodes/content-recovery/evidence.md
     skill: typo3-upgrade-migration
     phase: P11
     mutation: stateful
     resources: [ddev-stateful]
-    outcomes: [pass, blocked]
+    outcomes: [pass, db-health, blocked]
   session-recovery:
     objective: "Repair the consent or session handling that made the visual proof compare different states."
     done: "Fresh-context consent and session setup match the sealed baseline states."
@@ -663,8 +696,14 @@ edges:
   - { id: sitemap-blocked, from: sitemap-recovery, outcome: blocked, to: stopped }
   - { id: degraded-pass, from: degraded-discovery, outcome: pass, to: url-discovery, retry: true, max_traversals: 1 }
   - { id: degraded-blocked, from: degraded-discovery, outcome: blocked, to: stopped }
-  - { id: intake-joined, from: intake-join, outcome: pass, to: deterministic-baseline }
+  - { id: intake-joined, from: intake-join, outcome: pass, to: db-health-intake }
   - { id: intake-join-blocked, from: intake-join, outcome: blocked, to: stopped }
+  - { id: db-health-intake-pass, from: db-health-intake, outcome: pass, to: deterministic-baseline }
+  - { id: db-health-intake-findings, from: db-health-intake, outcome: findings, to: db-health-recovery }
+  - { id: db-health-intake-na, from: db-health-intake, outcome: not-applicable, to: deterministic-baseline }
+  - { id: db-health-intake-blocked, from: db-health-intake, outcome: blocked, to: stopped }
+  - { id: db-health-recheck, from: db-health-recovery, outcome: pass, to: db-health-intake, retry: true, max_traversals: 2 }
+  - { id: db-health-recovery-blocked, from: db-health-recovery, outcome: blocked, to: stopped }
   - { id: baseline-pass, from: deterministic-baseline, outcome: pass, to: dependency-plan }
   - { id: baseline-invalid, from: deterministic-baseline, outcome: invalid, to: determinism-recovery }
   - { id: baseline-harness, from: deterministic-baseline, outcome: harness-error, to: harness-recovery }
@@ -729,7 +768,10 @@ edges:
   - { id: rte-pass, from: rte-visual-editor, outcome: pass, to: migration-join }
   - { id: rte-na, from: rte-visual-editor, outcome: not-applicable, to: migration-join }
   - { id: rte-blocked, from: rte-visual-editor, outcome: blocked, to: stopped }
-  - { id: migration-joined, from: migration-join, outcome: pass, to: target-content-epoch }
+  - { id: migration-joined, from: migration-join, outcome: pass, to: db-health-target }
+  - { id: db-health-target-pass, from: db-health-target, outcome: pass, to: target-content-epoch }
+  - { id: db-health-target-findings, from: db-health-target, outcome: findings, to: content-recovery }
+  - { id: db-health-target-blocked, from: db-health-target, outcome: blocked, to: stopped }
   - { id: migration-join-blocked, from: migration-join, outcome: blocked, to: stopped }
   - { id: epoch-pass, from: target-content-epoch, outcome: pass, to: [http-dom-proof, visual-proof, component-sentinels, backend-operations, axe-proof, lighthouse-proof] }
   - { id: epoch-invalid, from: target-content-epoch, outcome: invalid, to: content-ledger-recovery }
@@ -761,6 +803,7 @@ edges:
   - { id: asset-retry, from: asset-recovery, outcome: pass, to: visual-proof, retry: true, max_traversals: 2 }
   - { id: asset-blocked, from: asset-recovery, outcome: blocked, to: stopped }
   - { id: content-retry, from: content-recovery, outcome: pass, to: visual-proof, retry: true, max_traversals: 2 }
+  - { id: content-db-health-retry, from: content-recovery, outcome: db-health, to: db-health-target, retry: true, max_traversals: 2 }
   - { id: content-blocked, from: content-recovery, outcome: blocked, to: stopped }
   - { id: session-retry, from: session-recovery, outcome: pass, to: visual-proof, retry: true, max_traversals: 2 }
   - { id: session-blocked, from: session-recovery, outcome: blocked, to: stopped }

@@ -31,8 +31,14 @@ Start every node from `t3u node-brief --node <id>`; it carries the contract, rou
 | `dataset-acceptance-decision` | Name every gap and its effect on proof coverage, ask the owner, record the answer as an approval and cite it; `pass` (reviewed) re-runs `dataset-freshness` against the accepted gaps, `blocked` stops |
 | `sitemap-recovery` | Diagnose only; `not-applicable` (reviewed) routes to `degraded-discovery` |
 | `degraded-discovery` | Approved page-tree or crawl fallback with named coverage gaps |
+| `db-health-intake` | Checklist item 14, after `intake-join`; flagged **R**: a verifier checks the group classification |
+| `db-health-recovery` | Flagged **A**: replay only the owner-approved curated dbdoctor SQL in one transaction before Baseline A; `pass` re-runs `db-health-intake` |
 
 The controller closes `intake-join` with your sealed `manifests/feature-contracts.json`.
+
+The two database-health nodes are the bounded exception to read-only intake: a dev-only tool in its own
+commit, a probe inside its own restored and fingerprint-proven snapshot, and only owner-approved fixes
+before Baseline A ([database health](../typo3-upgrade-run/references/database-health.md)).
 
 ## Worker protocol
 
@@ -129,6 +135,13 @@ plus the open question ([lean profile](../typo3-upgrade-run/references/graph-run
     Read `../typo3-upgrade-run/references/overnight-controller.md`,
     write the selected-route runtime plan and run `t3u graph-forecast` before the baseline. A missing
     or non-fitting estimate blocks admission. The size-dependent 8/24/48h caps are not completion guarantees.
+14. Database health (`db-health-intake`): install the pinned `lolli/dbdoctor` (1.0.6 on a 12.4 source,
+    the exact 2.2.x on 13.4) with `--dev` in its own commit, run `scripts/db-health.mjs check`, then
+    `probe` for the full `(check, table, uid)` inventory, and record version and runtime. Classify every
+    group as `pre-existing` or owner-approved for a fix, following the round-1 policy (record only, or
+    fix approved groups before Baseline A). Never approve the 1.0.6 `…ParentLanguageDifferent` groups,
+    never let dbdoctor `execute` a kept database
+    ([database health](../typo3-upgrade-run/references/database-health.md#classification-at-intake)).
 
 ## Routes
 

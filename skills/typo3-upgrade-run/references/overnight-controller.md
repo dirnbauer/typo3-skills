@@ -78,6 +78,7 @@ answer as given ([approval matrix](../rules/40-approval-matrix.md)).
 | Contract A Lighthouse floors: measured on Baseline A or fixed | [quality bars](quality-bars.md#contract-a-lighthouse-floors-decided-at-intake) |
 | Bootstrap and jQuery: migrate in this run or record an exception, and the review slot | [migration intake](bootstrap-5-migration.md#intake-inventory-estimate-ask) |
 | Extension removals and forks the inventory names | [extension strategy](extension-strategy.md) |
+| Database health policy: **record only** (every dbdoctor group stays a pre-existing residual) or **fix approved groups before Baseline A**, each group asked with its risk at `db-health-intake` | [database health](database-health.md#classification-at-intake), matrix row 32 |
 | Fix-pack approvals: split bundles, restored module rights, renamed asset files, the powermail `Basic.css` URL, the shared `.htaccess` on staging and live | [fix pack](typo3-14-fix-pack.md#where-each-item-applies) |
 | Backend test accounts: a DDEV-only throwaway admin and the non-admin editors | [test accounts](#prepare-test-accounts-once) |
 | Delegation: how many parallel workers (`parallel_approval`, `max_workers`) | [admission](#admission-and-prediction) |

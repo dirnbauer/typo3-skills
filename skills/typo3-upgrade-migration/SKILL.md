@@ -31,7 +31,7 @@ Start every node from `t3u node-brief --node <id>`; it carries the contract, rou
 | `mechanical-recovery` | Diagnose the cause the tools left behind; plan the fix for the retry |
 | `manual-recovery` | Diagnose one data/API/registration-order failure; plan the fix |
 | `rung14-recovery` | Diagnose the one blocking cause and plan the repair for the retried rung |
-| `content-recovery` | One ledgered content/data repair found by visual classification; snapshot first |
+| `content-recovery` | One ledgered content/data repair found by visual classification or `db-health-target`; snapshot first; outcome `pass` reruns `visual-proof`, `db-health` reruns `db-health-target` |
 
 Stateful nodes open with `t3u snapshot-create --node <id>` first. Code nodes open with a
 `--rollback-ref git:<sha>`; the guard measures your diff against it.

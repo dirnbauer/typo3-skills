@@ -1,0 +1,7 @@
+Find and fix database inconsistencies
+=====================================
+
+ [ERROR] Current database schema is not in sync with TCA: Missing tables, missing or not adapted columns or
+         indexes were detected. Run "bin/typo3 extension:setup", or use the install tool "Database analyzer"
+         to fix this. Then run dbdoctor again.
+
