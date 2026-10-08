@@ -65,10 +65,10 @@ ddev composer remove mask/mask nhovratov/mask-to-content-blocks
 ```
 
 Remove both afterwards. The migration extension is a one-shot tool, and leaving Mask installed
-alongside generated Content Blocks invites two definitions of the same element. Remove
-`friendsoftypo3/fontawesome-provider` in the same step when it served only Mask's backend icons: the
-generated blocks get generated icons. Check first that the frontend's `fa` classes come from the site's
-own CSS, not from that package.
+alongside generated Content Blocks invites two definitions of the same element. Do **not** remove
+`friendsoftypo3/fontawesome-provider` with Mask: the migrated elements keep using their Font Awesome
+icon identifiers through it. Keep it and upgrade it to its latest stable v14-compatible release — see
+[Font Awesome icons](extension-strategy.md#font-awesome-icons-keep-friendsoftypo3fontawesome-provider).
 
 ## What the importer does not do
 

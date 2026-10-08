@@ -120,9 +120,9 @@ passes, stopping earlier on two unchanged/non-improving results or oscillation. 
 diff is incomplete and needs a new decision; it is not permission to keep applying indefinitely.
 
 Do not apply a destructive semantic rule merely because it is automated. In particular, defer an
-icon-registration removal when the current provider (for example Font Awesome) has no proven SVG
-replacement yet. Skip that exact rule with a recorded manual follow-up, replace/register the icon,
-then rerun Rector to zero.
+icon-registration removal when the current provider (for example Font Awesome, which stays on
+`friendsoftypo3/fontawesome-provider`) has no proven SVG replacement yet. Skip that exact rule
+with a recorded manual follow-up, replace/register the icon, then rerun Rector to zero.
 
 ## 3. Version constraints and extra Rector sets
 

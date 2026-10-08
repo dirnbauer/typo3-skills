@@ -109,6 +109,11 @@ column identifiers, child-table names and `sys_file_reference.fieldname` values 
 repeatable data migration proves every live, translated and workspace record. Cosmetic renames can
 make a valid definition appear empty or orphan FAL relations.
 
+Icons are part of that contract. Mask's icon picker stores Font Awesome identifiers, which resolve
+through `friendsoftypo3/fontawesome-provider`. Keep that package installed (and upgraded to its
+latest stable TYPO3 14 release) when Mask is removed, so the migrated blocks keep their icons; do not
+swap in a CDN icon font or another icon package during the migration.
+
 Audit generated YAML scalar types explicitly: converters have emitted integer and boolean options as
 quoted strings. Run `content-blocks:lint`, check existing `NULL` rows before declaring fields
 non-nullable, and test Link fields as link objects rather than strings. Preserve local Frame layouts
