@@ -8,7 +8,7 @@ to have looked at, must refuse to emit a verdict.** Refusing is a distinct exit 
 
 - [Exit codes](#exit-codes) · [The gating rule](#the-gating-rule) · [Where the URL guard runs](#where-the-url-guard-runs)
 - [Browser arguments](#browser-arguments) · [Secrets](#secrets) · [Reports](#reports) · [Untrusted text](#untrusted-text)
-- [Coverage honesty](#coverage-honesty) · [Tests](#tests) · [Sampling scope](#sampling-scope-cheap-in-the-loops-exhaustive-at-the-end)
+- [Coverage honesty](#coverage-honesty) · [Project layout](#project-layout-composer-in-a-subdirectory) · [Tests](#tests) · [Sampling scope](#sampling-scope-cheap-in-the-loops-exhaustive-at-the-end)
 - [Determinism runtime](#determinism-runtime) · [Where the logs are](#where-the-logs-are-and-why-all-three-matter) · [Final smoke test](#final-smoke-test-no-new-errors)
 
 ## Exit codes
@@ -152,6 +152,25 @@ Sitemap entry points come from the same language bases (`/sitemap.xml` for a def
 `/en/sitemap.xml` for `/en/`) with the same `--languages` selection; without site configuration the
 `/<code>/sitemap.xml` guess stays, with a warning. A blank discovery seed falls back to the run's
 default seed instead of sealing `""`.
+
+## Project layout: Composer in a subdirectory
+
+The project root (`.ddev/`, `.git`, the run directory) is not always the Composer root. With DDEV
+`composer_root: app/`, composer.json, `config/sites`, `config/system`, `var/` and the CLI live below
+`app/`; Composer `config.bin-dir: "."` makes the CLI `app/typo3` instead of `vendor/bin/typo3`.
+`scripts/lib/run/project-layout.mjs` resolves it once, first match wins: `--composer-root`, the
+`project.composer_root` that `init` records in state, run.yml `project.composer_root`,
+`.ddev/config.yaml` `composer_root`, composer.json in the project root, the one subdirectory whose
+composer.json requires `typo3/cms-core`. The web directory follows composer.json `web-dir`, then DDEV
+`docroot`, then `public/`; the CLI follows `bin-dir` (default `<vendor-dir>/bin`). Standard layouts
+keep `config/sites`, `public/` and `vendor/bin/typo3`.
+
+`init` logs and records the layout, `doctor` checks it (composer.json requiring TYPO3, site count,
+`TYPO3 CLI via DDEV`), and `discover-urls` (sitemap entry points and `--from-pages`), the environment
+fingerprint (`ddev exec -- <cli>` instead of `ddev typo3`) and the content fingerprint's default
+fileadmin (`<web dir>/fileadmin`) read it. The diagnostic scripts resolve it too (`sitemap-audit`,
+`smoke-log-check`, `indexed-search-check`, `db-health`, `extension-usage`, `typo3-14-readiness`,
+`backend-permissions-audit`, `pull-live-dataset`, `deploy-staging`); most accept `--composer-root`.
 
 When a budget was exhausted, the loop report carries `coverageDegraded: true` and the generated
 summary says so in its **first paragraph**. A report that covered 60% of a site and reads exactly

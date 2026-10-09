@@ -1,0 +1,10 @@
+# A DDEV project whose Composer root is app/ (composer_root) and whose CLI is app/typo3 (bin-dir ".").
+name: example
+type: typo3
+docroot: app/web
+composer_root: app
+php_version: "8.3"
+webserver_type: apache-fpm
+database:
+  type: mariadb
+  version: "10.11"

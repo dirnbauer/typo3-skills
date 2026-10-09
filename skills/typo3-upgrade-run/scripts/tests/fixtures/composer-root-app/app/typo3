@@ -1,0 +1,3 @@
+#!/usr/bin/env php
+<?php
+// Stand-in for the TYPO3 CLI that Composer installs at app/typo3 when bin-dir is ".".

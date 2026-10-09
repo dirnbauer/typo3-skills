@@ -15,12 +15,16 @@
  *
  * Usage:
  *   node indexed-search-check.mjs --base-url https://site.ddev.site --ddev-dir /path \
- *     [--count 50] [--language 0] [--term Kontakt] [--report out.json]
+ *     [--count 50] [--language 0] [--term Kontakt] [--report out.json] [--composer-root app]
+ *
+ * The TYPO3 CLI runs through `ddev exec` at the path the project layout resolves (vendor/bin/typo3,
+ * or app/typo3 with DDEV composer_root app/ and Composer bin-dir "."), not `ddev typo3`.
  *
  * Exit: 0 ok · 1 findings (nothing indexed, or the control term is not found) · 3 invalid
  */
 import { writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import { resolveProjectLayout } from './lib/run/project-layout.mjs';
 
 const argv = process.argv.slice(2);
 const opt = (n, d = null) => {
@@ -42,7 +46,8 @@ if (!baseUrl) { console.error('--base-url is required'); process.exit(3); }
 const sql = (q) => execFileSync('ddev', ['mysql', '-N', '-e', q], {
   cwd: ddevDir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'],
 }).trim();
-const ddevTypo3 = (...a) => execFileSync('ddev', ['typo3', ...a], {
+const typo3Cli = resolveProjectLayout(ddevDir, { composerRoot: opt('composer-root', null) }).ddevTypo3;
+const ddevTypo3 = (...a) => execFileSync('ddev', ['exec', '--', typo3Cli, ...a], {
   cwd: ddevDir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'],
 }).trim();
 

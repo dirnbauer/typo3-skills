@@ -20,7 +20,8 @@ import { profileHash, validateStabilizationProfile } from '../browser/stabilize.
 import { resolveImageMagick } from '../browser/media-adapters.mjs';
 import { DEFAULT_STATES, MAX_AUTHORITATIVE_STATES, stateByName } from '../browser/states.mjs';
 import { intOpt, listOpt } from '../cli/args.mjs';
-import { readJson } from './core.mjs';
+import { projectLayout, readJson } from './core.mjs';
+import { describeLayout } from '../run/project-layout.mjs';
 
 const execFileAsync = promisify(execFile);
 
@@ -57,9 +58,12 @@ export async function discoverUrls({ values, paths, log, journal, cwd = process.
   const base = (await guard.assertUrl(baseUrl, { purpose: 'discovery' })).url;
 
   // Scheme and port are taken from the validated base URL, never reconstructed; the paths come
-  // from the site languages, read once for the sitemaps and the page tree.
-  const siteConfigs = await readSiteConfigs(cwd);
-  const sitemaps = sitemapEntryPoints(siteRouting(siteConfigs.configs, base), base, { languages });
+  // from the site languages, read once for the sitemaps and the page tree. config/sites lives
+  // below the Composer root, which is not the project root with DDEV `composer_root: app/`.
+  const layout = await projectLayout({ values, state, paths, cwd });
+  log.debug(`project layout: ${describeLayout(layout)}`);
+  const siteConfigs = await readSiteConfigs(cwd, { layout });
+  const sitemaps = sitemapEntryPoints(siteRouting(siteConfigs.configs, base), base, { languages, sitesDir: siteConfigs.dirRel });
   for (const warning of siteConfigs.warnings) log.warn(`site configuration: ${warning}`);
   for (const warning of sitemaps.warnings) log.warn(`sitemap discovery: ${warning}`);
   const { entryPoints } = sitemaps;
@@ -205,7 +209,7 @@ export function discoverySeed(values, state) {
  * when it names nothing served here, the old guess stays (/sitemap.xml and /<code>/sitemap.xml
  * per --languages value), with a warning that it is one.
  */
-export function sitemapEntryPoints(sites, base, { languages = [] } = {}) {
+export function sitemapEntryPoints(sites, base, { languages = [], sitesDir = 'config/sites' } = {}) {
   const wanted = wantedCodes(languages);
   const entryPoints = new Set(), named = new Set(), warnings = [];
   for (const site of sites) {
@@ -225,7 +229,7 @@ export function sitemapEntryPoints(sites, base, { languages = [] } = {}) {
     return { entryPoints: [...entryPoints], warnings };
   }
   const guessed = ['/', ...languages.map((code) => String(code).trim()).filter(Boolean).map((code) => `/${code}/`)];
-  warnings.push(`${sites.length ? `config/sites names no language served on ${new URL(base).origin}` : 'no config/sites/*/config.yaml'}; `
+  warnings.push(`${sites.length ? `${sitesDir} names no language served on ${new URL(base).origin}` : `no ${sitesDir}/*/config.yaml`}; `
     + `sitemap entry points are guessed: ${guessed.map((prefix) => `${prefix}sitemap.xml`).join(', ')}`);
   return { entryPoints: [...new Set(guessed.map((prefix) => new URL(`${prefix}sitemap.xml`, base).href))], warnings };
 }
@@ -309,7 +313,7 @@ function siteOf(uid, sites, parents) {
   return null;
 }
 
-export async function discoverFromPages({ base, guard, cwd, log, languages = [], run = execFileAsync, siteConfigs = null }) {
+export async function discoverFromPages({ base, guard, cwd, log, languages = [], run = execFileAsync, siteConfigs = null, layout = null }) {
   const query = async (sql) => {
     try {
       return (await run('ddev', ['mysql', '-N', '-B', '-e', sql], { cwd, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 })).stdout;
@@ -319,8 +323,10 @@ export async function discoverFromPages({ base, guard, cwd, log, languages = [],
   };
   const stdout = await query(PAGE_TREE_SQL);
   // A caller that already read config/sites has reported its warnings.
-  const { configs, warnings } = siteConfigs ? { configs: siteConfigs.configs, warnings: [] } : await readSiteConfigs(cwd);
-  if (!configs.length) warnings.push(`no config/sites/*/config.yaml under ${cwd}; page URLs keep base + slug`);
+  const read = siteConfigs ?? await readSiteConfigs(cwd, { layout });
+  const { configs } = read;
+  const warnings = siteConfigs ? [] : [...read.warnings];
+  if (!configs.length) warnings.push(`no ${read.dirRel ?? 'config/sites'}/*/config.yaml under ${cwd}; page URLs keep base + slug`);
   const sites = siteRouting(configs, base);
   const parents = sites.length ? parsePageParents(await query(PAGE_PARENTS_SQL)) : new Map();
   const parsed = parsePageTreeRows(stdout, base, { sites, parents, languages });

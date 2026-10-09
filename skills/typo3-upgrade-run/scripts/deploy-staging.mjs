@@ -23,11 +23,12 @@
  */
 
 import { execFileSync, spawnSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { checkedHost, readHosts, remotePaths, sshArgs, sshTarget } from './pull-live-dataset.mjs';
 import { isMain } from './lib/cli/is-main.mjs';
+import { resolveProjectLayout } from './lib/run/project-layout.mjs';
 
 const STAGING_LABELS = new Set(['staging', 'stage', 'testing', 'test', 'development', 'dev']);
 const PRODUCTION_LABELS = /^(prod|production|live|www|master|main)$/i;
@@ -56,9 +57,20 @@ export function stagingVerdict(host, allHosts) {
   return { allowed: reasons.length === 0, reasons };
 }
 
-export function deployCommand(alias, branch) {
+/**
+ * Deployer's binary, relative to the project: vendor/bin/dep at the project root, else in the
+ * Composer bin-dir (app/vendor/bin/dep, or app/dep with DDEV composer_root app/ and bin-dir ".").
+ */
+export function deployerBinary(project) {
+  if (existsSync(path.join(project, 'vendor', 'bin', 'dep'))) return 'vendor/bin/dep';
+  const layout = resolveProjectLayout(project);
+  const dep = path.join(layout.binDir, 'dep');
+  return existsSync(dep) ? path.relative(path.resolve(project), dep).split(path.sep).join('/') : 'vendor/bin/dep';
+}
+
+export function deployCommand(alias, branch, dep = 'vendor/bin/dep') {
   if (!/^[A-Za-z0-9._-]+$/.test(alias)) throw new Error('Unsafe host alias.');
-  const args = ['vendor/bin/dep', 'deploy', alias];
+  const args = [dep, 'deploy', alias];
   if (branch) {
     if (!/^[A-Za-z0-9._/-]+$/.test(branch) || branch.startsWith('-')) throw new Error('Unsafe branch name.');
     args.push('-o', `branch=${branch}`);
@@ -149,7 +161,7 @@ export function platformCheck({ host, composerLock, run = execFileSync }) {
 }
 
 export function deployStaging({ project, hostName, hostsFile = path.join(project, '.hosts.yaml'),
-  composerLock = path.join(project, 'composer.lock'), branch, record, dryRun = false, skipPlatformCheck = null,
+  composerLock = path.join(resolveProjectLayout(project).composerRoot, 'composer.lock'), branch, record, dryRun = false, skipPlatformCheck = null,
   run = execFileSync, spawn = spawnSync, log = (line) => process.stdout.write(`${line}\n`), error = (line) => process.stderr.write(`${line}\n`) }) {
   const hosts = readHosts(readFileSync(hostsFile, 'utf8'));
   const host = hosts.find((h) => h.alias === hostName);
@@ -162,7 +174,7 @@ export function deployStaging({ project, hostName, hostsFile = path.join(project
     error(`deploy-staging: REFUSED ${host.alias}: ${verdict.reasons.join('; ')}. Upgrade runs never publish to live.`);
     return 5;
   }
-  const [command, args] = deployCommand(host.alias, branch);
+  const [command, args] = deployCommand(host.alias, branch, deployerBinary(project));
   const platform = skipPlatformCheck
     ? { checked: false, skipped_reason: skipPlatformCheck, web_php: WEB_PHP_UNMEASURED }
     : { composer_lock: path.relative(project, path.resolve(composerLock)), ...platformCheck({ host, composerLock, run }) };

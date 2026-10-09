@@ -17,6 +17,10 @@ project:
   # navigation may reach; everything else is refused by the URL guard.
   trusted_origin: "https://example.ddev.site"
   ddev_project: ""
+  # TYPO3 Composer root inside the project, e.g. "app" when .ddev/config.yaml has
+  # composer_root: app/ (then config/sites, config/system, var/ and the CLI live below it).
+  # Empty = what init recorded, else .ddev/config.yaml composer_root, else composer.json.
+  composer_root: ""
   # Real site language prefixes, not a guess. Discovery reads /<lang>/sitemap.xml per entry.
   languages: ["de", "en"]
 

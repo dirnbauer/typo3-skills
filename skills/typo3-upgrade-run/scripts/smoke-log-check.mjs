@@ -13,12 +13,14 @@
  * update introduced stands out alone.
  *
  * Log sources, all of them, because each catches something the others miss:
- *   var/log/typo3_*.log   application log: exceptions, deprecations, PHP warnings
+ *   var/log/typo3_*.log   application log: exceptions, deprecations, PHP warnings (below the
+ *                         Composer root: app/var/log with DDEV composer_root app/)
  *   sys_log (database)    backend and DataHandler events, including failures with no HTTP trace
  *   the HTTP response     status codes and TYPO3's own rendered exception output
  *
  * Usage:
  *   node smoke-log-check.mjs --base-url https://site.ddev.site [--count 10] [--seed x] [--json r.json]
+ *     [--project-root <dir>] [--composer-root app]
  *
  * Exit: 0 no new errors · 1 new errors found · 2 could not run
  */
@@ -28,6 +30,7 @@ import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { parseArgs } from 'node:util';
+import { resolveProjectLayout } from './lib/run/project-layout.mjs';
 
 const exec = promisify(execFile);
 
@@ -64,8 +67,8 @@ async function sitemapUrls(baseUrl) {
   return { urls: [...new Set(urls)] };
 }
 
-async function findLogFile(projectRoot) {
-  const dir = path.join(projectRoot, 'var', 'log');
+async function findLogFile(projectRoot, composerRoot = null) {
+  const dir = path.join(resolveProjectLayout(projectRoot, { composerRoot }).varDir, 'log');
   try {
     const files = (await readdir(dir)).filter((f) => f.startsWith('typo3_') && f.endsWith('.log'));
     if (!files.length) return null;
@@ -87,14 +90,14 @@ async function main() {
   const { values } = parseArgs({ options: {
     'base-url': { type: 'string' }, 'project-root': { type: 'string', default: process.cwd() },
     count: { type: 'string', default: '10' }, seed: { type: 'string', default: 'smoke' },
-    'ddev-project': { type: 'string' }, json: { type: 'string' },
+    'ddev-project': { type: 'string' }, json: { type: 'string' }, 'composer-root': { type: 'string' },
     'include-deprecations': { type: 'boolean', default: false },
   } });
   if (!values['base-url']) { console.error('--base-url is required'); process.exit(2); }
   const baseUrl = values['base-url'].replace(/\/+$/, '');
   const want = Number(values.count);
 
-  const logFile = await findLogFile(values['project-root']);
+  const logFile = await findLogFile(values['project-root'], values['composer-root'] ?? null);
   const markBytes = logFile ? (await stat(logFile)).size : 0;
   const markSysLog = await sysLogCount(values['ddev-project']);
 

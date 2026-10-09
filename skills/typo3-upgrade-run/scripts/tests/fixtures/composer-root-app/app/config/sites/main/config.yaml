@@ -1,0 +1,24 @@
+rootPageId: 1
+base: 'https://www.example.org/'
+baseVariants:
+  - base: 'https://example.ddev.site/'
+    condition: 'applicationContext == "Development"'
+languages:
+  - languageId: 0
+    title: Deutsch
+    base: /
+    locale: de_AT.UTF-8
+    hreflang: de-AT
+  - languageId: 1
+    title: English
+    base: /en/
+    locale: en_GB.UTF-8
+    iso-639-1: en
+    hreflang: en-GB
+routeEnhancers:
+  PageTypeSuffix:
+    type: PageType
+    default: /
+    map:
+      /: 0
+      sitemap.xml: 1533906435

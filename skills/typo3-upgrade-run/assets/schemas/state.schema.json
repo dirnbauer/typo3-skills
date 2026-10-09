@@ -44,7 +44,11 @@
         },
         "ddev_project": { "type": "string" },
         "languages": { "type": "array", "items": { "type": "string" } },
-        "run_dir": { "type": "string", "default": ".typo3-update" }
+        "run_dir": { "type": "string", "default": ".typo3-update" },
+        "composer_root": {
+          "type": "string",
+          "description": "TYPO3 Composer root relative to the project, recorded by init: '.' or e.g. 'app' (DDEV composer_root). config/sites, config/system, var/ and the CLI are read below it."
+        }
       }
     },
     "target": {

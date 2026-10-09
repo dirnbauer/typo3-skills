@@ -32,6 +32,7 @@ import { parseArgs } from 'node:util';
 import { sha256 } from './lib/run/paths.mjs';
 import { collectContent, compareContent } from './lib/fingerprint/content.mjs';
 import { isMain } from './lib/cli/is-main.mjs';
+import { resolveProjectLayout } from './lib/run/project-layout.mjs';
 
 export const EXIT = Object.freeze({ PASS: 0, FINDINGS: 1, HARNESS_ERROR: 2, INVALID: 3, PRECONDITION: 4, POLICY: 5 });
 export const CHECK_SCHEMA = 'typo3-upgrade-run/db-health-check@1';
@@ -604,20 +605,22 @@ async function writeJson(file, data) {
 }
 
 const HELP = `Usage: node db-health.mjs <command> [options]
-  check        --project <dir> --out <dir> [--version x.y.z] [--timeout 3600] [--typo3-bin vendor/bin/typo3]
+  check        --project <dir> --out <dir> [--version x.y.z] [--timeout 3600] [--typo3-bin <path>] [--composer-root <dir>]
   parse-check  --stdout <file> --exit <n> [--stderr <file>] [--version x.y.z] [--json <file>]
   probe        --project <dir> --out <dir> --snapshot-name <name> [--version] [--timeout] [--max-passes 5]
   parse-sql    --sql <file> [--sql <file> ...] [--version x.y.z] [--json <file>]
   compare      --target <records.json> [--intake <records.json>|none] [--ledger <content-transition.json>]
                [--pre-existing <keys.json>] [--require-ledgered] [--json <file>]
   apply        --project <dir> --sql <curated.sql> --approval APR-NNN --snapshot <name> --out <dir> [--version]
+--typo3-bin defaults to the CLI of the project layout, relative to the DDEV project root: vendor/bin/typo3,
+or app/typo3 with DDEV composer_root app/ and Composer bin-dir ".".
 Exit: 0 pass, 1 findings, 2 harness error, 3 restore not proven, 4 precondition, 5 refused by policy.`;
 
 export async function main(argv, { run = defaultRunner, stderr = (m) => process.stderr.write(`${m}\n`) } = {}) {
   const [command, ...rest] = argv;
   const { values } = parseArgs({ args: rest, allowPositionals: false, options: {
     project: { type: 'string' }, out: { type: 'string' }, version: { type: 'string' }, timeout: { type: 'string', default: '3600' },
-    'typo3-bin': { type: 'string', default: 'vendor/bin/typo3' }, stdout: { type: 'string' }, stderr: { type: 'string' },
+    'typo3-bin': { type: 'string' }, 'composer-root': { type: 'string' }, stdout: { type: 'string' }, stderr: { type: 'string' },
     exit: { type: 'string' }, json: { type: 'string' }, 'snapshot-name': { type: 'string' }, 'max-passes': { type: 'string', default: String(MAX_PROBE_PASSES) },
     sql: { type: 'string', multiple: true }, intake: { type: 'string' }, target: { type: 'string' }, ledger: { type: 'string' },
     'pre-existing': { type: 'string' }, 'require-ledgered': { type: 'boolean', default: false }, approval: { type: 'string' },
@@ -626,7 +629,8 @@ export async function main(argv, { run = defaultRunner, stderr = (m) => process.
   if (!command || values.help || command === 'help') { process.stdout.write(`${HELP}\n`); return EXIT.PASS; }
   const timeoutSeconds = Number(values.timeout);
   const cwd = values.project ? path.resolve(values.project) : undefined;
-  const typo3Bin = values['typo3-bin'];
+  const typo3Bin = values['typo3-bin']
+    ?? resolveProjectLayout(cwd ?? process.cwd(), { composerRoot: values['composer-root'] ?? null }).ddevTypo3;
   if (!/^[A-Za-z0-9._/-]+$/.test(typo3Bin)) throw usage('--typo3-bin may contain letters, digits, dot, dash, underscore and slash');
 
   if (command === 'parse-check') {

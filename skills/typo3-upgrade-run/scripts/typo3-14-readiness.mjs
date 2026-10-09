@@ -65,6 +65,7 @@ import { parseArgs } from 'node:util';
 import { EXIT, HarnessError, PreconditionError } from './lib/cli/exit-codes.mjs';
 import { mapPool } from './lib/util/pool.mjs';
 import { isMain } from './lib/cli/is-main.mjs';
+import { resolveProjectLayout } from './lib/run/project-layout.mjs';
 
 const SCHEMA = 'typo3-upgrade-run/typo3-14-readiness@1';
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -986,7 +987,7 @@ async function readSiteConfigurations(project) {
   const sites = [];
   const problems = [];
   const seen = new Set();
-  for (const directory of [path.join(project.root, 'config', 'sites'), path.join(project.webDir, 'typo3conf', 'sites')]) {
+  for (const directory of [path.join(project.composerRoot, 'config', 'sites'), path.join(project.webDir, 'typo3conf', 'sites')]) {
     for (const siteDir of await subdirectories(directory)) {
       const file = path.join(siteDir, 'config.yaml');
       const real = await realpathOrNull(file);
@@ -1283,14 +1284,18 @@ async function expandPathRepository(root, pattern) {
 /**
  * The project: Composer layout, local packages (Composer path repositories, packages/*, non-vendor
  * typo3conf/ext/*) and every installed extension key with its directory, for EXT: resolution.
+ * `root` stays the project root (the PHP helpers run from it, on the host and in DDEV alike);
+ * composer.json, config/ and packages/ are read below `composerRoot`, which is app/ when DDEV
+ * sets `composer_root: app/`.
  */
-export async function discoverProject(projectRoot, { packageDirs = [] } = {}) {
+export async function discoverProject(projectRoot, { packageDirs = [], composerRoot: composerRootOption = null } = {}) {
   const root = path.resolve(projectRoot);
   if (!await isDir(root)) throw new PreconditionError(`The project root is not a directory: ${root}`);
-  const composer = await readJsonIfExists(path.join(root, 'composer.json'));
-  const vendorDir = path.resolve(root, composer?.config?.['vendor-dir'] ?? 'vendor');
-  const configuredWebDir = composer?.extra?.['typo3/cms']?.['web-dir'];
-  const webDir = path.resolve(root, configuredWebDir ?? ((await isDir(path.join(root, 'public'))) ? 'public' : '.'));
+  const layout = resolveProjectLayout(root, { composerRoot: composerRootOption, webDirFallback: '.' });
+  const composerRoot = layout.composerRoot;
+  const composer = await readJsonIfExists(path.join(composerRoot, 'composer.json'));
+  const vendorDir = layout.vendorDir;
+  const webDir = layout.webDir;
 
   const candidates = [];
   if (packageDirs.length) {
@@ -1300,9 +1305,11 @@ export async function discoverProject(projectRoot, { packageDirs = [] } = {}) {
       candidates.push(absolute);
     }
   } else {
-    for (const pattern of composerPathRepositories(composer)) candidates.push(...await expandPathRepository(root, pattern));
-    candidates.push(...await subdirectories(path.join(root, 'packages')));
-    for (const extensions of new Set([path.join(webDir, 'typo3conf', 'ext'), path.join(root, 'typo3conf', 'ext')])) {
+    for (const pattern of composerPathRepositories(composer)) candidates.push(...await expandPathRepository(composerRoot, pattern));
+    for (const packagesDir of new Set([path.join(composerRoot, 'packages'), path.join(root, 'packages')])) {
+      candidates.push(...await subdirectories(packagesDir));
+    }
+    for (const extensions of new Set([path.join(webDir, 'typo3conf', 'ext'), path.join(composerRoot, 'typo3conf', 'ext')])) {
       candidates.push(...await subdirectories(extensions));
     }
   }
@@ -1345,7 +1352,7 @@ export async function discoverProject(projectRoot, { packageDirs = [] } = {}) {
   }
 
   return {
-    root, composer, vendorDir, webDir, packages, extensionPaths, coreExtensions,
+    root, composerRoot, composer, vendorDir, webDir, packages, extensionPaths, coreExtensions,
     extensionMapComplete: Array.isArray(installedList) || await isDir(sysext),
   };
 }
@@ -1375,7 +1382,7 @@ async function collectSources(project) {
     }
   }
   // Site-level TypoScript and TSconfig next to config.yaml (13+), site YAML, and the system settings.
-  for (const directory of [path.join(project.root, 'config'), path.join(project.webDir, 'typo3conf', 'sites')]) {
+  for (const directory of [path.join(project.composerRoot, 'config'), path.join(project.webDir, 'typo3conf', 'sites')]) {
     for (const file of await walk(directory, { skip: (relative) => relative === 'system' })) {
       if (!await once(file)) continue;
       const context = typoscriptContext(toPosix(path.relative(directory, file)));
@@ -1385,7 +1392,7 @@ async function collectSources(project) {
     }
   }
   const settings = [
-    path.join(project.root, 'config', 'system', 'settings.php'), path.join(project.root, 'config', 'system', 'additional.php'),
+    path.join(project.composerRoot, 'config', 'system', 'settings.php'), path.join(project.composerRoot, 'config', 'system', 'additional.php'),
     path.join(project.webDir, 'typo3conf', 'system', 'settings.php'), path.join(project.webDir, 'typo3conf', 'system', 'additional.php'),
     path.join(project.webDir, 'typo3conf', 'LocalConfiguration.php'), path.join(project.webDir, 'typo3conf', 'AdditionalConfiguration.php'),
   ];
@@ -1543,7 +1550,9 @@ function compareFindings(a, b) {
 export async function runReadiness(options = {}, deps = {}) {
   const checks = new Set(options.checks ?? CHECKS);
   for (const check of checks) if (!CHECKS.includes(check)) throw new HarnessError(`Unknown check: ${check}`);
-  const project = await discoverProject(options.projectRoot ?? process.cwd(), { packageDirs: options.packageDirs ?? [] });
+  const project = await discoverProject(options.projectRoot ?? process.cwd(), {
+    packageDirs: options.packageDirs ?? [], composerRoot: options.composerRoot ?? null,
+  });
   const sources = await collectSources(project);
   const relative = (file) => toPosix(path.relative(project.root, file));
 
@@ -1739,6 +1748,8 @@ export async function runReadiness(options = {}, deps = {}) {
 
 const USAGE = `Usage: node typo3-14-readiness.mjs [options]
   --project-root DIR       TYPO3 project to check (default: current directory)
+  --composer-root DIR      Composer root inside the project (default: .ddev/config.yaml composer_root,
+                           else the directory with composer.json requiring typo3/cms-core)
   --checks LIST            comma list of ${CHECKS.join(', ')} (default: all)
   --db-export FILE         database TypoScript/TSconfig rows, and tt_content CType/list_type rows,
                            as JSON or JSON Lines (repeatable)
@@ -1763,6 +1774,7 @@ export function parseCli(argv) {
     strict: true,
     options: {
       'project-root': { type: 'string' },
+      'composer-root': { type: 'string' },
       checks: { type: 'string' },
       'db-export': { type: 'string', multiple: true },
       'dom-dir': { type: 'string' },
@@ -1786,6 +1798,7 @@ export function parseCli(argv) {
   return {
     help: values.help,
     projectRoot: values['project-root'] ?? process.cwd(),
+    composerRoot: values['composer-root'] ?? null,
     checks,
     dbExports: values['db-export'] ?? [],
     domDir: values['dom-dir'] ?? null,

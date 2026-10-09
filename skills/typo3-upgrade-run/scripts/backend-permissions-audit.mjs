@@ -31,6 +31,7 @@ import { writeFileSync, existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { isMain } from './lib/cli/is-main.mjs';
+import { resolveProjectLayout } from './lib/run/project-layout.mjs';
 
 // Local package folders, scanned next to vendor when Composer's record is missing.
 const LOCAL_ROOTS = Object.freeze(['packages', 'extensions']);
@@ -79,8 +80,8 @@ export function unknownModuleEntries(entries, modules) {
  * Without it, the directories this script can see stand in.
  */
 export function moduleFiles(root) {
-  const composerRoot = resolve(root, ddevComposerRoot(root));
-  const vendor = join(composerRoot, 'vendor');
+  // DDEV's composer_root (Composer in app/, for one), composer.json's vendor-dir, or the project itself.
+  const { composerRoot, vendorDir: vendor } = resolveProjectLayout(root);
   const installed = join(vendor, 'composer', 'installed.json');
   if (existsSync(installed)) {
     const data = JSON.parse(readFileSync(installed, 'utf8'));
@@ -91,13 +92,6 @@ export function moduleFiles(root) {
   }
   const files = [vendor, ...LOCAL_ROOTS.map((dir) => join(composerRoot, dir))].flatMap(modulesFilesBelow);
   return { source: 'directory scan (no vendor/composer/installed.json)', files: [...new Set(files)] };
-}
-
-/** DDEV's composer_root (Composer in app/, for one), or the project itself. */
-function ddevComposerRoot(root) {
-  const config = join(root, '.ddev', 'config.yaml');
-  if (!existsSync(config)) return '.';
-  return /^composer_root:\s*['"]?([^'"#\s]+)/m.exec(readFileSync(config, 'utf8'))?.[1] ?? '.';
 }
 
 function modulesFilesBelow(dir) {

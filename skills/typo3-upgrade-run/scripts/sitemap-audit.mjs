@@ -8,7 +8,8 @@
  *
  * So this reads three sources and cross-checks them:
  *
- *   1. CONFIG   config/sites/<id>/config.yaml — every site, every language, base + baseVariants.
+ *   1. CONFIG   config/sites/<id>/config.yaml below the Composer root (app/config/sites with DDEV
+ *               composer_root app/) — every site, every language, base + baseVariants.
  *               This is what SHOULD exist.
  *   2. LIVE     the actual HTTP responses. This is what DOES exist.
  *   3. DATABASE the indexable page count per site root. This is how many entries to EXPECT.
@@ -19,6 +20,7 @@
  *
  * Usage:
  *   node sitemap-audit.mjs --base-url https://site.ddev.site [--json report.json] [--ddev-project x]
+ *     [--project-root <dir>] [--composer-root app]
  *
  * Exit: 0 all good · 1 findings · 2 could not run
  */
@@ -28,6 +30,7 @@ import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { parseArgs } from 'node:util';
+import { resolveProjectLayout } from './lib/run/project-layout.mjs';
 
 const exec = promisify(execFile);
 
@@ -61,11 +64,12 @@ function readSiteYaml(text) {
 }
 const val = (s) => s.split(':').slice(1).join(':').trim().replace(/^['"]|['"]$/g, '');
 
-async function readConfiguredSites(projectRoot) {
-  const dir = path.join(projectRoot, 'config', 'sites');
+async function readConfiguredSites(projectRoot, composerRoot = null) {
+  const layout = resolveProjectLayout(projectRoot, { composerRoot });
+  const dir = layout.sitesDir;
   let ids = [];
   try { ids = (await readdir(dir, { withFileTypes: true })).filter((d) => d.isDirectory()).map((d) => d.name); }
-  catch { return { error: `no config/sites directory under ${projectRoot}` }; }
+  catch { return { error: `no ${layout.sitesDirRel} directory under ${projectRoot}` }; }
   const sites = [];
   for (const id of ids) {
     try {
@@ -125,12 +129,12 @@ function languagePrefixes(site) {
 async function main() {
   const { values } = parseArgs({ options: {
     'base-url': { type: 'string' }, 'project-root': { type: 'string', default: process.cwd() },
-    'ddev-project': { type: 'string' }, json: { type: 'string' },
+    'ddev-project': { type: 'string' }, json: { type: 'string' }, 'composer-root': { type: 'string' },
   } });
   if (!values['base-url']) { console.error('--base-url is required'); process.exit(2); }
   const baseUrl = values['base-url'].replace(/\/+$/, '');
 
-  const cfg = await readConfiguredSites(values['project-root']);
+  const cfg = await readConfiguredSites(values['project-root'], values['composer-root'] ?? null);
   if (cfg.error) { console.error(`cannot run: ${cfg.error}`); process.exit(2); }
 
   const db = await dbIndexablePerRoot(values['ddev-project']);

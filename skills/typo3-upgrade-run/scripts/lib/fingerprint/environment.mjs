@@ -17,6 +17,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { sha256 } from '../run/paths.mjs';
+import { resolveProjectLayout } from '../run/project-layout.mjs';
 
 const exec = promisify(execFile);
 const SCRIPT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -75,8 +76,12 @@ export async function collectEnvironment({
   bookkeepingHash = null,
   rendering = {},
   launchArgs = [],
+  typo3Cli = null,
 } = {}) {
-  const runInApp = appRunner ?? ((cmd, args) => ddevRun(cmd, args, ddevProject));
+  // The TYPO3 CLI as `ddev exec` reaches it: vendor/bin/typo3, or app/typo3 with DDEV
+  // composer_root app/ and Composer bin-dir ".", where `ddev typo3` finds nothing.
+  const cli = typo3Cli ?? (appRunner ? null : resolveProjectLayout(process.cwd()).ddevTypo3);
+  const runInApp = appRunner ?? ((cmd, args) => ddevRun(cmd, args, ddevProject, cli));
   const identity = await harnessIdentity({ depsLockHash, sourceHash, bookkeepingHash });
   const [playwrightVersion, browser, fonts, php, typo3, ddev, imaging] = await Promise.all([
     detectPlaywright(),
@@ -157,12 +162,18 @@ async function safeRun(cmd, args) {
   }
 }
 
-/** Application commands always execute in the DDEV web container. */
-async function ddevRun(cmd, args, project) {
-  if (cmd === 'composer' || cmd === 'typo3') {
-    return safeRun('ddev', [cmd, ...args]);
-  }
-  return safeRun('ddev', ['exec', '--', cmd, ...args]);
+/**
+ * The ddev arguments of an application command. It always executes in the DDEV web container;
+ * `ddev composer` honours composer_root, the TYPO3 CLI is called by its path in the project.
+ */
+export function ddevAppArgs(cmd, args, typo3Cli = 'vendor/bin/typo3') {
+  if (cmd === 'composer') return [cmd, ...args];
+  if (cmd === 'typo3') return ['exec', '--', typo3Cli, ...args];
+  return ['exec', '--', cmd, ...args];
+}
+
+async function ddevRun(cmd, args, project, typo3Cli) {
+  return safeRun('ddev', ddevAppArgs(cmd, args, typo3Cli ?? undefined));
 }
 
 async function detectPlaywright() {
