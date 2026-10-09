@@ -2,7 +2,8 @@
  * Site configuration as URL facts for page-tree discovery.
  *
  * `base + slug` is not the URL a visitor requests. The site language adds its base (`/en/`) and a
- * PageType route enhancer adds its suffix (`/` or `.html`); both live in config/sites/<id>/config.yaml.
+ * PageType route enhancer adds its suffix (`/` or `.html`); both live in config/sites/<id>/config.yaml
+ * below the Composer root (app/config/sites with DDEV `composer_root: app`, see project-layout.mjs).
  * Only paths are taken from it: the run measures one local origin, whatever production host the
  * file names. Among `base` and `baseVariants`, the variant on the run's origin wins, so variant
  * conditions never need evaluating.
@@ -11,11 +12,17 @@
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { parse as parseYaml } from 'yaml';
+import { resolveProjectLayout } from '../run/project-layout.mjs';
 
 const ENV_PLACEHOLDER = /%env\([^)]*\)%/g;
 
-export async function readSiteConfigs(root) {
-  const dir = path.join(root, 'config', 'sites');
+/**
+ * Every config/sites/<id>/config.yaml of the project. `root` is the project root; the sites
+ * directory is resolved below its Composer root unless `layout` (resolveProjectLayout) is given.
+ */
+export async function readSiteConfigs(root, { layout = null, composerRoot = null } = {}) {
+  const resolved = layout ?? resolveProjectLayout(root, { composerRoot });
+  const dir = resolved.sitesDir;
   const entries = await readdir(dir, { withFileTypes: true }).catch(() => []);
   const configs = [], warnings = [];
   for (const entry of entries.filter((e) => e.isDirectory()).sort((a, b) => (a.name < b.name ? -1 : 1))) {
@@ -25,7 +32,7 @@ export async function readSiteConfigs(root) {
       warnings.push(`site ${entry.name}: config.yaml unreadable (${error.message.split('\n')[0]}); its language bases and suffix are not applied`);
     }
   }
-  return { configs, warnings };
+  return { configs, warnings, dir, dirRel: resolved.sitesDirRel };
 }
 
 /** The default suffix of the site's one PageType enhancer; none, or more than one, adds nothing. */

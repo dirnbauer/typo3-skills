@@ -30,7 +30,9 @@
  *
  * Usage:
  *   node pull-live-dataset.mjs --project <dir> --host <alias|hostname> --out <dir> [--hosts-file <file>]
- *        [--webroot public] [--skip-db] [--skip-files] [--include-processed] [--dry-run]
+ *        [--webroot <dir>] [--skip-db] [--skip-files] [--include-processed] [--dry-run]
+ *   --webroot defaults to the project's web directory relative to --project: composer.json web-dir
+ *   below the Composer root, else DDEV docroot (app/web with composer_root app/), else public.
  *        [--accept-case-collisions <evidence-file>]
  *
  * Import afterwards is a separate stateful step: snapshot first, then `ddev import-db`, then
@@ -45,6 +47,7 @@ import { parseArgs } from 'node:util';
 import { createGzip } from 'node:zlib';
 import { parse as parseYaml } from 'yaml';
 import { isMain } from './lib/cli/is-main.mjs';
+import { resolveProjectLayout } from './lib/run/project-layout.mjs';
 
 export const SCHEMA = 'typo3-upgrade-run/live-dataset@1';
 export const DB_EXCLUDES = Object.freeze(['cache_*', 'cf_*', 'be_sessions', 'fe_sessions', 'sys_lockedrecords', 'sys_log', 'sys_http_report']);
@@ -407,15 +410,22 @@ export async function pullLiveDataset({ project, hostName, out, hostsFile = path
     }
   }
   writeFileSync(path.join(out, 'live-dataset.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+  const cli = resolveProjectLayout(project).ddevTypo3;
   log(`Dataset written to ${out}. Next: snapshot, ddev import-db --file=${path.join(out, 'db.sql.gz')}, `
-    + 'then ddev exec vendor/bin/typo3 extension:setup (recreates the excluded cache tables) and cache:flush.');
+    + `then ddev exec ${cli} extension:setup (recreates the excluded cache tables) and cache:flush.`);
   return manifest;
+}
+
+/** The local web directory relative to the project; public unless composer.json or DDEV name another. */
+export function defaultWebroot(project) {
+  const layout = resolveProjectLayout(project);
+  return layout.webDirSource === 'default' ? 'public' : layout.webDirRel;
 }
 
 async function main(argv) {
   const { values } = parseArgs({ args: argv, options: {
     project: { type: 'string', default: '.' }, host: { type: 'string' }, out: { type: 'string' },
-    'hosts-file': { type: 'string' }, webroot: { type: 'string', default: 'public' }, 'skip-db': { type: 'boolean', default: false },
+    'hosts-file': { type: 'string' }, webroot: { type: 'string' }, 'skip-db': { type: 'boolean', default: false },
     'skip-files': { type: 'boolean', default: false }, 'include-processed': { type: 'boolean', default: false },
     'dry-run': { type: 'boolean', default: false }, 'accept-case-collisions': { type: 'string' },
   } });
@@ -426,7 +436,7 @@ async function main(argv) {
   }
   try {
     const result = await pullLiveDataset({ project: values.project, hostName: values.host, out: values.out,
-      hostsFile: values['hosts-file'], webroot: values.webroot, skipDb: values['skip-db'], skipFiles: values['skip-files'],
+      hostsFile: values['hosts-file'], webroot: values.webroot ?? defaultWebroot(values.project), skipDb: values['skip-db'], skipFiles: values['skip-files'],
       includeProcessed: values['include-processed'], dryRun: values['dry-run'], acceptCaseCollisions: values['accept-case-collisions'] });
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     return 0;

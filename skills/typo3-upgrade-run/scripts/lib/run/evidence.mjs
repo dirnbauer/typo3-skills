@@ -12,6 +12,7 @@ import { collectEnvironment, compareEnvironment } from '../fingerprint/environme
 import { collectContent, compareContent } from '../fingerprint/content.mjs';
 import { StateStore } from './state.mjs';
 import { sha256 } from './paths.mjs';
+import { runLayout } from './project-layout.mjs';
 import { declaredChangesHash } from '../compare/declared-changes.mjs';
 
 export async function readEvidenceContext(paths) {
@@ -80,15 +81,17 @@ export async function assertLiveInputs(paths, {
   const context = await readEvidenceContext(paths);
   const { state, sealed } = context;
   const tables = sealed.content.database?.tables?.map((entry) => entry.table) ?? null;
+  const layout = runLayout({ state });
   const [environment, content] = await Promise.all([
     environmentCollector({
       ddevProject: state.project?.ddev_project || null,
       launchArgs,
+      typo3Cli: layout.ddevTypo3,
     }),
     // A table the database cannot answer throws exit 2 here (harness error), never drift.
     contentCollector({
       ddevProject: state.project?.ddev_project || null,
-      fileadmin: sealed.content.files?.root ?? 'fileadmin',
+      fileadmin: sealed.content.files?.root ?? layout.fileadminRel,
       tables,
       allowMissing: sealed.content.degraded === true,
       ...(log ? { log } : {}),

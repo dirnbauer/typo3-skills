@@ -14,6 +14,13 @@ before new scripts/dependencies; this does not add phases or global browser stat
 detections of the [TYPO3 14 fix pack](typo3-14-fix-pack.md) and put the approvals it needs into the
 [intake question round](overnight-controller.md#batch-the-owner-decisions).
 
+## Contents
+
+- [Where a day and a half went](#where-a-day-and-a-half-went) · [Small shop site minutes](#where-the-minutes-went-on-a-small-shop-site-2026-10-07) · [Why a small site took so long](#why-a-small-site-took-so-long-2026-10-08)
+- [Sentinel opened the mail client](#a-component-sentinel-opened-the-operators-mail-client-2026-10-09) · [Composer in a subdirectory](#composer-in-a-subdirectory-discovery-read-the-wrong-configsites-2026-10-09) · [Processed images darker](#processed-images-darker-locally-than-live-2026-10-07)
+- [Bootstrap 5 review rejected](#a-bootstrap-5-review-rejected-renames-are-not-a-migration-2026-10-07) · [Closure, deploy and backend-proof traps](#closure-deploy-and-backend-proof-traps-from-a-fleet-run-2026-10-07) · [What failed](#what-failed-and-what-now-prevents-a-repeat)
+- [Fast representative matrix](#the-fast-representative-matrix) · [Secure dependency diagnosis](#secure-dependency-diagnosis) · [Safe Solr mutation](#safe-solr-mutation) · [Quality profile](#vite-html-lighthouse-and-axe-quality-profile)
+
 ## Where a day and a half went
 
 On one fleet site the TYPO3 migration itself (13.4 rung to 14.3 rung) took about three hours and
@@ -97,6 +104,19 @@ links; prove the decoder statically and keep the click guard in every context, a
 harness installs the guard in all its capture, sweep, axe and backend contexts
 (`scripts/lib/browser/external-guard.mjs`); self-written journey scripts must install it too.
 
+## Composer in a subdirectory: discovery read the wrong config/sites (2026-10-09)
+
+A fleet project keeps Composer in `app/` (DDEV `composer_root: app/`, webroot `app/web`) with
+Composer `bin-dir: "."`, so the CLI is `app/typo3`, not `vendor/bin/typo3`. `t3u discover-urls` read
+`config/sites` from the project root, found nothing, guessed `/<lang>/sitemap.xml`, got a 404 and
+exited 4; `--from-pages` built URLs without the site's trailing-slash PageType suffix. The harness
+now resolves the [project layout](harness-contract.md#project-layout-composer-in-a-subdirectory)
+from `.ddev/config.yaml` and composer.json and records it at `init`. At intake, check the
+`Project layout` line of `t3u init` or `t3u doctor`: it must name the real Composer root, sites
+directory and CLI. When detection cannot know (no DDEV, several composer.json), pass
+`--composer-root app` or set run.yml `project.composer_root`. Hand-written commands use the same
+path: `ddev exec app/typo3 …`, not `ddev typo3` or `vendor/bin/typo3`.
+
 ## Processed images darker locally than live (2026-10-07)
 
 On a two-language shop-check site DDEV ran ImageMagick where live runs GraphicsMagick, with TYPO3
@@ -136,9 +156,11 @@ finding or a lost hour; each counter-measure below is cheap when applied before 
    Recommend untracking these generated files in the project; that is an owner decision, recorded
    in the handover, not a change the run makes on its own.
 2. **`t3u content-fingerprint --assert` needs the real fileadmin path.** Pass
-   `--fileadmin public/fileadmin` (and `--ddev-project <name>`). Without it the harness resolves
-   `fileadmin` relative to the working directory, finds nothing, hashes an empty file tree (the
-   empty-string hash) and reports content drift that does not exist. Check the file count in the
+   `--fileadmin public/fileadmin` (and `--ddev-project <name>`). Without it the harness resolved
+   `fileadmin` relative to the working directory, found nothing, hashed an empty file tree (the
+   empty-string hash) and reported content drift that did not exist. The default is now the
+   [project layout's](harness-contract.md#project-layout-composer-in-a-subdirectory)
+   `<web dir>/fileadmin`; a sealed fingerprint keeps its recorded root. Check the file count in the
    fingerprint before believing a drift report.
 3. **Redirects sharing host and path: the lowest uid wins.** EXT:redirects serves the first match:
    `RedirectCacheService` orders by `respect_query_parameters` descending, then `uid` ascending, and

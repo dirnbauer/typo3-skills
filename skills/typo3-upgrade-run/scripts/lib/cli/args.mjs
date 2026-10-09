@@ -16,6 +16,7 @@ export const GLOBAL_OPTIONS = {
   loop: { type: 'string', help: 'Loop directory name, e.g. 300-invariance-closure' },
   node: { type: 'string', help: 'Upgrade graph node id' },
   config: { type: 'string', help: 'Run configuration file' },
+  'composer-root': { type: 'string', help: 'TYPO3 Composer root inside the project (default: recorded at init, run.yml project.composer_root, .ddev/config.yaml composer_root, composer.json)' },
   'env-file': { type: 'string', help: 'Explicit secret file. No .env is ever loaded implicitly.' },
   'allow-origin': { type: 'string', multiple: true, help: 'Additional allowed origin (repeatable)' },
   'redaction-profile': { type: 'string', default: 'local', help: 'local | share' },
@@ -95,7 +96,7 @@ export const COMMANDS = {
   'content-fingerprint': { summary: 'Record or assert the content fingerprint', options: {
     'write-baseline': { type: 'boolean', default: false }, 'write-target': { type: 'boolean', default: false },
     transition: { type: 'string' }, assert: { type: 'boolean', default: false },
-    'ddev-project': { type: 'string' }, fileadmin: { type: 'string', default: 'fileadmin' },
+    'ddev-project': { type: 'string' }, fileadmin: { type: 'string', help: 'Default: the sealed root, else <web dir>/fileadmin of the project layout' },
     tables: { type: 'string' },
     'exclude-tables': { type: 'string' },
     'allow-missing': { type: 'boolean', default: false },

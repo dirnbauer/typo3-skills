@@ -19,13 +19,16 @@
  * Read-only.
  *
  * Usage:
- *   node extension-usage.mjs --ddev-dir /path/to/project [--report out.json]
+ *   node extension-usage.mjs --ddev-dir /path/to/project [--report out.json] [--composer-root app]
+ *
+ * composer.json and vendor/ are read below the Composer root (DDEV composer_root, or --composer-root).
  *
  * Exit: 0 always — this is an inventory, not a gate.
  */
 import { writeFileSync, existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { resolveProjectLayout } from './lib/run/project-layout.mjs';
 
 const argv = process.argv.slice(2);
 const opt = (n, d = null) => {
@@ -46,7 +49,8 @@ const sql = (q) => {
 };
 const num = (q) => Number(sql(q) || 0);
 
-const composerPath = join(ddevDir, 'composer.json');
+const layout = resolveProjectLayout(ddevDir, { composerRoot: opt('composer-root', null) });
+const composerPath = join(layout.composerRoot, 'composer.json');
 if (!existsSync(composerPath)) { console.error('no composer.json'); process.exit(3); }
 const composer = JSON.parse(readFileSync(composerPath, 'utf8'));
 
@@ -57,7 +61,7 @@ const requireDev = composer['require-dev'] ?? {};
 
 // Extension key: the vendor directory's composer.json knows it; fall back to the name.
 const extKeyOf = (pkg) => {
-  const p = join(ddevDir, 'vendor', pkg, 'composer.json');
+  const p = join(layout.vendorDir, pkg, 'composer.json');
   if (existsSync(p)) {
     try {
       const j = JSON.parse(readFileSync(p, 'utf8'));
@@ -65,7 +69,7 @@ const extKeyOf = (pkg) => {
       if (k) return k;
     } catch { /* fall through */ }
   }
-  const local = ['packages', 'extensions'].map((d) => join(ddevDir, d));
+  const local = ['packages', 'extensions'].map((d) => join(layout.composerRoot, d));
   for (const base of local) {
     if (!existsSync(base)) continue;
     const guess = pkg.split('/')[1]?.replace(/-/g, '_');

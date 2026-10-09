@@ -3,6 +3,7 @@
  */
 
 import { mkdir, writeFile, readFile, cp } from 'node:fs/promises';
+import { existsSync, readdirSync } from 'node:fs';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import path from 'node:path';
@@ -15,6 +16,7 @@ import { collectContent, compareContent } from '../fingerprint/content.mjs';
 import { listOpt } from '../cli/args.mjs';
 import { renderStatus } from '../run/status.mjs';
 import { sha256 } from '../run/paths.mjs';
+import { describeLayout, runLayout } from '../run/project-layout.mjs';
 import {
   classifySiteSize, classifyCompatibilityBlockers, runtimeWindow, sizingEvidenceIssues, sizingMetrics,
   RUNTIME_BUDGET_POLICY,
@@ -83,6 +85,9 @@ export async function init({ values, paths, log, journal }) {
   );
   await copyTemplate('gitignore', path.join(paths.root, '.gitignore'));
 
+  // Recorded once, so every later command reads config/sites, the CLI and fileadmin where this
+  // run found them, also when the project keeps Composer in a subdirectory (DDEV composer_root).
+  const layout = await projectLayout({ values, paths });
   const state = emptyState({ runId, now: new Date().toISOString() });
   state.project = {
     name: projectName,
@@ -90,14 +95,19 @@ export async function init({ values, paths, log, journal }) {
     ddev_project: values['ddev-project'] ?? '',
     languages: listOpt(values, 'languages', []),
     run_dir: values['run-dir'] ?? '.typo3-update',
+    composer_root: layout.composerRootRel,
   };
   await new StateStore(paths).write(state);
   await journal.append('transition', { from: null, to: 'P00', note: 'run initialised' });
 
   log.success(`Initialised ${paths.root} (run ${runId}, origin ${url.origin}; runtime unclassified)`);
+  log.info(`Project layout: ${describeLayout(layout)}`);
   log.info('Next: graph-init, complete the read-only P00 branches, write runtime-size.json, runtime-seal, then close intake-join.');
 
-  return { exitCode: EXIT.PASS, verdict: 'pass', runId, trustedOrigin: url.origin, message: `run ${runId} initialised` };
+  return {
+    exitCode: EXIT.PASS, verdict: 'pass', runId, trustedOrigin: url.origin,
+    layout: layoutSummary(layout), message: `run ${runId} initialised`,
+  };
 }
 
 export async function runtimeSeal({ values, paths, log, journal }) {
@@ -203,10 +213,21 @@ export async function doctor({ values, paths, log }) {
     add('sandbox', true, 'enabled');
   }
 
+  const state = await new StateStore(paths).read().catch(() => null);
+  const layout = await projectLayout({ values, state, paths });
+  add('TYPO3 project layout', layout.requiresTypo3, layout.requiresTypo3
+    ? describeLayout(layout)
+    : `no composer.json requiring typo3/cms-core at ${layout.composerRootRel}; pass --composer-root <dir> or set composer_root in .ddev/config.yaml`);
+  const siteCount = countSiteConfigs(layout.sitesDir);
+  add('site configuration', siteCount > 0, siteCount
+    ? `${siteCount} site(s) in ${layout.sitesDirRel}`
+    : `no ${layout.sitesDirRel}/*/config.yaml; discovery would guess sitemap URLs`);
+
   for (const [name, args] of [
     ['ddev CLI', ['version']],
     ['application PHP via DDEV', ['exec', '--', 'php', '-r', 'echo PHP_VERSION;']],
     ['application Composer via DDEV', ['composer', 'show', '--locked', 'typo3/cms-core', '--format=json']],
+    ['TYPO3 CLI via DDEV', ['exec', '--', layout.ddevTypo3, '--version']],
   ]) {
     try {
       const { stdout } = await exec('ddev', args, { timeout: 20_000 });
@@ -252,6 +273,7 @@ export async function envFingerprint({ values, paths, log, journal }) {
   const current = await collectEnvironment({
     ddevProject: values['ddev-project'] ?? state.project?.ddev_project ?? null,
     launchArgs: (await import('../browser/launch.mjs')).browserArgs(),
+    typo3Cli: (await projectLayout({ values, state, paths })).ddevTypo3,
   });
 
   if (values['write-baseline']) {
@@ -315,7 +337,9 @@ export async function contentFingerprint({ values, paths, log, journal }) {
   const projectExcludes = listOpt(values, 'exclude-tables', await runConfigExcludeTables(paths));
   const current = await collectContent({
     ddevProject: values['ddev-project'] ?? state.project?.ddev_project ?? null,
-    fileadmin: values.fileadmin ?? sealed?.files?.root ?? baseline?.files?.root ?? 'fileadmin',
+    // A bare 'fileadmin' default hashed an empty tree in every project (it lives in the web dir).
+    fileadmin: values.fileadmin ?? sealed?.files?.root ?? baseline?.files?.root
+      ?? (await projectLayout({ values, state, paths })).fileadminRel,
     tables: configuredTables.length
       ? configuredTables
       : (writeTarget ? null : sealed?.database?.tables?.map((table) => table.table) ?? null),
@@ -419,13 +443,42 @@ async function copyTemplate(rel, dest) {
 
 /** run.yml `fingerprint.exclude_tables` — absent file or key means no exclusions. */
 async function runConfigExcludeTables(paths) {
+  const list = (await readRunConfig(paths))?.fingerprint?.exclude_tables;
+  return Array.isArray(list) ? list.map(String) : [];
+}
+
+/** The parsed run.yml, or null when it is absent or unreadable. */
+export async function readRunConfig(paths) {
+  if (!paths?.runConfig) return null;
   try {
     const { parse: parseYaml } = await import('yaml');
-    const cfg = parseYaml(await readFile(paths.runConfig, 'utf8'));
-    const list = cfg?.fingerprint?.exclude_tables;
-    return Array.isArray(list) ? list.map(String) : [];
+    return parseYaml(await readFile(paths.runConfig, 'utf8')) ?? null;
   } catch {
-    return [];
+    return null;
+  }
+}
+
+/**
+ * Where TYPO3 sits in this project: --composer-root, the value init recorded, run.yml
+ * project.composer_root, then .ddev/config.yaml and composer.json (lib/run/project-layout.mjs).
+ */
+export async function projectLayout({ values = {}, state = null, paths = null, cwd = process.cwd() } = {}) {
+  return runLayout({ values, state, runConfig: await readRunConfig(paths), cwd });
+}
+
+export function layoutSummary(layout) {
+  return {
+    composerRoot: layout.composerRootRel, composerRootSource: layout.composerRootSource, webDir: layout.webDirRel,
+    sitesDir: layout.sitesDirRel, typo3Cli: layout.typo3CliRel, typo3CliExists: layout.typo3CliExists,
+  };
+}
+
+function countSiteConfigs(dir) {
+  try {
+    return readdirSync(dir, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory() && existsSync(path.join(dir, entry.name, 'config.yaml'))).length;
+  } catch {
+    return 0;
   }
 }
 

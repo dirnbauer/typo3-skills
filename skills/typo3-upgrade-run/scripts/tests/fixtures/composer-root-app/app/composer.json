@@ -1,0 +1,16 @@
+{
+  "name": "example/site",
+  "type": "project",
+  "require": {
+    "typo3/cms-core": "^13.4"
+  },
+  "config": {
+    "bin-dir": ".",
+    "vendor-dir": "vendor"
+  },
+  "extra": {
+    "typo3/cms": {
+      "web-dir": "web"
+    }
+  }
+}
