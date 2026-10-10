@@ -650,7 +650,7 @@ nodes:
     requires: [structured-data-enrichment, webmcp-readiness]
     outcomes: [pass, blocked]
   handover:
-    objective: "Hand over locally: project, branch, HEAD, versions, dataset, backups, graph hash, tests, declared changes and risks."
+    objective: "Hand over locally: project, branch, HEAD, versions, dataset, backups, graph hash, tests, declared changes, risks and any runtime extension with its approval."
     done: "The handover exists, closure is current and accepted, the audit trail is committed or archived, and no staging or live action happened."
     evidence: report/handover.md
     skill: typo3-upgrade-closure

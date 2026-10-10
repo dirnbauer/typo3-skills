@@ -6,8 +6,9 @@ import { spawn } from 'node:child_process';
 import { EXIT, HarnessError, PreconditionError } from '../cli/exit-codes.mjs';
 import { intOpt } from '../cli/args.mjs';
 import { withMachineResources } from '../util/machine-resources.mjs';
+import { resolveRuntime, sealedRuntimeWindow } from '../run/runtime.mjs';
 
-export async function resourceRun({ values, positionals, state, log }) {
+export async function resourceRun({ values, positionals, state, log, paths }) {
   if (!positionals?.length) throw new PreconditionError('Supply the existing foreground command after --.');
   const browsers = intOpt(values, 'browsers', 0), cpu = intOpt(values, 'cpu', 0);
   const seconds = intOpt(values, 'timeout', 1800);
@@ -18,12 +19,16 @@ export async function resourceRun({ values, positionals, state, log }) {
     if (error instanceof PreconditionError && error.message.startsWith('No state file at ')) return null;
     throw error;
   });
-  const remainingMs = Date.parse(runState?.runtime?.deadline_at) - Date.now();
+  // The effective deadline: the sealed one, or the latest verified owner-approved extension.
+  const runPaths = paths ?? state?.paths;
+  const window = runState && runPaths ? (await resolveRuntime(runPaths, runState)).window : sealedRuntimeWindow(runState?.runtime);
+  const deadlineAt = window.waived ? null : window.deadlineAt;
+  const remainingMs = window.deadlineMs - Date.now();
   if (Number.isFinite(remainingMs) && remainingMs <= 0) throw new PreconditionError('Sealed run deadline has passed.');
   return withMachineResources({ browsers, cpu, exclusive: values.exclusive === true,
-    owner: 'project-command', log, deadlineAt: runState?.runtime?.deadline_at }, async lease => {
+    owner: 'project-command', log, deadlineAt }, async lease => {
     const started = Date.now();
-    const untilDeadline = Date.parse(runState?.runtime?.deadline_at) - started;
+    const untilDeadline = window.deadlineMs - started;
     if (Number.isFinite(untilDeadline) && untilDeadline <= 0) throw new PreconditionError('Sealed run deadline passed while waiting for capacity.');
     const timeoutMs = Math.min(seconds * 1000, Number.isFinite(untilDeadline) ? untilDeadline : Infinity);
     const childExitCode = await runForeground(positionals, timeoutMs, { json: values.json });

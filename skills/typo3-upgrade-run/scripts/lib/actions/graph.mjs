@@ -12,7 +12,9 @@ import { parse as parseYaml } from 'yaml';
 import { EXIT, HarnessError, InvalidRunError, PreconditionError } from '../cli/exit-codes.mjs';
 import { StateStore } from '../run/state.mjs';
 import { sha256 } from '../run/paths.mjs';
-import { assertPhaseRuntime, runtimeProfileIssues, phaseUsesMigrationWindow } from '../run/runtime.mjs';
+import {
+  assertPhaseRuntime, runtimeProfileIssues, phaseUsesMigrationWindow, readRuntimeApprovals, resolveRuntime,
+} from '../run/runtime.mjs';
 import { forecastGraph } from '../run/forecast.mjs';
 import { nodeClaims, claimsConflict, lockOwners, blockedClaims, acquireClaims, releaseClaims } from '../run/resources.mjs';
 import {
@@ -162,6 +164,7 @@ export async function nodeOpen({ values, paths, log, journal }) {
   }
   assertPhaseRuntime(state.runtime, node.phase, Date.now(), {
     contractAClosed: state.contract_a?.status === 'closed' || acceptingRecordedProof,
+    window: (await resolveRuntime(paths, state)).window,
   });
   if (!applicabilityOnly && node.mutation === 'stateful') {
     if (!values.snapshot || !state.snapshots.includes(values.snapshot)) {
@@ -400,7 +403,9 @@ export async function openGuardedNodes(paths) {
 
 export async function graphValidate({ paths, log }) {
   const { state, definition, hash } = await graphContext(paths);
-  const issues = validateGraphState(state.graph, definition, hash, state);
+  const runtimeContext = { approvals: await readRuntimeApprovals(paths.approvalsDir, state.runtime),
+    runId: state.run_id, granted: state.approvals ?? [] };
+  const issues = validateGraphState(state.graph, definition, hash, state, runtimeContext);
   if (issues.length) throw new InvalidRunError(`Graph validation failed:\n  - ${issues.join('\n  - ')}`);
   if (definition.policy?.require_artifacts) {
     for (const [id, node] of Object.entries(state.graph.nodes)) {
@@ -419,7 +424,7 @@ export async function graphForecast({ values, paths, log, journal }) {
   const revision = stateHash(state);
   const planBytes = await readClosureArtifact(paths.root, values.evidence);
   const plan = JSON.parse(planBytes);
-  const forecast = forecastGraph(definition, state, plan);
+  const forecast = forecastGraph(definition, state, plan, Date.now(), (await resolveRuntime(paths, state)).window);
   forecast.plan_ref = values.evidence;
   forecast.plan_hash = `sha256:${sha256(planBytes)}`;
   forecast.source_hashes = {};
@@ -544,10 +549,10 @@ export function nodeContractIssues(id, node) {
   return issues;
 }
 
-export function validateGraphState(graph, definition, hash, runState = null) {
+export function validateGraphState(graph, definition, hash, runState = null, runtimeContext = {}) {
   const issues = validateGraphDefinition(definition);
   if (graph.definition_hash !== hash) issues.push('definition hash drifted after graph-init');
-  if (runState) issues.push(...runtimeProfileIssues(runState.runtime));
+  if (runState) issues.push(...runtimeProfileIssues(runState.runtime, runtimeContext));
   if (graph.status === 'complete' && deriveGraphStatus(graph, definition) !== 'complete') {
     issues.push('graph is labelled complete with blocked or unfinished activated work; reconcile derived status with graph-next');
   }

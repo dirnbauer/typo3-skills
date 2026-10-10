@@ -105,7 +105,9 @@ declared change with before/after evidence. Do not refresh Baseline A or relax m
 Close only with zero unapproved regressions and passing `t3u closure-check`, `graph-validate` and
 `validate-run`. Missing/failed/skipped checks cannot be waived by a narrative summary. Record:
 project/remote/branch/HEAD, core/PHP, dataset date, source/target hashes, graph hash, backup/restore,
-commands and exit codes, coverage, declared changes, residual risks, and exact next local step. When
+commands and exit codes, coverage, declared changes, residual risks, any runtime extension or waiver
+(`closure-check` and `closure-verify` print it) with its approval id and new deadline, and exact
+next local step. When
 the run moved Bootstrap to 5.x, name the invariance loop/commit and the accepted Bootstrap change
 (intent and acceptance ids, declared-change ids) as separate items ([procedure](../typo3-upgrade-run/references/bootstrap-5-migration.md#sequence-inside-the-run)).
 State that no staging/live action occurred. Contract B remains locked until countersigned; after

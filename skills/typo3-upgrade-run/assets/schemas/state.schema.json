@@ -28,7 +28,27 @@
         "migration_cutoff_at": { "type": ["string", "null"], "format": "date-time" },
         "deadline_at": { "type": ["string", "null"], "format": "date-time" },
         "max_hours": { "type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 48 },
-        "closure_reserve_hours": { "type": ["number", "null"], "minimum": 2, "maximum": 12 }
+        "closure_reserve_hours": { "type": ["number", "null"], "minimum": 2, "maximum": 12 },
+        "extensions": {
+          "type": "array",
+          "description": "Owner-approved extensions or waivers of the sealed window, appended by t3u runtime-extend. The sealed fields above never change; runtimeProfileIssues verifies every entry against its approval file.",
+          "items": {
+            "type": "object",
+            "required": ["approval_id", "approval_sha256", "previous_cutoff", "previous_deadline", "new_cutoff", "new_deadline", "waived", "reason", "recorded_at"],
+            "additionalProperties": false,
+            "properties": {
+              "approval_id": { "type": "string", "pattern": "^APR-\\d{3}$" },
+              "approval_sha256": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+              "previous_cutoff": { "type": ["string", "null"], "format": "date-time" },
+              "previous_deadline": { "type": ["string", "null"], "format": "date-time" },
+              "new_cutoff": { "type": ["string", "null"], "format": "date-time" },
+              "new_deadline": { "type": ["string", "null"], "format": "date-time" },
+              "waived": { "type": "boolean" },
+              "reason": { "type": "string", "minLength": 1 },
+              "recorded_at": { "type": "string", "format": "date-time" }
+            }
+          }
+        }
       }
     },
     "project": {
