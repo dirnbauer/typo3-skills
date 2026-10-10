@@ -40,6 +40,12 @@ export const COMMANDS = {
   'runtime-seal': { summary: 'Classify small/large/huge from intake evidence and seal hard timings', options: {
     evidence: { type: 'string' },
   }},
+  'runtime-extend': { summary: 'Record an owner-approved extension or waiver of the sealed cutoff and deadline', options: {
+    approval: { type: 'string', help: 'Granted intent approval APR-NNN that authorises the extension' },
+    until: { type: 'string', help: 'New hard deadline (ISO 8601); the cutoff keeps the sealed closure reserve before it' },
+    waive: { type: 'boolean', default: false, help: 'Waive the cutoff and deadline instead of extending them' },
+    reason: { type: 'string', help: 'Why the owner extends the run; recorded and journaled' },
+  }},
   doctor: { summary: 'Check the environment can run the harness', options: {
     'base-url': { type: 'string' }, 'ddev-project': { type: 'string' },
   }},

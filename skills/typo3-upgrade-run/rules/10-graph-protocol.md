@@ -122,11 +122,18 @@ Stop and route to `stopped` when any of these cannot be resolved safely:
 | retry bound or sealed size-profile deadline exhausted | incomplete, never green |
 | graph definition/hash/state/lock inconsistency | graph invalid; repair harness/state |
 
-The intake evidence seals one non-extendable profile: small 8h with migration cutoff T+6h,
+The intake evidence seals one profile: small 8h with migration cutoff T+6h,
 large 24h/T+18h, or huge 48h/T+36h. The remaining 2h, 6h, or 12h are reserved for closure and
 handover; after the applicable cutoff no new P05–P10 cause starts. These are elapsed-time caps;
 resumption never resets them. Legacy seals retain their original budgets. See
 [`references/runtime-sizing.md`](../references/runtime-sizing.md).
+
+The cap is the default. The owner may extend or waive the cutoff and deadline, and only the owner:
+a granted intent approval, then `t3u runtime-extend --approval APR-NNN (--until <ISO> | --waive)
+--reason "…"`. It appends a hash-bound entry to `runtime.extensions` and never rewrites the sealed
+fields. Agents never ask for an extension to avoid a stop, never hand-edit `state.json`, and treat
+an extension whose approval no longer verifies as absent. Extending a deadline never weakens a proof
+rule: only the time limits move ([extension or waiver](../references/runtime-sizing.md#owner-approved-extension-or-waiver)).
 
 ## 10.7 Completion
 
@@ -138,7 +145,8 @@ must prove:
 - retry counts are within bounds;
 - every lock belongs to a running node that declared it;
 - no unbounded cycle exists;
-- every proof node carries the required green loop and evidence reference.
+- every proof node carries the required green loop and evidence reference;
+- the sealed runtime matches its profile and every runtime extension verifies against its approval.
 
 Graph validity is not closure. `closure-check` must also bind complete, hashed final reports to
 the current code/data epoch. The Contract A transition requires actual human acceptance of that

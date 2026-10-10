@@ -66,6 +66,7 @@ Each is a memory failure, and none of them is fixed by remembering harder. They 
 | `runtime.budget_policy` | New seals use `site-size-v2`; an absent marker or `overnight-v1` preserves legacy 8/12/14h budgets. Never rewrite an existing seal. |
 | `runtime.migration_cutoff_at` | Stops new P05–P10 causes early enough to preserve 2h, 6h, or 12h for closure in new runs. |
 | `runtime.deadline_at` | New runs have an 8h, 24h, or 48h elapsed-time ceiling. Resumption does not reset it. Passing it cannot produce a green Contract A result. |
+| `runtime.extensions` | Owner-approved extensions or waivers appended by `t3u runtime-extend`, each bound to its intent approval file by SHA-256. The latest verified entry sets the effective cutoff and deadline; the sealed fields above never change. |
 | `target.php_to` / `php_85_evaluated` | 8.4 is the standard target. `php_85_evaluated` is `null` until `composer why-not php 8.5` has actually run, so "we could not use 8.5" is never confused with "we never checked". |
 | `contract_a.closed_at` | Gate B1.1 compares this timestamp against every elevation loop's `created_at`. It is the mechanical answer to "did improvement work leak into the migration?" |
 | `contract_b.unlocked` | Set only by the closure certificate. No elevation loop may start while it is false. |

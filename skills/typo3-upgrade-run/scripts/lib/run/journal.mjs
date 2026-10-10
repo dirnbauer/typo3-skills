@@ -12,7 +12,7 @@ import { redactArgv, redactUrl } from '../util/redact.mjs';
 export const EVENTS = Object.freeze([
   'command', 'finding', 'approval', 'decision', 'transition',
   'snapshot', 'policy-block', 'drift', 'abort', 'note',
-  'graph', 'node', 'edge', 'lock', 'content-transition',
+  'graph', 'node', 'edge', 'lock', 'content-transition', 'runtime-extension',
 ]);
 
 export class Journal {

@@ -1,11 +1,13 @@
 /** Pure, conservative admission scheduling. Estimates are not measured completion claims. */
 import { PreconditionError } from '../cli/exit-codes.mjs';
 import { nodeClaims, claimsConflict } from './resources.mjs';
+import { describeRuntimeWindow, sealedRuntimeWindow } from './runtime.mjs';
 
 const terminal = status => ['passed', 'skipped'].includes(status);
 const array = value => Array.isArray(value) ? value : value ? [value] : [];
 
-export function forecastGraph(definition, state, plan, now = Date.now()) {
+/** `window` is the verified effective window (resolveRuntime); by default the sealed one. */
+export function forecastGraph(definition, state, plan, now = Date.now(), window = sealedRuntimeWindow(state.runtime)) {
   const refuse = message => { throw new PreconditionError(`Runtime forecast: ${message}`); };
   if (plan?.schema !== 'typo3-upgrade-run/runtime-plan@1' || plan.run_id !== state.run_id
     || plan.graph_hash !== state.graph?.definition_hash) refuse('plan must name this run and sealed graph.');
@@ -85,11 +87,14 @@ export function forecastGraph(definition, state, plan, now = Date.now()) {
   // charge that entire reserve again or require a cutoff for work already finished.
   const protectedMinutes = Math.max(minutes + plan.buffer_minutes,
     migrations.length ? mutationEnd + state.runtime.closure_reserve_hours * 60 : 0);
-  const deadline = Date.parse(state.runtime.deadline_at), cutoff = Date.parse(state.runtime.migration_cutoff_at);
+  // An owner-approved extension moves the limits; a waiver removes them. The reserve stays.
+  const deadline = window.deadlineMs, cutoff = window.cutoffMs;
   const feasible = now + protectedMinutes * 60000 <= deadline
     && (!migrations.length || now + (mutationEnd + plan.buffer_minutes) * 60000 <= cutoff);
   return { schema: 'typo3-upgrade-run/runtime-forecast@1', run_id: state.run_id, graph_hash: plan.graph_hash,
     created_at: new Date(now).toISOString(), profile: state.runtime.size_profile, max_workers: workers,
+    ...(window.extension ? { runtime_extension: { approval_id: window.extension.approval_id, waived: window.waived,
+      deadline_at: window.deadlineAt, migration_cutoff_at: window.cutoffAt, summary: describeRuntimeWindow(window) } } : {}),
     estimated_minutes: minutes, serial_minutes: [...jobs.values()].reduce((n, j) => n + j.minutes, 0),
     reserved_minutes: protectedMinutes, feasible, sources: [...sources], schedule,
     estimated_finish_at: new Date(now + minutes * 60000).toISOString(),

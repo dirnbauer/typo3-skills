@@ -3,8 +3,12 @@
  * matching the evidence it summarises, and it is the first thing a person reads.
  */
 
-export function renderStatus(state) {
+import { describeRuntimeWindow } from './runtime.mjs';
+
+/** `window` is the verified effective runtime window; without it STATUS shows the sealed values only. */
+export function renderStatus(state, window = null) {
   const s = state ?? {};
+  const extension = describeRuntimeWindow(window);
   const loops = Object.entries(s.loops ?? {}).sort(([a], [b]) => a.localeCompare(b));
 
   const rows = loops.length
@@ -27,7 +31,7 @@ ${blocked}
 | Runtime profile | ${s.runtime?.size_profile ?? 'unclassified'} |
 | Migration cutoff | ${s.runtime?.migration_cutoff_at ?? '—'} |
 | Hard deadline | ${s.runtime?.deadline_at ?? '—'}${s.runtime?.max_hours ? ` (${s.runtime.max_hours}h; ${s.runtime.closure_reserve_hours}h reserved for closure)` : ''} |
-| Target | TYPO3 ${s.target?.typo3_from || '?'} → ${s.target?.typo3_to || '14.3'}, PHP ${s.target?.php_from || '?'} → ${s.target?.php_to || '8.4'} |
+${extension ? `| Runtime extension | ${extension}; sealed values above unchanged |\n` : ''}| Target | TYPO3 ${s.target?.typo3_from || '?'} → ${s.target?.typo3_to || '14.3'}, PHP ${s.target?.php_from || '?'} → ${s.target?.php_to || '8.4'} |
 | PHP 8.5 evaluated | ${php85(s)} |
 | Phase | ${s.contract_a?.phase ?? '—'} |
 | Contract A | ${s.contract_a?.status ?? '—'}${s.contract_a?.closed_at ? ` (closed ${s.contract_a.closed_at})` : ''} |

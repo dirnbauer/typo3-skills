@@ -12,7 +12,7 @@
 import { parse, helpText } from './lib/cli/args.mjs';
 import { runCommand } from './lib/cli/command.mjs';
 import { EXIT } from './lib/cli/exit-codes.mjs';
-import { init, runtimeSeal, doctor, status, envFingerprint, contentFingerprint } from './lib/actions/core.mjs';
+import { init, runtimeSeal, runtimeExtend, doctor, status, envFingerprint, contentFingerprint } from './lib/actions/core.mjs';
 import { discoverUrls } from './lib/actions/discover.mjs';
 import { capture } from './lib/actions/capture.mjs';
 import {
@@ -40,6 +40,7 @@ const ACTIONS = {
   'resource-run': resourceRun,
   init,
   'runtime-seal': runtimeSeal,
+  'runtime-extend': runtimeExtend,
   doctor,
   status,
   'graph-init': graphInit,

@@ -272,7 +272,8 @@ skipped as unrequested.
 Read [the unattended controller](references/overnight-controller.md) and
 [runtime sizing](references/runtime-sizing.md). Intake seals the smallest fitting profile: small 8 h
 (migration cutoff T+6 h), large 24 h (T+18 h), huge 48 h (T+36 h). These are caps, not targets;
-resumption never extends them. Ask the known decisions in one intake round and the acceptances in
+resumption never extends them. Only the owner can, by a recorded approval and `t3u runtime-extend`
+([extension or waiver](references/runtime-sizing.md#owner-approved-extension-or-waiver)). Ask the known decisions in one intake round and the acceptances in
 one review before closure ([batched decisions](references/overnight-controller.md#batch-the-owner-decisions));
 forecast scope added mid-run against the deadline before starting it.
 
@@ -294,8 +295,8 @@ zero unapproved regressions remain. `node-close` for `contract-a-gate` checks th
 manifest (by default the one `closure-verify` recorded) and its recorded human acceptance. Never edit `state.json` to manufacture a closure.
 
 The handover names project/branch/HEAD, core/PHP versions, dataset date, backup and restore
-references, graph hash/status, tests with exit codes, declared changes, residual risks, the graph
-report, the structured-data and WebMCP Contract B results with their B baselines, and where the
+references, graph hash/status, tests with exit codes, declared changes, residual risks, any runtime
+extension or waiver with its approval id, the graph report, the structured-data and WebMCP Contract B results with their B baselines, and where the
 audit trail is committed or archived. It states that no staging/live deployment was performed.
 Distinguish **implemented**, **verified awaiting acceptance**, **closed locally** and
 **stale/incomplete**; never promise zero undiscovered bugs.

@@ -14,7 +14,7 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 import { EXIT, HarnessError } from '../cli/exit-codes.mjs';
 import { Journal } from '../run/journal.mjs';
-import { assertPhaseRuntime } from '../run/runtime.mjs';
+import { assertPhaseRuntime, describeRuntimeWindow, resolveRuntime, sealedRuntimeWindow } from '../run/runtime.mjs';
 import { blockedClaims, lockOwners, nodeClaims } from '../run/resources.mjs';
 import { readClosureArtifact } from './closure.mjs';
 import { reviewRequired } from '../run/guards.mjs';
@@ -48,14 +48,15 @@ export async function nodeBrief({ values, paths, log }) {
     forecast = await readClosureArtifact(paths.root, state.runtime.forecast_ref)
       .then((bytes) => JSON.parse(bytes)).catch(() => null);
   }
-  const brief = buildNodeBrief(id, definition, state, { forecast, now: Date.now() });
+  const brief = buildNodeBrief(id, definition, state, { forecast, now: Date.now(), window: (await resolveRuntime(paths, state)).window });
   if (!values.json) process.stdout.write(`${renderNodeBrief(brief)}\n`);
   log.debug(`Brief for ${id}: ${brief.status}, ${brief.blockers.length} blocker(s).`);
   return { exitCode: EXIT.PASS, verdict: 'pass', brief,
     message: brief.blockers.length ? `${id}: ${brief.status}, not openable yet` : `${id}: ready to open` };
 }
 
-export function buildNodeBrief(id, definition, state, { forecast = null, now = Date.now() } = {}) {
+export function buildNodeBrief(id, definition, state, { forecast = null, now = Date.now(), window = null } = {}) {
+  const runtimeWindow = window ?? sealedRuntimeWindow(state.runtime);
   const node = definition.nodes[id];
   const nodeState = state.graph?.nodes?.[id];
   if (!node || !nodeState) throw new HarnessError(`Unknown graph node: ${id}`);
@@ -88,7 +89,7 @@ export function buildNodeBrief(id, definition, state, { forecast = null, now = D
     blockers.push('graph-forecast must admit the route before baseline or migration work');
   }
   try {
-    assertPhaseRuntime(state.runtime, node.phase, now, { contractAClosed: state.contract_a?.status === 'closed' });
+    assertPhaseRuntime(state.runtime, node.phase, now, { contractAClosed: state.contract_a?.status === 'closed', window: runtimeWindow });
   } catch (error) {
     blockers.push(error.message);
   }
@@ -148,8 +149,9 @@ export function buildNodeBrief(id, definition, state, { forecast = null, now = D
       graph_retries_used: retriesUsed,
       graph_retries_max: policy.max_total_retries ?? null,
       forecast_minutes: Number.isFinite(scheduled?.minutes) ? scheduled.minutes : null,
-      minutes_to_migration_cutoff: minutesUntil(state.runtime?.migration_cutoff_at),
-      minutes_to_deadline: minutesUntil(state.runtime?.deadline_at),
+      minutes_to_migration_cutoff: minutesUntil(runtimeWindow.cutoffAt),
+      minutes_to_deadline: minutesUntil(runtimeWindow.deadlineAt),
+      runtime_extension: describeRuntimeWindow(runtimeWindow),
     },
     blockers,
     commands: {
@@ -198,7 +200,8 @@ export function renderNodeBrief(brief) {
   lines.push('', '## Budget',
     `- attempts ${b.attempts_used}/${b.attempts_max ?? '∞'} · graph retries ${b.graph_retries_used}/${b.graph_retries_max ?? '∞'}`
       + (b.forecast_minutes !== null ? ` · forecast ${b.forecast_minutes} min` : ''),
-    `- migration cutoff in ${b.minutes_to_migration_cutoff ?? '—'} min · deadline in ${b.minutes_to_deadline ?? '—'} min`);
+    `- migration cutoff in ${b.minutes_to_migration_cutoff ?? '—'} min · deadline in ${b.minutes_to_deadline ?? '—'} min`,
+    ...(b.runtime_extension ? [`- runtime ${b.runtime_extension}; sealed cutoff and deadline unchanged`] : []));
   if (brief.blockers.length) {
     lines.push('', '## Blockers', ...brief.blockers.map((x) => `- ${x}`));
   }
@@ -211,7 +214,8 @@ export function renderNodeBrief(brief) {
 export async function graphReport({ values, paths, log }) {
   const { state, definition } = await graphContext(paths);
   const events = await new Journal(paths.journalPath).read();
-  const report = buildGraphReport(definition, state, events, { now: Date.now() });
+  const ledger = await resolveRuntime(paths, state);
+  const report = buildGraphReport(definition, state, events, { now: Date.now(), window: ledger.window, extensions: ledger.applied });
   report.audit_trail = await auditTrail(paths);
   const markdown = renderGraphReport(report);
   const reports = [];
@@ -227,7 +231,8 @@ export async function graphReport({ values, paths, log }) {
     message: `graph ${report.graph.status}; ${report.nodes.length} node(s) touched; measured minutes are wall-clock, not guarantees` };
 }
 
-export function buildGraphReport(definition, state, events, { now = Date.now() } = {}) {
+export function buildGraphReport(definition, state, events, { now = Date.now(), window = null, extensions = [] } = {}) {
+  const runtimeWindow = window ?? sealedRuntimeWindow(state.runtime);
   const graph = state.graph;
   const nodeEvents = events.filter((e) => e.event === 'node' && ['open', 'close'].includes(e.action) && e.node_id);
   const open = new Map();
@@ -293,6 +298,13 @@ export function buildGraphReport(definition, state, events, { now = Date.now() }
       profile: state.runtime?.size_profile ?? null,
       deadline_at: state.runtime?.deadline_at ?? null,
       migration_cutoff_at: state.runtime?.migration_cutoff_at ?? null,
+      // Owner-approved extensions or waivers; the sealed values above never change.
+      effective_deadline_at: runtimeWindow.deadlineAt,
+      effective_migration_cutoff_at: runtimeWindow.cutoffAt,
+      waived: runtimeWindow.waived,
+      extension: describeRuntimeWindow(runtimeWindow),
+      extensions: extensions.map((e) => ({ approval_id: e.approval_id, approval_sha256: e.approval_sha256,
+        waived: e.waived, new_deadline: e.new_deadline, new_cutoff: e.new_cutoff, reason: e.reason, recorded_at: e.recorded_at })),
     },
     phases,
     nodes,
@@ -311,6 +323,12 @@ export function renderGraphReport(report) {
     `Retries: ${g.retries_used}/${g.retries_max ?? '∞'} · running: ${g.running.join(', ') || '—'}`,
     `Runtime: ${report.runtime.profile ?? 'unsealed'} · cutoff ${report.runtime.migration_cutoff_at ?? '—'} · deadline ${report.runtime.deadline_at ?? '—'}`,
   ];
+  if (report.runtime.extension) {
+    lines.push(`Runtime extension: ${report.runtime.extension}; sealed values unchanged, proof rules unchanged`);
+    for (const e of report.runtime.extensions ?? []) {
+      lines.push(`- ${e.approval_id} (${e.approval_sha256.slice(0, 19)}…) at ${e.recorded_at}: ${e.waived ? 'waived' : `deadline ${e.new_deadline}, cutoff ${e.new_cutoff}`} — ${e.reason}`);
+    }
+  }
   if (report.audit_trail) {
     lines.push(`Audit trail in Git: ${report.audit_trail.tracked}${report.audit_trail.detail ? ` (${report.audit_trail.detail})` : ''}`);
   }

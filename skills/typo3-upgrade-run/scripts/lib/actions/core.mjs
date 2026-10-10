@@ -19,7 +19,8 @@ import { sha256 } from '../run/paths.mjs';
 import { describeLayout, runLayout } from '../run/project-layout.mjs';
 import {
   classifySiteSize, classifyCompatibilityBlockers, runtimeWindow, sizingEvidenceIssues, sizingMetrics,
-  RUNTIME_BUDGET_POLICY,
+  RUNTIME_BUDGET_POLICY, describeRuntimeWindow, intentApprovalIssues, readIntentApproval, resolveRuntime,
+  runtimeProfileIssues,
 } from '../run/runtime.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -186,6 +187,81 @@ export async function runtimeSeal({ values, paths, log, journal }) {
   };
 }
 
+/**
+ * The owner's recorded decision to extend or waive the sealed runtime window. The sealed fields
+ * stay untouched; one entry is appended to runtime.extensions and journaled. Only a granted
+ * intent approval of this run authorises it, and the entry binds that approval file's bytes.
+ * An extension moves the cutoff and deadline only: every proof rule stays as it is.
+ */
+export async function runtimeExtend({ values, paths, log, journal }) {
+  if (values['dry-run']) throw new PreconditionError('runtime-extend records an owner decision and has no --dry-run; nothing was written.');
+  const id = String(values.approval ?? '');
+  if (!/^APR-\d{3}$/.test(id)) throw new HarnessError('--approval must name a granted intent approval APR-NNN.');
+  const waive = values.waive === true;
+  const until = values.until === undefined ? null : String(values.until);
+  if (waive === Boolean(until)) throw new HarnessError('Pass exactly one of --until <ISO 8601 timestamp> or --waive.');
+  const reason = String(values.reason ?? '').trim();
+  if (!reason) throw new HarnessError('--reason is required: say why the owner extends or waives the window.');
+
+  const store = new StateStore(paths);
+  const state = await store.read();
+  const runtime = state.runtime ?? {};
+  if (!runtime.deadline_at || !runtime.size_profile) {
+    throw new PreconditionError('The runtime is not sealed. Run t3u runtime-seal first; an extension changes a sealed window only.');
+  }
+  const sealedIssues = runtimeProfileIssues({ ...runtime, extensions: undefined });
+  if (sealedIssues.length) throw new InvalidRunError(`The sealed runtime does not verify:\n  - ${sealedIssues.join('\n  - ')}`);
+  const approval = await readIntentApproval(paths.approvalsDir, id);
+  const approvalIssues = intentApprovalIssues(approval, { runId: state.run_id, granted: state.approvals ?? [] });
+  if (approvalIssues.length) {
+    throw new PreconditionError(`${id} cannot authorise a runtime extension:\n  - ${approvalIssues.join('\n  - ')}\n`
+      + 'Record the owner decision first: t3u approval --id APR-NNN --stage intent --granted --scope … --question … --answer …');
+  }
+  if ((runtime.extensions ?? []).some((entry) => entry?.approval_id === id)) {
+    throw new PreconditionError(`${id} already authorised a runtime extension; record a new approval for a new decision.`);
+  }
+  const ledger = await resolveRuntime(paths, state);
+  if (ledger.issues.length) {
+    throw new InvalidRunError(`Recorded runtime extensions do not verify; resolve them before recording another:\n  - ${ledger.issues.join('\n  - ')}`);
+  }
+  const current = ledger.window;
+  const recordedAt = new Date().toISOString();
+  let newCutoff = null, newDeadline = null;
+  if (waive) {
+    if (current.waived) throw new PreconditionError(`The window is already waived by ${current.extension.approval_id}.`);
+  } else {
+    const ms = Date.parse(until);
+    if (!/^\d{4}-\d{2}-\d{2}T/.test(until) || !Number.isFinite(ms)) throw new HarnessError('--until must be an ISO 8601 timestamp, e.g. 2026-10-11T08:00:00Z.');
+    if (ms <= Date.parse(recordedAt)) throw new PreconditionError(`--until ${new Date(ms).toISOString()} has already passed.`);
+    if (!current.waived && ms <= current.deadlineMs) {
+      throw new PreconditionError(`--until must be later than the current deadline ${current.deadlineAt}; an extension never shortens the window.`);
+    }
+    newDeadline = new Date(ms).toISOString();
+    newCutoff = new Date(ms - runtime.closure_reserve_hours * 60 * 60 * 1000).toISOString();
+  }
+  const entry = {
+    approval_id: id,
+    approval_sha256: approval.sha256,
+    previous_cutoff: current.cutoffAt,
+    previous_deadline: current.deadlineAt,
+    new_cutoff: newCutoff,
+    new_deadline: newDeadline,
+    waived: waive,
+    reason,
+    recorded_at: recordedAt,
+  };
+  const known = (runtime.extensions ?? []).length;
+  await store.update((next) => {
+    if ((next.runtime.extensions ?? []).length !== known) throw new PreconditionError('Runtime extensions changed concurrently; run runtime-extend again.');
+    next.runtime.extensions = [...(next.runtime.extensions ?? []), entry];
+  });
+  await journal?.append('runtime-extension', entry);
+  const window = { ...current, cutoffAt: newCutoff, deadlineAt: newDeadline, waived: waive, extension: entry };
+  const summary = describeRuntimeWindow(window);
+  log.success(`Runtime ${summary}. Sealed values are unchanged; every proof rule still applies.`);
+  return { exitCode: EXIT.PASS, verdict: 'pass', extension: entry, message: `runtime ${summary}` };
+}
+
 export async function doctor({ values, paths, log }) {
   const checks = [];
   const add = (name, ok, detail) => checks.push({ name, ok, detail });
@@ -260,7 +336,7 @@ export async function doctor({ values, paths, log }) {
 
 export async function status({ paths, log, values }) {
   const state = await new StateStore(paths).read();
-  const md = renderStatus(state);
+  const md = renderStatus(state, (await resolveRuntime(paths, state)).window);
   await writeFile(paths.statusPath, md, 'utf8');
   if (!values.json) process.stdout.write(`${md}\n`);
   log.debug(`STATUS.md regenerated at ${paths.statusPath}`);
