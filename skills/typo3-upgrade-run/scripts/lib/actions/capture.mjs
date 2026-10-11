@@ -24,6 +24,7 @@ import { verifyManifest, urlById } from '../run/manifest.mjs';
 import { captureId } from '../run/paths.mjs';
 import { intOpt, listOpt } from '../cli/args.mjs';
 import { readJson } from './core.mjs';
+import { capacityDeadlineAt } from '../run/runtime.mjs';
 import { consentStateFor } from '../browser/stabilize.mjs';
 import { mapPool } from '../util/pool.mjs';
 import { acquireMachineLock, releaseMachineLock } from '../util/machine-lock.mjs';
@@ -68,7 +69,7 @@ export async function capture({ values, paths, log, journal }) {
 
   const result = await captureAll({
     manifest, guard, outRoot, stages, log, journal,
-    deadlineAt: (await readJson(paths.statePath))?.runtime?.deadline_at,
+    deadlineAt: await capacityDeadlineAt(paths, await readJson(paths.statePath)),
     resume: values.resume, warmup: values.warmup !== false,
     scope,
     affected,

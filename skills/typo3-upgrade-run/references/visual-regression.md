@@ -66,7 +66,7 @@ site regression, and a guard refusal is not a broken tool.
 |---|---|
 | `init` | Create the run directory; validates the base URL on its own terms first |
 | `doctor` | Node version, dependencies, browser launch, sandbox state, guard check |
-| `env-fingerprint` / `content-fingerprint` | `--write-baseline` to seal, bare to assert |
+| `env-fingerprint` / `content-fingerprint` | `--write-baseline` to seal, bare to assert; `env-fingerprint --reseal --approval APR-NNN` after a harness fix |
 | `discover-urls` | Guarded sitemap walk → URL manifest with tiered coverage |
 | `capture --label <l>` | Stage 1 (HTTP), stage 2 (DOM), stage 3 (screenshots) |
 | `selftest-determinism` | Double-shoot the untouched site; require zero |

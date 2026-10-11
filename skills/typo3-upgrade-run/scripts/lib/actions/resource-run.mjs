@@ -6,7 +6,7 @@ import { spawn } from 'node:child_process';
 import { EXIT, HarnessError, PreconditionError } from '../cli/exit-codes.mjs';
 import { intOpt } from '../cli/args.mjs';
 import { withMachineResources } from '../util/machine-resources.mjs';
-import { resolveRuntime, sealedRuntimeWindow } from '../run/runtime.mjs';
+import { capacityDeadline, resolveRuntime, sealedRuntimeWindow } from '../run/runtime.mjs';
 
 export async function resourceRun({ values, positionals, state, log, paths }) {
   if (!positionals?.length) throw new PreconditionError('Supply the existing foreground command after --.');
@@ -22,7 +22,7 @@ export async function resourceRun({ values, positionals, state, log, paths }) {
   // The effective deadline: the sealed one, or the latest verified owner-approved extension.
   const runPaths = paths ?? state?.paths;
   const window = runState && runPaths ? (await resolveRuntime(runPaths, runState)).window : sealedRuntimeWindow(runState?.runtime);
-  const deadlineAt = window.waived ? null : window.deadlineAt;
+  const deadlineAt = capacityDeadline(window);
   const remainingMs = window.deadlineMs - Date.now();
   if (Number.isFinite(remainingMs) && remainingMs <= 0) throw new PreconditionError('Sealed run deadline has passed.');
   return withMachineResources({ browsers, cpu, exclusive: values.exclusive === true,

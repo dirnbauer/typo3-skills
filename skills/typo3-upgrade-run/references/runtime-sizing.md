@@ -55,13 +55,19 @@ and human acceptance all stay as they are. `node-brief`, `status`, `graph-foreca
 `graph-report` print "extended to … by APR-NNN" or "cutoff waived by APR-NNN"; the closure
 certificate and the handover name the extension and its approval.
 
-Known limit: `capture`, `selftest-determinism`, `compare-*`, `lighthouse` and `axe` bound their
-machine-capacity lease by the sealed `deadline_at` they read themselves. That code is measurement
-source (`harness.sourceHash`), so this change leaves it alone and sealed baselines stay valid; after
-the sealed deadline those commands refuse with "Machine capacity wait exceeded its limit or the
-sealed run deadline", even inside an extended or waived window. Until a deliberate harness release
-moves them to the effective window, an extension past the sealed deadline covers bookkeeping,
-node work and migration nodes without fresh captures, not new proof runs.
+Machine-capacity waits follow the effective window too. `capture`, `selftest-determinism`,
+`compare-*`, `lighthouse` and `axe` wait for a capacity lease (and the visual capture lock) at most
+until the effective deadline: the sealed `deadline_at`, or the latest verified extension. Under a
+verified waiver there is no deadline, and only the wait's own limit bounds it (ten minutes for a lease
+or the capture lock, `T3U_LOAD_WAIT_MS` for the quiet-machine wait). Without a verified extension the
+wait stops at the sealed deadline as before, with "Machine capacity wait exceeded its limit or the
+sealed run deadline". An extension whose approval no longer verifies never widens the wait.
+
+Pins older than this fix bound those waits by the sealed `deadline_at` even inside an extended or
+waived window. The fix is measurement source, so moving a run onto it changes `harness.sourceHash`:
+re-pin, then [re-seal the environment](closure-currentness.md#epoch-order-what-makes-a-new-epoch-stale)
+with a granted intent approval (`t3u env-fingerprint --reseal --approval APR-NNN --reason "…"`), then
+run `selftest-determinism` before the next capture.
 
 New seals record `runtime.budget_policy: site-size-v2`. Previously sealed runs without a policy
 marker (or with `overnight-v1`) retain their original 8/12/14-hour deadlines and 2/3/4-hour reserves.

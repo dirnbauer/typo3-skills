@@ -1,6 +1,18 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/dirnbauer/webconsulting-skills/skills/typo3-upgrade-run/assets/schemas/state.schema.json",
+  "$defs": {
+    "harnessIdentity": {
+      "type": "object",
+      "required": ["version", "sourceHash", "bookkeepingHash"],
+      "additionalProperties": false,
+      "properties": {
+        "version": { "type": ["string", "null"] },
+        "sourceHash": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
+        "bookkeepingHash": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" }
+      }
+    }
+  },
   "title": "typo3-upgrade-run run state",
   "description": "The single source of truth for graph-node and bounded-loop preconditions. Never derived from the transcript; always read from disk.",
   "type": "object",
@@ -166,14 +178,34 @@
         "content_target": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
         "content_active": { "enum": ["baseline", "target"] },
         "content_transition_hash": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
-        "sealed_at": { "type": ["string", "null"], "format": "date-time" }
+        "sealed_at": { "type": ["string", "null"], "format": "date-time" },
+        "environment_reseals": {
+          "type": "array",
+          "description": "Owner-approved environment re-seals after a harness fix, appended by t3u env-fingerprint --reseal. Only harness.version, harness.sourceHash and harness.bookkeepingHash change; validate-run verifies every entry against its approval file.",
+          "items": {
+            "type": "object",
+            "required": ["approval_id", "approval_sha256", "reason", "recorded_at", "previous_fingerprint", "new_fingerprint", "previous_harness", "new_harness"],
+            "additionalProperties": false,
+            "properties": {
+              "approval_id": { "type": "string", "pattern": "^APR-\\d{3}$" },
+              "approval_sha256": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+              "reason": { "type": "string", "minLength": 1 },
+              "recorded_at": { "type": "string", "format": "date-time" },
+              "previous_fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+              "new_fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+              "previous_harness": { "$ref": "#/$defs/harnessIdentity" },
+              "new_harness": { "$ref": "#/$defs/harnessIdentity" }
+            }
+          }
+        }
       }
     },
     "selftest": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "status": { "enum": ["never-run", "open", "diagnostic-green", "green", "aborted"] },
+        "status": { "enum": ["never-run", "open", "diagnostic-green", "green", "aborted", "stale"] },
+        "stale_reason": { "type": ["string", "null"], "description": "Why the self-test is stale (an environment re-seal); cleared by the next selftest-determinism." },
         "at": { "type": ["string", "null"], "format": "date-time" },
         "lock_hash": { "type": ["string", "null"] },
         "coverage": { "type": ["string", "null"] },

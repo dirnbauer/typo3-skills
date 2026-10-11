@@ -21,6 +21,7 @@ import { loopDocSchemaErrors } from '../run/schema.mjs';
 import { validateReport } from '../report/write.mjs';
 import { graphValidate } from './graph.mjs';
 import { readRuntimeApprovals, runtimeProfileIssues } from '../run/runtime.mjs';
+import { environmentResealIssues, readResealApprovals } from '../run/reseal.mjs';
 
 const exec = promisify(execFile);
 const TEMPLATE_DIR = path.resolve(
@@ -306,6 +307,7 @@ export async function validateRun({ paths, log, values = {} }) {
   if (state.fingerprints.environment || state.fingerprints.content || state.manifest.hash) {
     try { await readEvidenceContext(paths); } catch (error) { issues.push(error.message); }
   }
+  issues.push(...environmentResealIssues(state, await readResealApprovals(paths.approvalsDir, state)));
   // graph-validate checks the sealed runtime and its extensions; a run without a graph checks them here.
   if (!state.graph) {
     issues.push(...runtimeProfileIssues(state.runtime, { approvals: await readRuntimeApprovals(paths.approvalsDir, state.runtime),

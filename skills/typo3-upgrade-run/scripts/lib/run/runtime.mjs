@@ -407,6 +407,20 @@ export async function resolveRuntime(paths, state) {
   return runtimeExtensionLedger(state?.runtime, { approvals, runId: state?.run_id ?? null, granted: state?.approvals ?? [] });
 }
 
+/**
+ * The deadline a machine-capacity wait may run to: the effective deadline, or null under a verified
+ * waiver, when only the wait's own limit (maxWaitMs) bounds it. Without a verified extension this is
+ * the sealed deadline_at, exactly as before; an unverified extension never widens it.
+ */
+export function capacityDeadline(window) {
+  return window?.waived ? null : window?.deadlineAt ?? null;
+}
+
+/** capacityDeadline of a run's verified window, for measurement commands that read state themselves. */
+export async function capacityDeadlineAt(paths, state) {
+  return capacityDeadline((await resolveRuntime(paths, state)).window);
+}
+
 /** "cutoff waived by APR-NNN" or "extended to … by APR-NNN"; null for the sealed window. */
 export function describeRuntimeWindow(window) {
   const extension = window?.extension;

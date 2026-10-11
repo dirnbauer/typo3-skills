@@ -23,7 +23,7 @@ import { StateStore } from '../run/state.mjs';
 import { redactStack } from '../util/redact.mjs';
 import { assertLiveInputs } from '../run/evidence.mjs';
 import { withMachineResources } from '../util/machine-resources.mjs';
-import { describeRuntimeWindow, resolveRuntime, sealedRuntimeWindow } from '../run/runtime.mjs';
+import { capacityDeadline, describeRuntimeWindow, resolveRuntime, sealedRuntimeWindow } from '../run/runtime.mjs';
 
 /** Commands that may not run without a proven-deterministic harness. */
 const REQUIRES_SELFTEST = new Set([
@@ -135,13 +135,15 @@ export async function runCommand({ command, values, positionals, argv, actions, 
 
     const window = await effectiveWindow(paths, runState);
     // Capacity waits stop at the effective deadline; a waiver leaves only their own limit.
-    const deadlineAt = window ? (window.waived ? null : window.deadlineAt) : undefined;
+    const deadlineAt = window ? capacityDeadline(window) : undefined;
     const deadlineExempt = AFTER_DEADLINE_COMMANDS.has(command) || lateAcceptanceCommand(command, values, runState, window);
     if (runState && !deadlineExempt) {
       assertWithinRuntimeBudget(runState, now(), window);
     }
 
     const resources = commandResources(command);
+    // An environment re-seal voids the self-test; a capture then needs a fresh selftest-determinism first.
+    if (command === 'capture' && !values['dry-run']) assertSelftestNotStale(runState);
     if (REQUIRES_SELFTEST.has(command) && !values['dry-run']) {
       await assertSelftestValid(paths, now);
       const { browserArgs } = await import('../browser/launch.mjs');
@@ -228,6 +230,7 @@ export async function runCommand({ command, values, positionals, argv, actions, 
  * Missing lock -> PRECONDITION (run the self-test). Stale or drifted lock -> INVALID.
  */
 export async function assertSelftestValid(paths, now = Date.now) {
+  assertSelftestNotStale(await readFile(paths.statePath, 'utf8').then((raw) => { try { return JSON.parse(raw); } catch { return null; } }, () => null));
   let lock;
   try {
     lock = JSON.parse(await readFile(paths.selftestLock, 'utf8'));
@@ -262,6 +265,15 @@ export async function assertSelftestValid(paths, now = Date.now) {
     );
   }
   return lock;
+}
+
+/** Refuses while an environment re-seal has marked the self-test stale (state.selftest.status). */
+export function assertSelftestNotStale(runState) {
+  if (runState?.selftest?.status !== 'stale') return true;
+  throw new PreconditionError(
+    `The determinism self-test is stale (${runState.selftest.stale_reason ?? 'environment re-seal'}). `
+    + 'Run "t3u selftest-determinism" before the next capture, comparison or closure-start.',
+  );
 }
 
 /**

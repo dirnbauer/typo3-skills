@@ -95,9 +95,12 @@ export const COMMANDS = {
     question: { type: 'string' }, answer: { type: 'string' }, evidence: { type: 'string' },
     granted: { type: 'boolean', default: false },
   }},
-  'env-fingerprint': { summary: 'Record or assert the environment fingerprint', options: {
+  'env-fingerprint': { summary: 'Record, assert or (owner-approved) re-seal the environment fingerprint', options: {
     'write-baseline': { type: 'boolean', default: false }, assert: { type: 'boolean', default: false },
     'ddev-project': { type: 'string' },
+    reseal: { type: 'boolean', default: false, help: 'Re-seal after a harness fix: only harness.version/sourceHash/bookkeepingHash may change' },
+    approval: { type: 'string', help: 'Granted intent approval APR-NNN that authorises the re-seal' },
+    reason: { type: 'string', help: 'Why the owner re-seals (the harness fix)' },
   }},
   'content-fingerprint': { summary: 'Record or assert the content fingerprint', options: {
     'write-baseline': { type: 'boolean', default: false }, 'write-target': { type: 'boolean', default: false },

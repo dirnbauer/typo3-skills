@@ -2,7 +2,7 @@
  * init, doctor, status, and the fingerprint actions.
  */
 
-import { mkdir, writeFile, readFile, cp } from 'node:fs/promises';
+import { mkdir, writeFile, readFile, cp, rename, unlink } from 'node:fs/promises';
 import { existsSync, readdirSync } from 'node:fs';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -11,10 +11,11 @@ import { fileURLToPath } from 'node:url';
 import { EXIT, HarnessError, InvalidRunError, PreconditionError } from '../cli/exit-codes.mjs';
 import { emptyState, StateStore } from '../run/state.mjs';
 import { UrlGuard, assertPlausibleBaseUrl } from '../net/url-guard.mjs';
-import { collectEnvironment, compareEnvironment } from '../fingerprint/environment.mjs';
+import { collectEnvironment, compareEnvironment, hashComponents } from '../fingerprint/environment.mjs';
 import { collectContent, compareContent } from '../fingerprint/content.mjs';
 import { listOpt } from '../cli/args.mjs';
 import { renderStatus } from '../run/status.mjs';
+import { stateSchemaErrors } from '../run/schema.mjs';
 import { sha256 } from '../run/paths.mjs';
 import { describeLayout, runLayout } from '../run/project-layout.mjs';
 import {
@@ -22,6 +23,9 @@ import {
   RUNTIME_BUDGET_POLICY, describeRuntimeWindow, intentApprovalIssues, readIntentApproval, resolveRuntime,
   runtimeProfileIssues,
 } from '../run/runtime.mjs';
+import {
+  environmentResealIssues, readResealApprovals, RESEALABLE_KEYS, resealDrift, resealedEnvironment, sealedHashVerifiable,
+} from '../run/reseal.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const TEMPLATES = path.resolve(HERE, '../../../templates/run-directory');
@@ -343,10 +347,11 @@ export async function status({ paths, log, values }) {
   return { exitCode: EXIT.PASS, verdict: 'pass', state, message: 'status written' };
 }
 
-export async function envFingerprint({ values, paths, log, journal }) {
+export async function envFingerprint({ values, paths, log, journal, environmentCollector = collectEnvironment }) {
+  if (values.reseal) return envReseal({ values, paths, log, journal, environmentCollector });
   const store = new StateStore(paths);
   const state = await store.read();
-  const current = await collectEnvironment({
+  const current = await environmentCollector({
     ddevProject: values['ddev-project'] ?? state.project?.ddev_project ?? null,
     launchArgs: (await import('../browser/launch.mjs')).browserArgs(),
     typo3Cli: (await projectLayout({ values, state, paths })).ddevTypo3,
@@ -380,6 +385,111 @@ export async function envFingerprint({ values, paths, log, journal }) {
   }
   log.success('Environment fingerprint matches the sealed value.');
   return { exitCode: EXIT.PASS, verdict: 'pass', message: 'environment matches' };
+}
+
+/**
+ * `env-fingerprint --reseal --approval APR-NNN --reason "…"`: the owner's recorded re-seal after a
+ * harness hotfix. Only harness.version, harness.sourceHash and harness.bookkeepingHash may change;
+ * any other drift refuses. The entry binds the approval file's bytes, is journaled, and marks the
+ * self-test stale, so selftest-determinism runs before the next capture, comparison or closure-start.
+ */
+async function envReseal({ values, paths, log, journal, environmentCollector }) {
+  if (values['dry-run']) throw new PreconditionError('env-fingerprint --reseal records an owner decision and has no --dry-run; nothing was written.');
+  if (values['write-baseline'] || values.assert) throw new HarnessError('--reseal cannot be combined with --write-baseline or --assert.');
+  const id = String(values.approval ?? '');
+  if (!/^APR-\d{3}$/.test(id)) throw new HarnessError('--approval must name a granted intent approval APR-NNN.');
+  const reason = String(values.reason ?? '').trim();
+  if (!reason) throw new HarnessError('--reason is required: say which harness fix the owner re-seals for.');
+
+  const store = new StateStore(paths);
+  const state = await store.read();
+  const sealed = await readJson(paths.envFingerprint);
+  if (!sealed?.fingerprintHash || !sealed.components) {
+    throw new PreconditionError('No sealed environment fingerprint. A re-seal changes a sealed fingerprint only.');
+  }
+  if (state.fingerprints?.environment !== sealed.fingerprintHash) {
+    throw new InvalidRunError('state.json and manifests/environment.json name different environment fingerprints; re-seal refused.');
+  }
+  if (sealedHashVerifiable(sealed) && hashComponents(sealed.components) !== sealed.fingerprintHash) {
+    throw new InvalidRunError('manifests/environment.json does not hash to its own fingerprintHash: it was edited. Re-seal refused.');
+  }
+  const approval = await readIntentApproval(paths.approvalsDir, id);
+  const approvalIssues = intentApprovalIssues(approval, { runId: state.run_id, granted: state.approvals ?? [] });
+  if (approvalIssues.length) {
+    throw new PreconditionError(`${id} cannot authorise an environment re-seal:\n  - ${approvalIssues.join('\n  - ')}\n`
+      + 'Record the owner decision first: t3u approval --id APR-NNN --stage intent --granted --scope … --question … --answer …');
+  }
+  const recorded = state.fingerprints?.environment_reseals ?? [];
+  if (recorded.some((entry) => entry?.approval_id === id)) {
+    throw new PreconditionError(`${id} already authorised an environment re-seal; record a new approval for a new decision.`);
+  }
+  const ledgerIssues = environmentResealIssues(state, await readResealApprovals(paths.approvalsDir, state));
+  if (ledgerIssues.length) {
+    throw new InvalidRunError(`Recorded environment re-seals do not verify; resolve them before recording another:\n  - ${ledgerIssues.join('\n  - ')}`);
+  }
+
+  const current = await environmentCollector({
+    ddevProject: values['ddev-project'] ?? state.project?.ddev_project ?? null,
+    launchArgs: (await import('../browser/launch.mjs')).browserArgs(),
+    typo3Cli: (await projectLayout({ values, state, paths })).ddevTypo3,
+  });
+  const drift = resealDrift(sealed, current);
+  if (drift.forbidden.length) {
+    for (const d of drift.forbidden) log.error(`drift ${d.key}: ${JSON.stringify(d.before)} -> ${JSON.stringify(d.after)}`);
+    throw new InvalidRunError(
+      `Re-seal refused: ${drift.forbidden.map((d) => d.key).join(', ')} differ from the sealed environment. `
+      + `A re-seal may change only ${RESEALABLE_KEYS.join(', ')}; any other drift is a different environment, not a harness fix.`,
+      { drifted: drift.forbidden },
+    );
+  }
+  if (!drift.changed.length) {
+    throw new PreconditionError('Nothing to re-seal: the harness identity equals the sealed one.');
+  }
+  const recordedAt = new Date().toISOString();
+  const entry = {
+    approval_id: id,
+    approval_sha256: approval.sha256,
+    reason,
+    recorded_at: recordedAt,
+    previous_fingerprint: sealed.fingerprintHash,
+    new_fingerprint: null,
+    previous_harness: drift.before,
+    new_harness: drift.after,
+  };
+  const next = resealedEnvironment(sealed, current, {
+    approval_id: id, approval_sha256: approval.sha256, recorded_at: recordedAt, previous_fingerprint: sealed.fingerprintHash,
+  });
+  if (next.fingerprintHash !== current.fingerprintHash) {
+    throw new HarnessError('The re-sealed fingerprint does not equal the live one; nothing was written.');
+  }
+  entry.new_fingerprint = next.fingerprintHash;
+
+  const tmp = `${paths.envFingerprint}.${process.pid}.tmp`;
+  await store.update(async (s) => {
+    if (s.fingerprints.environment !== sealed.fingerprintHash
+      || (s.fingerprints.environment_reseals ?? []).length !== recorded.length) {
+      throw new PreconditionError('The environment fingerprint changed concurrently; run the re-seal again.');
+    }
+    s.fingerprints.environment = next.fingerprintHash;
+    s.fingerprints.environment_reseals = [...(s.fingerprints.environment_reseals ?? []), entry];
+    // The lock binds the old fingerprint and is void already; this says why, and the wrapper refuses captures until a new self-test.
+    s.selftest = { ...s.selftest, status: 'stale', lock_hash: null, stale_reason: `environment re-seal ${id} at ${recordedAt}` };
+    // Validate the state before the fingerprint file changes, so a refused state never leaves a re-sealed file behind.
+    const errors = stateSchemaErrors(s);
+    if (errors.length) throw new InvalidRunError(`state schema validation failed:\n  - ${errors.join('\n  - ')}`, { errors });
+    try {
+      await writeFile(tmp, `${JSON.stringify(next, null, 2)}\n`, 'utf8');
+      await rename(tmp, paths.envFingerprint);
+    } catch (error) {
+      await unlink(tmp).catch(() => {});
+      throw error;
+    }
+  });
+  await journal?.append('environment-reseal', entry);
+  for (const key of drift.changed) log.info(`harness.${key}: ${drift.before[key]} -> ${drift.after[key]}`);
+  log.success(`Environment re-sealed by ${id}: ${sealed.fingerprintHash} -> ${next.fingerprintHash}. `
+    + 'The self-test is stale: run "t3u selftest-determinism" before the next capture, comparison or closure-start.');
+  return { exitCode: EXIT.PASS, verdict: 'pass', reseal: entry, fingerprint: next.fingerprintHash, message: `environment re-sealed by ${id}` };
 }
 
 export async function contentFingerprint({ values, paths, log, journal }) {
