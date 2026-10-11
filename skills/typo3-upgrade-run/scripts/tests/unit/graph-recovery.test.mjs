@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { graphForecast, graphInit, graphNext, graphStatus, nodeOpen, nodeClose, validateGraphDefinition, validateGraphState } from '../../lib/actions/graph.mjs';
+import { graphForecast, graphInit, graphNext, graphStatus, nodeOpen, nodeClose, refreshReady, validateGraphDefinition, validateGraphState } from '../../lib/actions/graph.mjs';
 import { RunPaths } from '../../lib/run/paths.mjs';
 import { emptyState, StateStore } from '../../lib/run/state.mjs';
 import { runtimeWindow } from '../../lib/run/runtime.mjs';
@@ -227,4 +227,75 @@ test('orphaned shared readers and shared locks falsely held by writers are inval
   const issues = validateGraphState(graph, definition, 'hash').join('\n');
   assert.match(issues, /exclusive lock project-write/);
   assert.match(issues, /non-running node ghost/);
+});
+
+// The ombudsstelle deadlock: a re-run edge reaches lighthouse while axe is not passed yet.
+const DEFERRED = { start: ['epoch'], terminal: ['join'], nodes: {
+  epoch: { outcomes: ['pass'] }, axe: { outcomes: ['pass', 'findings'] },
+  light: { requires: ['axe'], outcomes: ['pass', 'findings'] }, repair: { outcomes: ['pass'] },
+  join: { requires: ['axe', 'light'], outcomes: ['pass'] },
+}, edges: [
+  { id: 'epoch-pass', from: 'epoch', outcome: 'pass', to: ['axe', 'light'] },
+  { id: 'axe-pass', from: 'axe', outcome: 'pass', to: 'join' },
+  { id: 'axe-findings', from: 'axe', outcome: 'findings', to: 'repair' },
+  { id: 'light-pass', from: 'light', outcome: 'pass', to: 'join' },
+  { id: 'light-findings', from: 'light', outcome: 'findings', to: 'repair' },
+  { id: 'retry', from: 'repair', outcome: 'pass', to: ['axe', 'light'], retry: true, max_traversals: 2 },
+] };
+const tick = () => new Promise(resolve => setTimeout(resolve, 5));
+
+test('an arrival that came while requirements were unmet makes the failed node ready once they pass', async () => {
+  await scenario(DEFERRED, async ({ paths, open, close }) => {
+    await open('epoch'); await close('epoch', 'pass');
+    await open('axe'); await close('axe', 'pass');
+    await open('light'); await close('light', 'findings');
+    await tick();
+    await open('repair'); await close('repair', 'pass'); // reaches light while axe is ready again
+    let state = await new StateStore(paths).read();
+    assert.equal(state.graph.nodes.light.status, 'pending');
+    assert.equal(state.graph.nodes.light.outcome, null);
+    assert.equal(state.graph.nodes.light.history.at(-1).outcome, 'findings');
+    assert.deepEqual((await graphNext({ paths, log })).ready.map(n => n.id), ['axe']);
+    await open('axe'); await close('axe', 'pass');
+    const next = await graphNext({ paths, log });
+    assert.deepEqual(next.ready.map(n => n.id), ['light']);
+    state = await new StateStore(paths).read();
+    assert.equal(state.graph.edges.retry.traversals, 1, 'reactivation spends no traversal');
+    assert.equal(state.graph.nodes.light.attempts, 1);
+    assert.deepEqual(validateGraphState(state.graph, JSON.parse(await readFile(paths.graphDefinition, 'utf8')), state.graph.definition_hash), []);
+    await open('light'); await close('light', 'pass');
+    await open('join'); await close('join', 'pass');
+    assert.equal((await new StateStore(paths).read()).graph.status, 'complete');
+  });
+});
+
+function deferredGraph({ light, lightCompleted, lastAt }) {
+  const edges = Object.fromEntries(DEFERRED.edges.map(e => [e.id, { traversals: 0, last_at: null }]));
+  edges['epoch-pass'] = { traversals: 1, last_at: '2026-10-11T19:00:00.000Z' };
+  edges.retry = { traversals: 1, last_at: lastAt };
+  const node = (status, completed_at = null) => ({ status, attempts: 1, active_since: null, completed_at,
+    outcome: status === 'pending' ? null : 'x', evidence: null, evidence_loop: null, history: [] });
+  return { nodes: { epoch: node('passed', '2026-10-11T19:00:00.000Z'), axe: node('passed', '2026-10-11T19:30:00.000Z'),
+    light: node(light, lightCompleted), repair: node('passed', lastAt), join: node('pending') }, edges, locks: {} };
+}
+
+test('a finished node without a later arrival is not reactivated', () => {
+  for (const status of ['failed', 'blocked', 'invalid']) {
+    const graph = deferredGraph({ light: status, lightCompleted: '2026-10-11T20:00:00.000Z', lastAt: '2026-10-11T19:50:00.000Z' });
+    refreshReady(graph, DEFERRED);
+    assert.equal(graph.nodes.light.status, status);
+    assert.equal(graph.nodes.light.completed_at, '2026-10-11T20:00:00.000Z');
+  }
+  const later = deferredGraph({ light: 'failed', lightCompleted: '2026-10-11T19:48:41.684Z', lastAt: '2026-10-11T20:42:18.796Z' });
+  refreshReady(later, DEFERRED);
+  assert.equal(later.nodes.light.status, 'ready');
+});
+
+test('history never reactivates passed or skipped work', () => {
+  for (const status of ['passed', 'skipped']) {
+    const graph = deferredGraph({ light: status, lightCompleted: '2026-10-11T19:48:41.684Z', lastAt: '2026-10-11T20:42:18.796Z' });
+    refreshReady(graph, DEFERRED);
+    assert.equal(graph.nodes.light.status, status);
+    assert.equal(graph.nodes.light.outcome, 'x');
+  }
 });

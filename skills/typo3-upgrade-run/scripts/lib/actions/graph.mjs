@@ -651,9 +651,15 @@ export function refreshReady(graph, definition, { traversed = [] } = {}) {
     const requirementsMet = required.every((requiredId) => ['passed', 'skipped'].includes(graph.nodes[requiredId]?.status));
     // An explicit arrival is a new work item, including a second visit to a repair
     // node. Historical edge counts alone must never reactivate completed work.
+    // A failed/blocked/invalid node keeps an arrival that came while its requirements were
+    // unmet: an incoming edge stamped after the node finished is still owed a visit.
+    const finishedAt = Date.parse(nodeState.completed_at ?? '');
+    const deferredArrival = ['failed', 'blocked', 'invalid'].includes(nodeState.status) && Number.isFinite(finishedAt)
+      && incoming.some((edge) => Date.parse(graph.edges[edge.id]?.last_at ?? '') > finishedAt);
     if (nodeState.status === 'ready' && !requirementsMet) nodeState.status = 'pending';
-    if (activated && requirementsMet && (nodeState.status === 'pending' || (traversedTargets.has(id) && ['failed', 'blocked', 'invalid', 'passed', 'skipped'].includes(nodeState.status)))) {
-      nodeState.status = 'ready';
+    const arrived = traversedTargets.has(id) && ['failed', 'blocked', 'invalid', 'passed', 'skipped'].includes(nodeState.status);
+    if (deferredArrival || (activated && requirementsMet && (nodeState.status === 'pending' || arrived))) {
+      nodeState.status = requirementsMet ? 'ready' : 'pending';
       nodeState.active_since = null;
       nodeState.completed_at = null;
       nodeState.outcome = null;

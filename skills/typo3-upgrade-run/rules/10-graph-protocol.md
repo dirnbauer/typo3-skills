@@ -21,6 +21,9 @@ A retry edge may return a terminal node state to `ready`; it increments `attempt
 history. A fresh outcome arriving at a completed recovery/join node may activate the next bounded
 work item. Historical edge counts alone never repeat completed work. The shared per-node attempt
 budget applies across different recovery causes; state is not manually rewound.
+An edge that reaches a failed, blocked or invalid node while its `requires` are unmet is kept: an
+incoming `last_at` later than the node's `completed_at` returns it to `pending`, then `ready` once
+the requirements pass; passed and skipped nodes are never reopened this way.
 
 Open with `t3u node-open`; close with `t3u node-close --outcome … --evidence …`. Evidence is a path
 or stable report reference, never “the agent checked it.” `not-applicable` needs evidence explaining
