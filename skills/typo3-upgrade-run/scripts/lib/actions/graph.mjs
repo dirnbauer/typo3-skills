@@ -16,6 +16,11 @@ import {
   assertPhaseRuntime, runtimeProfileIssues, phaseUsesMigrationWindow, readRuntimeApprovals, resolveRuntime,
 } from '../run/runtime.mjs';
 import { forecastGraph } from '../run/forecast.mjs';
+import {
+  attemptApprovalIssues, attemptBudgetOf, attemptExtensionLedger, foreignApprovalIds, nodeAttemptBudget,
+  readAttemptApprovals, resolveAttemptBudgets, sealedAttemptBudget,
+} from '../run/attempts.mjs';
+import { readIntentApproval } from '../run/runtime.mjs';
 import { nodeClaims, claimsConflict, lockOwners, blockedClaims, acquireClaims, releaseClaims } from '../run/resources.mjs';
 import {
   closureCheck, gateClosureEvidence, readClosureArtifact, readFeaturePlan, validClosureAcceptance, verifyRecordedClosureAcceptance,
@@ -64,7 +69,7 @@ export async function graphInit({ values, paths, log, journal }) {
 export async function graphStatus({ values, paths, log, now = Date.now }) {
   const { state, definition } = await graphContext(paths);
   refreshReady(state.graph, definition);
-  const summary = summarize(state.graph, definition);
+  const summary = summarize(state.graph, definition, attemptBudgetOf(definition, await resolveAttemptBudgets(paths, state, definition)));
   // The 24-hour self-test lock gates every comparison and closure. Show what is left of it, and
   // warn while there is still time to re-run it rather than after a final compare was refused.
   summary.selftest = selftestValidity(await readSelftestLock(paths), now());
@@ -87,8 +92,9 @@ export async function graphNext({ paths, log }) {
   const store = new StateStore(paths);
   const { state, definition } = await graphContext(paths);
   const stateRevision = stateHash(state);
+  const budget = attemptBudgetOf(definition, await resolveAttemptBudgets(paths, state, definition));
   refreshReady(state.graph, definition);
-  state.graph.status = deriveGraphStatus(state.graph, definition);
+  state.graph.status = deriveGraphStatus(state.graph, definition, budget);
   state.graph.updated_at = new Date().toISOString();
   await writeGraphState(store, state, stateRevision);
   const candidates = Object.entries(state.graph.nodes)
@@ -99,7 +105,7 @@ export async function graphNext({ paths, log }) {
   for (const node of candidates) {
     const held = blockedClaims(node.claims, state.graph.locks);
     if (held.length) waiting.push({ ...node, reason: held.map(({ resource }) => `${resource} held by ${lockOwners(state.graph.locks[resource]).join(', ')}`).join('; ') });
-    else if (state.graph.nodes[node.id].attempts >= (definition.policy?.max_node_attempts ?? Infinity)) {
+    else if (state.graph.nodes[node.id].attempts >= budget(node.id)) {
       waiting.push({ ...node, reason: 'Shared node attempt budget exhausted; re-plan or stop.' });
     } else {
       const exhausted = recoveryBudgetBlock(state.graph, definition, node.id);
@@ -122,8 +128,10 @@ export async function nodeOpen({ values, paths, log, journal }) {
   const nodeState = state.graph.nodes[id];
   if (!node || !nodeState) throw new PreconditionError(`Unknown graph node: ${id}`);
   if (nodeState.status !== 'ready') throw new PreconditionError(`Node ${id} is ${nodeState.status}, not ready.`);
-  if (nodeState.attempts >= (definition.policy?.max_node_attempts ?? Infinity)) {
-    throw new PreconditionError(`Node ${id} exhausted its shared attempt budget. Changing recovery cause does not reset it.`);
+  // Only owner-approved extensions that still verify against their approval file widen the budget.
+  if (nodeState.attempts >= nodeAttemptBudget(definition, id, await resolveAttemptBudgets(paths, state, definition))) {
+    throw new PreconditionError(`Node ${id} exhausted its shared attempt budget. Changing recovery cause does not reset it; `
+      + 'only the owner can grant more, by a recorded approval (t3u node-attempts-extend).');
   }
   const exhausted = recoveryBudgetBlock(state.graph, definition, id);
   if (exhausted) throw new PreconditionError(exhausted);
@@ -355,7 +363,8 @@ export async function nodeClose({ values, paths, log, journal }) {
     edgeEvents.push({ edge_id: edge.id, from: id, to: asArray(edge.to), outcome, traversal: edgeState.traversals });
   }
   refreshReady(state.graph, definition, { traversed: matching });
-  state.graph.status = deriveGraphStatus(state.graph, definition);
+  state.graph.status = deriveGraphStatus(state.graph, definition,
+    attemptBudgetOf(definition, await resolveAttemptBudgets(paths, state, definition)));
   state.graph.updated_at = now;
   await mkdir(paths.node(id), { recursive: true });
   await writeGraphState(store, state, stateRevision);
@@ -404,6 +413,7 @@ export async function openGuardedNodes(paths) {
 export async function graphValidate({ paths, log }) {
   const { state, definition, hash } = await graphContext(paths);
   const runtimeContext = { approvals: await readRuntimeApprovals(paths.approvalsDir, state.runtime),
+    attemptApprovals: await readAttemptApprovals(paths.approvalsDir, state.graph),
     runId: state.run_id, granted: state.approvals ?? [] };
   const issues = validateGraphState(state.graph, definition, hash, state, runtimeContext);
   if (issues.length) throw new InvalidRunError(`Graph validation failed:\n  - ${issues.join('\n  - ')}`);
@@ -553,14 +563,18 @@ export function validateGraphState(graph, definition, hash, runState = null, run
   const issues = validateGraphDefinition(definition);
   if (graph.definition_hash !== hash) issues.push('definition hash drifted after graph-init');
   if (runState) issues.push(...runtimeProfileIssues(runState.runtime, runtimeContext));
-  if (graph.status === 'complete' && deriveGraphStatus(graph, definition) !== 'complete') {
+  const attempts = attemptExtensionLedger(graph, definition, { approvals: runtimeContext.attemptApprovals ?? null,
+    runId: runState?.run_id ?? null, granted: runState?.approvals ?? [], foreignIds: foreignApprovalIds(runState) });
+  issues.push(...attempts.issues);
+  const budget = attemptBudgetOf(definition, attempts);
+  if (graph.status === 'complete' && deriveGraphStatus(graph, definition, budget) !== 'complete') {
     issues.push('graph is labelled complete with blocked or unfinished activated work; reconcile derived status with graph-next');
   }
   for (const id of Object.keys(definition.nodes)) if (!graph.nodes[id]) issues.push(`state misses node ${id}`);
   for (const id of Object.keys(graph.nodes)) if (!definition.nodes[id]) issues.push(`state contains unknown node ${id}`);
   for (const [id, node] of Object.entries(definition.nodes)) {
     const nodeState = graph.nodes[id];
-    if (nodeState?.attempts > (definition.policy?.max_node_attempts ?? Infinity)) issues.push(`node ${id} exceeded its shared attempt budget`);
+    if (nodeState?.attempts > budget(id)) issues.push(`node ${id} exceeded its shared attempt budget`);
     if (nodeState?.status === 'running') {
       for (const { resource, mode } of nodeClaims(node, definition)) {
         const lock = graph.locks[resource];
@@ -672,7 +686,114 @@ export function recoveryBudgetBlock(graph, definition, id) {
   return exhausted ? `Node ${id} cannot finish a successful route within the remaining recovery budget; stop before starting another repair.` : null;
 }
 
-export function deriveGraphStatus(graph, definition) {
+/**
+ * The successful routes out of `id` and, per route, which bound a close would overrun: a retry
+ * edge at its max_traversals, or the global max_total_retries. Same rule as recoveryBudgetBlock,
+ * spelled out so a refusal can say which bound is spent.
+ */
+export function recoveryRoutes(graph, definition, id) {
+  const outgoing = definition.edges.filter(e => e.from === id);
+  const outcomes = [...new Set(definition.nodes[id]?.outcomes ?? outgoing.map(e => e.outcome))]
+    .filter(o => !['blocked', 'invalid', 'findings', 'harness-error'].includes(o));
+  const used = definition.edges.filter(e => e.retry)
+    .reduce((sum, e) => sum + (graph.edges[e.id]?.traversals ?? 0), 0);
+  const cap = definition.policy?.max_total_retries ?? Infinity;
+  return outcomes.map((outcome) => {
+    const retries = outgoing.filter(e => e.outcome === outcome && e.retry);
+    const overruns = retries.filter(e => (graph.edges[e.id]?.traversals ?? 0) >= e.max_traversals)
+      .map(e => `retry edge ${e.id} used ${graph.edges[e.id]?.traversals ?? 0}/${e.max_traversals}`);
+    if (retries.length && used + retries.length > cap) {
+      overruns.push(`global retry cap max_total_retries used ${used}/${cap}, needs ${retries.length} more`);
+    }
+    return { outcome, edges: retries.map(e => `${e.id} ${graph.edges[e.id]?.traversals ?? 0}/${e.max_traversals}`), overruns };
+  });
+}
+
+/**
+ * `t3u node-attempts-extend --node <id> --approval APR-NNN --reason "…" [--attempts 1]`: the owner's
+ * recorded decision to give one ready node whose shared attempt budget is spent more attempts. The
+ * graph definition, its retry edges, max_traversals and max_total_retries stay unchanged; one entry
+ * is appended to graph.attempt_extensions, bound to the approval file's bytes, and journaled.
+ */
+export async function nodeAttemptsExtend({ values, paths, log, journal }) {
+  if (values['dry-run']) throw new PreconditionError('node-attempts-extend records an owner decision and has no --dry-run; nothing was written.');
+  const id = requireNode(values.node);
+  const approvalId = String(values.approval ?? '');
+  if (!/^APR-\d{3}$/.test(approvalId)) throw new HarnessError('--approval must name a granted intent approval APR-NNN.');
+  const reason = String(values.reason ?? '').trim();
+  if (!reason) throw new HarnessError('--reason is required: say why the owner grants the node more attempts.');
+  const rawAttempts = values.attempts === undefined ? '1' : String(values.attempts);
+  const extra = Number(rawAttempts);
+  const store = new StateStore(paths);
+  const { state, definition } = await graphContext(paths);
+  const base = sealedAttemptBudget(definition);
+  if (!Number.isFinite(base)) throw new PreconditionError('The graph policy sets no max_node_attempts; there is no attempt budget to extend.');
+  if (!/^\d+$/.test(rawAttempts) || !Number.isInteger(extra) || extra < 1 || extra > base) {
+    throw new HarnessError(`--attempts must be an integer between 1 and ${base}.`);
+  }
+  const node = definition.nodes[id];
+  const nodeState = state.graph.nodes[id];
+  if (!node || !nodeState) throw new PreconditionError(`Unknown graph node: ${id}`);
+  const approvals = await readAttemptApprovals(paths.approvalsDir, state.graph);
+  const ledgerContext = (run) => ({ runId: run.run_id, granted: run.approvals ?? [], foreignIds: foreignApprovalIds(run) });
+  const ledger = attemptExtensionLedger(state.graph, definition, { approvals, ...ledgerContext(state) });
+  if (ledger.issues.length) {
+    throw new InvalidRunError(`Recorded attempt extensions do not verify; resolve them before recording another:\n  - ${ledger.issues.join('\n  - ')}`);
+  }
+  const preview = structuredClone(state.graph);
+  refreshReady(preview, definition); // in memory only, as node-open sees it
+  if (preview.nodes[id].status !== 'ready') {
+    throw new PreconditionError(`Node ${id} is ${preview.nodes[id].status}, not ready; an extension applies only to a ready node whose budget is spent.`);
+  }
+  const budget = nodeAttemptBudget(definition, id, ledger);
+  if (nodeState.attempts < budget) {
+    throw new PreconditionError(`Node ${id} has used ${nodeState.attempts} of ${budget} attempts; it needs no extension.`);
+  }
+  const routes = recoveryRoutes(preview, definition, id);
+  const open = routes.filter(r => !r.overruns.length);
+  if (routes.length && !open.length) {
+    throw new PreconditionError(`An extra attempt of ${id} would also need a retry-edge or global-retry overrun, which no approval grants:\n  - `
+      + routes.map(r => `${r.outcome}: ${r.overruns.join('; ')}`).join('\n  - '));
+  }
+  const approval = await readIntentApproval(paths.approvalsDir, approvalId);
+  const approvalIssues = attemptApprovalIssues(approval, id, { runId: state.run_id, granted: state.approvals ?? [] });
+  if (approvalIssues.length) {
+    throw new PreconditionError(`${approvalId} cannot authorise extra attempts for ${id}:\n  - ${approvalIssues.join('\n  - ')}\n`
+      + `Record the owner decision first, naming the node in its scope: t3u approval --id APR-NNN --stage intent --granted --scope "… ${id} …" --question … --answer …`);
+  }
+  if (ledger.applied.some(e => e.approval_id === approvalId) || foreignApprovalIds(state).has(approvalId)) {
+    throw new PreconditionError(`${approvalId} already authorised an owner decision; record a new approval for a new decision.`);
+  }
+  const entry = {
+    node: id,
+    approval_id: approvalId,
+    approval_sha256: approval.sha256,
+    extra_attempts: extra,
+    reason,
+    recorded_at: new Date().toISOString(),
+  };
+  const known = (state.graph.attempt_extensions ?? []).length;
+  await store.update((next) => {
+    if ((next.graph.attempt_extensions ?? []).length !== known || next.graph.nodes[id]?.attempts !== nodeState.attempts) {
+      throw new PreconditionError('The graph changed concurrently; run node-attempts-extend again.');
+    }
+    next.graph.attempt_extensions = [...(next.graph.attempt_extensions ?? []), entry];
+    const after = attemptExtensionLedger(next.graph, definition,
+      { approvals: new Map([...approvals, [approvalId, approval]]), ...ledgerContext(next) });
+    next.graph.status = deriveGraphStatus(next.graph, definition, attemptBudgetOf(definition, after));
+    next.graph.updated_at = entry.recorded_at;
+  });
+  await journal?.append('attempt-extension', entry);
+  const total = budget + extra;
+  const within = open.map(r => `${r.outcome}${r.edges.length ? ` (${r.edges.join(', ')})` : ''}`).join(', ');
+  log.success(`Node ${id} may open ${extra} more time(s): budget ${total} by ${approvalId} (sealed ${base}). `
+    + `Retry edges and the global retry cap are unchanged; routes within budget: ${within || 'terminal'}.`);
+  return { exitCode: EXIT.PASS, verdict: 'pass', extension: entry, attempts_used: nodeState.attempts, attempts_max: total,
+    routes_within_budget: open.map(r => r.outcome), message: `${id}: attempt budget ${total} by ${approvalId}` };
+}
+
+/** `attemptBudget(id)` is the effective per-node budget (attemptBudgetOf); without it the sealed one counts. */
+export function deriveGraphStatus(graph, definition, attemptBudget = attemptBudgetOf(definition)) {
   const entries = Object.entries(graph.nodes);
   const terminals = asArray(definition.terminal);
   if (entries.some(([, n]) => n.status === 'blocked')
@@ -688,16 +809,16 @@ export function deriveGraphStatus(graph, definition) {
   if (!unfinished && terminals.some(id => ['passed', 'skipped'].includes(graph.nodes[id]?.status))) return 'complete';
   const ready = entries.filter(([, n]) => n.status === 'ready');
   if (!entries.some(([, n]) => n.status === 'running') && ready.length
-    && ready.every(([id, n]) => n.attempts >= (definition.policy?.max_node_attempts ?? Infinity)
+    && ready.every(([id, n]) => n.attempts >= attemptBudget(id)
       || recoveryBudgetBlock(graph, definition, id))) return 'blocked';
   return 'active';
 }
 
-function summarize(graph, definition) {
+function summarize(graph, definition, attemptBudget) {
   const counts = {};
   for (const node of Object.values(graph.nodes)) counts[node.status] = (counts[node.status] ?? 0) + 1;
   return {
-    status: deriveGraphStatus(graph, definition),
+    status: deriveGraphStatus(graph, definition, attemptBudget),
     definitionHash: graph.definition_hash,
     counts,
     ready: Object.entries(graph.nodes).filter(([, node]) => node.status === 'ready').map(([id]) => id),

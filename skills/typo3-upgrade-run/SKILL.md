@@ -296,7 +296,7 @@ manifest (by default the one `closure-verify` recorded) and its recorded human a
 
 The handover names project/branch/HEAD, core/PHP versions, dataset date, backup and restore
 references, graph hash/status, tests with exit codes, declared changes, residual risks, any runtime
-extension or waiver with its approval id, the graph report, the structured-data and WebMCP Contract B results with their B baselines, and where the
+extension or waiver and any node attempt extension with its approval id, the graph report, the structured-data and WebMCP Contract B results with their B baselines, and where the
 audit trail is committed or archived. It states that no staging/live deployment was performed.
 Distinguish **implemented**, **verified awaiting acceptance**, **closed locally** and
 **stale/incomplete**; never promise zero undiscovered bugs.

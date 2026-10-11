@@ -309,7 +309,24 @@
             ]
           }
         },
-        "updated_at": { "type": "string", "format": "date-time" }
+        "updated_at": { "type": "string", "format": "date-time" },
+        "attempt_extensions": {
+          "type": "array",
+          "description": "Owner-approved extra attempts for one node whose shared attempt budget is spent, appended by t3u node-attempts-extend. policy.max_node_attempts, retry edges and max_total_retries never change; graph-validate verifies every entry against its approval file.",
+          "items": {
+            "type": "object",
+            "required": ["node", "approval_id", "approval_sha256", "extra_attempts", "reason", "recorded_at"],
+            "additionalProperties": false,
+            "properties": {
+              "node": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+              "approval_id": { "type": "string", "pattern": "^APR-\\d{3}$" },
+              "approval_sha256": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+              "extra_attempts": { "type": "integer", "minimum": 1, "maximum": 100 },
+              "reason": { "type": "string", "minLength": 1 },
+              "recorded_at": { "type": "string", "format": "date-time" }
+            }
+          }
+        }
       }
     },
     "loops": {

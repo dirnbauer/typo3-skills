@@ -32,7 +32,7 @@ import {
   validateRun,
 } from './lib/actions/lifecycle.mjs';
 import {
-  graphInit, graphNext, graphStatus, graphValidate, graphForecast, nodeClose, nodeOpen,
+  graphInit, graphNext, graphStatus, graphValidate, graphForecast, nodeAttemptsExtend, nodeClose, nodeOpen,
 } from './lib/actions/graph.mjs';
 import { graphReport, nodeBrief } from './lib/actions/runner.mjs';
 
@@ -50,6 +50,7 @@ const ACTIONS = {
   'graph-forecast': graphForecast,
   'graph-report': graphReport,
   'node-brief': nodeBrief,
+  'node-attempts-extend': nodeAttemptsExtend,
   'node-open': nodeOpen,
   'node-close': nodeClose,
   'validate-run': validateRun,

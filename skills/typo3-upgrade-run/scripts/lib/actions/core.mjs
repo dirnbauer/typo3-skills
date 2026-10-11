@@ -221,8 +221,9 @@ export async function runtimeExtend({ values, paths, log, journal }) {
     throw new PreconditionError(`${id} cannot authorise a runtime extension:\n  - ${approvalIssues.join('\n  - ')}\n`
       + 'Record the owner decision first: t3u approval --id APR-NNN --stage intent --granted --scope … --question … --answer …');
   }
-  if ((runtime.extensions ?? []).some((entry) => entry?.approval_id === id)) {
-    throw new PreconditionError(`${id} already authorised a runtime extension; record a new approval for a new decision.`);
+  if ((runtime.extensions ?? []).some((entry) => entry?.approval_id === id)
+    || (state.graph?.attempt_extensions ?? []).some((entry) => entry?.approval_id === id)) {
+    throw new PreconditionError(`${id} already authorised a runtime or attempt extension; record a new approval for a new decision.`);
   }
   const ledger = await resolveRuntime(paths, state);
   if (ledger.issues.length) {
@@ -420,8 +421,9 @@ async function envReseal({ values, paths, log, journal, environmentCollector }) 
       + 'Record the owner decision first: t3u approval --id APR-NNN --stage intent --granted --scope … --question … --answer …');
   }
   const recorded = state.fingerprints?.environment_reseals ?? [];
-  if (recorded.some((entry) => entry?.approval_id === id)) {
-    throw new PreconditionError(`${id} already authorised an environment re-seal; record a new approval for a new decision.`);
+  if (recorded.some((entry) => entry?.approval_id === id)
+    || (state.graph?.attempt_extensions ?? []).some((entry) => entry?.approval_id === id)) {
+    throw new PreconditionError(`${id} already authorised an environment re-seal or attempt extension; record a new approval for a new decision.`);
   }
   const ledgerIssues = environmentResealIssues(state, await readResealApprovals(paths.approvalsDir, state));
   if (ledgerIssues.length) {

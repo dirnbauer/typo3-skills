@@ -103,6 +103,10 @@ invalidates the current run unless reconciled as a new graph/run.
 
 The default graph also caps all node starts at three and aggregate retry traversals at twelve.
 These ceilings are shared with leaf work, not multiplied by a second specialist-owned retry loop.
+Only the owner can give one spent node more starts: a granted intent approval naming the node, then
+`t3u node-attempts-extend`. It appends a hash-bound entry to `graph.attempt_extensions`, never
+rewrites the definition, and moves no retry edge or the global retry cap
+([extra attempts](../references/graph-runner.md#owner-approved-extra-attempts)).
 
 Bounded loops inside a node may still enforce one cause per attempt, change budgets, progress,
 oscillation, and fixed-point evidence. They do not choose the next node.
@@ -146,7 +150,9 @@ must prove:
 - every lock belongs to a running node that declared it;
 - no unbounded cycle exists;
 - every proof node carries the required green loop and evidence reference;
-- the sealed runtime matches its profile and every runtime extension verifies against its approval.
+- the sealed runtime matches its profile and every runtime extension verifies against its approval;
+- every node attempt extension verifies against its approval, and no node exceeds its sealed attempt
+  budget plus its verified extensions.
 
 Graph validity is not closure. `closure-check` must also bind complete, hashed final reports to
 the current code/data epoch. The Contract A transition requires actual human acceptance of that

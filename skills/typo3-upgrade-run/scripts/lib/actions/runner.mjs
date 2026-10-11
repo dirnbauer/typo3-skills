@@ -19,6 +19,7 @@ import { blockedClaims, lockOwners, nodeClaims } from '../run/resources.mjs';
 import { readClosureArtifact } from './closure.mjs';
 import { reviewRequired } from '../run/guards.mjs';
 import { deriveGraphStatus, graphContext, recoveryBudgetBlock, refreshReady } from './graph.mjs';
+import { attemptBudgetOf, resolveAttemptBudgets } from '../run/attempts.mjs';
 
 const exec = promisify(execFile);
 
@@ -48,15 +49,18 @@ export async function nodeBrief({ values, paths, log }) {
     forecast = await readClosureArtifact(paths.root, state.runtime.forecast_ref)
       .then((bytes) => JSON.parse(bytes)).catch(() => null);
   }
-  const brief = buildNodeBrief(id, definition, state, { forecast, now: Date.now(), window: (await resolveRuntime(paths, state)).window });
+  const brief = buildNodeBrief(id, definition, state, { forecast, now: Date.now(), window: (await resolveRuntime(paths, state)).window,
+    attempts: await resolveAttemptBudgets(paths, state, definition) });
   if (!values.json) process.stdout.write(`${renderNodeBrief(brief)}\n`);
   log.debug(`Brief for ${id}: ${brief.status}, ${brief.blockers.length} blocker(s).`);
   return { exitCode: EXIT.PASS, verdict: 'pass', brief,
     message: brief.blockers.length ? `${id}: ${brief.status}, not openable yet` : `${id}: ready to open` };
 }
 
-export function buildNodeBrief(id, definition, state, { forecast = null, now = Date.now(), window = null } = {}) {
+export function buildNodeBrief(id, definition, state, { forecast = null, now = Date.now(), window = null, attempts = null } = {}) {
   const runtimeWindow = window ?? sealedRuntimeWindow(state.runtime);
+  const attemptBudget = attemptBudgetOf(definition, attempts);
+  const attemptExtensions = (attempts?.applied ?? []).filter((e) => e.node === id);
   const node = definition.nodes[id];
   const nodeState = state.graph?.nodes?.[id];
   if (!node || !nodeState) throw new HarnessError(`Unknown graph node: ${id}`);
@@ -81,7 +85,7 @@ export function buildNodeBrief(id, definition, state, { forecast = null, now = D
   for (const { resource } of blockedClaims(claims, state.graph.locks ?? {})) {
     blockers.push(`${resource} held by ${lockOwners(state.graph.locks[resource]).join(', ')}`);
   }
-  if (nodeState.attempts >= (policy.max_node_attempts ?? Infinity)) blockers.push('shared node attempt budget exhausted; re-plan or stop');
+  if (nodeState.attempts >= attemptBudget(id)) blockers.push('shared node attempt budget exhausted; re-plan or stop');
   const exhausted = recoveryBudgetBlock(state.graph, definition, id);
   if (exhausted) blockers.push(exhausted);
   const phase = Number(String(node.phase ?? '').slice(1));
@@ -145,7 +149,8 @@ export function buildNodeBrief(id, definition, state, { forecast = null, now = D
     incoming_retries: incomingRetries,
     budget: {
       attempts_used: nodeState.attempts,
-      attempts_max: policy.max_node_attempts ?? null,
+      attempts_max: Number.isFinite(attemptBudget(id)) ? attemptBudget(id) : null,
+      attempt_extensions: attemptExtensions.map((e) => ({ approval_id: e.approval_id, extra_attempts: e.extra_attempts })),
       graph_retries_used: retriesUsed,
       graph_retries_max: policy.max_total_retries ?? null,
       forecast_minutes: Number.isFinite(scheduled?.minutes) ? scheduled.minutes : null,
@@ -201,6 +206,7 @@ export function renderNodeBrief(brief) {
     `- attempts ${b.attempts_used}/${b.attempts_max ?? '∞'} · graph retries ${b.graph_retries_used}/${b.graph_retries_max ?? '∞'}`
       + (b.forecast_minutes !== null ? ` · forecast ${b.forecast_minutes} min` : ''),
     `- migration cutoff in ${b.minutes_to_migration_cutoff ?? '—'} min · deadline in ${b.minutes_to_deadline ?? '—'} min`,
+    ...(b.attempt_extensions?.length ? [`- attempts extended by ${b.attempt_extensions.map((e) => `${e.approval_id} (+${e.extra_attempts})`).join(', ')}; retry edges and the global retry cap unchanged`] : []),
     ...(b.runtime_extension ? [`- runtime ${b.runtime_extension}; sealed cutoff and deadline unchanged`] : []));
   if (brief.blockers.length) {
     lines.push('', '## Blockers', ...brief.blockers.map((x) => `- ${x}`));
@@ -215,7 +221,8 @@ export async function graphReport({ values, paths, log }) {
   const { state, definition } = await graphContext(paths);
   const events = await new Journal(paths.journalPath).read();
   const ledger = await resolveRuntime(paths, state);
-  const report = buildGraphReport(definition, state, events, { now: Date.now(), window: ledger.window, extensions: ledger.applied });
+  const report = buildGraphReport(definition, state, events, { now: Date.now(), window: ledger.window, extensions: ledger.applied,
+    attempts: await resolveAttemptBudgets(paths, state, definition) });
   report.audit_trail = await auditTrail(paths);
   const markdown = renderGraphReport(report);
   const reports = [];
@@ -231,7 +238,7 @@ export async function graphReport({ values, paths, log }) {
     message: `graph ${report.graph.status}; ${report.nodes.length} node(s) touched; measured minutes are wall-clock, not guarantees` };
 }
 
-export function buildGraphReport(definition, state, events, { now = Date.now(), window = null, extensions = [] } = {}) {
+export function buildGraphReport(definition, state, events, { now = Date.now(), window = null, extensions = [], attempts = null } = {}) {
   const runtimeWindow = window ?? sealedRuntimeWindow(state.runtime);
   const graph = state.graph;
   const nodeEvents = events.filter((e) => e.event === 'node' && ['open', 'close'].includes(e.action) && e.node_id);
@@ -285,7 +292,7 @@ export function buildGraphReport(definition, state, events, { now = Date.now(), 
     generated_at: new Date(now).toISOString(),
     graph: {
       definition_hash: graph.definition_hash,
-      status: deriveGraphStatus(graph, definition),
+      status: deriveGraphStatus(graph, definition, attemptBudgetOf(definition, attempts)),
       started_at: startedAt,
       last_event_at: lastTs,
       elapsed_minutes: startedAt && lastTs ? round((Date.parse(lastTs) - Date.parse(startedAt)) / 60000) : null,
@@ -293,6 +300,9 @@ export function buildGraphReport(definition, state, events, { now = Date.now(), 
       retries_used: retryEdges.reduce((n, e) => n + (graph.edges[e.id]?.traversals ?? 0), 0),
       retries_max: definition.policy?.max_total_retries ?? null,
       running: nodes.filter((n) => n.status === 'running').map((n) => n.id),
+      // Owner-approved extra node attempts that verify; policy.max_node_attempts never changes.
+      attempt_extensions: (attempts?.applied ?? []).map((e) => ({ node: e.node, approval_id: e.approval_id,
+        approval_sha256: e.approval_sha256, extra_attempts: e.extra_attempts, reason: e.reason, recorded_at: e.recorded_at })),
     },
     runtime: {
       profile: state.runtime?.size_profile ?? null,
@@ -328,6 +338,9 @@ export function renderGraphReport(report) {
     for (const e of report.runtime.extensions ?? []) {
       lines.push(`- ${e.approval_id} (${e.approval_sha256.slice(0, 19)}…) at ${e.recorded_at}: ${e.waived ? 'waived' : `deadline ${e.new_deadline}, cutoff ${e.new_cutoff}`} — ${e.reason}`);
     }
+  }
+  for (const e of g.attempt_extensions ?? []) {
+    lines.push(`Attempt extension: ${e.node} +${e.extra_attempts} by ${e.approval_id} (${e.approval_sha256.slice(0, 19)}…) at ${e.recorded_at} — ${e.reason}; retry edges and the global retry cap unchanged`);
   }
   if (report.audit_trail) {
     lines.push(`Audit trail in Git: ${report.audit_trail.tracked}${report.audit_trail.detail ? ` (${report.audit_trail.detail})` : ''}`);

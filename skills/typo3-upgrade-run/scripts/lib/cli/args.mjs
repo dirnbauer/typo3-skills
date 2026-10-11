@@ -61,6 +61,11 @@ export const COMMANDS = {
   'graph-report': { summary: 'Measured minutes, attempts and retries per node from state and journal', options: {
     write: { type: 'boolean', default: false, help: 'Also write report/graph-report.{json,md}' },
   }},
+  'node-attempts-extend': { summary: 'Record owner-approved extra attempts for one ready node whose attempt budget is spent', options: {
+    approval: { type: 'string', help: 'Granted intent approval APR-NNN whose scope names the node' },
+    attempts: { type: 'string', default: '1', help: 'Extra attempts (1..max_node_attempts); retry edges and the global retry cap stay unchanged' },
+    reason: { type: 'string', help: 'Why the owner grants the attempts; recorded and journaled' },
+  }},
   'node-open': { summary: 'Acquire resources and open one ready graph node', options: {
     snapshot: { type: 'string' }, 'rollback-ref': { type: 'string' }, approval: { type: 'string' },
     'applicability-only': { type: 'boolean', default: false },
