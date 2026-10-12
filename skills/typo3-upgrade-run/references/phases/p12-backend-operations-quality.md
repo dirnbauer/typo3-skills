@@ -39,6 +39,9 @@ file. On the older `TYPO3_BE_USER_*` environment-variable form: it is documented
 **not accepted on every 14.x build** — if the command answers with its usage block and exit 255,
 pass `--username/--password` explicitly instead.
 
+On a `*.ddev.site` host an agent may not log in with these passwords; the owner runs the login
+journeys in four commands ([who runs them](../overnight-controller.md#who-runs-the-backend-login-journeys)).
+
 Verify the teardown rather than assuming it:
 
 ```bash

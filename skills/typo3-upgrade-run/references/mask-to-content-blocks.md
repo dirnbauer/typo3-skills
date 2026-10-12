@@ -156,6 +156,45 @@ for b in packages/*/ContentBlocks/ContentElements/*/; do
 done
 ```
 
+## Backend previews that crash on 14.3
+
+On one fleet run the frontend proof was green and the page module still failed on 14.3 with
+`#1775553111 Record property "X" is not available`, thrown by `typo3/cms-fluid`
+`Render/TextViewHelper`. The importer generates `templates/backend-preview.html` with
+`{data -> f:render.text(field: 'header')}` and with reads of fields the record may not have (Mask
+exposed the whole row). `f:render.text` throws when the field is not a property of the record. The
+page module also shows the records of collection child tables (for example `tx_mask_*_typed`) where
+the child table is not hidden, and the preview breaks there as well.
+
+**Detect.** Frontend captures never reach these templates. Before the first capture, list the risky
+reads, then let the closure backend check render the page-module preview of **every** Content Block
+type and every collection child table, not only plugin previews:
+
+```bash
+# f:render.text without optional: true, per preview template
+grep -rn 'f:render.text' packages/*/ContentBlocks/*/*/templates/backend-preview*.html | grep -v 'optional: *true'
+# child tables the page module may list: compare with the Mask TCA on the 12.4/13.4 source
+grep -rhoE 'identifier: *tx_[a-z0-9_]+' packages/*/ContentBlocks/ContentElements/*/config.yaml | awk '{print $2}' | sort -u
+```
+
+For each child table, compare `ctrl.hideTable` on the target (Configuration module, `$GLOBALS['TCA']`)
+with the Mask TCA on the 12.4 source. Where Mask hid the child table and the generated collection
+does not, the page module lists its records and renders their preview.
+
+**Fix.** Two candidates; apply both where they fit:
+
+1. Add `optional: true` to every `f:render.text` in a backend preview
+   (`{data -> f:render.text(field: 'header', optional: true)}`), and remove or guard reads of fields
+   the type does not define: `{data.rawRecord.<column>}` for a column only Mask exposed (fix 3 above),
+   `f:if` around everything else.
+2. Restore the child-table visibility the Mask TCA had on 12.4: when Mask hid the child table, set
+   `ctrl.hideTable` for the generated one (a TCA override in the sitepackage), so the page module no
+   longer lists those records.
+
+Prove it in the page module: one page per Content Block type, one record per collection child table,
+in both colour schemes; the frame content lives in the backend's `list_frame` iframe
+([backend previews](../../typo3-content-blocks/references/19-backend-previews.md#verify)).
+
 ## Proving it worked
 
 This is a content-element migration, so the invariance gate is exactly the right instrument and
@@ -176,7 +215,8 @@ node scripts/t3u.mjs compare-visual \
 ```
 
 Then check the backend as well: a Content Block that renders correctly in the frontend can still
-be uneditable. Open one of each migrated type in FormEngine, save it, and confirm every field
+be uneditable, and its page-module preview can still throw
+([previews that crash on 14.3](#backend-previews-that-crash-on-143)). Open one of each migrated type in FormEngine, save it, and confirm every field
 survived — `scripts/backend-write-roundtrip.mjs` covers the mechanics, and
 `references/backend-permissions.md` covers the part everyone forgets: **new content types are not
 automatically permitted to editors.** A migrated element that editors cannot select has not been

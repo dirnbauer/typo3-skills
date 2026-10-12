@@ -80,7 +80,7 @@ answer as given ([approval matrix](../rules/40-approval-matrix.md)).
 | Extension removals and forks the inventory names | [extension strategy](extension-strategy.md) |
 | Database health policy: **record only** (every dbdoctor group stays a pre-existing residual) or **fix approved groups before Baseline A**, each group asked with its risk at `db-health-intake` | [database health](database-health.md#classification-at-intake), matrix row 32 |
 | Fix-pack approvals: split bundles, restored module rights, renamed asset files, the powermail `Basic.css` URL, the shared `.htaccess` on staging and live | [fix pack](typo3-14-fix-pack.md#where-each-item-applies) |
-| Backend test accounts: a DDEV-only throwaway admin and the non-admin editors | [test accounts](#prepare-test-accounts-once) |
+| Backend test accounts: a DDEV-only throwaway admin and the non-admin editors; on a `*.ddev.site` host the owner runs the login journeys | [test accounts](#prepare-test-accounts-once), [login journeys](#who-runs-the-backend-login-journeys) |
 | Delegation: how many parallel workers (`parallel_approval`, `max_workers`) | [admission](#admission-and-prediction) |
 | Commits per phase batch, and whether the run directory may be committed; pushes stay separate | [approval matrix](../rules/40-approval-matrix.md#401-the-matrix), rows 26–27 |
 | Standard Contract B scope: the structured-data types (at least Organization/WebSite, WebPage, BreadcrumbList, plus the eligible types found) and the WebMCP tools (read-only navigation/lookup, prepare-only forms, Permissions-Policy); the scope, never whether | `structured-data-inventory`, `webmcp-inventory`, [standard branches](specialist-branches.md#standard-contract-b-branches) |
@@ -125,6 +125,24 @@ and never prints it. `rte-visual-editor`, the Redirects rights branch, `componen
 `backend-operations` reuse the accounts. Delete them with their `sys_log` and `sys_history` rows at
 handover, before any database leaves the machine, and record the zero count
 ([proof scripts](measurement-recipes.md#proof-scripts-journeys-sweeps-and-row-diffs)).
+
+## Who runs the backend login journeys
+
+An agent's safety rules allow logging in with a test password only on `localhost`, `127.0.0.1` and
+`*.test` hosts. On a `*.ddev.site` host the journeys that log in (`component-sentinels` steps behind a
+login, `backend-operations`, the Redirects rights branch, the RTE dialogs) are owner steps. Plan them
+at intake, and have the agent prepare a kit that needs exactly four owner commands:
+
+1. the snapshot (`ddev snapshot --name <run-id>-backend-journeys`);
+2. the run (the kit's journey command, which reads the mode-600 password file);
+3. the restore (`ddev snapshot restore <run-id>-backend-journeys`);
+4. the cleanup (the kit's command with `--cleanup`: files the journeys wrote, test-account leftovers).
+
+Give the owner one command per message and wait for its result before the next. Show the long run
+command once; later messages refer to it as "step 2" and never repeat it. In one fleet run it was
+repeated, the owner started it a second time, and the overlapping runs wrote the same output
+directory and database. Make the kit's run refuse to start while its output directory or lock file
+exists. After step 4 the agent runs `t3u content-fingerprint --assert` and reads the artifacts.
 
 ## Work, recovery and safe resumption
 

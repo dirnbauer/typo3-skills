@@ -280,7 +280,9 @@ Guidelines:
 Migrated previews (Mask importer, `make:content-block`) dump raw fields; collections drawn with the
 `PageLayout/Grid` partial show empty cards for non-`tt_content` children. For one shared preview design,
 item lists with side-panel editing, link-field values and inline record labels, read
-[backend previews](references/19-backend-previews.md).
+[backend previews](references/19-backend-previews.md). On 14.3 a preview that reads a field the record
+lacks (`f:render.text` without `optional: true`) takes the page module down with `#1775553111`:
+[fields the record does not have](references/19-backend-previews.md#fields-the-record-does-not-have).
 
 
 ## Detailed Reference

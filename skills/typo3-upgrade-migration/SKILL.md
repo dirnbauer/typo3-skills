@@ -91,7 +91,8 @@ plus the open question ([lean profile](../typo3-upgrade-run/references/graph-run
 
 ## Specialist routes
 
-- Mask/content modeling → `typo3-content-blocks`
+- Mask/content modeling → `typo3-content-blocks`; check the generated backend previews on 14.3
+  ([previews that crash](../typo3-upgrade-run/references/mask-to-content-blocks.md#backend-previews-that-crash-on-143))
 - PHP APIs → `typo3-v14-reference` + `typo3-rector`
 - TypoScript/Fluid/YAML/XLIFF → `typo3-fractor`
 - Assets/Gulp/Bootstrap → `typo3-vite`

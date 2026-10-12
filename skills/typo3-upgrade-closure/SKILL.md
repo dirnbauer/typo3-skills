@@ -34,7 +34,7 @@ Start every node from `t3u node-brief --node <id>`; it carries the contract, rou
 | `markup-recovery` | One template/markup cause; outcome `http` or `visual` names the proof to rerun |
 | `interaction-recovery` | One failing journey step |
 | `quality-recovery` | One accessibility or performance regression |
-| `closure-harness-recovery` | Measurement node: repair the final instrument; the outcome names the single proof to rerun |
+| `closure-harness-recovery` | Measurement node: repair the final instrument; the outcome names the single proof to rerun. One attempt budget for every cause: [dry-run the kit](../typo3-upgrade-run/references/measurement-recipes.md#closure-kit-dry-run-before-the-epoch) before `closure-start` and route a stale epoch after a code fix through `closure-reconcile` ([budget](../typo3-upgrade-run/references/graph-runner.md#the-shared-attempt-budget)) |
 | `closure-join` | All final proofs passed on the current epoch |
 | `closure-reconcile` | Stale evidence, missing assertions or unaccepted changes; flagged **R** |
 | `contract-a-gate` | Closure certificate plus recorded human acceptance of its hash; evidence loop |
@@ -43,8 +43,9 @@ Start every node from `t3u node-brief --node <id>`; it carries the contract, rou
 
 ## Worker protocol
 
-Your input is the node brief. Write its evidence file, return one allowed outcome, and never run
-`node-open`/`node-close` or edit run state. Details: [graph runner](../typo3-upgrade-run/references/graph-runner.md).
+Your input is the node brief. Write its evidence file completely, return one allowed outcome with the
+file's SHA-256, never change the file after that, and never run `node-open`/`node-close` or edit run
+state. Details: [graph runner](../typo3-upgrade-run/references/graph-runner.md).
 Keep the evidence lean: about 120 lines of proof, earlier artifacts cited by path and hash, one probe
 artifact; at the brief's forecast (15 minutes or less) or twice it, stop and return what is proven
 plus the open question ([lean profile](../typo3-upgrade-run/references/graph-runner.md#evidence-file)).
@@ -77,7 +78,11 @@ cannot hide an untested finisher, provider state, authenticated module or warmed
 5. Verify backend login, expected module inventory, editor roles, cache/task/data write round-trip,
    runtime logs, scheduler/search as applicable, Composer audit, schema, and migration idempotence.
    Use `typo3-playwright`: non-admin save/reopen, RTE page/record/file link dialogs, actual plugin
-   previews, media/video and category fields. Test mobile filters a second time after AJAX results
+   previews, the page-module preview of every Content Block type and every collection child table
+   (migrated previews can throw on 14.3 while the frontend is identical), media/video and category
+   fields. On a `*.ddev.site` host the owner runs the login journeys
+   ([four commands](../typo3-upgrade-run/references/overnight-controller.md#who-runs-the-backend-login-journeys)),
+   and nobody uses the backend otherwise until closure is done. Test mobile filters a second time after AJAX results
    replacement and UTF-8 search/suggest when present. Verify the web PHP runtime, not only CLI.
    For migrated rich text or preset changes, require the [field round-trip proof](../typo3-content-blocks/references/rich-text-roundtrip.md).
    Standalone editor/parser results cannot close a pending authenticated backend check.

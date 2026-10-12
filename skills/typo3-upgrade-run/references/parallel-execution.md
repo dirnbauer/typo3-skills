@@ -133,7 +133,8 @@ timeouts, and a video painted an empty first frame at ~75 that the immediate re-
 
 - Run one capture or self-test at a time per machine, across all projects. The machine-wide visual lock
   serialises screenshots only, not HTTP/DOM fetches, builds or DDEV stacks; stop the stacks of projects
-  you are not measuring (`ddev stop <project>`).
+  you are not measuring (`ddev stop <project>`, and `ddev start <project>` afterwards). `ddev pause`
+  no longer exists in current DDEV; the Lighthouse quiet lane uses `ddev stop` as well.
 - Before screenshots, `capture` waits while the 1-minute load average exceeds 2× the core count
   (`T3U_LOAD_FACTOR`), at most `T3U_LOAD_WAIT_MS` (600000) and never past the deadline. It never refuses:
   it captures anyway and records the load in the capture index (`machineLoad`); strict-zero comparison

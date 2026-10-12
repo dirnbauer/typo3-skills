@@ -110,6 +110,12 @@ node renders pages (one fleet run went from 576 to 762 between two seals while t
 byte-identical). Record the time windows, counts, cause and the matching `sys_file_processedfile` rows
 as a generated-asset entry; an independent reviewer refused the seal without it.
 
+The count is part of the fingerprint body (`imageProcessingWarm.processedFileCount`), and so of its
+`fingerprintHash`, although `content-fingerprint --assert` compares only tables and the file tree.
+A target sealed before the backend journeys therefore no longer matches its own hash once they have
+rendered thumbnails. Run the journeys in the [closure kit dry run](measurement-recipes.md#closure-kit-dry-run-before-the-epoch),
+then re-seal the target epoch with the extended cumulative ledger, before `closure-start`.
+
 ## Residual findings do not block closure
 
 `closure-check` requires zero unresolved run findings. That count follows the loop gate (`loopVerdict`): only
@@ -129,7 +135,8 @@ fleet runs lost an epoch each this way. Before `closure-start`:
    [admin login](known-problems.md#logging-in-as-admin-or-opening-the-install-tool-changes-tracked-files))
    makes the epoch stale: the next proof (there `axe-proof`) closes `invalid`, `closure-harness-recovery`
    finds nothing to repair in the instrument and returns `reproof`, and the route runs
-   `target-content-epoch` again before a new `closure-start`.
+   `target-content-epoch` again before a new `closure-start`. That route spends one of the node's
+   shared attempts; when kit repairs already used them, it deadlocks (item 4).
 2. **Re-run the self-test after any environment re-seal.** `closure-start` refuses a missing or stale
    lock (`Re-run "t3u selftest-determinism" before closure-start`). Older pins accepted a stale lock,
    and `closure-check` refused the epoch as STALE only after all thirteen checks had run. Order:
@@ -137,6 +144,16 @@ fleet runs lost an epoch each this way. Before `closure-start`:
 3. **Classify untracked owner folders.** `closure-start` refuses untracked files outside the run
    directory and names their top-level paths. Add owner drafts (for example `relaunch/`) to
    `.git/info/exclude`: local, never committed, never `.gitignore`.
+4. **Dry-run the closure kit.** Kit bugs found inside the epoch spend the one shared attempt budget
+   of `closure-harness-recovery`; fix them in a [pre-epoch rehearsal](measurement-recipes.md#closure-kit-dry-run-before-the-epoch).
+   After a code fix inside the epoch, let the remaining proofs run and reach `reproof` through
+   `closure-join` → `contract-a-gate` → `closure-reconcile`
+   ([shared attempt budget](graph-runner.md#the-shared-attempt-budget)).
+5. **No backend use by the owner until closure is done.** Opening pages in the backend is enough to
+   write: Yoast (`tx_yoastseo_*`) and backend thumbnails (`sys_file_processedfile`, `_processed_`)
+   drift the content fingerprint mid-epoch. Say so before `closure-start`. To recover, restore the
+   verified snapshot, delete the stray `_processed_` files the snapshot does not cover, and run
+   `t3u content-fingerprint --assert` until it passes.
 
 The `lighthouse` check also needs floors that were fixed before the first migration node
 ([quality bars](quality-bars.md#contract-a-lighthouse-floors-decided-at-intake)); its required fields

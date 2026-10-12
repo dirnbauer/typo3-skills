@@ -102,6 +102,21 @@ edit buttons. List the items yourself:
 - Plain-text fields that hold link targets (`122`, `133#924`, `file:501`) are strings; crop them.
 - Rich text: `{data.bodytext -> f:format.stripTags() -> f:format.crop(maxCharacters: 180)}`.
 
+## Fields the record does not have
+
+On TYPO3 14.3 a preview that reads a field the record lacks takes the page module down with
+`#1775553111 Record property "X" is not available` (`Render/TextViewHelper`). Migrated previews do
+this: the Mask importer writes `{data -> f:render.text(field: 'header')}` and reads every column Mask
+exposed, and the page module also renders collection child records whose table is not hidden.
+
+- Give every `f:render.text` in a preview `optional: true`:
+  `{data -> f:render.text(field: 'header', optional: true)}`.
+- Read only fields the type's `config.yaml` defines; a column outside it goes through
+  `{data.rawRecord.<column>}` or an `f:if`.
+- Hide child tables editors should not see in the page module (`ctrl.hideTable`), as the source TCA did.
+
+Detection and the upgrade context: [Mask → Content Blocks](../../typo3-upgrade-run/references/mask-to-content-blocks.md#backend-previews-that-crash-on-143).
+
 ## Inline records in the edit form
 
 The inline (IRRE) header of each child shows the child table's label. Content Blocks picks the first
@@ -124,6 +139,7 @@ TYPO3 14 renders no thumbnail in inline headers; the page-module preview carries
 ## Verify
 
 Lint (`content-blocks:lint`), confirm no schema change (`database:updateschema '*.add,*.change'
---dry-run`) and look at the page module in both colour schemes. In a browser test the module content
+--dry-run`) and look at the page module in both colour schemes: one page per Content Block type and
+one record per collection child table, since a frontend comparison never renders a preview. In a browser test the module content
 lives in the backend's `list_frame` iframe: query that frame, not the top document. Frontend output does
 not change: compare the frontend responses before and after.
