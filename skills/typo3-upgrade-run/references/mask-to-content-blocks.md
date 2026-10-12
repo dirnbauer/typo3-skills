@@ -158,42 +158,45 @@ done
 
 ## Backend previews that crash on 14.3
 
-On one fleet run the frontend proof was green and the page module still failed on 14.3 with
-`#1775553111 Record property "X" is not available`, thrown by `typo3/cms-fluid`
-`Render/TextViewHelper`. The importer generates `templates/backend-preview.html` with
-`{data -> f:render.text(field: 'header')}` and with reads of fields the record may not have (Mask
-exposed the whole row). `f:render.text` throws when the field is not a property of the record. The
-page module also shows the records of collection child tables (for example `tx_mask_*_typed`) where
-the child table is not hidden, and the preview breaks there as well.
+On one fleet run the frontend proof was green while the 14.3 page module threw
+`#1775553111 Record property "X" is not available` from `typo3/cms-fluid` `Render/TextViewHelper`:
+721 child rows across 11 child tables failed, and other child rows rendered silently with nonsense.
 
-**Detect.** Frontend captures never reach these templates. Before the first capture, list the risky
-reads, then let the closure backend check render the page-module preview of **every** Content Block
-type and every collection child table, not only plugin previews:
+**Cause.** The importer's generated `templates/backend-preview.html` renders every collection with
+the Content Blocks partial `PageLayout/Grid`. That partial is meant for blocks with their own record
+table. For a child table defined inside a block (`tx_mask_*`), Content Blocks picks the **parent**
+block's `backend-preview.html` for the child row. Each child row was therefore rendered through its
+parent's preview, and `{data -> f:render.text(field: 'header')}` threw because the child row has no
+`header`. Child rows whose fields happened to exist rendered the parent's layout with wrong values.
+
+**Not the cause:** `ctrl.hideTable`. Mask on 12.4 set `hideTable: true` for its child tables, and
+Content Blocks sets the same.
+
+**Detect.** A frontend proof never reaches these templates. Run a page-module probe that renders
+every page carrying Content Block elements, child rows included, and require 0 exceptions (that run:
+328 pages, 522 elements). Find the generated previews that use the grid first:
 
 ```bash
-# f:render.text without optional: true, per preview template
-grep -rn 'f:render.text' packages/*/ContentBlocks/*/*/templates/backend-preview*.html | grep -v 'optional: *true'
-# child tables the page module may list: compare with the Mask TCA on the 12.4/13.4 source
-grep -rhoE 'identifier: *tx_[a-z0-9_]+' packages/*/ContentBlocks/ContentElements/*/config.yaml | awk '{print $2}' | sort -u
+grep -rl 'PageLayout/Grid' packages/*/ContentBlocks/ContentElements/*/templates/backend-preview*.html
 ```
 
-For each child table, compare `ctrl.hideTable` on the target (Configuration module, `$GLOBALS['TCA']`)
-with the Mask TCA on the 12.4 source. Where Mask hid the child table and the generated collection
-does not, the page module lists its records and renders their preview.
+**Run the probe only on a clone** (a copied DDEV project or a scratch database plus a copied
+`fileadmin`), never on the project whose fingerprint is sealed. Rendering previews with `f:image`
+writes derivatives: in that run `plan2net/webp` created `.webp` sidecars in the main `fileadmin` and
+broke a sealed content fingerprint.
 
-**Fix.** Two candidates; apply both where they fit:
+**Fix**, per element, decided by what 12.4 had:
 
-1. Add `optional: true` to every `f:render.text` in a backend preview
-   (`{data -> f:render.text(field: 'header', optional: true)}`), and remove or guard reads of fields
-   the type does not define: `{data.rawRecord.<column>}` for a column only Mask exposed (fix 3 above),
-   `f:if` around everything else.
-2. Restore the child-table visibility the Mask TCA had on 12.4: when Mask hid the child table, set
-   `ctrl.hideTable` for the generated one (a TCA override in the sitepackage), so the page module no
-   longer lists those records.
+1. **12.4 had a Mask backend template** (the Mask `backend` template folder): restore it as the
+   `Content` section of `backend-preview.html`. Render the children in a plain `f:for` loop over the
+   collection, never through `PageLayout/Grid`.
+2. **12.4 had none:** delete the generated `backend-preview.html`. Content Blocks then falls back to
+   the TYPO3 standard preview, which matches what editors saw on 12.4.
+3. In TYPO3 14 backend templates, use `f:sanitize.html` instead of `f:format.html`, which throws
+   `#1686813703` in the page module.
 
-Prove it in the page module: one page per Content Block type, one record per collection child table,
-in both colour schemes; the frame content lives in the backend's `list_frame` iframe
-([backend previews](../../typo3-content-blocks/references/19-backend-previews.md#verify)).
+Then rerun the clone probe until it reports 0 exceptions, and compare one page per element type with
+the 12.4 page module ([backend previews](../../typo3-content-blocks/references/19-backend-previews.md#verify)).
 
 ## Proving it worked
 

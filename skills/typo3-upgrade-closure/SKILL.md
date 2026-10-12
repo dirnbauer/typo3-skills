@@ -78,9 +78,9 @@ cannot hide an untested finisher, provider state, authenticated module or warmed
 5. Verify backend login, expected module inventory, editor roles, cache/task/data write round-trip,
    runtime logs, scheduler/search as applicable, Composer audit, schema, and migration idempotence.
    Use `typo3-playwright`: non-admin save/reopen, RTE page/record/file link dialogs, actual plugin
-   previews, the page-module preview of every Content Block type and every collection child table
-   (migrated previews can throw on 14.3 while the frontend is identical), media/video and category
-   fields. On a `*.ddev.site` host the owner runs the login journeys
+   previews, a page-module probe of every page with Content Block elements, child rows included, with
+   0 exceptions (migrated previews can throw on 14.3 while the frontend is identical; probe on a
+   clone, since `f:image` previews write into `fileadmin`), media/video and category fields. On a `*.ddev.site` host the owner runs the login journeys
    ([four commands](../typo3-upgrade-run/references/overnight-controller.md#who-runs-the-backend-login-journeys)),
    and nobody uses the backend otherwise until closure is done. Test mobile filters a second time after AJAX results
    replacement and UTF-8 search/suggest when present. Verify the web PHP runtime, not only CLI.

@@ -244,9 +244,10 @@ epoch spend it; one fleet closure deadlocked after three kit repairs. Before `cl
 whole closure kit once against the target, as a pre-epoch rehearsal whose results prove nothing:
 
 1. Snapshot, then run every component test and every backend check of the kit. The backend checks
-   render the page-module preview of **every** Content Block type and every collection child table,
-   not only plugin previews: a migrated preview can throw on 14.3 while the frontend is identical
-   ([previews that crash](mask-to-content-blocks.md#backend-previews-that-crash-on-143)).
+   include a page-module probe of every page with Content Block elements, child rows included, with
+   0 exceptions: a migrated preview can throw on 14.3 while the frontend is identical
+   ([previews that crash](mask-to-content-blocks.md#backend-previews-that-crash-on-143)). Run that
+   probe on a clone: previews with `f:image` write derivatives (and WebP sidecars) into `fileadmin`.
 2. Fix every kit failure in the kit (timings, DOM counts, approved redirect rules, selectors) and
    commit it. A site defect the rehearsal finds goes to its recovery node now, not inside the epoch.
 3. Restore the snapshot, delete the files the journeys wrote, and run

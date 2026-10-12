@@ -219,14 +219,19 @@ gives the problem, how to detect it and how to fix it; the detail lives in the l
 1. **Migrated Content Blocks backend previews crash on 14.3.**
    - *Problem.* The page module throws `#1775553111 Record property "X" is not available` from
      `typo3/cms-fluid` `Render/TextViewHelper`. The Mask importer
-     (`nhovratov/mask-to-content-blocks`) generates `backend-preview.html` templates with
-     `{data -> f:render.text(field: 'header')}` and reads of fields the record may not have. The page
-     module can also show collection child records (for example `tx_mask_*_typed`), and the preview
-     breaks there as well.
-   - *Detect.* The closure backend check renders the page-module preview of **every** Content Block
-     type and every collection child table, not only plugin previews. A frontend proof never catches
-     it: the frontend templates do not use the failing reads.
-   - *Fix.* [Mask → Content Blocks: backend previews that crash on 14.3](mask-to-content-blocks.md#backend-previews-that-crash-on-143).
+     (`nhovratov/mask-to-content-blocks`) generates previews that render every collection with the
+     Content Blocks partial `PageLayout/Grid`. For a child table defined inside a block (`tx_mask_*`),
+     Content Blocks then renders the child row through the **parent** block's `backend-preview.html`,
+     and `{data -> f:render.text(field: 'header')}` throws. In that run 721 child rows across 11
+     child tables failed; others rendered silently with nonsense. `ctrl.hideTable` is not the cause.
+   - *Detect.* A page-module probe that renders every page with Content Block elements, child rows
+     included (328 pages, 522 elements there), must report 0 exceptions. Run it on a clone only:
+     previews with `f:image` let `plan2net/webp` write sidecars into the main `fileadmin`, which
+     broke a sealed fingerprint. A frontend proof never catches this.
+   - *Fix.* Where 12.4 had a Mask backend template, restore it as the `Content` section with the
+     children in a plain `f:for` loop; where it had none, delete the generated `backend-preview.html`
+     so the TYPO3 standard preview applies; use `f:sanitize.html`, not `f:format.html`
+     (`#1686813703`). Detail: [backend previews that crash on 14.3](mask-to-content-blocks.md#backend-previews-that-crash-on-143).
 2. **`closure-harness-recovery` has one shared attempt budget across all causes.**
    - *Problem.* `max_node_attempts` (3) counts every visit, whatever edge brought it. Three kit
      repairs (a slider transition timing, a `robots.txt` DOM count, a missing approved-redirect rule)

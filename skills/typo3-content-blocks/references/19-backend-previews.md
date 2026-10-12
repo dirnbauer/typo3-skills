@@ -102,18 +102,22 @@ edit buttons. List the items yourself:
 - Plain-text fields that hold link targets (`122`, `133#924`, `file:501`) are strings; crop them.
 - Rich text: `{data.bodytext -> f:format.stripTags() -> f:format.crop(maxCharacters: 180)}`.
 
-## Fields the record does not have
+## Child rows rendered through the parent's preview
 
-On TYPO3 14.3 a preview that reads a field the record lacks takes the page module down with
-`#1775553111 Record property "X" is not available` (`Render/TextViewHelper`). Migrated previews do
-this: the Mask importer writes `{data -> f:render.text(field: 'header')}` and reads every column Mask
-exposed, and the page module also renders collection child records whose table is not hidden.
+On TYPO3 14.3 a migrated preview can take the page module down with `#1775553111 Record property
+"X" is not available` (`Render/TextViewHelper`). The Mask importer's previews render every
+collection with `PageLayout/Grid`, which is meant for blocks with their own record table. For a child
+table defined inside a block, Content Blocks picks the **parent** block's `backend-preview.html` for
+the child row, so `{data -> f:render.text(field: 'header')}` runs against a row that has no `header`.
+Child rows whose fields happen to exist render silently with wrong output. `ctrl.hideTable` is not
+the cause.
 
-- Give every `f:render.text` in a preview `optional: true`:
-  `{data -> f:render.text(field: 'header', optional: true)}`.
-- Read only fields the type's `config.yaml` defines; a column outside it goes through
-  `{data.rawRecord.<column>}` or an `f:if`.
-- Hide child tables editors should not see in the page module (`ctrl.hideTable`), as the source TCA did.
+- Where the source had its own backend template, use it as the `Content` section and list the
+  children in a plain `f:for` loop ([collections](#collections-list-the-items-not-the-core-grid)),
+  never through `PageLayout/Grid`.
+- Where the source had none, delete the generated `backend-preview.html`; the TYPO3 standard
+  preview is what editors saw before.
+- Use `f:sanitize.html`, not `f:format.html`, in backend templates on TYPO3 14 (`#1686813703`).
 
 Detection and the upgrade context: [Mask → Content Blocks](../../typo3-upgrade-run/references/mask-to-content-blocks.md#backend-previews-that-crash-on-143).
 
@@ -139,7 +143,9 @@ TYPO3 14 renders no thumbnail in inline headers; the page-module preview carries
 ## Verify
 
 Lint (`content-blocks:lint`), confirm no schema change (`database:updateschema '*.add,*.change'
---dry-run`) and look at the page module in both colour schemes: one page per Content Block type and
-one record per collection child table, since a frontend comparison never renders a preview. In a browser test the module content
+--dry-run`) and look at the page module in both colour schemes. After a migration, probe every page
+that carries Content Block elements, child rows included, and require 0 exceptions; a frontend
+comparison never renders a preview. Probe on a clone: previews with `f:image` write image derivatives
+(and sidecars of WebP extensions) into `fileadmin`. In a browser test the module content
 lives in the backend's `list_frame` iframe: query that frame, not the top document. Frontend output does
 not change: compare the frontend responses before and after.
