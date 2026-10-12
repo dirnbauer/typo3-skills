@@ -928,6 +928,24 @@
       "files": []
     },
     {
+      "id": "visual-editor-only-on-explicit-yes",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Upgrade our TYPO3 12 site to 14.3 and make the backend feel modern. The friendsoftypo3/visual-editor package would install cleanly, so maybe editors could click into the page too?",
+      "expected_output": "Asks the owner one explicit yes/no question about in-page editing in the round-1 intake questions, default no, and does not treat the installable package, the modern wish or the hedged maybe as a yes. Only a recorded yes opens visual-editor-opt-in after the countersigned Contract A gate as Contract B work; no or no answer closes it not-applicable with the recorded answer and installs nothing.",
+      "assertions": [
+        "Asks one explicit Visual Editor yes/no question in the round-1 intake questions with default no",
+        "Does not infer a yes from the installable package, a modern-backend wish or a hedged maybe",
+        "Records the answer as an approval or decision (matrix row 38)",
+        "On no or no answer closes visual-editor-opt-in not-applicable via the read-only applicability mode and installs nothing",
+        "On yes runs the node only after Contract A with an intent approval, snapshot, derived B baseline and typo3-visual-editor as owner",
+        "On yes grants editor-group rights through file-based TSconfig plus an idempotent, deployable command with a backup for be_groups-only settings",
+        "On yes proves anonymous visitor HTML unchanged except documented differences and leaves the backend login test to the owner",
+        "Deploys nothing; the handover names a staging rollout only"
+      ],
+      "files": []
+    },
+    {
       "id": "explicit-modern-frontend-quality-profile",
       "kind": "behaviour",
       "status": "proposed",

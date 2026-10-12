@@ -39,6 +39,10 @@ The standard Contract B nodes `structured-data-enrichment` and `webmcp-readiness
 conditional: they run in every upgrade. They never close `not-applicable` for unrequested scope;
 only a reviewed impossibility (no public frontend, for example) qualifies.
 
+`visual-editor-opt-in` is the reverse: it opens for implementation only with the owner's recorded
+yes (matrix row 38). No, or no answer, is closed with `--applicability-only` as `not-applicable`,
+citing the recorded answer; that mode can never pass, so nothing is installed.
+
 The shipped graph requires a real, nonempty run-relative artifact at node closure and records its
 SHA-256. `graph-validate` checks passed/skipped node artifacts against those recorded hashes.
 

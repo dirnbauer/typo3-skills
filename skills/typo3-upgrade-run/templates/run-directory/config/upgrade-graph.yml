@@ -376,7 +376,8 @@ nodes:
     objective: "Migrate RTE presets and Visual Editor configuration and prove stored formatting survives save and reopen."
     done: "Rich text round-trips through the authenticated backend unchanged; not-applicable when unused."
     evidence: nodes/rte-visual-editor/evidence.md
-    # CKEditor is the default RTE owner; delegate inline editing only when installed.
+    # CKEditor is the default RTE owner; delegate inline editing only when already installed.
+    # A new Visual Editor install is never P10 work: it is the P14 visual-editor-opt-in node.
     skill: typo3-ckeditor5
     phase: P10
     mutation: stateful
@@ -641,13 +642,28 @@ nodes:
     resources: [browser-proof]
     approval: required
     outcomes: [pass, blocked]
+  # Opt-in only: runs solely on the owner's explicit round-1 yes, recorded as an intent approval.
+  # No, no answer, an installable package or a "modern" request closes it not-applicable via
+  # node-open --applicability-only, which can never pass or mutate.
+  visual-editor-opt-in:
+    objective: "Only on the owner's explicit yes at intake: install the Visual Editor, adapt templates/Content Blocks/components and grant editor groups its permissions, as Contract B work against a derived B baseline."
+    done: "Yes: owner-run backend test passes, visitor HTML unchanged except documented differences, rights in TSconfig plus an idempotent command with backup, B loop green. No or no answer: not-applicable citing the recorded answer, nothing installed."
+    evidence: nodes/visual-editor-opt-in/evidence.md
+    skill: typo3-visual-editor
+    phase: P14
+    mutation: stateful
+    resources: [composer, ddev-stateful, browser-proof, backend-session]
+    approval: required
+    evidence_loop: required
+    requires: [contract-a-gate]
+    outcomes: [pass, not-applicable, blocked]
   elevation-join:
-    objective: "Join the two standard Contract B branches, structured data and WebMCP, before handover."
-    done: "Both branches passed; a not-applicable branch carries a reviewed impossibility reason, never a missing request."
+    objective: "Join the two standard Contract B branches, structured data and WebMCP, and the opt-in Visual Editor branch before handover."
+    done: "All three branches closed; a not-applicable standard branch carries a reviewed impossibility reason, never a missing request; a not-applicable Visual Editor branch cites the owner's recorded no or missing answer."
     evidence: nodes/elevation-join/evidence.md
     skill: typo3-upgrade-closure
     phase: P14
-    requires: [structured-data-enrichment, webmcp-readiness]
+    requires: [structured-data-enrichment, webmcp-readiness, visual-editor-opt-in]
     outcomes: [pass, blocked]
   handover:
     objective: "Hand over locally: project, branch, HEAD, versions, dataset, backups, graph hash, tests, declared changes, risks and any runtime or attempt extension with its approval."
@@ -846,7 +862,7 @@ edges:
   - { id: closure-harness-blocked, from: closure-harness-recovery, outcome: blocked, to: stopped }
   - { id: closure-joined, from: closure-join, outcome: pass, to: contract-a-gate }
   - { id: closure-join-blocked, from: closure-join, outcome: blocked, to: stopped }
-  - { id: contract-pass, from: contract-a-gate, outcome: pass, to: [structured-data-enrichment, webmcp-readiness] }
+  - { id: contract-pass, from: contract-a-gate, outcome: pass, to: [structured-data-enrichment, webmcp-readiness, visual-editor-opt-in] }
   - { id: contract-findings, from: contract-a-gate, outcome: findings, to: closure-reconcile }
   - { id: contract-invalid, from: contract-a-gate, outcome: invalid, to: closure-harness-recovery }
   - { id: contract-blocked, from: contract-a-gate, outcome: blocked, to: stopped }
@@ -865,5 +881,8 @@ edges:
   - { id: webmcp-readiness-blocked, from: webmcp-readiness, outcome: blocked, to: stopped }
   - { id: webmcp-readiness-retry, from: webmcp-readiness-recovery, outcome: pass, to: webmcp-readiness, retry: true, max_traversals: 2 }
   - { id: webmcp-readiness-recovery-blocked, from: webmcp-readiness-recovery, outcome: blocked, to: stopped }
+  - { id: visual-editor-opt-in-pass, from: visual-editor-opt-in, outcome: pass, to: elevation-join }
+  - { id: visual-editor-opt-in-na, from: visual-editor-opt-in, outcome: not-applicable, to: elevation-join }
+  - { id: visual-editor-opt-in-blocked, from: visual-editor-opt-in, outcome: blocked, to: stopped }
   - { id: elevation-joined, from: elevation-join, outcome: pass, to: handover }
   - { id: elevation-join-blocked, from: elevation-join, outcome: blocked, to: stopped }

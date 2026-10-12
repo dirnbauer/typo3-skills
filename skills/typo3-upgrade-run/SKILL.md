@@ -151,6 +151,11 @@ pages stay unchanged except the declared enrichment. Ask for their scope in the 
 questions. `not-applicable` is only for a reviewed impossibility (no public frontend, for example),
 never for "not requested" ([specialist branches](references/specialist-branches.md)).
 
+The Visual Editor (in-page editing) is the opposite: **opt-in only**. Ask one yes/no question in
+round 1, default no, and never infer a yes from the site, the package or a "modern" request. Only
+an explicit, recorded yes opens `visual-editor-opt-in` after Contract A; no or no answer closes it
+`not-applicable` and nothing is installed ([opt-in branch](references/specialist-branches.md#opt-in-visual-editor-branch)).
+
 ## Node owners
 
 Load only the skill the brief names:
@@ -164,8 +169,9 @@ Load only the skill the brief names:
 | `typo3-upgrade-retrospective` | audits of earlier runs; not a graph node | problem/cause/fix matrix + proposals |
 
 Specialist nodes name `typo3-content-blocks`, `typo3-vite`, `typo3-solr`, `typo3-ckeditor5`,
-`typo3-playwright`, `typo3-backend-rights`, `typo3-structured-data` and `typo3-webmcp`. Use
-`typo3-rector`, `typo3-fractor`, `typo3-visual-editor` and `typo3-security` inside the node that
+`typo3-playwright`, `typo3-backend-rights`, `typo3-structured-data`, `typo3-webmcp` and
+`typo3-visual-editor` (the opt-in P14 node). Use `typo3-rector`, `typo3-fractor`, `typo3-security`
+and, for an already installed Visual Editor in P10, `typo3-visual-editor` inside the node that
 needs them. Netresearch's `typo3-project-upgrade` supplies migration techniques, not a second parent
 orchestrator; `typo3-upgrade-effort-model` supplies estimates, not longer deadlines. Never execute
 imported skills sequentially or nest their orchestration loops.

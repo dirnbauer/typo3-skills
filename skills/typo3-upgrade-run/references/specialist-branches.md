@@ -5,7 +5,8 @@ the parent workflow; each returns one evidence-backed result inside the shared d
 
 Most specialist branches are conditional: Solr, Content Blocks or an RTE branch closes
 `not-applicable` when the feature is absent. The P14 structured-data and WebMCP branches are not:
-they are a standard part of every run.
+they are a standard part of every run. The P14 Visual Editor branch is the opposite: it runs only
+on the owner's explicit yes.
 
 ## Standard Contract B branches
 
@@ -30,6 +31,40 @@ declared enrichment (the added JSON-LD, the WebMCP registrations or form annotat
 - **`not-applicable`** only for a genuine impossibility with a reviewed reason, for example a
   project with no public frontend. "Not requested", "no time" and "nobody asked" are not reasons;
   a missing approval waits, and a deadline problem is re-forecast and reported.
+
+## Opt-in Visual Editor branch
+
+In-page editing with `friendsoftypo3/visual-editor` is strictly optional. It changes templates and
+backend permissions, so it is never part of an upgrade unless the owner asks for it.
+
+- **Ask once, default no.** Put one question into the
+  [round-1 questions](overnight-controller.md#batch-the-owner-decisions): "Do you want editors to
+  edit content directly on the page (TYPO3 Visual Editor)? It changes page templates and editor
+  permissions. Default: no." Record the question and the answer as given (matrix row 38).
+- **Never inferred.** An installable package, a site that looks ready, a Contract B "modern" or
+  "editor-friendly" request, or an earlier project's answer is not a yes. Only an explicit yes
+  from the owner in this run is.
+- **No, or no answer:** `visual-editor-opt-in` opens with `--applicability-only` and closes
+  `not-applicable`, its evidence quoting the recorded answer. Nothing is installed or changed.
+  Unlike the standard branches, a missing answer does not hold the node.
+- **Yes:** the node opens with that intent approval after the countersigned Contract A gate, as
+  Contract B work with a snapshot and a derived B baseline, owned by `typo3-visual-editor`:
+  1. Install the latest compatible `friendsoftypo3/visual-editor` via DDEV Composer.
+  2. Adapt page templates, Content Blocks and components per the skill (`f:render.text`,
+     content areas, `record-transformation`).
+  3. Give the editor groups the module, table, field and page permissions with
+     `typo3-backend-rights`: file-based TSconfig in the sitepackage, plus one idempotent,
+     deployable command for settings that live only in `be_groups`, which writes a backup first.
+  4. Prove anonymous visitor HTML unchanged against the B baseline, except documented
+     differences, each accepted per class.
+  5. The owner runs the backend editing test with a non-admin editor
+     ([login journeys](overnight-controller.md#who-runs-the-backend-login-journeys)); agents do not
+     log in with passwords.
+  6. Staging only: the [handover](deployment-handover.md) names the TSconfig and the command for
+     a staging rollout; the run deploys nothing, and live waits for the owner after staging.
+
+A Visual Editor that is **already installed** is not this branch: P10 keeps it working
+(`rte-visual-editor`, [loop 210](feature-upgrades.md#loop-210--visual-editor)).
 
 ## Redirect module and backend rights
 

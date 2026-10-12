@@ -2,7 +2,9 @@
 
 Track `elevation`. Contract B. Two branches are standard in every upgrade run: the graph nodes
 `structured-data-enrichment` and `webmcp-readiness` ([standard branches](../specialist-branches.md#standard-contract-b-branches)),
-scoped in the round-1 intake questions and joined at `elevation-join` before handover. The loops
+scoped in the round-1 intake questions and joined at `elevation-join` before handover. The
+`visual-editor-opt-in` node joins there too, but runs only on the owner's explicit round-1 yes and
+otherwise closes `not-applicable` ([opt-in branch](../specialist-branches.md#opt-in-visual-editor-branch)). The loops
 below are optional and run only after the user explicitly requests a separate improvement
 programme.
 

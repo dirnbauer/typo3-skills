@@ -4,8 +4,10 @@ Track `report`.
 
 ## Preconditions
 P13 closed. The standard structured-data and WebMCP branches passed `elevation-join` (or carry a
-reviewed impossibility reason). Any separately requested Contract B tracks are green or explicitly
-stopped.
+reviewed impossibility reason). `visual-editor-opt-in` passed, or closed `not-applicable` with the
+owner's recorded no or missing answer; after a yes the handover names its staging rollout
+(TSconfig, the idempotent rights command and its backup). Any separately requested Contract B
+tracks are green or explicitly stopped.
 
 ## Steps
 1. Update only README, Documentation, changelog, or operator instructions directly made inaccurate

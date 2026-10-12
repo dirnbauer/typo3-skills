@@ -83,6 +83,7 @@ answer as given ([approval matrix](../rules/40-approval-matrix.md)).
 | Backend test accounts: a DDEV-only throwaway admin and the non-admin editors; on a `*.ddev.site` host the owner runs the login journeys | [test accounts](#prepare-test-accounts-once), [login journeys](#who-runs-the-backend-login-journeys) |
 | Delegation: how many parallel workers (`parallel_approval`, `max_workers`) | [admission](#admission-and-prediction) |
 | Commits per phase batch, and whether the run directory may be committed; pushes stay separate | [approval matrix](../rules/40-approval-matrix.md#401-the-matrix), rows 26–27 |
+| Visual Editor (optional, default **no**): one explicit yes/no; never inferred, no answer counts as no | [opt-in branch](specialist-branches.md#opt-in-visual-editor-branch), matrix row 38 |
 | Standard Contract B scope: the structured-data types (at least Organization/WebSite, WebPage, BreadcrumbList, plus the eligible types found) and the WebMCP tools (read-only navigation/lookup, prepare-only forms, Permissions-Policy); the scope, never whether | `structured-data-inventory`, `webmcp-inventory`, [standard branches](specialist-branches.md#standard-contract-b-branches) |
 
 Round 1 **must** include the predictable approvals below, before any symptom shows: each one asked
