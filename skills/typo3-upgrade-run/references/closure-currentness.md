@@ -137,10 +137,24 @@ fleet runs lost an epoch each this way. Before `closure-start`:
    finds nothing to repair in the instrument and returns `reproof`, and the route runs
    `target-content-epoch` again before a new `closure-start`. That route spends one of the node's
    shared attempts; when kit repairs already used them, it deadlocks (item 4).
-2. **Re-run the self-test after any environment re-seal.** `closure-start` refuses a missing or stale
-   lock (`Re-run "t3u selftest-determinism" before closure-start`). Older pins accepted a stale lock,
-   and `closure-check` refused the epoch as STALE only after all thirteen checks had run. Order:
-   re-seal, self-test, `closure-start`.
+2. **Re-run the self-test after any environment re-seal.** A harness fix changes `harness.sourceHash`,
+   which the sealed environment fingerprint hashes, so `env-fingerprint`, `loop-open`, every
+   comparison, `gate` and `closure-start` refuse the run as drifted. The owner re-seals it with a
+   granted intent approval:
+
+   ```bash
+   t3u env-fingerprint --reseal --approval APR-NNN --reason "harness fix: <what it changes>"
+   ```
+
+   Only `harness.version`, `harness.sourceHash` and `harness.bookkeepingHash` may change; any other
+   difference from the sealed fingerprint (browser, fonts, Node, `depsLockHash`, …) refuses, and a
+   missing, declined or edited approval refuses. The re-seal appends the old and new fingerprint and
+   harness hashes, the approval id and the SHA-256 of its file to `fingerprints.environment_reseals`,
+   journals an `environment-reseal` event, and marks the self-test `stale`: `capture`, every
+   comparison and `closure-start` refuse until `selftest-determinism` has run again. `validate-run`
+   fails when a recorded re-seal's approval was edited afterwards. Order: re-seal, self-test,
+   `closure-start`. Older pins accepted a stale lock, and `closure-check` refused the epoch as STALE
+   only after all thirteen checks had run.
 3. **Classify untracked owner folders.** `closure-start` refuses untracked files outside the run
    directory and names their top-level paths. Add owner drafts (for example `relaunch/`) to
    `.git/info/exclude`: local, never committed, never `.gitignore`.

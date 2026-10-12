@@ -12,7 +12,7 @@
 import { parse, helpText } from './lib/cli/args.mjs';
 import { runCommand } from './lib/cli/command.mjs';
 import { EXIT } from './lib/cli/exit-codes.mjs';
-import { init, runtimeSeal, doctor, status, envFingerprint, contentFingerprint } from './lib/actions/core.mjs';
+import { init, runtimeSeal, runtimeExtend, doctor, status, envFingerprint, contentFingerprint } from './lib/actions/core.mjs';
 import { discoverUrls } from './lib/actions/discover.mjs';
 import { capture } from './lib/actions/capture.mjs';
 import {
@@ -32,7 +32,7 @@ import {
   validateRun,
 } from './lib/actions/lifecycle.mjs';
 import {
-  graphInit, graphNext, graphStatus, graphValidate, graphForecast, nodeClose, nodeOpen,
+  graphInit, graphNext, graphStatus, graphValidate, graphForecast, nodeAttemptsExtend, nodeClose, nodeOpen,
 } from './lib/actions/graph.mjs';
 import { graphReport, nodeBrief } from './lib/actions/runner.mjs';
 
@@ -40,6 +40,7 @@ const ACTIONS = {
   'resource-run': resourceRun,
   init,
   'runtime-seal': runtimeSeal,
+  'runtime-extend': runtimeExtend,
   doctor,
   status,
   'graph-init': graphInit,
@@ -49,6 +50,7 @@ const ACTIONS = {
   'graph-forecast': graphForecast,
   'graph-report': graphReport,
   'node-brief': nodeBrief,
+  'node-attempts-extend': nodeAttemptsExtend,
   'node-open': nodeOpen,
   'node-close': nodeClose,
   'validate-run': validateRun,

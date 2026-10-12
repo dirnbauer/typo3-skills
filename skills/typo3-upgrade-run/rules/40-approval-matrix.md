@@ -51,6 +51,9 @@ Use `t3u approval --stage intent ...` and `t3u approval --stage acceptance --evi
 | 31 | Consolidate normal editors into one user-facing main backend group | no | user | once per project topology; user memberships remain separate decisions |
 | 32 | Apply dbdoctor fixes (curated SQL) to the dataset before Baseline A | no | user | **per finding group** (check × table), with rendered before/after for medium/high-risk groups; the round-1 policy says whether groups are asked at all ([database health](../references/database-health.md#classification-at-intake)) |
 | 33 | Run dbdoctor `--mode=execute` or interactive `e` on a database that is kept | **not grantable** | — | only the restored probe executes; fixes replay curated SQL in one transaction |
+| 34 | Extend or waive the sealed migration cutoff and deadline | no | user (owner) | per extension: one intent approval, recorded with `t3u runtime-extend` ([runtime sizing](../references/runtime-sizing.md#owner-approved-extension-or-waiver)) |
+| 35 | Re-seal the environment fingerprint after a harness fix | no | user (owner) | per re-seal: one intent approval, recorded with `t3u env-fingerprint --reseal`; only the harness identity may change, and the self-test runs again before the next capture ([closure currentness](../references/closure-currentness.md#epoch-order-what-makes-a-new-epoch-stale)) |
+| 36 | Give one ready node whose shared attempt budget is spent more attempts | no | user (owner) | per extension: one intent approval whose scope names the node, recorded with `t3u node-attempts-extend`; retry edges, `max_traversals` and `max_total_retries` stay unchanged ([graph runner](../references/graph-runner.md#owner-approved-extra-attempts)) |
 
 ## 40.2 Approval granularity for rendering changes
 

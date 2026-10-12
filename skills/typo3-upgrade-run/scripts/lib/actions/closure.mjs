@@ -12,6 +12,7 @@ import { verifyBaseline } from '../run/lockfile.mjs';
 import { StateStore } from '../run/state.mjs';
 import { featurePlanIssues, featureCoverageIssues } from '../run/feature-contracts.mjs';
 import { assertSelftestValid } from '../cli/command.mjs';
+import { describeRuntimeWindow, resolveRuntime, sealedRuntimeWindow } from '../run/runtime.mjs';
 
 const exec = promisify(execFile);
 export const CLOSURE_CHECKS = Object.freeze([
@@ -101,8 +102,9 @@ export async function closureStart({ paths, log }) {
     throw new PreconditionError(`Re-run "t3u selftest-determinism" before closure-start: ${err.message}`);
   }
   const { context, subject } = await currentSubject(paths);
-  if (context.state.contract_a.status !== 'closed' && (!Number.isFinite(Date.parse(context.state.runtime?.deadline_at)) || Date.now() >= Date.parse(context.state.runtime.deadline_at))) {
-    throw new PreconditionError('The overnight deadline has passed; a new proof epoch cannot extend the run.');
+  const window = (await resolveRuntime(paths, context.state)).window;
+  if (context.state.contract_a.status !== 'closed' && (!Number.isFinite(Date.parse(context.state.runtime?.deadline_at)) || Date.now() >= window.deadlineMs)) {
+    throw new PreconditionError('The overnight deadline has passed; a new proof epoch cannot extend the run. Only the owner can, by a recorded approval (t3u runtime-extend).');
   }
   if (context.state.graph.nodes?.['migration-join']?.status !== 'passed'
     || context.state.graph.nodes?.['target-content-epoch']?.status !== 'passed') {
@@ -131,24 +133,25 @@ export async function readClosureArtifact(root, reference) {
   return bytes;
 }
 
-export function timelyVerification(manifest, epoch, state, now = Date.now()) {
+/** "Before the deadline" means the effective one: sealed, or extended or waived by a verified owner approval. */
+export function timelyVerification(manifest, epoch, state, now = Date.now(), window = sealedRuntimeWindow(state.runtime)) {
   const verification = state.contract_a?.verification;
-  const at = Date.parse(verification?.at), deadline = Date.parse(state.runtime?.deadline_at);
-  return Boolean(verification?.evidence_ref && Number.isFinite(at) && Number.isFinite(deadline)
-    && at < deadline && at <= now && Date.parse(epoch?.createdAt) <= at
+  const at = Date.parse(verification?.at), deadline = window.deadlineMs;
+  return Boolean(verification?.evidence_ref && Number.isFinite(at) && Number.isFinite(Date.parse(state.runtime?.deadline_at))
+    && !Number.isNaN(deadline) && at < deadline && at <= now && Date.parse(epoch?.createdAt) <= at
     && verification.epoch_hash === epoch?.hash
     && verification.manifest_hash === `sha256:${sha256(JSON.stringify(manifest))}`
     && Array.isArray(manifest?.checks) && manifest.checks.length === CLOSURE_CHECKS.length
     && manifest.checks.every(c => c && Number.isFinite(Date.parse(c.finishedAt)) && Date.parse(c.finishedAt) <= at));
 }
 
-export function closureIssues(manifest, epoch, subject, state, now = Date.now()) {
+export function closureIssues(manifest, epoch, subject, state, now = Date.now(), window = sealedRuntimeWindow(state?.runtime)) {
   const object = value => value && typeof value === 'object' && !Array.isArray(value);
   if (![manifest, epoch, subject, state].every(object)) return ['closure, epoch, subject and state must be objects'];
   const issues = [];
   if (!Number.isFinite(Date.parse(epoch.createdAt)) || Date.parse(epoch.createdAt) > now) issues.push('invalid epoch timestamp');
   if (state.contract_a?.status !== 'closed' && (!Number.isFinite(Date.parse(state.runtime?.deadline_at))
-    || (now >= Date.parse(state.runtime.deadline_at) && !timelyVerification(manifest, epoch, state, now)))) {
+    || (now >= window.deadlineMs && !timelyVerification(manifest, epoch, state, now, window)))) {
     issues.push('sealed runtime deadline missing or exhausted without a timely verified receipt');
   }
   const { hash, ...body } = epoch;
@@ -190,7 +193,8 @@ export async function closureCheck({ values, paths, log }) {
   const manifest = JSON.parse(manifestBytes);
   const epoch = JSON.parse(await readClosureArtifact(paths.root, manifest?.epochRef));
   const { context, subject, features } = await currentSubject(paths);
-  const issues = closureIssues(manifest, epoch, subject, context.state);
+  const window = (await resolveRuntime(paths, context.state)).window;
+  const issues = closureIssues(manifest, epoch, subject, context.state, Date.now(), window);
   if (issues.length) throw new InvalidRunError(`Closure refused:\n  - ${issues.join('\n  - ')}`);
   for (const key of ['coverage', 'backup', 'restore']) {
     if (`sha256:${sha256(await readClosureArtifact(paths.root, manifest[`${key}Ref`]))}` !== manifest[`${key}Sha256`]) {
@@ -216,6 +220,7 @@ export async function closureCheck({ values, paths, log }) {
     canonicalManifestHash: `sha256:${sha256(JSON.stringify(manifest))}`,
     manifestHash: `sha256:${sha256(manifestBytes)}`,
     proofCompletedAt: Math.max(...manifest.checks.map(c => Date.parse(c.finishedAt))),
+    runtimeExtension: describeRuntimeWindow(window),
     message: 'closure evidence current and complete' };
 }
 
@@ -224,9 +229,10 @@ export async function closureVerify({ values, paths, log, journal }) {
   const at = new Date().toISOString();
   const verification = { at, evidence_ref: checked.evidence, epoch_hash: checked.epoch,
     manifest_hash: checked.canonicalManifestHash };
-  await new StateStore(paths).transaction(state => {
+  await new StateStore(paths).transaction(async state => {
     if (sha256(JSON.stringify(state)) !== checked.stateRevision) throw new PreconditionError('State changed during verification; check again.');
-    if (state.contract_a.status === 'closed' || Date.parse(at) >= Date.parse(state.runtime.deadline_at)) {
+    const window = (await resolveRuntime(paths, state)).window;
+    if (state.contract_a.status === 'closed' || Date.parse(at) >= window.deadlineMs) {
       throw new PreconditionError('Record overnight verification before the deadline, while Contract A is open.');
     }
     state.contract_a.verification = verification;
@@ -234,7 +240,9 @@ export async function closureVerify({ values, paths, log, journal }) {
   });
   await journal?.append('graph', { action: 'verified-awaiting-acceptance', ...verification });
   log.success('Verification recorded within the overnight budget. Contract A remains open, awaiting actual human acceptance.');
-  return { exitCode: EXIT.PASS, verdict: 'pass', verification, message: 'verified awaiting acceptance; no deployment authorized' };
+  if (checked.runtimeExtension) log.info?.(`Runtime ${checked.runtimeExtension}: name it and its approval in the closure certificate and handover.`);
+  return { exitCode: EXIT.PASS, verdict: 'pass', verification, runtimeExtension: checked.runtimeExtension,
+    message: 'verified awaiting acceptance; no deployment authorized' };
 }
 
 export function validClosureAcceptance(acceptance, { runId, approvalId, evidence, manifestHash, proofCompletedAt }, now = Date.now()) {
@@ -267,12 +275,13 @@ async function isClosureManifest(root, reference) {
 }
 
 export async function verifyRecordedClosureAcceptance(paths, state, now = Date.now()) {
-  const closedAt = Date.parse(state.contract_a?.closed_at), deadline = Date.parse(state.runtime?.deadline_at);
+  const window = (await resolveRuntime(paths, state)).window;
+  const closedAt = Date.parse(state.contract_a?.closed_at), deadline = window.deadlineMs;
   const evidence = state.contract_a?.closure_ref;
   const gate = state.graph?.nodes?.['contract-a-gate'];
   // Gates closed with their own evidence file record the judged manifest as closure_ref; older runs used the manifest
   // itself as the node's evidence.
-  if (!Number.isFinite(closedAt) || !Number.isFinite(deadline) || closedAt > now
+  if (!Number.isFinite(closedAt) || !Number.isFinite(Date.parse(state.runtime?.deadline_at)) || Number.isNaN(deadline) || closedAt > now
     || gate?.status !== 'passed' || !evidence || evidence !== (gate.closure_ref ?? gate.evidence)) {
     throw new InvalidRunError('Closed label lacks a passed, timely Contract A transition and its evidence reference.');
   }
@@ -282,7 +291,7 @@ export async function verifyRecordedClosureAcceptance(paths, state, now = Date.n
   const manifest = JSON.parse(bytes);
   if (closedAt > deadline) {
     const epoch = JSON.parse(await readClosureArtifact(paths.root, manifest.epochRef));
-    if (state.contract_a.verification?.evidence_ref !== evidence || !timelyVerification(manifest, epoch, state, closedAt)) {
+    if (state.contract_a.verification?.evidence_ref !== evidence || !timelyVerification(manifest, epoch, state, closedAt, window)) {
       throw new InvalidRunError('Late acceptance requires the exact proof verified before the overnight deadline.');
     }
   }

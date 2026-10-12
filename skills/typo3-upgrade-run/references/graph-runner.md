@@ -257,6 +257,37 @@ journal, retries used, phase totals, running nodes and whether the audit trail i
 `measured_plan_nodes` entries are ready-made `minutes`/`source` pairs for the next run's
 `runtime-plan.json`, so admission estimates come from measured work instead of guesses.
 
+## Owner-approved extra attempts
+
+`policy.max_node_attempts` is shared across recovery causes: a recovery node that spent its three
+attempts on three different instrument repairs cannot open a fourth time, even for a legitimate new
+outcome such as `reproof` after an approved fix made the closure epoch stale. The graph then stays
+blocked. Never edit `state.json` or the sealed definition to get past it; only the owner can grant
+more attempts, one decision at a time:
+
+```bash
+t3u approval --id APR-NNN --stage intent --granted \
+  --scope "One extra attempt for graph node <node id> to route <outcome>" --question "…" --answer "…"
+t3u node-attempts-extend --node <node id> --approval APR-NNN --reason "…" [--attempts 1]
+t3u graph-validate && t3u graph-next
+```
+
+The command appends `{node, approval_id, approval_sha256, extra_attempts, reason, recorded_at}` to
+`graph.attempt_extensions` and an `attempt-extension` journal event. It refuses unless the node is
+ready and its effective budget is spent, the approval is a granted intent approval of this run whose
+scope names the node, and the approval has authorised no other owner decision (runtime extension,
+environment re-seal, earlier attempt extension). `--attempts` is 1 to `max_node_attempts`.
+
+An entry counts only for its own node and only while its approval file verifies byte for byte
+(SHA-256). A tampered, deleted or re-labelled entry adds nothing: `node-open`, `graph-next`,
+`node-brief` and the derived graph status fall back to the sealed budget, and `graph-validate` and
+`validate-run` fail and name it. The extension moves no other bound. Retry edges keep their
+`max_traversals` and the graph its `max_total_retries`; when every successful route out of the node
+would overrun one of them, the command refuses and names the spent edge or the global cap, because
+no approval grants that. The node brief shows `attempts n/m` with the approval, and `graph-report`
+lists every verified extension for the handover. It is bookkeeping only: `harness.sourceHash` does
+not change and sealed baselines stay valid.
+
 ## What the guards refuse
 
 | Attempt | Refusal |

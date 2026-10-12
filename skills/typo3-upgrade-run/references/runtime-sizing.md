@@ -25,6 +25,50 @@ branches are part of this job and of its forecast. Other Contract B work is not 
 of it; schedule it only with separate authority and a stated budget. Never silently extend the
 current job because A closed early.
 
+## Owner-approved extension or waiver
+
+The profile cap is the default and the harness enforces it unattended. Only the owner may extend
+or waive it, and only by a recorded decision: first a granted intent approval, then
+
+```bash
+t3u approval --id APR-012 --stage intent --granted --scope "Extend the runtime window of this run" \
+  --question "The deadline passes at 06:00 with closure proof unfinished. Extend it to 14:00?" --answer "Yes"
+t3u runtime-extend --approval APR-012 --until 2026-10-11T14:00:00Z --reason "dataset import took 3 h longer than forecast"
+t3u runtime-extend --approval APR-013 --waive --reason "owner lifts the cap for this run"
+```
+
+`--until` sets the new hard deadline; the migration cutoff moves with it and keeps the sealed
+closure reserve (2h, 6h or 12h) before it. `--waive` removes both limits. Each decision appends one
+entry to `runtime.extensions` (approval id and the SHA-256 of its file, previous and new values,
+reason, time) and one `runtime-extension` journal event. `started_at`, `migration_cutoff_at`,
+`deadline_at` and `size_profile` stay as sealed, so the seal and its profile check are unchanged.
+
+The effective window is the latest entry that still verifies: its approval file exists with the
+recorded hash, is a granted intent approval of this run, and the entry chains onto the window
+before it. An edited or deleted approval stops counting, so the sealed (or earlier) window applies
+again, and `graph-validate` and `validate-run` fail until it is resolved. An extension is never
+shorter than the window before it, and one approval authorises one extension.
+
+Extending the deadline never weakens a proof rule. Strict-zero comparison, the proof epoch,
+complete closure checks, the timely `closure-verify` receipt (now before the effective deadline)
+and human acceptance all stay as they are. `node-brief`, `status`, `graph-forecast` and
+`graph-report` print "extended to … by APR-NNN" or "cutoff waived by APR-NNN"; the closure
+certificate and the handover name the extension and its approval.
+
+Machine-capacity waits follow the effective window too. `capture`, `selftest-determinism`,
+`compare-*`, `lighthouse` and `axe` wait for a capacity lease (and the visual capture lock) at most
+until the effective deadline: the sealed `deadline_at`, or the latest verified extension. Under a
+verified waiver there is no deadline, and only the wait's own limit bounds it (ten minutes for a lease
+or the capture lock, `T3U_LOAD_WAIT_MS` for the quiet-machine wait). Without a verified extension the
+wait stops at the sealed deadline as before, with "Machine capacity wait exceeded its limit or the
+sealed run deadline". An extension whose approval no longer verifies never widens the wait.
+
+Pins older than this fix bound those waits by the sealed `deadline_at` even inside an extended or
+waived window. The fix is measurement source, so moving a run onto it changes `harness.sourceHash`:
+re-pin, then [re-seal the environment](closure-currentness.md#epoch-order-what-makes-a-new-epoch-stale)
+with a granted intent approval (`t3u env-fingerprint --reseal --approval APR-NNN --reason "…"`), then
+run `selftest-determinism` before the next capture.
+
 New seals record `runtime.budget_policy: site-size-v2`. Previously sealed runs without a policy
 marker (or with `overnight-v1`) retain their original 8/12/14-hour deadlines and 2/3/4-hour reserves.
 Updating the skill does not reclassify, rewrite or extend them. If the old window cannot fit,
@@ -189,5 +233,5 @@ Every metric needs a source pointing to inspectable command output or a manifest
 
 `runtime-seal` calculates the profile itself. It does not accept a requested profile or arbitrary
 hours, so an under-declared site cannot buy a shorter deadline. The profile, evidence path, cutoff,
-reserve and deadline become state. Reclassification or extension requires a new run rather than
-rewriting the sealed clock.
+reserve and deadline become state. Reclassification requires a new run; the sealed clock is never
+rewritten. Only the owner extends or waives it, by a [recorded approval](#owner-approved-extension-or-waiver).
