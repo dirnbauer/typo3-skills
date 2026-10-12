@@ -109,6 +109,29 @@ See the [September follow-up](run-retrospective-2026-09-16.md) for Site B archiv
 Site F/Site C/Site E runtime differences, Site D DI cache behavior and Site G cache
 invalidation. These are bounded release checks, not permission to deploy.
 
+## Environment context per host
+
+Part of the deploy-model check and the handover, for every environment (DDEV, staging, live):
+
+- **The right context per host.** `deploy.php` sets `TYPO3_CONTEXT` per host (`Production/Staging`
+  for staging, `Production` or `Production/Live` for live), for the web server and for every CLI
+  task, because scheduler and Solr indexing run in the CLI. DDEV keeps `Development/Docker` from
+  `.ddev/config.yaml`. Record each host's context and where it is set.
+- **The login says where you are.** The backend login and sitename show a readable label mapped from
+  the real context in one place (`Entwicklung (DDEV)`, `Staging`, `Live`, or the readable context
+  name), with a per-environment highlight colour, the footnote
+  `Website by webconsulting.at · <label>`, and logos that work in light and dark. Never the raw
+  context string; never Live on a staging release path. Verify `/typo3/` (no login needed) in
+  both colour schemes on every host after the deploy, and evaluate the mapping with each
+  simulated context locally ([backend branding](../../typo3-backend-rights/references/backend-branding.md)).
+- **Context-dependent services.** EXT:solr 14's siteHash includes the context, so a wrong staging
+  context would let staging clean up live documents in a shared core. Solr stays disabled per
+  context until the [siteHash comparison](../../typo3-solr/references/v14-only-solr-changes.md#application-context-sitehash-and-shared-cores)
+  passed.
+- **Shared hosting accounts.** When staging and live share one account with an account-wide web
+  PHP, staging's newer PHP comes from one `FcgidWrapper` line in its shared `.htaccess`, and the
+  deploy guard keeps that line ([one hosting account](live-dataset-and-staging.md#one-hosting-account-for-staging-and-live)).
+
 ## Database-only changes and test accounts
 
 Approved editor-rights grants (the Redirects module, the Info sub-modules) live in `be_groups`, not in

@@ -19,7 +19,7 @@ detections of the [TYPO3 14 fix pack](typo3-14-fix-pack.md) and put the approval
 - [Where a day and a half went](#where-a-day-and-a-half-went) · [Small shop site minutes](#where-the-minutes-went-on-a-small-shop-site-2026-10-07) · [Why a small site took so long](#why-a-small-site-took-so-long-2026-10-08)
 - [Sentinel opened the mail client](#a-component-sentinel-opened-the-operators-mail-client-2026-10-09) · [Composer in a subdirectory](#composer-in-a-subdirectory-discovery-read-the-wrong-configsites-2026-10-09) · [Processed images darker](#processed-images-darker-locally-than-live-2026-10-07)
 - [Bootstrap 5 review rejected](#a-bootstrap-5-review-rejected-renames-are-not-a-migration-2026-10-07) · [Closure, deploy and backend-proof traps](#closure-deploy-and-backend-proof-traps-from-a-fleet-run-2026-10-07) · [What failed](#what-failed-and-what-now-prevents-a-repeat)
-- [Closure deadlocks, crashing previews and search drift](#closure-deadlocks-crashing-previews-and-search-drift-2026-10-11)
+- [Closure deadlocks, crashing previews and search drift](#closure-deadlocks-crashing-previews-and-search-drift-2026-10-11) · [Environment context, shared hosting and a shared Solr core](#environment-context-shared-hosting-and-a-shared-solr-core-2026-10-12)
 - [Fast representative matrix](#the-fast-representative-matrix) · [Secure dependency diagnosis](#secure-dependency-diagnosis) · [Safe Solr mutation](#safe-solr-mutation) · [Quality profile](#vite-html-lighthouse-and-axe-quality-profile)
 
 ## Where a day and a half went
@@ -304,6 +304,61 @@ gives the problem, how to detect it and how to fix it; the detail lives in the l
       after a search.
     - *Fix.* `fields.title = title` in the page index configuration and `lastSearches.mode = user`
       ([Solr upgrade parity](../../typo3-solr/references/v14-only-solr-changes.md#search-parity-across-the-solr-upgrade)).
+
+## Environment context, shared hosting and a shared Solr core (2026-10-12)
+
+Four lessons from publishing a fleet site to staging next to its live installation. Each gives the
+problem, how to detect it and how to fix it.
+
+1. **The backend login did not say which environment it was.**
+   - *Problem.* The login footnote printed the raw context string (`Development/Docker - by …`),
+     and nothing told a staging login from a live one. A label derived from the hostname, or set
+     by hand per server, can call a staging release Live.
+   - *Detect.* Open `/typo3/` (no login needed) on DDEV, staging and live, in the light and the
+     dark colour scheme; read the footnote and sitename.
+   - *Fix.* One mapping of the real `Environment::getContext()` in `config/system/additional.php`
+     sets label and highlight colour for every environment: `Development/Docker` →
+     `Entwicklung (DDEV)`, `Production/Staging` → `Staging`, `Production` or `Production/Live` →
+     `Live`, anything else → the readable context name. It fails closed: the staging release path
+     is labelled Staging whatever the context claims. The same label goes into `loginFootnote`
+     (`Website by webconsulting.at · <label>`) and the sitename; logo, background and backend logo
+     work in both schemes. Evaluate the mapping with each simulated context. Recipe:
+     [backend branding](../../typo3-backend-rights/references/backend-branding.md); checklist:
+     [environment context per host](deployment-handover.md#environment-context-per-host).
+2. **Staging and live share one hosting account, and the web PHP version is account-wide.**
+   - *Problem.* On a Hetzner konsoleH managed server the panel's PHP version is stored in
+     `~/.phpversion` for the whole account, so raising it for the 14.3 staging would raise it for
+     live too.
+   - *Detect.* The staging frontend answers with Composer's platform check: `Your Composer
+     dependencies require a PHP version ">= …"`. The CLI passed because the deploy used its own
+     `/usr/bin/phpXX` binary.
+   - *Fix.* Run staging on the newer PHP per directory: one line in staging's shared
+     `web/.htaccess`, `FcgidWrapper "/home/httpd/cgi-bin/php85-fcgi-starter.fcgi" .php` (Hetzner's
+     per-directory PHP version), and leave the account version alone. The deploy guard keeps that
+     line in the shared `.htaccess` ([shared hosting account](live-dataset-and-staging.md#one-hosting-account-for-staging-and-live)).
+3. **A staging site indexed into the production Solr core.**
+   - *Problem.* EXT:solr 14 computes the siteHash from the application context, the site
+     identifier and the `encryptionKey`, not from the domain as EXT:solr 12 did. A staging copy
+     with the same `encryptionKey` stays apart from live only because its context differs. The
+     site configuration pointed at the production Solr in every context, so a staging host running
+     as `Production` would have deleted live documents in its garbage collection and re-index
+     cleanup. An old staging site had also left orphaned documents under its own hash. The core
+     ran Solr 8.11, which EXT:solr 14 does not support but still writes to (unknown fields are
+     dropped).
+   - *Detect.* Read-only: compute the staging hash, facet `siteHash` on the core, compare, and
+     count the live documents before and after indexing staging.
+   - *Fix.* Disable Solr per context until the comparison passed. Remove orphans with exactly one
+     delete-by-query on their siteHash and verify every other count. The clean target is a
+     dedicated Solr 10 core ([siteHash and shared cores](../../typo3-solr/references/v14-only-solr-changes.md#application-context-sitehash-and-shared-cores)).
+4. **A worker agent refused the owner's approval relayed by the controller.**
+   - *Problem.* The orphan delete on the shared production core was approved by the owner in chat.
+     The controller passed the approval on to a worker, and the worker refused: for an
+     irreversible delete on shared infrastructure an agent may not accept an approval that reaches
+     it through another agent.
+   - *Detect.* The worker answers with a refusal that names the relayed approval.
+   - *Fix.* Do not re-word the relay or try another worker. When the owner approved that exact
+     step in chat, the controller runs it itself, with before/after verification in the evidence
+     ([scope of an approval](../rules/40-approval-matrix.md#404-scope-of-an-approval)).
 
 ## What failed and what now prevents a repeat
 

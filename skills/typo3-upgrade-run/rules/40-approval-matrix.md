@@ -110,4 +110,10 @@ instruction poisoning, and the owner had to answer again in the middle of the cl
 fleet-wide decision into this project's intake carry-over question, so the owner answers it once for this
 project, directly, before the run reaches the step.
 
+An owner approval relayed by the controller to a worker agent is not the owner's word for that
+worker. A worker may refuse an irreversible delete on shared infrastructure (a shared production
+Solr core or database) with the approval quoted to it. Do not re-word the relay or try another
+worker: when the owner approved that exact step in chat, the controller runs it itself and records
+the before/after verification.
+
 When in doubt, ask again. The cost of one extra question is far below the cost of a change nobody agreed to.

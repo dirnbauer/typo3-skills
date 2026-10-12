@@ -132,6 +132,11 @@ Upgrading a site from EXT:solr 12 changes results silently three ways: the Lucen
 analysis, the page title taken from the SEO title, and `lastSearches` off by default. Detection and
 fixes: [search parity across the Solr upgrade](references/v14-only-solr-changes.md#search-parity-across-the-solr-upgrade).
 
+EXT:solr 14 computes the siteHash from the application context, site identifier and
+`encryptionKey`, not the domain. A staging copy shares a production core safely only while its
+context differs; compare the hashes before indexing staging there, and disable Solr per context
+until that is verified: [siteHash and shared cores](references/v14-only-solr-changes.md#application-context-sitehash-and-shared-cores).
+
 ### CVE-2025-24814 Migration
 
 Apache Solr 9.8.0+ disables loading `jar` files via `lib` directive in configsets. **CVE-2025-24814** is a remote-code-execution class issue: if an attacker can replace or supply a configset file that Solr treats as trusted, Solr may load attacker-controlled JARs from that configset (including via the `lib` directive), which can lead to arbitrary code execution. The stricter default blocks that classpath loading from configsets. The `solr-typo3-plugin` must be moved from `/configsets/ext_solr_*/typo3lib/` to `/typo3lib/` at the Solr server root. Docker users: use the **EXT:solr** container image **13.0.1+** (image tag, not TYPO3 Core) so this migration runs automatically.

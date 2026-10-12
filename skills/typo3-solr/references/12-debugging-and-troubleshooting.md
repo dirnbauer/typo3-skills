@@ -182,6 +182,10 @@ q=*:*&rows=0&facet=true&facet.field=siteHash
 
 Compare Solr cores and TYPO3 site / **language** endpoints against the EXT:solr version you run — use Extension Settings + Site Configuration as documented for that major (names moved between releases).
 
+Since EXT:solr 14 the hash comes from the application context, the site identifier and the
+`encryptionKey` ([siteHash and shared cores](v14-only-solr-changes.md#application-context-sitehash-and-shared-cores)):
+a web request and a CLI indexer with different `TYPO3_CONTEXT` values produce different hashes.
+
 If the hashes don't match: **re-index** (Backend → Web → Search → Index Queue → clear and re-queue all).
 
 **Other causes of 0 results:**

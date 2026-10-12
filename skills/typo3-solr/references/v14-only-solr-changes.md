@@ -92,3 +92,62 @@ plugin.tx_solr.search.lastSearches.mode = user
 
 Dropping the cookie can be a deliberate improvement; then it is a declared change the owner accepts,
 not a silent difference.
+
+## Application context, siteHash and shared cores
+
+### The siteHash depends on the context **[EXT:solr 14]**
+
+**Problem.** EXT:solr 14 computes the siteHash from the application context, the site identifier
+and the `encryptionKey`, not from the domain as EXT:solr 12 did
+(`SiteHashService::getSiteHashForSiteIdentifier()`):
+
+```php
+sha1((string)Environment::getContext() . $siteIdentifier . $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] . 'tx_solr')
+```
+
+The siteHash scopes document ids, garbage collection, the re-index cleanup and the `allowedSites`
+search filter. A staging copy with the same `encryptionKey` and site identifier is kept apart from
+live **only** because its context differs (`Production/Staging` against `Production`). A staging
+host that runs as `Production` computes the live hash: its garbage collection and re-index cleanup
+then delete live documents, and its search shows them. The web and the CLI context must match,
+because the indexer and the scheduler run in the CLI.
+
+**Detect.** Before indexing staging into a shared production core, read-only:
+
+1. Compute the staging hash on the staging host with the effective `encryptionKey` (settings plus
+   any `additional.php` or env override), without printing the key:
+   ```bash
+   php -r '$c = require "config/system/settings.php"; echo sha1($argv[1] . $argv[2] . $c["SYS"]["encryptionKey"] . "tx_solr"), PHP_EOL;' Production/Staging <site-identifier>
+   ```
+2. Facet the core on siteHash: `select?q=*:*&rows=0&facet=true&facet.field=siteHash&facet.limit=-1`.
+3. The staging hash must not equal any live hash. Record the live document count per hash.
+4. Index staging, then count again: every live count is unchanged.
+
+**Fix.** A site configuration that points at the production Solr in every context is the trap:
+until the comparison above passed, disable Solr in the unverified contexts (`solr_enabled_read`
+per context, for example through a `%env()%` placeholder set per host, and no indexing scheduler
+task there). The placeholder resolves to a string, and the string `false` is truthy for EXT:solr:
+use `0` or an empty value.
+
+### Orphans of an old staging site
+
+An old staging site leaves documents under its own siteHash after it is gone. Remove them with
+exactly one delete-by-query on that hash, never a broader query:
+
+```bash
+curl -s "$CORE/select?q=*:*&rows=0&facet=true&facet.field=siteHash&facet.limit=-1"   # before
+curl -s "$CORE/update?commit=true" -H 'Content-Type: application/json' \
+  -d '{"delete":{"query":"siteHash:<orphan-hash>"}}'
+curl -s "$CORE/select?q=*:*&rows=0&facet=true&facet.field=siteHash&facet.limit=-1"   # after
+```
+
+After the delete the orphan hash is gone and every other hash has exactly its earlier count. A
+shared production core is shared infrastructure: the delete needs the owner's approval for that
+exact hash and core, and the [safe Solr mutation](../../typo3-upgrade-run/references/recent-run-lessons.md#safe-solr-mutation)
+identity steps.
+
+### EXT:solr 14 on an old Solr server
+
+EXT:solr 14 against a Solr 8.11 core is unsupported, but it writes: in one fleet run the documents
+were accepted and the fields unknown to the old schema were dropped. That is a stopgap, not a
+target. The clean target is a dedicated core on Solr 10 with the `ext_solr_14_0_0` configset.
