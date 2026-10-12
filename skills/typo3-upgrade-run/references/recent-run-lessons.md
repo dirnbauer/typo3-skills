@@ -19,7 +19,7 @@ detections of the [TYPO3 14 fix pack](typo3-14-fix-pack.md) and put the approval
 - [Where a day and a half went](#where-a-day-and-a-half-went) · [Small shop site minutes](#where-the-minutes-went-on-a-small-shop-site-2026-10-07) · [Why a small site took so long](#why-a-small-site-took-so-long-2026-10-08)
 - [Sentinel opened the mail client](#a-component-sentinel-opened-the-operators-mail-client-2026-10-09) · [Composer in a subdirectory](#composer-in-a-subdirectory-discovery-read-the-wrong-configsites-2026-10-09) · [Processed images darker](#processed-images-darker-locally-than-live-2026-10-07)
 - [Bootstrap 5 review rejected](#a-bootstrap-5-review-rejected-renames-are-not-a-migration-2026-10-07) · [Closure, deploy and backend-proof traps](#closure-deploy-and-backend-proof-traps-from-a-fleet-run-2026-10-07) · [What failed](#what-failed-and-what-now-prevents-a-repeat)
-- [Closure deadlocks, crashing previews and search drift](#closure-deadlocks-crashing-previews-and-search-drift-2026-10-11) · [Environment context, shared hosting and a shared Solr core](#environment-context-shared-hosting-and-a-shared-solr-core-2026-10-12)
+- [Closure deadlocks, crashing previews and search drift](#closure-deadlocks-crashing-previews-and-search-drift-2026-10-11) · [Environment context, shared hosting and a shared Solr core](#environment-context-shared-hosting-and-a-shared-solr-core-2026-10-12) · [Inline styles and scripts outside the bundle](#inline-styles-and-scripts-outside-the-vite-bundle-2026-10-12)
 - [Fast representative matrix](#the-fast-representative-matrix) · [Secure dependency diagnosis](#secure-dependency-diagnosis) · [Safe Solr mutation](#safe-solr-mutation) · [Quality profile](#vite-html-lighthouse-and-axe-quality-profile)
 
 ## Where a day and a half went
@@ -360,6 +360,43 @@ problem, how to detect it and how to fix it.
      step in chat, the controller runs it itself, with before/after verification in the evidence
      ([scope of an approval](../rules/40-approval-matrix.md#404-scope-of-an-approval)).
 
+## Inline styles and scripts outside the Vite bundle (2026-10-12)
+
+After the upgrade, the owner found CSS and JavaScript that bypassed the theme bundle. Each item
+gives the problem, how to detect it and how to fix it.
+
+1. **Inline `<style>` and `<script>` blocks in every page head.**
+   - *Problem.* A one-rule `<style>` (`margin-left: .25rem !important` on navbar togglers) sat in
+     the `config` field of the root `sys_template` **database record**, and an inline `<script>`
+     with legacy e-mail obfuscation helpers (`obscureAddMid()`/`obscureAddEnd()` doing
+     `document.write('@')`) sat in `page.headerData` of the theme's TypoScript file. Neither is
+     visible in the Vite sources, and a database record survives every code deploy.
+   - *Detect.* Crawl every sitemap route and list each inline `<style>` block, inline `<script>`
+     without `src`, `<link rel="stylesheet">` and static `style="…"` attribute with the pages it
+     appears on. Search the TypoScript files **and** `sys_template.config`/`constants` (all
+     records, also `+ext` templates on sub-pages) for `<style`, `<script`, `<link`, `headerData`,
+     `footerData`, `includeCSS` and `cssInline`.
+   - *Fix.* Move the CSS into the Sass/CSS sources and rebuild once. Drop `!important` when no
+     competing rule exists, and give the new rule enough specificity to win where the inline style
+     used to. Empty the database field (back up the old value, repeat on staging; the live database
+     changes only at go-live). Before moving a script, search the database and the rendered HTML
+     for calls: helpers nobody calls (here `spamProtectEmailAddresses = 0`) move into the bundle as
+     `window` globals or are deleted with the owner's OK. A helper that inline content calls while
+     the page is parsed must load before that content, never from the footer bundle.
+2. **Static `style="…"` attributes in Fluid templates.**
+   - *Problem.* Templates carried `display`, padding and colour values inline. The values bypassed
+     the design tokens, and an inline colour silently overrode the component's variant rules.
+   - *Fix.* Replace each with a class rule in the component's Sass partial. Use a modifier class
+     when the shared class serves other templates too. Remove arguments that pass a field the
+     record does not have (a content-element field such as `tx_mask_header_style` passed from a
+     page template); they always render empty.
+   - *Proof.* Computed styles (display, padding, margin, colour, box) of every affected element
+     before and after on representative pages at mobile and desktop width; full-page screenshots;
+     and the whitespace-normalised HTML of every route, which may differ only by the removed
+     block. Separate animation timing, such as a typewriter hero, from real differences.
+   - Third-party form apps that load their own CSS and JS from `fileadmin` via `+ext` templates
+     belong to those apps; list them in the handover, do not merge them into the theme bundle.
+
 ## What failed and what now prevents a repeat
 
 | Failure mode | Cost or risk | Mandatory correction |
@@ -453,6 +490,8 @@ When the user requests the secure/fast/modern outcome, Contract B is explicitly 
 1. Plain Vite owns every project CSS/JS entry, bundling and minification. Run a clean production
    build and `scripts/vite-production-check.mjs`; then crawl the representative matrix with zero
    missing assets, failed requests, dev/HMR clients, stale legacy bundles or severe console errors.
+   Inline `<style>`/`<script>` blocks and static template `style="…"` attributes move into the
+   bundle; check `sys_template` records as well as TypoScript files ([inline assets](#inline-styles-and-scripts-outside-the-vite-bundle-2026-10-12)).
 2. Validate generated HTML and run axe in each representative **visible state**, not only on the
    closed/default document. Target zero serious/critical findings; triage every moderate/minor and
    every `incomplete` result. Automated green is not WCAG conformance.
