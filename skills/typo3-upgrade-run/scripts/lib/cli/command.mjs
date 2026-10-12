@@ -23,6 +23,7 @@ import { StateStore } from '../run/state.mjs';
 import { redactStack } from '../util/redact.mjs';
 import { assertLiveInputs } from '../run/evidence.mjs';
 import { withMachineResources } from '../util/machine-resources.mjs';
+import { capacityDeadline, describeRuntimeWindow, resolveRuntime, sealedRuntimeWindow } from '../run/runtime.mjs';
 
 /** Commands that may not run without a proven-deterministic harness. */
 const REQUIRES_SELFTEST = new Set([
@@ -33,7 +34,8 @@ const REQUIRES_SELFTEST = new Set([
 const SELFTEST_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 /** Below this much remaining validity graph-status warns: a final capture and compare can outlast it. */
 export const SELFTEST_EXPIRY_WARNING_MS = 3 * 60 * 60 * 1000;
-const AFTER_DEADLINE_COMMANDS = new Set(['status', 'report', 'validate-run', 'graph-report']);
+// runtime-extend is the owner's way past a deadline, so the deadline cannot refuse it.
+const AFTER_DEADLINE_COMMANDS = new Set(['status', 'report', 'validate-run', 'graph-report', 'runtime-extend']);
 
 /** Leases for single-browser page work and file hashing; capture, axe, pixels and Lighthouse lease their own pools. */
 const ACTION_RESOURCES = Object.freeze({
@@ -55,12 +57,14 @@ export function commandResources(command) {
   };
 }
 
-export function assertWithinRuntimeBudget(runState, timestamp = Date.now()) {
-  const deadline = Date.parse(runState?.runtime?.deadline_at ?? '');
-  if (!Number.isFinite(deadline)) return true;
-  if (timestamp >= deadline && runState?.contract_a?.status !== 'closed') {
+/** `window` is the verified effective window (resolveRuntime); without it only the sealed deadline counts. */
+export function assertWithinRuntimeBudget(runState, timestamp = Date.now(), window = null) {
+  const effective = window ?? sealedRuntimeWindow(runState?.runtime);
+  if (!Number.isFinite(effective.deadlineMs)) return true;
+  if (timestamp >= effective.deadlineMs && runState?.contract_a?.status !== 'closed') {
+    const extended = describeRuntimeWindow(effective);
     throw new PreconditionError(
-      `The ${runState.runtime.max_hours}h run deadline (${runState.runtime.deadline_at}) has passed. `
+      `The ${runState.runtime.max_hours}h run deadline (${effective.deadlineAt}${extended ? `, ${extended}` : ''}) has passed. `
       + 'Contract A remains incomplete; write the blocker and do not report a pass.',
     );
   }
@@ -73,13 +77,18 @@ export function assertWithinRuntimeBudget(runState, timestamp = Date.now()) {
  * Contract A gate pass, and both re-check the exact verified manifest (timelyVerification,
  * verifyRecordedClosureAcceptance). Everything else still stops at the deadline.
  */
-export function lateAcceptanceCommand(command, values, runState) {
+export function lateAcceptanceCommand(command, values, runState, window = null) {
   const verification = runState?.contract_a?.verification;
-  const deadline = Date.parse(runState?.runtime?.deadline_at ?? '');
+  const deadline = (window ?? sealedRuntimeWindow(runState?.runtime)).deadlineMs;
   if (runState?.contract_a?.status === 'closed' || !verification?.evidence_ref
     || !(Date.parse(verification.at) < deadline)) return false;
   if (command === 'approval') return values?.stage === 'acceptance';
   return ['node-open', 'node-close'].includes(command) && values?.node === 'contract-a-gate';
+}
+
+/** The verified effective window of a run, or null without a run. */
+async function effectiveWindow(paths, runState) {
+  return runState ? (await resolveRuntime(paths, runState)).window : null;
 }
 
 export async function runCommand({ command, values, positionals, argv, actions, now = Date.now,
@@ -124,18 +133,23 @@ export async function runCommand({ command, values, positionals, argv, actions, 
     })
       .catch(() => { /* the journal must never be the reason a command fails */ });
 
-    const deadlineExempt = AFTER_DEADLINE_COMMANDS.has(command) || lateAcceptanceCommand(command, values, runState);
+    const window = await effectiveWindow(paths, runState);
+    // Capacity waits stop at the effective deadline; a waiver leaves only their own limit.
+    const deadlineAt = window ? capacityDeadline(window) : undefined;
+    const deadlineExempt = AFTER_DEADLINE_COMMANDS.has(command) || lateAcceptanceCommand(command, values, runState, window);
     if (runState && !deadlineExempt) {
-      assertWithinRuntimeBudget(runState, now());
+      assertWithinRuntimeBudget(runState, now(), window);
     }
 
     const resources = commandResources(command);
+    // An environment re-seal voids the self-test; a capture then needs a fresh selftest-determinism first.
+    if (command === 'capture' && !values['dry-run']) assertSelftestNotStale(runState);
     if (REQUIRES_SELFTEST.has(command) && !values['dry-run']) {
       await assertSelftestValid(paths, now);
       const { browserArgs } = await import('../browser/launch.mjs');
       const check = () => liveInputs(paths, { launchArgs: browserArgs(), log });
       await (resources.preflight
-        ? reserve({ ...resources.preflight, owner: 'live-input-preflight', log, deadlineAt: runState?.runtime?.deadline_at }, check)
+        ? reserve({ ...resources.preflight, owner: 'live-input-preflight', log, deadlineAt }, check)
         : check());
     }
 
@@ -143,10 +157,11 @@ export async function runCommand({ command, values, positionals, argv, actions, 
     if (!action) throw new HarnessError(`No implementation registered for command: ${command}`);
 
     result = resources.action && !values['dry-run']
-      ? await reserve({ ...resources.action, owner: command, log, deadlineAt: runState?.runtime?.deadline_at }, () => action(ctx))
+      ? await reserve({ ...resources.action, owner: command, log, deadlineAt }, () => action(ctx))
       : await action(ctx);
     if (runState && !deadlineExempt) {
-      assertWithinRuntimeBudget(await state.read(), now());
+      const after = await state.read();
+      assertWithinRuntimeBudget(after, now(), await effectiveWindow(paths, after));
     }
     exitCode = result?.exitCode ?? EXIT.PASS;
 
@@ -215,6 +230,7 @@ export async function runCommand({ command, values, positionals, argv, actions, 
  * Missing lock -> PRECONDITION (run the self-test). Stale or drifted lock -> INVALID.
  */
 export async function assertSelftestValid(paths, now = Date.now) {
+  assertSelftestNotStale(await readFile(paths.statePath, 'utf8').then((raw) => { try { return JSON.parse(raw); } catch { return null; } }, () => null));
   let lock;
   try {
     lock = JSON.parse(await readFile(paths.selftestLock, 'utf8'));
@@ -249,6 +265,15 @@ export async function assertSelftestValid(paths, now = Date.now) {
     );
   }
   return lock;
+}
+
+/** Refuses while an environment re-seal has marked the self-test stale (state.selftest.status). */
+export function assertSelftestNotStale(runState) {
+  if (runState?.selftest?.status !== 'stale') return true;
+  throw new PreconditionError(
+    `The determinism self-test is stale (${runState.selftest.stale_reason ?? 'environment re-seal'}). `
+    + 'Run "t3u selftest-determinism" before the next capture, comparison or closure-start.',
+  );
 }
 
 /**

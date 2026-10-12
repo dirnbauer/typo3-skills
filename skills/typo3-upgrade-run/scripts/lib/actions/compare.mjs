@@ -32,6 +32,7 @@ import { StateStore } from '../run/state.mjs';
 import { intOpt } from '../cli/args.mjs';
 import { sha256 } from '../run/paths.mjs';
 import { readJson } from './core.mjs';
+import { capacityDeadlineAt } from '../run/runtime.mjs';
 import { mapPool } from '../util/pool.mjs';
 import { acquireMachineLock, releaseMachineLock } from '../util/machine-lock.mjs';
 import { WorkerPool } from '../util/worker-pool.mjs';
@@ -50,7 +51,7 @@ export const PIXEL_COLOR_TOLERANCE = 0;
 export const PIXEL_DUST_FLOOR = 0;
 
 export async function compareHttp(ctx) {
-  const deadlineAt = (await readJson(ctx.paths.statePath))?.runtime?.deadline_at;
+  const deadlineAt = await capacityDeadlineAt(ctx.paths, await readJson(ctx.paths.statePath));
   return withMachineResources({ cpu: 1, owner: 'http-comparison', log: ctx.log, deadlineAt }, () => compareHttpRecords(ctx));
 }
 
@@ -155,7 +156,7 @@ async function compareRecordDirs(beforeDir, afterDir, loopId, log, rules = []) {
 /* ------------------------------------------------------------- stage 2 */
 
 export async function compareDomAction(ctx) {
-  const deadlineAt = (await readJson(ctx.paths.statePath))?.runtime?.deadline_at;
+  const deadlineAt = await capacityDeadlineAt(ctx.paths, await readJson(ctx.paths.statePath));
   return withMachineResources({ cpu: 1, owner: 'dom-comparison', log: ctx.log, deadlineAt }, () => compareDomRecords(ctx));
 }
 
@@ -312,7 +313,7 @@ export async function compareVisual({ values, paths, log }) {
   const fallbackWorkers = Math.min(4, effectiveWorkers);
   const pool = new WorkerPool(new URL('../compare/pixelmatch-worker.mjs', import.meta.url), { size: fallbackWorkers });
   let execution;
-  const deadlineAt = (await readJson(paths.statePath))?.runtime?.deadline_at;
+  const deadlineAt = await capacityDeadlineAt(paths, await readJson(paths.statePath));
   const pixelOutcomes = await withMachineResources({ cpu: effectiveWorkers, owner: 'image-comparison', log, deadlineAt }, async lease => {
     const started = Date.now();
     try {
@@ -572,7 +573,7 @@ export async function selftestDeterminism({ values, paths, log, journal }) {
   // exhaustive double-shoot seals that count into the lock, and only that count may then
   // produce final evidence elsewhere.
   const httpWorkers = intOpt(values, 'http-workers', DEFAULT_HTTP_WORKERS);
-  const deadlineAt = (await readJson(paths.statePath))?.runtime?.deadline_at;
+  const deadlineAt = await capacityDeadlineAt(paths, await readJson(paths.statePath));
   // Hold the machine lock across BOTH passes: another run's captures landing between
   // pass A and pass B would change machine load mid-proof, which is exactly the
   // condition the double-shoot exists to exclude. captureAll's own acquisition is

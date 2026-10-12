@@ -24,6 +24,7 @@ import { untrusted } from '../util/redact.mjs';
 import { intOpt, listOpt } from '../cli/args.mjs';
 import { readJson } from './core.mjs';
 import { readEvidenceContext } from '../run/evidence.mjs';
+import { capacityDeadlineAt } from '../run/runtime.mjs';
 import { sample as seededSample } from '../util/rng.mjs';
 import { applyState, stateByName } from '../browser/states.mjs';
 import { assertCleanFrontendSession } from '../browser/session.mjs';
@@ -378,7 +379,7 @@ export async function lighthouse({ values, paths, log }) {
   // with a locally-generated certificate, and without this flag Lighthouse does not fail
   // — it waits, and the command hangs until something kills it.
   const lease = await acquireMachineResources({ exclusive: true, owner: 'lighthouse', log,
-    deadlineAt: evidenceContext.state.runtime?.deadline_at });
+    deadlineAt: await capacityDeadlineAt(paths, evidenceContext.state) });
   let chrome;
   const results = [];
   const rawRuns = [];
@@ -524,7 +525,7 @@ export async function axeAudit({ values, paths, log }) {
     : undefined;
   const axeSource = await readFile(require_.resolve('axe-core/axe.min.js'), 'utf8');
   const lease = await acquireMachineResources({ browsers: Math.min(workers, jobs.length), owner: 'axe', log,
-    deadlineAt: evidenceContext.state.runtime?.deadline_at });
+    deadlineAt: await capacityDeadlineAt(paths, evidenceContext.state) });
   let browser, collected;
   try {
     ({ browser } = await launchBrowser({ log }));
