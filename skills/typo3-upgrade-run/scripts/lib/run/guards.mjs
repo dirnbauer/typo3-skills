@@ -120,6 +120,35 @@ export async function projectChangeSince(runRoot, ref, { untrackedBaseline = nul
   return { base: `git:${ref}`, files, added, deleted };
 }
 
+/**
+ * Uncommitted project changes outside the run directory: modified, staged, deleted or new files.
+ * An untracked file recorded unchanged at node-open is not the node's change. Null when the run
+ * is not inside a Git work tree, so a clean tree cannot be proven.
+ */
+export async function uncommittedChanges(runRoot, { untrackedBaseline = null } = {}) {
+  const run = async (cwd, args) => (await exec('git', ['-C', cwd, ...args], { maxBuffer: 64 * 1024 * 1024 })).stdout;
+  let top, runReal;
+  try {
+    runReal = await realpath(runRoot);
+    top = await realpath((await run(runReal, ['rev-parse', '--show-toplevel'])).trim());
+  } catch {
+    return null;
+  }
+  const runRel = path.relative(top, runReal) || '.';
+  const lines = (await run(top, ['status', '--porcelain=v1', '-z', '--untracked-files=all', '--', '.', `:(exclude)${runRel}`]))
+    .split('\0').filter(Boolean);
+  const changed = [];
+  for (let i = 0; i < lines.length; i += 1) {
+    const code = lines[i].slice(0, 2);
+    const rel = lines[i].slice(3);
+    if (/^[RC]/.test(code)) i += 1; // a rename or copy carries its source path as the next entry
+    if (code === '??' && untrackedBaseline && Object.hasOwn(untrackedBaseline, rel)
+      && untrackedBaseline[rel] === await fileMark(path.join(top, rel))) continue;
+    changed.push(`${code.trim() || code} ${rel}`);
+  }
+  return changed;
+}
+
 export function overBudget(change, budget) {
   if (!change || !budget) return false;
   return change.files > budget.files || change.added + change.deleted > budget.lines;

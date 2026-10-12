@@ -216,6 +216,24 @@
         }
       }
     },
+    "selftest_refreshes": {
+      "type": "array",
+      "description": "Owner-approved determinism self-test refreshes inside one open guarded node, appended by t3u selftest-determinism --in-node --approval. node-close accepts the changed selftest.lock.json only when verified entries of that node attempt chain the anchored lock hash to the current one; graph-validate and validate-run verify every entry against its approval file.",
+      "items": {
+        "type": "object",
+        "required": ["node", "attempt", "approval_id", "approval_sha256", "previous_lock_sha256", "new_lock_sha256", "recorded_at"],
+        "additionalProperties": false,
+        "properties": {
+          "node": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+          "attempt": { "type": "integer", "minimum": 1 },
+          "approval_id": { "type": "string", "pattern": "^APR-\\d{3}$" },
+          "approval_sha256": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+          "previous_lock_sha256": { "type": "string", "pattern": "^(sha256:[a-f0-9]{64}|absent)$" },
+          "new_lock_sha256": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+          "recorded_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
     "manifest": {
       "type": "object",
       "additionalProperties": false,

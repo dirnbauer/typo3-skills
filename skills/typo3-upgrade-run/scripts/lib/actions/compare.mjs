@@ -520,15 +520,10 @@ async function compareOne(bPath, aPath, diffPath, log, pool = null) {
 export async function selftestDeterminism({ values, paths, log, journal }) {
   // The self-test rewrites (or, failing, deletes) selftest.lock.json, a measurement input that a
   // guarded node fingerprints at node-open. Run inside such a node, it leaves that node closable
-  // only as blocked, so it is refused before any capture.
-  const { openGuardedNodes } = await import('./graph.mjs');
-  const guarded = await openGuardedNodes(paths);
-  if (guarded.length) {
-    throw new PreconditionError(
-      `Node(s) ${guarded.join(', ')} are open and guard the measurement inputs; selftest.lock.json is one of them. `
-      + 'Close them first, or run the self-test from a measurement node (harness or closure recovery).',
-    );
-  }
+  // only as blocked, so it is refused before any capture, unless the owner approved one refresh
+  // inside that node (--in-node, --approval; graph.mjs authorizeSelftestRefresh).
+  const { authorizeSelftestRefresh, recordSelftestRefresh } = await import('./graph.mjs');
+  const refresh = await authorizeSelftestRefresh({ values, paths });
   const manifest = await readJson(paths.urlManifest);
   if (!manifest) throw new PreconditionError('No URL manifest. Run "t3u discover-urls" first.');
 
@@ -718,6 +713,7 @@ export async function selftestDeterminism({ values, paths, log, journal }) {
       };
       s.loops['000'] = 'open';
     });
+    if (refresh) await recordSelftestRefresh({ refresh, passed: false, paths, journal, log });
     log.finding(`${problems.length} unstable capture(s). This is a HARNESS defect, never a site defect.`);
     for (const u of problems.slice(0, 10)) {
       log.finding(`  ${u.capture}: ${u.reason}${u.suggestedStabilization ? ` → try ${u.suggestedStabilization.join(', ')}` : ''}`);
@@ -771,11 +767,13 @@ export async function selftestDeterminism({ values, paths, log, journal }) {
   // Pass B has just proven byte/pixel-identical to pass A with the same HTTP, DOM and full visual
   // matrix. Reuse it as the unsealed Baseline A capture instead of paying for a third exhaustive
   // browser pass. Copy through a temporary directory and never overwrite an existing baseline.
-  const promotedToBaseline = await promoteSelftestBaseline(rootB, paths.baseline('A-original'));
+  // An in-node refresh never creates a baseline: the site may already carry the node's change.
+  const promotedToBaseline = refresh ? false : await promoteSelftestBaseline(rootB, paths.baseline('A-original'));
   await new StateStore(paths).update((s) => {
     s.selftest = { status: 'green', at: lock.passedAt, lock_hash: selftestHash, coverage: lock.coverage, quarantined_captures: [] };
     s.loops['000'] = 'green';
   });
+  const refreshed = refresh ? await recordSelftestRefresh({ refresh, passed: true, paths, journal, log }) : null;
 
   log.success(
     `Determinism proven over ${pairs.length} captures. Comparisons are now permitted.`
@@ -784,6 +782,7 @@ export async function selftestDeterminism({ values, paths, log, journal }) {
   return {
     exitCode: EXIT.PASS, verdict: 'pass', captures: pairs.length,
     promotedToBaseline, reports: [reportPath], message: 'determinism proven',
+    ...(refreshed ? { selftestRefresh: refreshed } : {}),
   };
 }
 

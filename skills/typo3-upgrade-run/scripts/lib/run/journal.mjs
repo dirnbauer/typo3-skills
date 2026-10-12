@@ -13,6 +13,7 @@ export const EVENTS = Object.freeze([
   'command', 'finding', 'approval', 'decision', 'transition',
   'snapshot', 'policy-block', 'drift', 'abort', 'note',
   'graph', 'node', 'edge', 'lock', 'content-transition', 'runtime-extension', 'environment-reseal', 'attempt-extension',
+  'selftest-refresh',
 ]);
 
 export class Journal {

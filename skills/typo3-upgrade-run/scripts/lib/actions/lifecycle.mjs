@@ -310,6 +310,8 @@ export async function validateRun({ paths, log, values = {} }) {
   issues.push(...environmentResealIssues(state, await readResealApprovals(paths.approvalsDir, state)));
   // graph-validate checks the sealed runtime and its extensions; a run without a graph checks them here.
   if (!state.graph) {
+    // With a graph, graphValidate below verifies every self-test refresh against its approval.
+    if (state.selftest_refreshes?.length) issues.push('selftest_refreshes are recorded, but the run has no graph to bind them to');
     issues.push(...runtimeProfileIssues(state.runtime, { approvals: await readRuntimeApprovals(paths.approvalsDir, state.runtime),
       runId: state.run_id, granted: state.approvals ?? [] }));
   }
