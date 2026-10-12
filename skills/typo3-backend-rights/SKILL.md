@@ -56,8 +56,9 @@ not a copied backend record.
 12. Preserve a different enabled, login-capable administrator. Never demote the administrator used
     for the current work or the last remaining administrator. Ask whether each target user's
     existing groups should be appended to or replaced; do not infer a bulk membership cutover.
-13. Apply customer branding and the actual TYPO3 application context before and after login using
-    supported Core configuration and a small sitepackage stylesheet. Keep it version-controlled.
+13. Apply customer branding and a readable environment label derived from the real TYPO3
+    application context before and after login, using supported Core configuration and a small
+    sitepackage stylesheet. Keep it version-controlled.
 14. When `typo3/cms-workspaces` is installed, add the safe basic Workspace setup below. Do not
     write stale Workspace permissions or module identifiers when it is absent.
 
@@ -306,12 +307,19 @@ Prefer a group import over duplicated inline TSconfig:
 
 Read [backend-branding.md](references/backend-branding.md), derive an accessible action color from
 the customer's design tokens/CSS/logo, and configure the Core login logo, logo alt text, highlight,
-background, footnote, backend logo, and favicon. Use the plain-text Core footnote for
-`Website by webconsulting.at`; TYPO3 already places it at the lower right on wide screens.
+background, footnote, backend logo (with a variant legible in the dark scheme), and favicon. Use
+the plain-text Core footnote `Website by webconsulting.at · <label>`; TYPO3 already places it at the
+lower right on wide screens.
 
-Show the exact value of `Environment::getContext()` before login and in the logged-in backend by
-adding it to the instance sitename and login footnote. Do not infer the context from the hostname
-and do not try to set `TYPO3_CONTEXT` from `additional.php`; it is read earlier during bootstrap.
+DDEV, staging and live each get a correct, readable label and highlight colour from **one** mapping
+of the real `Environment::getContext()`: `Development/Docker` → `Entwicklung (DDEV)`,
+`Production/Staging` → `Staging`, `Production` or `Production/Live` → `Live`, anything else → the
+readable context name. Show the label in the login footnote and in the sitename
+(`<customer> · <label>`); never print the raw context string. Fail closed: a release on the staging
+deploy path is labelled Staging even when its context claims production. Do not infer the context
+from the hostname and do not try to set `TYPO3_CONTEXT` from `additional.php`; it is read earlier
+during bootstrap, and the deploy sets it per host. Verify the login page (no login needed) in the
+light and dark scheme, and evaluate the mapping with each simulated context.
 Use `$GLOBALS['TYPO3_CONF_VARS']['BE']['stylesheets']` for a small sitepackage stylesheet. Do not
 override TYPO3's danger/success colors, focus indicators, or structural layout.
 
@@ -413,8 +421,9 @@ Use a real non-admin session and verify all of these:
     group is a member rather than an owner and test file replacement with a new unique filename.
 12. TOTP and recovery codes can be configured in User Settings; MFA enforcement matches the
     separately approved policy.
-13. Login, password reset, MFA, and the logged-in top bar show the customer identity and exact
-    application context with accessible contrast.
+13. Login, password reset, MFA, and the logged-in top bar show the customer identity and the
+    environment label mapped from the real application context, with accessible contrast in the
+    light and dark scheme; the mapping was evaluated for every context.
 14. The separate administrator can still log in.
 
 Re-run the audit with `--group-title` and `--strict`. Report the main and leaf group UIDs, target
@@ -426,7 +435,7 @@ TSconfig profile, and the non-admin verification evidence.
 - [permission-model.md](references/permission-model.md): database field mapping, classification
   rules, and verification queries.
 - [backend-branding.md](references/backend-branding.md): supported login/backend branding,
-  accessible color selection, application-context display, and verification.
+  accessible color selection, the per-environment label mapping, and verification.
 - [typo3-workspaces](../typo3-workspaces/SKILL.md): Workspace versioning, DataHandler setup,
   preview, publishing, and the physical-file limitation.
 - `scripts/audit-backend-rights.php`: read-only runtime TCA/database audit.

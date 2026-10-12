@@ -18,7 +18,8 @@ stopped.
    Assemble it from `journal.jsonl` and the per-loop `report.json` files — a number nobody can
    trace back to a recorded entry does not belong in the report.
 4. Write `report/handover-deployment.md` with only the commands, environment requirements,
-   migrations, indexing needs and known gaps the deploying party actually needs.
+   migrations, indexing needs and known gaps the deploying party actually needs, including the
+   [environment context per host](../deployment-handover.md#environment-context-per-host).
 
 ## The handover is information only
 This skill executes none of it. It lists: the Composer, schema, wizard, reference-index, language and

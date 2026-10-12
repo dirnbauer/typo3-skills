@@ -20,7 +20,27 @@ JPEG screenshot when a token or vector asset exists.
 ## Supported Core configuration
 
 Put instance-specific values in `config/system/additional.php`, or use the project's established
-configuration layer. Adapt the sitepackage key and asset paths:
+configuration layer. Derive every environment-dependent value from **one** mapping of the real
+`Environment::getContext()`. Adapt the sitepackage key, asset paths, colours and the staging
+release-path marker to the project.
+
+`config/system/environment-label.php` holds the mapping as a pure function, so it can be tested:
+
+```php
+<?php
+
+declare(strict_types=1);
+
+// Fail closed: a release under the staging deploy path is never labelled Live, whatever its context.
+return static fn (string $context, string $projectPath): array => match (true) {
+    $context === 'Development/Docker' => ['label' => 'Entwicklung (DDEV)', 'color' => '#5b21b6'],
+    $context === 'Production/Staging', str_contains($projectPath, '/staging.') => ['label' => 'Staging', 'color' => '#9a3412'],
+    in_array($context, ['Production', 'Production/Live'], true) => ['label' => 'Live', 'color' => '#34512f'],
+    default => ['label' => str_replace('/', ' / ', $context), 'color' => '#374151'],
+};
+```
+
+`config/system/additional.php` applies it:
 
 ```php
 <?php
@@ -30,22 +50,21 @@ declare(strict_types=1);
 use TYPO3\CMS\Core\Core\Environment;
 
 $customerName = 'Customer website';
-$applicationContext = (string)Environment::getContext();
-
-$GLOBALS['TYPO3_CONF_VARS']['SYS']['sitename'] = sprintf(
-    '%s · %s',
-    $customerName,
-    $applicationContext,
+$environment = (require __DIR__ . '/environment-label.php')(
+    (string)Environment::getContext(),
+    Environment::getProjectPath(),
 );
+
+$GLOBALS['TYPO3_CONF_VARS']['SYS']['sitename'] = sprintf('%s · %s', $customerName, $environment['label']);
 
 $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['backend'] = array_replace(
     $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['backend'] ?? [],
     [
         'loginLogo' => 'EXT:sitepackage/Resources/Public/Images/Backend/login-logo.svg',
         'loginLogoAlt' => $customerName,
-        'loginHighlightColor' => '#34512f',
-        'loginBackgroundImage' => 'EXT:sitepackage/Resources/Public/Images/Backend/login-background.webp',
-        'loginFootnote' => sprintf('Website by webconsulting.at · %s', $applicationContext),
+        'loginHighlightColor' => $environment['color'],
+        'loginBackgroundImage' => 'EXT:sitepackage/Resources/Public/Images/Backend/login-background.svg',
+        'loginFootnote' => sprintf('Website by webconsulting.at · %s', $environment['label']),
         'backendLogo' => 'EXT:sitepackage/Resources/Public/Images/Backend/backend-logo.svg',
         'backendFavicon' => 'EXT:sitepackage/Resources/Public/Images/Backend/favicon.svg',
     ],
@@ -55,15 +74,57 @@ $GLOBALS['TYPO3_CONF_VARS']['BE']['stylesheets']['sitepackage-backend'] =
     'EXT:sitepackage/Resources/Public/Css/Backend/backend.css';
 ```
 
-`loginFootnote` is plain text: Core strips markup. On wide screens Core positions the footnote at
-the lower inline end, so use `Website by webconsulting.at` without overriding the login template.
-Keep `loginLogoAlt` meaningful and keep all assets inside the sitepackage.
+The mapping rules:
 
-The application context is read before `additional.php`. Display `Environment::getContext()` but
-never set or guess `TYPO3_CONTEXT` here. Adding the exact context to the sitename makes it visible in
-the logged-in backend for non-admin editors; the Core system-information dropdown is admin-only.
-Appending it to `loginFootnote` makes it visible before login and throughout password-reset/MFA
-flows that render the Core footnote.
+| Real context | Label | Highlight colour |
+|---|---|---|
+| `Development/Docker` | `Entwicklung (DDEV)` | a distinct non-brand shade |
+| `Production/Staging`, or any context on the staging release path | `Staging` | a distinct warning-like shade |
+| `Production` or `Production/Live` | `Live` | the validated customer action colour |
+| anything else | the readable context name | a neutral dark shade |
+
+- **Never print the raw context string** in the footnote or sitename. A composed text such as
+  `Development/Docker - by …` is unreadable and is what this mapping replaces.
+- **Never mislabel.** Live requires a production context **and** a release path outside staging.
+  A staging release that reports `Production` is a deploy error: the label still says Staging, and
+  the deploy must be fixed (it also makes EXT:solr compute the live siteHash, see
+  [typo3-solr](../../typo3-solr/references/v14-only-solr-changes.md#application-context-sitehash-and-shared-cores)).
+- Every highlight colour reaches at least 4.5:1 against white, because Core puts white text on the
+  login button. Colour is a second signal only; the label carries the meaning.
+- `loginBackgroundImage` is a calm, brand-coloured SVG or WebP that keeps the login card readable
+  in the light and the dark scheme. No photos with busy detail, no motion.
+- `backendLogo` is a variant that stays legible on the light and the dark top bar (a single-colour
+  mark readable on both, or the logo on its own light plate). An SVG's internal
+  `prefers-color-scheme` follows the operating system, not the TYPO3 user's colour-scheme setting,
+  so test both settings. Check `loginLogo` against the dark login card the same way.
+- `loginFootnote` reads exactly `Website by webconsulting.at · <label>`; proofread it, typos ship
+  to every login. It is plain text: Core strips markup. On wide screens Core positions it at the
+  lower inline end, so do not override the login template.
+- Keep `loginLogoAlt` meaningful and keep all assets inside the sitepackage.
+
+The application context is read before `additional.php`. Display the mapped label but never set or
+guess `TYPO3_CONTEXT` here, and never infer it from the hostname. Every environment must get its
+context from its deploy: `deploy.php` sets `TYPO3_CONTEXT` per host (or the host's shared `.env` /
+`SetEnv`), for the web server **and** the CLI, because scheduler and indexing jobs run in the CLI
+context. The sitename makes the label visible in the logged-in backend for non-admin editors (the
+Core system-information dropdown is admin-only); the footnote makes it visible before login and
+throughout password-reset/MFA flows.
+
+### Evaluate the mapping for every context
+
+The mapping runs once per process, so prove each branch without redeploying: evaluate the closure
+file for each simulated context and release path.
+
+```bash
+for ctx in Development/Docker Production/Staging Production Production/Live Testing; do
+  for root in /var/www/staging.example.at/releases/12 /var/www/www.example.at/releases/12; do
+    php -r '$m = require "config/system/environment-label.php"; echo json_encode([$argv[1], $argv[2], $m($argv[1], $argv[2])]), PHP_EOL;' "$ctx" "$root"
+  done
+done
+```
+
+Expected: no row says Live on the staging path; no row contains a raw `Development/Docker` string
+in the label; the unknown context prints its readable name.
 
 ## Optional stylesheet
 
@@ -82,8 +143,13 @@ backend color schemes and 200% zoom.
 
 Clear system/browser caches and verify:
 
-1. Login, password reset, MFA selection, MFA setup, and MFA authentication.
-2. The logo alt text, footnote, button hover/focus/disabled contrast, and background readability.
-3. The top-bar logo, favicon, sitename, and exact context after login as a non-admin.
-4. Production and non-production contexts are distinguishable by text, not color alone.
-5. No asset 404s, CSP errors, console errors, layout overflow, or lost focus indicators occur.
+1. The login page needs no login: open `/typo3/` in a fresh browser context with the light and
+   the dark colour scheme emulated (Playwright `colorScheme`), per environment (DDEV, staging,
+   live). Logo, alt text, background, label and footnote are readable in both schemes.
+2. Login, password reset, MFA selection, MFA setup, and MFA authentication.
+3. Button hover/focus/disabled contrast with each environment's highlight colour.
+4. The top-bar logo in the light and dark backend setting, the favicon, and the sitename
+   `<customer> · <label>` after login as a non-admin.
+5. Production and non-production environments are distinguishable by text, not colour alone, and
+   the [mapping evaluation](#evaluate-the-mapping-for-every-context) passed for every context.
+6. No asset 404s, CSP errors, console errors, layout overflow, or lost focus indicators occur.

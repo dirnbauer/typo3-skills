@@ -97,4 +97,33 @@ node skills/typo3-upgrade-run/scripts/deploy-staging.mjs --project . \
   document root, remove it (Deployer replaces `current` with a symlink). Deployer's `deploy:shared`
   copies a shared file such as `public/.htaccess` from the release into `shared/` when `shared/` lacks it;
   later deploys keep the server's copy, so a changed rule must then be edited on the server.
+- Staging gets its own application context (`Production/Staging`), set by the deploy for the web
+  server and the CLI, and the backend login shows it
+  ([environment context per host](deployment-handover.md#environment-context-per-host)). A staging
+  site whose Solr configuration points at the production Solr stays disabled for Solr until the
+  siteHash comparison passed ([siteHash and shared cores](../../typo3-solr/references/v14-only-solr-changes.md#application-context-sitehash-and-shared-cores)).
 - A staging publication is not Contract A acceptance. The human acceptance names the closure hash.
+
+## One hosting account for staging and live
+
+Some fleet sites run staging and live in one shared hosting account, for example a Hetzner konsoleH
+managed server. There the web PHP version set in the panel is **account-wide** (`~/.phpversion`):
+switching it for staging switches live too. Never change it for an upgrade.
+
+- **Detect.** The staging frontend shows Composer's platform-check error `Your Composer
+  dependencies require a PHP version ">= …"` while the deploy's CLI steps passed: the CLI used its
+  own binary (`/usr/bin/phpXX` on these servers), the web still runs the account version.
+- **Fix.** Run staging on the newer PHP per directory with one line in staging's **shared**
+  `<webroot>/.htaccess` (Hetzner's documented per-directory PHP version):
+
+  ```apache
+  FcgidWrapper "/home/httpd/cgi-bin/php85-fcgi-starter.fcgi" .php
+  ```
+
+  Pin the deploy's `bin/php` to the matching `/usr/bin/php85` so web and CLI agree.
+- **Keep it.** The shared `.htaccess` survives deploys only while nobody replaces it from the
+  release. The project's deploy guard checks that the line is present in the shared `.htaccess`
+  before release activation and fails the deploy when it is missing; record it in the handover.
+- The platform preflight above reads the CLI PHP only; the web PHP of such an account is proved by
+  the staging frontend answering without the platform-check error.
+
