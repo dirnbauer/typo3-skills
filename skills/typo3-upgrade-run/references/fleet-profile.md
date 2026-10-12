@@ -79,6 +79,14 @@ seven runs were on six different pins within two days.
 - Runs pinned before a judgement fix may need that re-seal to finish. Before screenshot declarations
   (harness PR #10) an owner-approved visible change could not be declared; before closure accounting
   (PR #12) a run with approved declared changes could never close.
+- Before the deferred reactivation (harness PR #40, commit `78414ac`) an edge that reached a failed,
+  blocked or invalid node while its `requires` were unmet was dropped: the node stayed failed and
+  `graph-status` printed `Ready: —`. One fleet closure deadlocked this way (`lighthouse-proof` reached
+  after the epoch passed, while `axe-proof` had not yet passed). With the fix the node returns to
+  `pending`, then `ready` once its requirements pass; no traversal is counted again. The change is
+  graph bookkeeping and leaves `harness.sourceHash` unchanged, so taking it needs no re-seal. On an
+  older pin, look for an incoming edge whose `last_at` is later than the failed node's
+  `completed_at`, and ask the owner before moving the pin.
 - Re-seal outside guarded nodes: the self-test it requires refuses while a code or stateful node is
   open ([graph runner](graph-runner.md#what-the-guards-refuse)), and `closure-start` refuses until it has run.
 

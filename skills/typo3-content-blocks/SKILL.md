@@ -280,7 +280,9 @@ Guidelines:
 Migrated previews (Mask importer, `make:content-block`) dump raw fields; collections drawn with the
 `PageLayout/Grid` partial show empty cards for non-`tt_content` children. For one shared preview design,
 item lists with side-panel editing, link-field values and inline record labels, read
-[backend previews](references/19-backend-previews.md).
+[backend previews](references/19-backend-previews.md). On 14.3 a migrated preview that renders
+collections with `PageLayout/Grid` makes child rows use the parent's preview and throws `#1775553111`:
+[child rows rendered through the parent's preview](references/19-backend-previews.md#child-rows-rendered-through-the-parents-preview).
 
 
 ## Detailed Reference

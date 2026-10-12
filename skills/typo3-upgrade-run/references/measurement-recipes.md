@@ -16,7 +16,8 @@ recorded command is not evidence.
   [Security](#security) · [Media and cache](#media-and-cache) · [Code quality](#code-quality)
 - [Intermediate loops on stateful rungs](#intermediate-loops-on-stateful-rungs)
 - [Proof scripts: journeys, sweeps and row diffs](#proof-scripts-journeys-sweeps-and-row-diffs),
-  with [count list records per language](#count-list-records-per-language)
+  with [closure kit dry run](#closure-kit-dry-run-before-the-epoch) and
+  [count list records per language](#count-list-records-per-language)
 - [RTE round-trip proof](#rte-round-trip-proof)
 
 ## Ground rules
@@ -28,6 +29,9 @@ recorded command is not evidence.
   **median**, and record min and max so the spread is visible.
 - **Pin the browser.** The Lighthouse Chrome must be the version recorded in the environment
   fingerprint. A browser change between the before and after measurement makes the delta meaningless.
+- **Quiet lane for Lighthouse.** Stop every other DDEV project with `ddev stop <project>` and start
+  it again with `ddev start <project>` afterwards. `ddev pause` no longer exists in current DDEV; a
+  kit that calls it fails at the quiet-lane step.
 - **Never submit the site to a remote scanner.** Mozilla Observatory, Google Rich Results and
   PageSpeed Insights all require a public URL and would publish the customer's pre-launch state.
   Compute the equivalents offline and say so.
@@ -231,6 +235,33 @@ comes from a fleet run:
   text → int retype and once hid a real change.
 - **Leave no test accounts.** Delete DDEV-only test editors and admins, with their `sys_log` and
   `sys_history` rows, before any database leaves the machine.
+
+### Closure kit: dry-run before the epoch
+
+`closure-harness-recovery` has one attempt budget for every cause
+([shared attempt budget](graph-runner.md#the-shared-attempt-budget)). Kit bugs found inside the
+epoch spend it; one fleet closure deadlocked after three kit repairs. Before `closure-start`, run the
+whole closure kit once against the target, as a pre-epoch rehearsal whose results prove nothing:
+
+1. Snapshot, then run every component test and every backend check of the kit. The backend checks
+   include a page-module probe of every page with Content Block elements, child rows included, with
+   0 exceptions: a migrated preview can throw on 14.3 while the frontend is identical
+   ([previews that crash](mask-to-content-blocks.md#backend-previews-that-crash-on-143)). Run that
+   probe on a clone: previews with `f:image` write derivatives (and WebP sidecars) into `fileadmin`.
+2. Fix every kit failure in the kit (timings, DOM counts, approved redirect rules, selectors) and
+   commit it. A site defect the rehearsal finds goes to its recovery node now, not inside the epoch.
+3. Restore the snapshot, delete the files the journeys wrote, and run
+   `t3u content-fingerprint --assert`.
+4. The backend journeys add `_processed_` derivatives. The fingerprint body records their count
+   (`imageProcessingWarm.processedFileCount`) although `--assert` does not compare it, so re-seal the
+   target epoch with the extended cumulative ledger now
+   ([target content epoch](closure-currentness.md#target-content-epoch-one-cumulative-ledger)).
+5. Tell the owner: no backend use until the closure is done
+   ([epoch order](closure-currentness.md#epoch-order-what-makes-a-new-epoch-stale)). Journeys that log
+   in on a `*.ddev.site` host are owner steps
+   ([who runs the login journeys](overnight-controller.md#who-runs-the-backend-login-journeys)).
+
+Then `closure-start`, and the real proof runs the same kit unchanged.
 
 ### Count list records per language
 

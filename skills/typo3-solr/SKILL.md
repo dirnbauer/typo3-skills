@@ -128,6 +128,10 @@ ddev composer require apache-solr-for-typo3/solr:^14.0
 Verify the chosen lock, server, Java and configset together. Do not infer Docker-image availability
 from a Composer release, and do not move an incompatible v14 project back to EXT:solr 13.1.
 
+Upgrading a site from EXT:solr 12 changes results silently three ways: the Lucene 10 German
+analysis, the page title taken from the SEO title, and `lastSearches` off by default. Detection and
+fixes: [search parity across the Solr upgrade](references/v14-only-solr-changes.md#search-parity-across-the-solr-upgrade).
+
 ### CVE-2025-24814 Migration
 
 Apache Solr 9.8.0+ disables loading `jar` files via `lib` directive in configsets. **CVE-2025-24814** is a remote-code-execution class issue: if an attacker can replace or supply a configset file that Solr treats as trusted, Solr may load attacker-controlled JARs from that configset (including via the `lib` directive), which can lead to arbitrary code execution. The stricter default blocks that classpath loading from configsets. The `solr-typo3-plugin` must be moved from `/configsets/ext_solr_*/typo3lib/` to `/typo3lib/` at the Solr server root. Docker users: use the **EXT:solr** container image **13.0.1+** (image tag, not TYPO3 Core) so this migration runs automatically.

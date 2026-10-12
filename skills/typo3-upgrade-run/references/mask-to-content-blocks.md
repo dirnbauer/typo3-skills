@@ -156,6 +156,48 @@ for b in packages/*/ContentBlocks/ContentElements/*/; do
 done
 ```
 
+## Backend previews that crash on 14.3
+
+On one fleet run the frontend proof was green while the 14.3 page module threw
+`#1775553111 Record property "X" is not available` from `typo3/cms-fluid` `Render/TextViewHelper`:
+721 child rows across 11 child tables failed, and other child rows rendered silently with nonsense.
+
+**Cause.** The importer's generated `templates/backend-preview.html` renders every collection with
+the Content Blocks partial `PageLayout/Grid`. That partial is meant for blocks with their own record
+table. For a child table defined inside a block (`tx_mask_*`), Content Blocks picks the **parent**
+block's `backend-preview.html` for the child row. Each child row was therefore rendered through its
+parent's preview, and `{data -> f:render.text(field: 'header')}` threw because the child row has no
+`header`. Child rows whose fields happened to exist rendered the parent's layout with wrong values.
+
+**Not the cause:** `ctrl.hideTable`. Mask on 12.4 set `hideTable: true` for its child tables, and
+Content Blocks sets the same.
+
+**Detect.** A frontend proof never reaches these templates. Run a page-module probe that renders
+every page carrying Content Block elements, child rows included, and require 0 exceptions (that run:
+328 pages, 522 elements). Find the generated previews that use the grid first:
+
+```bash
+grep -rl 'PageLayout/Grid' packages/*/ContentBlocks/ContentElements/*/templates/backend-preview*.html
+```
+
+**Run the probe only on a clone** (a copied DDEV project or a scratch database plus a copied
+`fileadmin`), never on the project whose fingerprint is sealed. Rendering previews with `f:image`
+writes derivatives: in that run `plan2net/webp` created `.webp` sidecars in the main `fileadmin` and
+broke a sealed content fingerprint.
+
+**Fix**, per element, decided by what 12.4 had:
+
+1. **12.4 had a Mask backend template** (the Mask `backend` template folder): restore it as the
+   `Content` section of `backend-preview.html`. Render the children in a plain `f:for` loop over the
+   collection, never through `PageLayout/Grid`.
+2. **12.4 had none:** delete the generated `backend-preview.html`. Content Blocks then falls back to
+   the TYPO3 standard preview, which matches what editors saw on 12.4.
+3. In TYPO3 14 backend templates, use `f:sanitize.html` instead of `f:format.html`, which throws
+   `#1686813703` in the page module.
+
+Then rerun the clone probe until it reports 0 exceptions, and compare one page per element type with
+the 12.4 page module ([backend previews](../../typo3-content-blocks/references/19-backend-previews.md#verify)).
+
 ## Proving it worked
 
 This is a content-element migration, so the invariance gate is exactly the right instrument and
@@ -176,7 +218,8 @@ node scripts/t3u.mjs compare-visual \
 ```
 
 Then check the backend as well: a Content Block that renders correctly in the frontend can still
-be uneditable. Open one of each migrated type in FormEngine, save it, and confirm every field
+be uneditable, and its page-module preview can still throw
+([previews that crash on 14.3](#backend-previews-that-crash-on-143)). Open one of each migrated type in FormEngine, save it, and confirm every field
 survived — `scripts/backend-write-roundtrip.mjs` covers the mechanics, and
 `references/backend-permissions.md` covers the part everyone forgets: **new content types are not
 automatically permitted to editors.** A migrated element that editors cannot select has not been

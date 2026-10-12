@@ -19,6 +19,7 @@ detections of the [TYPO3 14 fix pack](typo3-14-fix-pack.md) and put the approval
 - [Where a day and a half went](#where-a-day-and-a-half-went) · [Small shop site minutes](#where-the-minutes-went-on-a-small-shop-site-2026-10-07) · [Why a small site took so long](#why-a-small-site-took-so-long-2026-10-08)
 - [Sentinel opened the mail client](#a-component-sentinel-opened-the-operators-mail-client-2026-10-09) · [Composer in a subdirectory](#composer-in-a-subdirectory-discovery-read-the-wrong-configsites-2026-10-09) · [Processed images darker](#processed-images-darker-locally-than-live-2026-10-07)
 - [Bootstrap 5 review rejected](#a-bootstrap-5-review-rejected-renames-are-not-a-migration-2026-10-07) · [Closure, deploy and backend-proof traps](#closure-deploy-and-backend-proof-traps-from-a-fleet-run-2026-10-07) · [What failed](#what-failed-and-what-now-prevents-a-repeat)
+- [Closure deadlocks, crashing previews and search drift](#closure-deadlocks-crashing-previews-and-search-drift-2026-10-11)
 - [Fast representative matrix](#the-fast-representative-matrix) · [Secure dependency diagnosis](#secure-dependency-diagnosis) · [Safe Solr mutation](#safe-solr-mutation) · [Quality profile](#vite-html-lighthouse-and-axe-quality-profile)
 
 ## Where a day and a half went
@@ -209,6 +210,100 @@ finding or a lost hour; each counter-measure below is cheap when applied before 
    pre-existing rather than accepting it on sight: compare the computed colours with the source CSS
    from Git and with the Baseline A DOM markup. Matching values on both sides make it
    `pre-existing`; any difference is classified like every other finding.
+
+## Closure deadlocks, crashing previews and search drift (2026-10-11)
+
+Ten lessons from the closure of one fleet run (12.4 → 14.3, Mask → Content Blocks, EXT:solr). Each
+gives the problem, how to detect it and how to fix it; the detail lives in the linked reference.
+
+1. **Migrated Content Blocks backend previews crash on 14.3.**
+   - *Problem.* The page module throws `#1775553111 Record property "X" is not available` from
+     `typo3/cms-fluid` `Render/TextViewHelper`. The Mask importer
+     (`nhovratov/mask-to-content-blocks`) generates previews that render every collection with the
+     Content Blocks partial `PageLayout/Grid`. For a child table defined inside a block (`tx_mask_*`),
+     Content Blocks then renders the child row through the **parent** block's `backend-preview.html`,
+     and `{data -> f:render.text(field: 'header')}` throws. In that run 721 child rows across 11
+     child tables failed; others rendered silently with nonsense. `ctrl.hideTable` is not the cause.
+   - *Detect.* A page-module probe that renders every page with Content Block elements, child rows
+     included (328 pages, 522 elements there), must report 0 exceptions. Run it on a clone only:
+     previews with `f:image` let `plan2net/webp` write sidecars into the main `fileadmin`, which
+     broke a sealed fingerprint. A frontend proof never catches this.
+   - *Fix.* Where 12.4 had a Mask backend template, restore it as the `Content` section with the
+     children in a plain `f:for` loop; where it had none, delete the generated `backend-preview.html`
+     so the TYPO3 standard preview applies; use `f:sanitize.html`, not `f:format.html`
+     (`#1686813703`). Detail: [backend previews that crash on 14.3](mask-to-content-blocks.md#backend-previews-that-crash-on-143).
+2. **`closure-harness-recovery` has one shared attempt budget across all causes.**
+   - *Problem.* `max_node_attempts` (3) counts every visit, whatever edge brought it. Three kit
+     repairs (a slider transition timing, a `robots.txt` DOM count, a missing approved-redirect rule)
+     used it up. A later approved code fix made the closure epoch stale, the `reproof` route needed a
+     fourth visit of the same node, and the graph deadlocked.
+   - *Detect.* `t3u graph-status` shows the node with all attempts spent while a proof still routes
+     to it; `graph-next` offers nothing.
+   - *Fix.* Dry-run the whole closure kit before `closure-start`
+     ([closure kit dry run](measurement-recipes.md#closure-kit-dry-run-before-the-epoch)), so kit bugs
+     are fixed outside the epoch. After a code fix inside the closure, route the reproof through
+     `closure-join` → `contract-a-gate` → `closure-reconcile` → `reproof`, not through
+     `closure-harness-recovery` ([shared attempt budget](graph-runner.md#the-shared-attempt-budget)).
+3. **An arrival into a failed node was lost.**
+   - *Problem.* When an edge reached a failed node whose `requires` were not yet met, older harness
+     versions dropped the arrival. The node stayed failed and `graph-status` printed `Ready: —`.
+   - *Detect.* A deadlock with an incoming edge whose `last_at` is later than the failed node's
+     `completed_at`.
+   - *Fix.* The deferred reactivation of harness PR #40 (commit `78414ac`); see
+     [harness pins](fleet-profile.md#harness-pins-across-a-fleet).
+4. **The controller closed a node before the worker finished its evidence.**
+   - *Problem.* `node-close` binds the evidence SHA-256. The worker was still writing `evidence.md`
+     seconds after the close, and `graph-validate` then refused the changed file.
+   - *Detect.* `graph-validate` names an evidence hash mismatch on a closed node.
+   - *Fix.* The worker writes the evidence completely, then reports its SHA-256; the controller checks
+     the hash before `node-close`. A later attempt never overwrites a bound evidence file: it writes
+     `evidence.<attempt>.md` and closes with that path ([evidence file](graph-runner.md#close-only-a-finished-evidence-file)).
+5. **The owner's backend use during the proof drifted the content.**
+   - *Problem.* Opening pages in the backend is enough: Yoast (`tx_yoastseo_*`) and backend thumbnails
+     (`sys_file_processedfile`, `_processed_`) write, and the content fingerprint drifts mid-epoch.
+   - *Detect.* `t3u content-fingerprint --assert` reports drift in those tables or in the file tree
+     while no proof node wrote anything.
+   - *Fix.* Tell the owner before `closure-start`: no backend use until the closure is done. To
+     recover, restore the verified snapshot, remove the stray `_processed_` files and assert again
+     ([epoch order](closure-currentness.md#epoch-order-what-makes-a-new-epoch-stale)).
+6. **Agents cannot run the backend login journeys on `*.ddev.site`.**
+   - *Problem.* An agent's safety rules allow test-password logins only on `localhost` and `*.test`
+     hosts, so the login journeys on a `*.ddev.site` host need the owner. In one run the long run
+     command was repeated in a later message, the owner started it twice, and the overlapping runs
+     wrote the same output directory and database.
+   - *Detect.* Plan it at intake: every journey that logs in is an owner step.
+   - *Fix.* Four owner commands (snapshot, run, restore, `--cleanup`), exactly one command per step,
+     and the run command shown only once ([who runs the login journeys](overnight-controller.md#who-runs-the-backend-login-journeys)).
+7. **`ddev pause` no longer exists.**
+   - *Problem.* Current DDEV has no `pause` command, so the Lighthouse quiet-lane step failed.
+   - *Detect.* `ddev pause` answers with an unknown-command error.
+   - *Fix.* `ddev stop <project>` for every other project before the quiet lane, `ddev start <project>`
+     afterwards ([load across projects](parallel-execution.md#load-across-projects)).
+8. **The `_processed_` file count is part of the content-fingerprint body.**
+   - *Problem.* `content-fingerprint --assert` compares tables and the file tree hash only, but the
+     fingerprint body (and its `fingerprintHash`) also carries `imageProcessingWarm.processedFileCount`.
+     Backend journeys add derivatives, so a target sealed before them no longer matches its own hash.
+   - *Detect.* The assert passes while the target epoch's recorded hash differs from a fresh
+     fingerprint; the body diff is `processedFileCount`.
+   - *Fix.* Run the backend journeys of the kit dry run first, then re-seal the target epoch with the
+     extended cumulative ledger, before `closure-start` ([target content epoch](closure-currentness.md#target-content-epoch-one-cumulative-ledger)).
+9. **Solr 10 (Lucene 10) changed the German analysis.**
+   - *Problem.* `DictionaryCompoundWordTokenFilter` now defaults to
+     `onlyLongestMatchIgnoreSubwords=true`, and the German stemmer keeps `system`. Token counts and
+     search ranking change.
+   - *Detect.* The search sentinel's seeded query order differs; the Solr Analysis screen shows fewer
+     compound parts and `system` unstemmed.
+   - *Fix.* A configset overlay `german/schema.xml` with `onlyLongestMatchIgnoreSubwords="false"` and a
+     `PatternReplaceFilter` `system$` → `syst` before the stemmers, deployed on the target Solr 10
+     before the full reindex ([Solr upgrade parity](../../typo3-solr/references/v14-only-solr-changes.md#search-parity-across-the-solr-upgrade)).
+10. **EXT:solr 13 indexes the page title from the SEO title, and `lastSearches` is off.**
+    - *Problem.* Since EXT:solr 13 the page title comes from `PageTitleProviderManager`, so pages
+      with an SEO title index that instead of `pages.title`. EXT:solr 13 also disabled `lastSearches`
+      by default, which drops the `fe_typo_user` cookie.
+    - *Detect.* Result titles differ from the baseline; the HTTP/cookie proof misses `fe_typo_user`
+      after a search.
+    - *Fix.* `fields.title = title` in the page index configuration and `lastSearches.mode = user`
+      ([Solr upgrade parity](../../typo3-solr/references/v14-only-solr-changes.md#search-parity-across-the-solr-upgrade)).
 
 ## What failed and what now prevents a repeat
 

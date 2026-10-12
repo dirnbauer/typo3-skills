@@ -10,6 +10,7 @@ How one controller drives the sealed upgrade graph with small, fresh-context wor
 - [Evidence file](#evidence-file)
 - [Independent review](#independent-review)
 - [Choosing the outcome](#choosing-the-outcome)
+- [The shared attempt budget](#the-shared-attempt-budget)
 - [Parallel sets](#parallel-sets)
 - [Resume and calibration](#resume-and-calibration)
 - [What the guards refuse](#what-the-guards-refuse)
@@ -54,9 +55,11 @@ condition is proven or cannot be proven. Write the evidence file named in the br
 120 lines, only artifacts that prove the done condition (each with its SHA-256), earlier nodes'
 artifacts cited by path and hash, read-only checks in one probe artifact. Your time box is the
 brief's forecast: stop at the forecast when it is 15 minutes or less, otherwise at twice it, and
-return what is proven plus the one open question. Return:
+return what is proven plus the one open question. Finish the evidence file before you return and
+never change it afterwards. Return:
   outcome: <one allowed outcome>
   evidence: <path>
+  evidence_sha256: sha256:<shasum -a 256 of the finished evidence file>
   summary: <three lines at most>
 Do not run node-open or node-close. Do not edit state.json, config/, manifests/, baseline/ or the
 graph. Do not start a retry loop. Return blocked on identity, credential, backup, approval or scope doubt.
@@ -150,6 +153,19 @@ A narrative without commands, exit codes and artifacts is not evidence; fluent s
 hide a failed step are the most dangerous failure mode of agent systems. Lean is not thin: every
 done-condition clause still needs its command, exit code and hashed artifact.
 
+### Close only a finished evidence file
+
+`node-close` binds the evidence SHA-256, and `graph-validate` rechecks it. In one fleet run the
+controller closed a node seconds before the worker finished writing `evidence.md`; the file changed
+after the close and `graph-validate` refused it.
+
+- The worker writes the evidence file completely, then returns its digest with the outcome
+  (`evidence_sha256: sha256:<shasum -a 256 of the file>`), as its last action.
+- The controller recomputes the digest and runs `node-close` only when both match. A worker that
+  is still running or returned no digest has not finished.
+- A later attempt never overwrites an evidence file a close already bound. It writes
+  `nodes/<id>/evidence.<attempt>.md` and the controller closes with `--evidence` naming that path.
+
 ## Independent review
 
 Required for nodes flagged **R** in [the node reference](graph-nodes.md) and for every
@@ -189,6 +205,31 @@ trivial node gets the [short review](#trivial-nodes-run-in-the-controller).
 
 Never collapse these into "red". Each has its own recovery route, and a wrong class sends the next
 worker to the wrong repair.
+
+## The shared attempt budget
+
+`max_node_attempts` (3 in the shipped graph) counts every visit of a node, whatever edge or cause
+brought it there; each retry edge's `max_traversals` limits only that edge. A recovery node that
+several proofs route to therefore shares one budget across all causes.
+
+In one fleet closure, three instrument repairs in `closure-harness-recovery` (a slider transition
+timing, a `robots.txt` DOM count, a missing approved-redirect rule) spent its three attempts. An
+approved code fix later made the closure epoch stale; the stale proof routed to the same node for a
+`reproof`, no attempt was left, and the graph deadlocked.
+
+- **Dry-run the closure kit before `closure-start`.** Run the component tests and backend checks
+  once before the epoch, so kit bugs are fixed outside it
+  ([closure kit dry run](measurement-recipes.md#closure-kit-dry-run-before-the-epoch)).
+- **After a code fix inside the closure**, let the remaining proof nodes run on their own
+  measurements. Route the stale epoch through `closure-join` → `contract-a-gate` (its `closure-check`
+  reports the epoch stale) → `closure-reconcile` → `reproof`, which has its own budget, instead of
+  sending it through `closure-harness-recovery`.
+- **Spent budget.** With harness PR #40 merged into your pin (check `t3u --help` for
+  `node-attempts-extend`), the owner can grant one more attempt by a recorded approval:
+  `t3u node-attempts-extend --node <id> --approval APR-NNN --reason "…" [--attempts 1]`. It refuses
+  unless the node is ready with its budget spent and the approval names that node, and it never
+  lifts a retry edge's `max_traversals` or `max_total_retries`. Without it, a spent node is a re-plan
+  with the owner, not a state edit.
 
 ## Parallel sets
 
