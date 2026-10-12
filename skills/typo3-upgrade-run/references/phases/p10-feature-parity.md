@@ -23,7 +23,7 @@ rendering change needs an approval per difference class or it is a `regression`.
 |---|---|---|
 | Redirects | package was absent, newly set up, or its module/permissions changed | package and schema active; integrity clean; trusted non-admin can manage and exercise a local redirect |
 | Solr | EXT:solr/server/config/indexing path changed | supported server, reindex and affected search paths verified |
-| Visual Editor | installed and integration code/config changed | inline editing verified, frontend rendering unchanged |
+| Visual Editor | already installed and integration code/config changed (a new install is the P14 opt-in only) | inline editing verified, frontend rendering unchanged |
 | CKEditor RTE | preset, package or rendered markup changed | preset loads and affected authoring/rendering behavior is preserved |
 
 Security headers are not introduced here. Adding them before invariance closes guarantees an HTTP

@@ -87,8 +87,12 @@ frontend search verified including empty and paginated results.
 
 ## Loop 210 — Visual Editor
 
-Require the latest v14-compatible `friendsoftypo3/visual-editor`, verified on Packagist at execution
-time. Migrate the Fluid templates with the `typo3-visual-editor` skill — `f:render.text`, content
+Only when the site **already** has the Visual Editor installed. A new install is never P10 work: it
+is the [opt-in branch](specialist-branches.md#opt-in-visual-editor-branch), which runs after
+Contract A and only on the owner's explicit yes.
+
+Update to the latest v14-compatible `friendsoftypo3/visual-editor`, verified on Packagist at
+execution time. Migrate the Fluid templates with the `typo3-visual-editor` skill — `f:render.text`, content
 areas, colPos migration.
 
 Content Blocks need a `record-transformation` data processor that runs before their priority-10

@@ -100,7 +100,7 @@ test('structured data preserves Contract A before an approval-gated P14 enrichme
   assert.equal(enrichment.evidence_loop, 'required');
   assert.deepEqual(enrichment.requires, ['contract-a-gate']);
   assert.deepEqual(definition.edges.find((edge) => edge.id === 'contract-pass').to,
-    ['structured-data-enrichment', 'webmcp-readiness']);
+    ['structured-data-enrichment', 'webmcp-readiness', 'visual-editor-opt-in']);
   assert.equal(definition.edges.find((edge) => edge.id === 'structured-enrichment-pass').to,
     'elevation-join');
 });
@@ -131,7 +131,7 @@ test('native WebMCP is inventoried, preserved, then added after Contract A in ev
   assert.equal(definition.edges.find((edge) => edge.id === 'webmcp-readiness-pass').to,
     'elevation-join');
   assert.deepEqual(elevationJoin.requires,
-    ['structured-data-enrichment', 'webmcp-readiness']);
+    ['structured-data-enrichment', 'webmcp-readiness', 'visual-editor-opt-in']);
   assert.equal(definition.edges.find((edge) => edge.id === 'elevation-joined').to,
     'handover');
 });
@@ -158,7 +158,32 @@ test('structured data and WebMCP are standard Contract B branches, never skipped
   }
   // A not-applicable close of either branch still needs an independent review.
   assert.equal(definition.policy.require_independent_review, true);
-  assert.deepEqual(definition.edges.find((edge) => edge.id === 'contract-pass').to, standard);
+  assert.deepEqual(definition.edges.find((edge) => edge.id === 'contract-pass').to.slice(0, 2), standard);
+});
+
+test('the Visual Editor is an opt-in Contract B branch that never runs without a recorded yes', async () => {
+  const definition = parseYaml(await readFile(DEFAULT_GRAPH, 'utf8'));
+  const node = definition.nodes['visual-editor-opt-in'];
+  assert.equal(node.phase, 'P14');
+  assert.equal(node.skill, 'typo3-visual-editor');
+  assert.equal(node.mutation, 'stateful');
+  // The yes-path cannot open without a recorded intent approval; no or no answer closes
+  // not-applicable through the read-only applicability mode, which can never pass.
+  assert.equal(node.approval, 'required');
+  assert.equal(node.evidence_loop, 'required');
+  assert.deepEqual(node.requires, ['contract-a-gate']);
+  assert.deepEqual(node.outcomes, ['pass', 'not-applicable', 'blocked']);
+  assert.match(node.objective, /Only on the owner's explicit yes/);
+  assert.match(node.done, /No or no answer: not-applicable citing the recorded answer, nothing installed/);
+  assert.ok(definition.edges.find((edge) => edge.id === 'contract-pass').to.includes('visual-editor-opt-in'));
+  for (const outcome of ['pass', 'not-applicable']) {
+    assert.ok(definition.edges.some((edge) => edge.from === 'visual-editor-opt-in'
+      && edge.outcome === outcome && edge.to === 'elevation-join'), outcome);
+  }
+  // Nothing before Contract A installs it: no intake, migration or proof node routes to it.
+  assert.deepEqual(definition.edges.filter((edge) => [edge.to].flat().includes('visual-editor-opt-in'))
+    .map((edge) => edge.from), ['contract-a-gate']);
+  assert.ok(!definition.nodes['migration-join'].requires.includes('visual-editor-opt-in'));
 });
 
 test('an unbounded cycle is rejected', () => {

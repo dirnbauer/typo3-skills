@@ -134,10 +134,12 @@ Part of the deploy-model check and the handover, for every environment (DDEV, st
 
 ## Database-only changes and test accounts
 
-Approved editor-rights grants (the Redirects module, the Info sub-modules) live in `be_groups`, not in
+Approved editor-rights grants (the Redirects module, the Info sub-modules, the Visual Editor rights
+after an [opt-in yes](specialist-branches.md#opt-in-visual-editor-branch)) live in `be_groups`, not in
 the code, so a deploy does not carry them. Ship each one as an idempotent tool that bootstraps from the
-working directory and offers `dry-run` (a rolled-back transaction) before `apply`, and list the exact
-commands in the handover for staging and later live, after the upgrade wizards.
+working directory, offers `dry-run` (a rolled-back transaction) before `apply` and backs up the rows
+it changes, and list the exact commands in the handover for staging and later live, after the upgrade
+wizards.
 
 Before any database leaves the machine, delete the DDEV-only test accounts with every trace, after a
 fresh snapshot: the `be_users` rows, `be_sessions` (`ses_userid`), `sys_lockedrecords`, `sys_log` and
