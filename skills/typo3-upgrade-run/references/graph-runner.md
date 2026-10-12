@@ -298,7 +298,7 @@ not change and sealed baselines stay valid.
 | A specialist closes `not-applicable` alone | missing independent review |
 | A reviewer checks yesterday's evidence | review names different evidence bytes |
 | A third identical recovery attempt | retry edge exhausted: re-plan, do not repeat |
-| `selftest-determinism` while a guarded code/stateful node is open (an approved re-seal inside `rung-14`) | refused, naming the open nodes: the self-test rewrites `selftest.lock.json`, a measurement input |
+| `selftest-determinism` while a guarded code/stateful node is open (an approved re-seal inside `rung-14`) | refused, naming the open nodes: the self-test rewrites `selftest.lock.json`, a measurement input; only an [owner-approved in-node refresh](#owner-approved-self-test-refresh-inside-a-long-node) is let through |
 | A migration-window node (P05–P10) opens while a Contract A Lighthouse floor is null | refused until the owner's floors are in `config/thresholds.yml` ([quality bars](quality-bars.md#contract-a-lighthouse-floors-decided-at-intake)) |
 
 Rule 10.9 fingerprints the measurement inputs, `selftest.lock.json` among them, at `node-open`; only
@@ -307,3 +307,46 @@ closing it, or inside a measurement node (`harness-recovery`, `closure-harness-r
 the self-test ran inside the open node and changed the lock, and the node could then close only as
 `blocked`: one fleet run lost its green `rung-14` close that way after an approved environment re-seal.
 A failed self-test deletes the lock as well, so every `compare-*` refuses until the next pass.
+
+## Owner-approved self-test refresh inside a long node
+
+The self-test lock licenses comparisons for 24 hours (`maxAgeMs`). A code or stateful node that stays
+open longer, or one inside which the owner approved an environment re-seal, ends up with an expired or
+stale lock: `compare-all` and `gate` refuse ("The determinism self-test is older than 24h. Re-run
+it."), and a plain `selftest-determinism` refuses too, because the node fingerprinted
+`selftest.lock.json` at `node-open`. Without a way out the node can never finish. `graph-status`
+warns three hours before the lock lapses; re-run the self-test before opening a long node when you
+can. When the lock has already lapsed inside the node, only the owner can let one self-test run
+there, one decision at a time:
+
+```bash
+t3u approval --id APR-NNN --stage intent --granted \
+  --scope "One determinism self-test refresh inside the open node <node id>" --question "…" --answer "…"
+git status --short   # must be empty outside the run directory: commit the node's work first
+t3u selftest-determinism --in-node <node id> --approval APR-NNN --sample all --fresh-browser --visual-workers <n>
+t3u graph-validate
+```
+
+It refuses, before any capture, unless:
+
+- `<node id>` is the only open guarded code or stateful node (a measurement node needs no refresh);
+- the lock is missing, expired, stale after a re-seal, or bound to other inputs, never still valid
+  (an `expiring` lock is still valid);
+- the project tree outside the run directory has no uncommitted change (an untracked file recorded
+  unchanged at `node-open` does not count), so the proof measures committed code;
+- the approval is a granted intent approval of this run whose scope names the node, and it has
+  authorised no other owner decision (runtime extension, environment re-seal, attempt extension,
+  earlier refresh);
+- the run is the exhaustive proof (`--sample all`); `--dry-run` is refused.
+
+A green proof appends `{node, attempt, approval_id, approval_sha256, previous_lock_sha256,
+new_lock_sha256, recorded_at}` to `state.selftest_refreshes` and a `selftest-refresh` journal event,
+and it never promotes its capture to a baseline. `node-close` then accepts the changed
+`selftest.lock.json`, and only that input, when verified entries of the same node attempt chain the
+lock hash anchored at `node-open` to the current one. A hand edit of the lock, an entry of another
+node or attempt, or an approval file edited after the refresh breaks the chain, and the node closes
+only as `blocked`; `graph-validate` and `validate-run` fail and name the entry. A failed in-node
+self-test deletes the lock, is journaled with verdict `findings` and records no entry: the node then
+closes as `blocked` and the instability goes to a harness recovery node. Capture, settling,
+normalisation and comparison are unchanged. The hook lives in `compare.mjs`, so the harness
+`sourceHash` changed with it: a run pinned before it re-seals once (`env-fingerprint --reseal`).

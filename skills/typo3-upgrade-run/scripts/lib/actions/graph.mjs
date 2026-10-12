@@ -27,9 +27,13 @@ import {
 } from './closure.mjs';
 import {
   forbiddenMeasurementChanges, measurementInputs, overBudget, parseReview, projectChangeSince, reviewRequired,
-  untrackedSnapshot,
+  uncommittedChanges, untrackedSnapshot,
 } from '../run/guards.mjs';
-import { formatDuration, selftestExpiryWarning, selftestValidity } from '../cli/command.mjs';
+import {
+  otherLedgerApprovalIds, readRefreshApprovals, refreshApprovalIssues, refreshedLockBound, selftestRefreshLedger,
+  SELFTEST_LOCK_INPUT,
+} from '../run/selftest-refresh.mjs';
+import { assertSelftestValid, formatDuration, selftestExpiryWarning, selftestValidity } from '../cli/command.mjs';
 export { validClosureAcceptance } from './closure.mjs';
 
 const GRAPH_SCHEMA = 'typo3-upgrade-run/graph@1';
@@ -295,8 +299,18 @@ export async function nodeClose({ values, paths, log, journal }) {
   const guarded = definition.policy?.guard_change_scope === true && !nodeState.applicability_only
     && ['code', 'stateful'].includes(node.mutation);
   if (guarded && outcome !== 'blocked') {
-    const forbidden = forbiddenMeasurementChanges(nodeState.anchor?.measurement ?? {}, await measurementInputs(paths),
+    const current = await measurementInputs(paths);
+    let forbidden = forbiddenMeasurementChanges(nodeState.anchor?.measurement ?? {}, current,
       { measurementNode: node.measurement === true });
+    // An owner-approved in-node self-test refresh may have replaced the lock; only verified
+    // entries that chain the anchored lock hash to the current one excuse that one input.
+    if (forbidden.includes(SELFTEST_LOCK_INPUT) && state.selftest_refreshes?.length) {
+      const ledger = selftestRefreshLedger(state, definition, { approvals: await readRefreshApprovals(paths.approvalsDir, state) });
+      if (refreshedLockBound(ledger, id, nodeState, current[SELFTEST_LOCK_INPUT])) {
+        forbidden = forbidden.filter((key) => key !== SELFTEST_LOCK_INPUT);
+        log.info?.(`${SELFTEST_LOCK_INPUT} changed by recorded self-test refresh(es) of ${id}: accepted.`);
+      }
+    }
     if (forbidden.length) {
       throw new PreconditionError(`Node ${id} changed measurement inputs it may not change: ${forbidden.join(', ')}. `
         + 'Restore them. A measurement problem belongs to a harness recovery node with an ADR, never to a site fix.');
@@ -410,10 +424,126 @@ export async function openGuardedNodes(paths) {
     .sort();
 }
 
+/**
+ * The in-node refresh gate of `t3u selftest-determinism`, checked before any capture. Without
+ * --in-node it refuses while a guarded node is open (the self-test rewrites selftest.lock.json,
+ * which that node fingerprinted at node-open) and returns null. With --in-node <id> --approval
+ * APR-NNN it returns the refresh to record, and only when <id> is the one open guarded node, the
+ * lock is expired or stale (never a still-valid one), the project tree has no uncommitted change
+ * and the approval is an unused, granted intent approval of this run that names the node.
+ */
+export async function authorizeSelftestRefresh({ values, paths }) {
+  const guarded = await openGuardedNodes(paths);
+  if (values['in-node'] === undefined) {
+    if (values.approval !== undefined) throw new HarnessError('--approval authorises an in-node refresh; pass it with --in-node <node>.');
+    if (guarded.length) {
+      throw new PreconditionError(
+        `Node(s) ${guarded.join(', ')} are open and guard the measurement inputs; selftest.lock.json is one of them. `
+        + 'Close them first, or run the self-test from a measurement node (harness or closure recovery). '
+        + 'If the lock expired or went stale inside one long node, the owner may approve one refresh there: '
+        + 't3u selftest-determinism --in-node <node> --approval APR-NNN --sample all.',
+      );
+    }
+    return null;
+  }
+  const id = requireNode(values['in-node']);
+  const approvalId = String(values.approval ?? '');
+  if (!/^APR-\d{3}$/.test(approvalId)) throw new HarnessError('--in-node needs --approval naming a granted intent approval APR-NNN.');
+  if (values['dry-run']) throw new PreconditionError('An in-node self-test refresh records an owner decision and has no --dry-run; nothing was written.');
+  if ((values.sample ?? 'all') !== 'all') {
+    throw new PreconditionError('An in-node refresh must be the exhaustive proof (--sample all); a diagnostic would only delete the lock.');
+  }
+  if (!guarded.includes(id)) {
+    throw new PreconditionError(`Node ${id} is not an open guarded code or stateful node; an in-node refresh applies only inside one.`
+      + (guarded.length ? ` Open guarded node(s): ${guarded.join(', ')}.` : ''));
+  }
+  if (guarded.length !== 1) {
+    throw new PreconditionError(`Other guarded node(s) are open as well (${guarded.filter((n) => n !== id).join(', ')}); `
+      + 'a refresh would change their measurement inputs too. Close them first.');
+  }
+  const { state, definition } = await graphContext(paths);
+  const nodeState = state.graph.nodes[id];
+  const stillValid = await assertSelftestValid(paths).then(() => true, () => false);
+  if (stillValid) {
+    throw new PreconditionError('The self-test lock is still valid; an in-node refresh only replaces an expired or stale lock. '
+      + 'Nothing was captured.');
+  }
+  const dirty = await uncommittedChanges(paths.root, { untrackedBaseline: nodeState.anchor?.untracked ?? null });
+  if (dirty === null) throw new PreconditionError('The project is not a Git work tree; an in-node refresh needs a provably clean tree.');
+  if (dirty.length) {
+    throw new PreconditionError(`Node ${id} has uncommitted project changes; commit them (or restore them) before the self-test proves the tree:\n  - `
+      + `${dirty.slice(0, 10).join('\n  - ')}${dirty.length > 10 ? `\n  - … ${dirty.length - 10} more` : ''}`);
+  }
+  const approvals = await readRefreshApprovals(paths.approvalsDir, state);
+  const ledger = selftestRefreshLedger(state, definition, { approvals });
+  if (ledger.issues.length) {
+    throw new InvalidRunError(`Recorded self-test refreshes do not verify; resolve them before recording another:\n  - ${ledger.issues.join('\n  - ')}`);
+  }
+  const approval = await readIntentApproval(paths.approvalsDir, approvalId);
+  const approvalIssues = refreshApprovalIssues(approval, id, { runId: state.run_id, granted: state.approvals ?? [] });
+  if (approvalIssues.length) {
+    throw new PreconditionError(`${approvalId} cannot authorise a self-test refresh inside ${id}:\n  - ${approvalIssues.join('\n  - ')}\n`
+      + `Record the owner decision first, naming the node in its scope: t3u approval --id APR-NNN --stage intent --granted --scope "… ${id} …" --question … --answer …`);
+  }
+  if ((state.selftest_refreshes ?? []).some((e) => e?.approval_id === approvalId) || otherLedgerApprovalIds(state).has(approvalId)) {
+    throw new PreconditionError(`${approvalId} already authorised an owner decision; record a new approval for a new decision.`);
+  }
+  const lockBytes = await readFile(paths.selftestLock).catch(() => null);
+  return {
+    node: id,
+    attempt: nodeState.attempts,
+    approval,
+    previous_lock_sha256: lockBytes ? `sha256:${sha256(lockBytes)}` : 'absent',
+    known: (state.selftest_refreshes ?? []).length,
+  };
+}
+
+/**
+ * Records an authorised in-node refresh after the self-test ran. A green exhaustive proof appends
+ * one entry to state.selftest_refreshes and journals it; a failed proof (which deleted the lock)
+ * is journaled only, so the node stays closable only as blocked.
+ */
+export async function recordSelftestRefresh({ refresh, passed, paths, journal, log }) {
+  if (!passed) {
+    await journal?.append('selftest-refresh', { node: refresh.node, attempt: refresh.attempt, approval_id: refresh.approval.id,
+      verdict: 'findings', previous_lock_sha256: refresh.previous_lock_sha256, new_lock_sha256: 'absent' });
+    log?.error?.(`The in-node self-test failed and removed the lock; ${refresh.node} can now close only as blocked.`);
+    return null;
+  }
+  const entry = {
+    node: refresh.node,
+    attempt: refresh.attempt,
+    approval_id: refresh.approval.id,
+    approval_sha256: refresh.approval.sha256,
+    previous_lock_sha256: refresh.previous_lock_sha256,
+    new_lock_sha256: `sha256:${sha256(await readFile(paths.selftestLock))}`,
+    recorded_at: new Date().toISOString(),
+  };
+  const { state } = await graphContext(paths);
+  const dirty = await uncommittedChanges(paths.root, { untrackedBaseline: state.graph.nodes[refresh.node]?.anchor?.untracked ?? null });
+  if (!Array.isArray(dirty) || dirty.length) {
+    throw new PreconditionError(`The project tree changed during the in-node self-test; the refresh was not recorded and ${refresh.node} `
+      + 'can close only as blocked.');
+  }
+  await new StateStore(paths).update((next) => {
+    const nodeState = next.graph?.nodes?.[refresh.node];
+    if (nodeState?.status !== 'running' || nodeState.attempts !== refresh.attempt
+      || (next.selftest_refreshes ?? []).length !== refresh.known) {
+      throw new PreconditionError(`Node ${refresh.node} or the refresh ledger changed during the self-test; the refresh was not recorded.`);
+    }
+    next.selftest_refreshes = [...(next.selftest_refreshes ?? []), entry];
+  });
+  await journal?.append('selftest-refresh', { ...entry, verdict: 'pass' });
+  log?.success?.(`Self-test refresh inside ${refresh.node} recorded by ${entry.approval_id}: `
+    + `${entry.previous_lock_sha256} -> ${entry.new_lock_sha256}.`);
+  return entry;
+}
+
 export async function graphValidate({ paths, log }) {
   const { state, definition, hash } = await graphContext(paths);
   const runtimeContext = { approvals: await readRuntimeApprovals(paths.approvalsDir, state.runtime),
     attemptApprovals: await readAttemptApprovals(paths.approvalsDir, state.graph),
+    refreshApprovals: await readRefreshApprovals(paths.approvalsDir, state),
     runId: state.run_id, granted: state.approvals ?? [] };
   const issues = validateGraphState(state.graph, definition, hash, state, runtimeContext);
   if (issues.length) throw new InvalidRunError(`Graph validation failed:\n  - ${issues.join('\n  - ')}`);
@@ -566,6 +696,7 @@ export function validateGraphState(graph, definition, hash, runState = null, run
   const attempts = attemptExtensionLedger(graph, definition, { approvals: runtimeContext.attemptApprovals ?? null,
     runId: runState?.run_id ?? null, granted: runState?.approvals ?? [], foreignIds: foreignApprovalIds(runState) });
   issues.push(...attempts.issues);
+  if (runState) issues.push(...selftestRefreshLedger(runState, definition, { approvals: runtimeContext.refreshApprovals ?? null }).issues);
   const budget = attemptBudgetOf(definition, attempts);
   if (graph.status === 'complete' && deriveGraphStatus(graph, definition, budget) !== 'complete') {
     issues.push('graph is labelled complete with blocked or unfinished activated work; reconcile derived status with graph-next');

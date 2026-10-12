@@ -154,7 +154,12 @@ fleet runs lost an epoch each this way. Before `closure-start`:
    comparison and `closure-start` refuse until `selftest-determinism` has run again. `validate-run`
    fails when a recorded re-seal's approval was edited afterwards. Order: re-seal, self-test,
    `closure-start`. Older pins accepted a stale lock, and `closure-check` refused the epoch as STALE
-   only after all thirteen checks had run.
+   only after all thirteen checks had run. The lock also expires 24 hours after it passed. When the
+   re-seal or the expiry falls inside an open code or stateful node, a plain self-test is refused
+   there (it would change a measurement input the node fingerprinted), and the node could never
+   finish; the owner may then approve one refresh inside that node:
+   `t3u selftest-determinism --in-node <node id> --approval APR-NNN --sample all` with a clean
+   project tree ([in-node refresh](graph-runner.md#owner-approved-self-test-refresh-inside-a-long-node)).
 3. **Classify untracked owner folders.** `closure-start` refuses untracked files outside the run
    directory and names their top-level paths. Add owner drafts (for example `relaunch/`) to
    `.git/info/exclude`: local, never committed, never `.gitignore`.

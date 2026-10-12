@@ -143,6 +143,8 @@ export const COMMANDS = {
     sample: { type: 'string', default: 'all' },
     'visual-workers': { type: 'string' },
     'http-workers': { type: 'string' },
+    'in-node': { type: 'string', help: 'Owner-approved refresh inside this one open guarded node (expired or stale lock, clean tree only)' },
+    approval: { type: 'string', help: 'With --in-node: granted intent approval APR-NNN whose scope names the node' },
   }},
   'seal-baseline': { summary: 'Write MANIFEST.sha256 and LOCK.json; make a baseline immutable', options: {
     dir: { type: 'string' }, id: { type: 'string', default: 'A-original' },

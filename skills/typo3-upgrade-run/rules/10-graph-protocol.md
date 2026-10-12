@@ -190,6 +190,9 @@ measurement inputs of every code or stateful node: `config/`, `selftest.lock.jso
 manifest, the feature plan and baseline seals. Before any outcome except `blocked`, `node-close`
 refuses a node that changed them. Nodes marked `measurement: true` may recalibrate `config/` and
 the self-test with an ADR; no node may change baseline seals, the URL manifest or the feature plan.
+The one exception for a non-measurement node is `selftest.lock.json` after an owner-approved in-node
+refresh (`t3u selftest-determinism --in-node`, matrix #37): `node-close` accepts it only when verified
+`state.selftest_refreshes` entries of that node attempt chain the anchored lock hash to the current one.
 
 `policy.recovery_change_budget` limits a passing `*-recovery` node with a `git:` anchor to the stated
 files and changed lines, measured against the anchor and excluding the run directory. Exceeding it

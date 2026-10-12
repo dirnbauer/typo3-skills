@@ -31,6 +31,7 @@ export function foreignApprovalIds(state) {
   for (const entry of Array.isArray(state?.fingerprints?.environment_reseals) ? state.fingerprints.environment_reseals : []) {
     ids.add(entry?.approval_id);
   }
+  for (const entry of Array.isArray(state?.selftest_refreshes) ? state.selftest_refreshes : []) ids.add(entry?.approval_id);
   ids.delete(undefined);
   return ids;
 }
