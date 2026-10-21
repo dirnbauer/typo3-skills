@@ -25,12 +25,15 @@ test('GitLab and GitHub install the locked harness and run the same full gate', 
     'shell commands must parse as YAML strings, not accidental mappings');
 });
 
-test('GitLab keeps the Python minor and Node major selected by GitHub', () => {
+test('GitLab keeps the Python minor and exact Node release selected by GitHub', () => {
   const steps = github.jobs.check.steps;
   const python = steps.find(step => step.uses?.startsWith('actions/setup-python@'));
   const node = steps.find(step => step.uses?.startsWith('actions/setup-node@'));
   assert.equal(gitlab.default.image.match(/^python:(\d+\.\d+)-/)[1], python.with['python-version']);
-  assert.equal(gitlab.variables.NODE_VERSION.split('.')[0], node.with['node-version']);
+  assert.equal(gitlab.variables.NODE_VERSION, node.with['node-version']);
+  assert.equal(gitlab.check.cache.key.prefix, `npm-node${gitlab.variables.NODE_VERSION.split('.')[0]}`);
+  assert.equal(github.jobs.check.env.NPM_CONFIG_ENGINE_STRICT, 'true');
+  assert.equal(gitlab.variables.NPM_CONFIG_ENGINE_STRICT, 'true');
 });
 
 test('GitLab supplies the system dependencies used by the existing tests', () => {

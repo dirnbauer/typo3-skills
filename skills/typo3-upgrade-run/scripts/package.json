@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Evidence-graph orchestrator, equality prover, and security boundary for TYPO3 14.3 update runs.",
   "engines": {
-    "node": ">=20.11"
+    "node": ">=22.19"
   },
   "bin": {
     "t3u": "./t3u.mjs"

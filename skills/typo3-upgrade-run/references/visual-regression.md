@@ -3,6 +3,8 @@
 `scripts/t3u.mjs` — one entrypoint, subcommands, and exactly one place that decides the exit
 code. See [`harness-contract.md`](harness-contract.md) for the full contract.
 
+Requires Node.js **22.19+** (Lighthouse's minimum); use the latest LTS release by default.
+
 ```bash
 cd skills/typo3-upgrade-run/scripts
 npm ci

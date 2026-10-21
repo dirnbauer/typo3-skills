@@ -11,16 +11,17 @@ default:
   interruptible: true
 
 variables:
-  # Match GitHub's Node 20 family. Checksums: https://nodejs.org/dist/v20.20.2/SHASUMS256.txt
-  NODE_VERSION: "20.20.2"
+  # Match GitHub's latest LTS pin. Checksums: https://nodejs.org/dist/v24.22.1/SHASUMS256.txt
+  NODE_VERSION: "24.22.1"
   NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.npm"
+  NPM_CONFIG_ENGINE_STRICT: "true"
 
 check:
   stage: test
   timeout: 15m
   cache:
     key:
-      prefix: npm-node20
+      prefix: npm-node24
       files:
         - skills/typo3-upgrade-run/scripts/package-lock.json
     paths:
@@ -34,11 +35,11 @@ check:
       case "$(uname -m)" in
         x86_64)
           node_arch=x64
-          node_sha256=df770b2a6f130ed8627c9782c988fda9669fa23898329a61a871e32f965e007d
+          node_sha256=6c172a9ab6718f7b801fb5a7bd486af2ee5e32758086a04b84fcce2aa77095e6
           ;;
         aarch64|arm64)
           node_arch=arm64
-          node_sha256=73093db209e4e9e09dd7d15a47aeaab1b74833830df03efa5f942a1122c5fa71
+          node_sha256=dbabf7a1cbf947e6059ffad2c27b80041db97dea1e553b62afdee7f13fca336e
           ;;
         *) echo "Unsupported Node architecture" >&2; exit 1 ;;
       esac
