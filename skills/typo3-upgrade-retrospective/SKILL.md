@@ -38,6 +38,9 @@ not only the current branch. Deduplicate commit IDs and separate merge bookkeepi
 redesign and later repairs. Compare with the previous retrospective: add a new control only where
 the old one was absent, ambiguous or demonstrably bypassed. A task final is a claim until matched
 to artifacts; do not translate individual repair-task duration into whole-upgrade performance.
+Resolve every requested project alias against its actual repository root before counting coverage;
+a stale namesake or non-Git directory is not the active relaunch. Keep current-branch lockfiles,
+other-branch fixes and historical closure states separate. Later repairs do not refresh a certificate.
 
 For every project/task, record:
 

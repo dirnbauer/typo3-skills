@@ -49,6 +49,34 @@ empty detail pages and relations on a `strict` language without a log line:
 
 Its counts come from Baseline A and the target capture, never from a new source capture.
 
+### Backend defaults
+
+For new whole-site runs, keep the example's `delegated-user-management` and
+`backend-environment-branding` journeys under `backend` / `backend-editor`, alongside the existing
+editor/Redirects journeys. These are the owner's requested defaults, not optional features to mark
+absent when no package or artwork exists yet. Resolve role/action scope and compatible package or
+reviewed fork at intake. Missing compatibility or approval is a finding/blocker, not a waived test.
+
+Implement via the selected P10 rights branch using
+[delegated user management](../../typo3-backend-rights/references/delegated-user-management.md) and
+[backend branding](../../typo3-backend-rights/references/backend-branding.md). Keep their stable IDs
+and assertions; replace example targets with concrete local fixtures without credentials or real
+account details. Add narrower assertions for the approved lifecycle actions. `privilege-escalation-denied`
+includes actual direct-request attempts, not merely hidden buttons; `protected-targets-denied`
+includes admin/service/foreign-scope accounts. Group edits, resets and impersonation stay denied
+unless specifically approved and tested. `fixture-cleanup` verifies restored state.
+
+Branding means green Live, orange Staging and blue DDEV; three locally simulated context variants,
+this site's observed motifs and logos, explicit German labels, and usable login/reset/MFA and
+light/dark backend. Store the artwork's declared-change acceptance before final proof. Share one
+journey/report across palettes; do not add global visual states, graph nodes or full-site passes.
+
+The generic harness checks whatever the sealed plan contains; it does not recognize a safe user
+manager from its name. Intake review must confirm these required journeys and the meaningful
+assertions above. Do not change a running project's sealed plan to retrofit this new default.
+
+### Seal intake
+
 Finish the other intake prerequisites and sizing/forecast admission, then:
 
 ```bash

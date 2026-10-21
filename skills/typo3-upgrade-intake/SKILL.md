@@ -61,9 +61,14 @@ plus the open question ([lean profile](../typo3-upgrade-run/references/graph-run
    live/staging database server version (`-- Server version` in the dump header) against the target
    floor, and re-check `git status` after typo3-console `cache:flush`/`extension:list`, which write
    `settings.php` defaults ([known problems](../typo3-upgrade-run/references/known-problems.md)).
+   Derive the source runtime from its locked Core/dependencies before Baseline A; the target PHP
+   preference is not permission to run old code on an incompatible PHP version.
 2. Record database dump/source date, maximum `pages` and `tt_content` timestamps, table/row
    sentinels, fileadmin count/hash, and one known page/content/media sentinel. A reachable empty or
    wrong database is a finding, not a usable baseline.
+   Detect case-distinct media paths on case-insensitive hosts. Use the DDEV overlay's
+   [source runtime and case-sensitive media](../typo3-ddev/references/webconsulting-additions.md#source-runtime-and-case-sensitive-media)
+   contract; a database snapshot does not back up a separate fileadmin volume.
 3. Inspect sites/languages/bases, sitemaps, robots/canonical behavior, page-tree fallback, golden
    paths, dynamic routes, backend entry point, and local mail/search services. Name uncovered routes.
 4. Inventory every installed/local/abandoned extension and feature usage. Preserve exact output of:
@@ -80,6 +85,12 @@ plus the open question ([lean profile](../typo3-upgrade-run/references/graph-run
    adoption, maintenance and compatibility evidence. Put the choice in existing node evidence.
 6. Check `typo3/cms-redirects` and `spooner/deployer-information`. If absent, activate dependency resolution. Always activate
    the editor-rights verification branch for Redirects.
+   Plan [delegated Benutzerverwaltung](../typo3-backend-rights/references/delegated-user-management.md)
+   for approved non-admin managers and [three-colour login branding](../typo3-backend-rights/references/backend-branding.md).
+   Inventory the existing package, compatible upstream/fork evidence, managed account/group scope,
+   real context mapping and the site's own motifs. Retain green Live, orange Staging, blue DDEV;
+   record the two required backend journeys in the sealed feature plan. Ask the role/action and
+   artwork decisions with the other intake questions; do not provision or demote accounts here.
 7. Identify Mask/Content Blocks, Vite/assets, Solr/search, RTE/Visual Editor, Powermail/forms,
    scheduler, custom backend modules/rights, local extensions, and schema/data migrations.
    Read [fleet regression contracts](../typo3-upgrade-run/references/fleet-regression-contracts.md).

@@ -157,6 +157,10 @@ Reusing `bodytext` alone does not enable rich text for a new CType. For migratio
 read the [rich-text round-trip contract](references/rich-text-roundtrip.md): verify effective
 type-specific TCA, stored markup, actual preset and both editor and frontend behavior.
 
+For converted link columns, nested links or plugin type restrictions, read
+[typed links and no-change saves](references/typed-link-migration.md). Test actual transformed
+objects in both template contexts; a string fixture or unchanged public page can miss editor damage.
+
 ### Full Content Element Example
 
 ```yaml
@@ -211,7 +215,7 @@ fields:
             <p class="subheadline">{data.subheadline}</p>
         </f:if>
         
-        <f:if condition="{data.cta_link}">
+        <f:if condition="{data.cta_link.url}">
             <f:link.typolink parameter="{data.cta_link}" class="btn btn-primary">
                 {data.cta_text -> f:or(default: 'Learn more')}
             </f:link.typolink>

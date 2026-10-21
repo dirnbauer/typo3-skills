@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { FEATURE_CHECKS, featurePlanIssues, featureCoverageIssues } from '../../lib/run/feature-contracts.mjs';
@@ -36,6 +36,29 @@ test('only present features produce journeys; absent features do not multiply br
   assert.deepEqual(featurePlanIssues(f.plan, 'fleet-test'), []);
   assert.equal(f.coverage.featureResults.length, 3);
   assert.deepEqual(featureCoverageIssues(f.plan, f.coverage, f.manifest), []);
+});
+test('new-run template carries non-admin management and three-palette branding in the existing backend check', async () => {
+  const example = JSON.parse(await readFile(new URL('../../../templates/run-directory/manifests/feature-contracts.example.json', import.meta.url), 'utf8'));
+  const journeys = example.features.find(f => f.id === 'backend').journeys;
+  assert.deepEqual(journeys.map(j => j.id), ['delegated-user-management', 'backend-environment-branding']);
+  assert.ok(journeys.every(j => j.check === 'backend-editor'));
+  assert.ok(journeys[0].assertions.includes('privilege-escalation-denied'));
+  assert.ok(journeys[0].assertions.includes('self-lockout-denied'));
+  assert.ok(journeys[1].assertions.includes('three-palettes-site-motifs'));
+  // The example is deliberately incomplete. Only real hashed inventory can admit a run.
+  assert.ok(featurePlanIssues(example, example.runId).length);
+  const f = fixture();
+  f.plan.features.find(feature => feature.id === 'backend').journeys = journeys;
+  assert.deepEqual(featurePlanIssues(f.plan, 'fleet-test'), []);
+  const backend = f.manifest.checks.find(check => check.id === 'backend-editor');
+  f.coverage.featureResults = f.coverage.featureResults.filter(result => result.check !== 'backend-editor');
+  f.coverage.featureResults.push(...journeys.map(j => ({ id: j.id, check: j.check, epoch: backend.epoch,
+    assertions: j.assertions.map(id => ({ id, status: 'pass' })), artifacts: backend.artifacts,
+  })));
+  assert.deepEqual(featureCoverageIssues(f.plan, f.coverage, f.manifest), []);
+  const management = f.coverage.featureResults.find(result => result.id === 'delegated-user-management');
+  management.assertions = management.assertions.filter(assertion => assertion.id !== 'privilege-escalation-denied');
+  assert.ok(featureCoverageIssues(f.plan, f.coverage, f.manifest).some(issue => /assertion/.test(issue)));
 });
 test('unknown applicability, missing features and wrong run refuse intake', () => {
   for (const change of [p => p.features.pop(), p => p.features[0].applicable = null,

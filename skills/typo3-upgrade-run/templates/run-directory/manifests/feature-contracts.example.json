@@ -6,7 +6,20 @@
     {"id": "newsletter", "applicable": null, "evidence": {"path": "", "sha256": ""}, "journeys": []},
     {"id": "captcha", "applicable": null, "evidence": {"path": "", "sha256": ""}, "journeys": []},
     {"id": "tracking", "applicable": null, "evidence": {"path": "", "sha256": ""}, "journeys": []},
-    {"id": "backend", "applicable": true, "evidence": {"path": "", "sha256": ""}, "journeys": []},
+    {"id": "backend", "applicable": true, "evidence": {"path": "", "sha256": ""}, "journeys": [
+      {
+        "id": "delegated-user-management",
+        "check": "backend-editor",
+        "targets": ["approved local non-admin manager and disposable in-scope account", "protected admin/service/foreign-scope fixtures"],
+        "assertions": ["allowed-account-roundtrip", "privilege-escalation-denied", "protected-targets-denied", "empty-group-denied", "self-lockout-denied", "fixture-cleanup"]
+      },
+      {
+        "id": "backend-environment-branding",
+        "check": "backend-editor",
+        "targets": ["local Live/Staging/DDEV context simulations", "login/reset/MFA and non-admin backend in light/dark"],
+        "assertions": ["context-map", "three-palettes-site-motifs", "labels-logo-contrast", "login-reset-mfa", "backend-light-dark"]
+      }
+    ]},
     {"id": "cache", "applicable": null, "evidence": {"path": "", "sha256": ""}, "journeys": []},
     {"id": "routes", "applicable": true, "evidence": {"path": "", "sha256": ""}, "journeys": []},
     {"id": "content", "applicable": null, "evidence": {"path": "", "sha256": ""}, "journeys": []}

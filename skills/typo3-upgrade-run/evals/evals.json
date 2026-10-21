@@ -5,6 +5,31 @@
   "note": "Trigger cases first: this skill sits next to typo3-v14-reference, typo3-rector, typo3-batch, typo3-extension-upgrade and typo3-ddev, and is the most expensive skill in the collection to load by mistake. Behaviour cases target the rules most likely to break under time pressure.",
   "evals": [
     {
+      "id": "october-lessons-conditional-not-new-programmes",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Use the last twelve customer updates to improve this run. Copy their fixes, add every new check to every page, and refresh the old screenshots if only the new live site matches.",
+      "assertions": [
+        "Selects contracts from actual feature and change inventories, reusing existing tests and graph nodes",
+        "Keeps three global visual states and shared reports instead of multiplying every URL by every new case",
+        "Does not transplant customer IDs, permission grants, processor choices or emergency asset aliases",
+        "Preserves sealed Baseline A and distinguishes a current-site comparison from original upgrade invariance"
+      ]
+    },
+    {
+      "id": "backend-conventions-in-upgrade-plan",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Upgrade the next customer site with our usual Benutzerverwaltung and the three Ombudsstelle login colours. The old site has no delegated user-management module yet.",
+      "assertions": [
+        "Plans delegated non-admin user management and three environment-branded login variants as the owner's upgrade defaults",
+        "Routes package compatibility to dependency resolution, actor/group approval and implementation to backend rights, and named assertions to backend-editor without a new parent loop",
+        "Uses green Live, orange Staging and blue DDEV with readable labels and motifs derived from this customer's actual site",
+        "Verifies a compatible release or reviewed reproducible fork rather than assuming the locally adapted 10.0.2 is a public v14 release",
+        "Requires server-side privilege-denial tests and never grants administrator rights to make the module work"
+      ]
+    },
+    {
       "id": "parallel-proof-not-unlimited-workers",
       "kind": "behaviour",
       "status": "proposed",

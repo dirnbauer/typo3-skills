@@ -75,6 +75,12 @@ Use measured minutes from earlier `graph-report` files as forecast sources when 
 [fleet durations](references/runtime-sizing.md#measured-fleet-durations) otherwise. Read
 [`references/recent-run-lessons.md`](references/recent-run-lessons.md) at intake and ask the owner's
 decisions in one [question round](references/overnight-controller.md#batch-the-owner-decisions).
+Include the backend defaults: scoped Benutzerverwaltung for non-admin managers, plus three
+site-specific login backgrounds and environment labels. Resolve the permitted managers/actions,
+package provenance and artwork intent at intake; implement in the selected P10 rights branch,
+then verify in P12. See [delegation](../typo3-backend-rights/references/delegated-user-management.md)
+and [branding](../typo3-backend-rights/references/backend-branding.md). Never make an editor admin
+to satisfy this requirement or silently mark an unresolved v14 package as absent.
 Resume from `.typo3-update/state.json`, never from the transcript or an old `STATUS.md`.
 
 ### Closure and handover
@@ -224,6 +230,9 @@ Read [`rules/20-baseline-integrity.md`](rules/20-baseline-integrity.md),
   ([guards](references/graph-runner.md#what-the-guards-refuse), [load](references/parallel-execution.md#load-across-projects)).
 - Real editor journeys run through `typo3-playwright`: save/reopen, RTE links, plugin previews,
   AJAX/UTF-8 search. Rich-text migrations need the [field round-trip](../typo3-content-blocks/references/rich-text-roundtrip.md).
+- Content Blocks link/type changes need [real typed-link rendering and no-change saves](../typo3-content-blocks/references/typed-link-migration.md).
+  Dynamic widgets need [separate visual and functional proof](../typo3-playwright/references/dynamic-component-proof.md),
+  not a stabilized screenshot presented as a working map/modal. Reuse the sealed feature plan.
 - After patch-level dependency changes, recheck used backend subclasses/DI and affected integrations.
 - Database health runs twice with a pinned `lolli/dbdoctor`: `db-health-intake` before Baseline A
   (owner-approved fix groups only, as a dated dataset transition) and `db-health-target` before the
@@ -315,7 +324,8 @@ Distinguish **implemented**, **verified awaiting acceptance**, **closed locally*
 - [`references/recent-run-lessons.md`](references/recent-run-lessons.md) and the retrospectives of
   [2026-08](references/run-retrospective-2026-08.md), [2026-09](references/run-retrospective-2026-09.md),
   [2026-09-16](references/run-retrospective-2026-09-16.md), [2026-09-17](references/run-retrospective-2026-09-17.md)
-  and [2026-09-30](references/run-retrospective-2026-09-30.md); [fleet harness pins](references/fleet-profile.md#harness-pins-across-a-fleet)
+  [2026-09-30](references/run-retrospective-2026-09-30.md) and
+  [2026-10-21 (twelve projects)](references/run-retrospective-2026-10-21.md); [fleet harness pins](references/fleet-profile.md#harness-pins-across-a-fleet)
 - [`references/quality-bars.md`](references/quality-bars.md) · [`references/deployment-handover.md`](references/deployment-handover.md)
 - [TYPO3 14 readiness checks](references/typo3-14-readiness-checks.md) — INCLUDE_TYPOSCRIPT/@import, relative links, class names outside PHP, parseFunc overrides, site-package class shapes
 - [TYPO3 14 fix pack](references/typo3-14-fix-pack.md) — fourteen fleet-known breakers with detection, fix, proof and approval, applied at the rung
