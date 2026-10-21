@@ -32,3 +32,13 @@ test('GitLab keeps the Python minor and Node major selected by GitHub', () => {
   assert.equal(gitlab.default.image.match(/^python:(\d+\.\d+)-/)[1], python.with['python-version']);
   assert.equal(gitlab.variables.NODE_VERSION.split('.')[0], node.with['node-version']);
 });
+
+test('GitLab supplies the system dependencies used by the existing tests', () => {
+  const setup = gitlab.check.before_script;
+  const packages = setup.find(command => command.includes('apt-get install')).split(/\s+/);
+  for (const dependency of ['git', 'jq', 'php-cli', 'imagemagick']) {
+    assert.ok(packages.includes(dependency), `missing CI test dependency: ${dependency}`);
+  }
+  assert.ok(setup.includes('test "${CI_DISPOSABLE_ENVIRONMENT:-}" = "true"'),
+    'package installation must not modify a persistent shell runner');
+});

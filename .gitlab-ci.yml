@@ -29,7 +29,7 @@ check:
     # Never install system packages on a persistent shell/SSH runner host.
     - test "${CI_DISPOSABLE_ENVIRONMENT:-}" = "true"
     - apt-get update -qq
-    - apt-get install -y --no-install-recommends ca-certificates curl xz-utils git php-cli imagemagick
+    - DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ca-certificates curl xz-utils git jq php-cli imagemagick
     - |
       case "$(uname -m)" in
         x86_64)
@@ -52,6 +52,7 @@ check:
         --directory /usr/local --strip-components=1 --no-same-owner
     - node --version
     - python3 --version
+    - jq --version
     # These binaries prevent the existing PHP and real-image tests from silently skipping.
     - |
       php -r 'exit(function_exists("token_get_all") ? 0 : 1);'
