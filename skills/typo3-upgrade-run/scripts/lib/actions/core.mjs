@@ -268,12 +268,19 @@ export async function runtimeExtend({ values, paths, log, journal }) {
   return { exitCode: EXIT.PASS, verdict: 'pass', extension: entry, message: `runtime ${summary}` };
 }
 
+// Lighthouse's runtime floor, also declared in package.json. Do not check only the major.
+export function supportsNodeVersion(version) {
+  const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(version);
+  if (!match) return false;
+  const [, major, minor] = match.map(Number);
+  return major > 22 || (major === 22 && minor >= 19);
+}
+
 export async function doctor({ values, paths, log }) {
   const checks = [];
   const add = (name, ok, detail) => checks.push({ name, ok, detail });
 
-  const [major] = process.versions.node.split('.').map(Number);
-  add('node >= 20.11', major >= 20, process.version);
+  add('node >= 22.19', supportsNodeVersion(process.versions.node), process.version);
 
   for (const dep of ['playwright', 'pixelmatch', 'pngjs']) {
     try { await import(dep); add(`dependency ${dep}`, true, 'resolved'); }

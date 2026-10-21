@@ -19,16 +19,18 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    env:
+      NPM_CONFIG_ENGINE_STRICT: 'true'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.1
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7.0.0
         with:
           python-version: '3.12'
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7.1.0
         with:
-          node-version: '20'
+          node-version: '24.22.1'
           cache: npm
           cache-dependency-path: skills/typo3-upgrade-run/scripts/package-lock.json
 
