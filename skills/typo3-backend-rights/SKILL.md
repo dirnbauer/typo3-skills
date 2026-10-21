@@ -61,6 +61,10 @@ not a copied backend record.
     sitepackage stylesheet. Keep it version-controlled.
 14. When `typo3/cms-workspaces` is installed, add the safe basic Workspace setup below. Do not
     write stale Workspace permissions or module identifiers when it is absent.
+15. For whole-site upgrades or requested Benutzerverwaltung, use
+    [delegated user management](references/delegated-user-management.md): approved normal-user
+    managers stay non-admin, manage only approved accounts within permitted groups, and pass server-side
+    privilege-denial tests. Verify a compatible package/fork; never grant blanket admin rights.
 
 ## Decide the group model first
 
@@ -225,6 +229,10 @@ Resolve identifiers from the runtime `ModuleRegistry`; never write identifiers f
   `searchbackend_indexadministration` admin-only.
 - Workspaces: `workspaces_publish` and Live access bit `workspace_perms = 1` in the **Extensions**
   subgroup.
+- Delegated Benutzerverwaltung: only the approved manager role receives the installed scoped user
+  module and action options; ordinary editors do not inherit it automatically. Resolve identifiers
+  from the package and follow [delegation](references/delegated-user-management.md), not blanket
+  administration or unrestricted `be_users`/`be_groups` access.
 
 When `typo3/cms-form` is installed, grant read/write access to `form_definition`; TYPO3 v14.3's
 Form persistence permission checker requires both lists even though its TCA display fields are
@@ -305,11 +313,11 @@ Prefer a group import over duplicated inline TSconfig:
 
 ## Brand the login and backend
 
-Read [backend-branding.md](references/backend-branding.md), derive an accessible action color from
-the customer's design tokens/CSS/logo, and configure the Core login logo, logo alt text, highlight,
-background, footnote, backend logo (with a variant legible in the dark scheme), and favicon. Use
-the plain-text Core footnote `Website by webconsulting.at · <label>`; TYPO3 already places it at the
-lower right on wide screens.
+Read [backend-branding.md](references/backend-branding.md). Use the three fixed environment colour
+families from the reference site: green Live, orange Staging, blue DDEV. Derive **motifs and logos**
+from the current customer's site, not new environment colours. Configure Core logo/alt/highlight,
+three calm login backgrounds, backend logo and favicon. Use the plain-text footnote
+`<customer> · <label> · Website von webconsulting.at`; keep Core's placement and layout.
 
 DDEV, staging and live each get a correct, readable label and highlight colour from **one** mapping
 of the real `Environment::getContext()`: `Development/Docker` → `Entwicklung (DDEV)`,
@@ -425,6 +433,9 @@ Use a real non-admin session and verify all of these:
     environment label mapped from the real application context, with accessible contrast in the
     light and dark scheme; the mapping was evaluated for every context.
 14. The separate administrator can still log in.
+15. When delegated user management is in scope, the named non-admin manager can complete the
+    approved account lifecycle and every forbidden privilege/target/action remains denied in UI
+    and direct server-side requests. Follow the [delegation proof](references/delegated-user-management.md#required-proof-in-the-existing-backend-node).
 
 Re-run the audit with `--group-title` and `--strict`. Report the main and leaf group UIDs, target
 user, remaining administrator, allowed/missing CTypes, exceptions, tables, fields, mounts,
@@ -436,6 +447,8 @@ TSconfig profile, and the non-admin verification evidence.
   rules, and verification queries.
 - [backend-branding.md](references/backend-branding.md): supported login/backend branding,
   accessible color selection, the per-environment label mapping, and verification.
+- [delegated-user-management.md](references/delegated-user-management.md): package provenance,
+  non-admin manager scope, v14 selectors and server-side privilege-denial proof.
 - [typo3-workspaces](../typo3-workspaces/SKILL.md): Workspace versioning, DataHandler setup,
   preview, publishing, and the physical-file limitation.
 - `scripts/audit-backend-rights.php`: read-only runtime TCA/database audit.

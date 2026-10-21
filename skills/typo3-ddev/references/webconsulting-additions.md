@@ -58,6 +58,22 @@ processing instruction, not the processor, so stale derivatives survive until th
 upgrade run, settle this before Baseline A
 ([intake checklist item 12](../../typo3-upgrade-intake/SKILL.md#evidence-checklist)).
 
+## Source runtime and case-sensitive media
+
+Keep the unchanged source on a runtime supported by its locked Core/extensions until its baseline
+is sealed. Record source and target PHP independently; a source exception is not a new target
+default. Do not force the target PHP version onto an incompatible source to save one restart.
+
+Before an authorized file sync/import, inspect effective container mounts and case-distinct paths.
+A macOS host directory may collapse `Logo.jpg` and `logo.jpg` while the authoritative DDEV data lives
+in a named Linux volume. Count/hash files inside that actual mount, including case collisions; do
+not rename originals, trust the stale host copy or silently accept missing FAL targets.
+Use an explicitly approved case-sensitive destination when required. Preserve both names in a
+checksum-verified media archive and test restoration there; a database snapshot does not back up
+fileadmin or a named volume. Do not extract that archive through a case-insensitive staging folder.
+Follow [live-sync preparation](webconsulting-live-sync.md) for scope and rollback; never delete or
+replace volumes to repair identity. See the [October evidence](../../typo3-upgrade-run/references/run-retrospective-2026-10-21.md).
+
 ## Credits & Attribution
 
 This skill is based on the excellent work by **Netresearch DTT GmbH**.

@@ -77,6 +77,9 @@ plus the open question ([lean profile](../typo3-upgrade-run/references/graph-run
 - Run Rector/Fractor/scanner a second time after registry/cache rebuild; preserve exact output.
 - Migrate stored data before new registration. Preserve CType/list-type identities, parent/child and
   FAL relations, nullable meaning, translations, and YAML scalar types.
+  For legacy link columns, use the [typed-link migration contract](../typo3-content-blocks/references/typed-link-migration.md):
+  inspect actual formats, prefer supported tools, bind any custom plan to input hashes, and prove
+  real Fluid rendering plus unchanged editor save/reopen—not string-only fixtures.
 - Schema analyzer output is quarantine. Drops require separate exact table/field/index approval.
 - Before the 13.4 schema update, set `''` to `'0'` in every text column that 13 turns into an INT file
   count (seen: `fe_users.image`, `backend_layout.icon`); strict mode refuses the retype with
@@ -84,6 +87,7 @@ plus the open question ([lean profile](../typo3-upgrade-run/references/graph-run
 - Every migration/wizard/setup command must reach documented fixed point on an unchanged rerun.
 - After any dependency change, including patch releases, inspect used backend subclasses and DI
   signatures against the installed target. Rebuild the container and open the affected real module.
+  Exercise its actual factory/lazy service path, not only reflection or direct construction.
   Prefer an upstream fix; otherwise pin a reproducible Composer patch with drift failure and exit plan.
 - Read [fleet regression contracts](../typo3-upgrade-run/references/fleet-regression-contracts.md)
   for touched integrations. Preserve recipient/DOI/consent, cached selection, URL and persisted-data
@@ -101,7 +105,8 @@ plus the open question ([lean profile](../typo3-upgrade-run/references/graph-run
 - Inline frontend editing → `typo3-visual-editor`
 - Executable visitor/editor journeys → `typo3-playwright`
 - Environment secrets/Deployer information → [orchestrator environment reference](../typo3-upgrade-run/references/project-environment.md)
-- Redirect install/editor groups → DDEV Composer + `typo3-backend-rights`
+- Redirect install/editor groups, delegated Benutzerverwaltung and three-colour environment branding
+  → DDEV Composer + `typo3-backend-rights`; provision in the selected P10 rights branch, not frozen proof
 - Security finding → `typo3-security`/`security-audit`, without disguising it as Composer failure
 
 If `typo3/cms-redirects` is absent, dependency resolution installs a constraint compatible with the

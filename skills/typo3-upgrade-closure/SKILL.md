@@ -85,6 +85,14 @@ cannot hide an untested finisher, provider state, authenticated module or warmed
    and nobody uses the backend otherwise until closure is done. Test mobile filters a second time after AJAX results
    replacement and UTF-8 search/suggest when present. Verify the web PHP runtime, not only CLI.
    For migrated rich text or preset changes, require the [field round-trip proof](../typo3-content-blocks/references/rich-text-roundtrip.md).
+   For migrated CTypes/links, require a no-change save that preserves the stored CType and actual
+   typed-link frontend/backend rendering. For file-cache changes, replace the same FAL file UID/name
+   with caches warm: new bytes/markup must appear while unrelated cached pages survive.
+   Prove `delegated-user-management` as a real non-admin, including forbidden direct writes and
+   protected targets, and `backend-environment-branding` with all three local palette/context
+   simulations, site-specific motifs, readable labels and login/reset/MFA/light-dark coverage.
+   Use [backend rights](../typo3-backend-rights/SKILL.md); package uncertainty, missing credentials
+   or skipped negative tests cannot pass. These share the existing `backend-editor` check.
    Standalone editor/parser results cannot close a pending authenticated backend check.
 6. Redirects is mandatory: package/module present, intended editor group can read/create/edit only in
    authorized scope, unrelated actions remain denied, and frontend redirect response is correct.

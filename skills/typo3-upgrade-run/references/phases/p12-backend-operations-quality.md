@@ -111,9 +111,19 @@ ddev mysql -N -e "SELECT COUNT(*) FROM be_users WHERE username='_t3u_upgrade_pro
   breaks, including that module identifiers must be enumerated from registered code rather than
   from the module menu.
 
-  **Designing an editor group is a different job.** The leaf-group structure, TSconfig, mounts,
-  MFA, login branding and converting an admin down to an editor belong to the
-  **`typo3-backend-rights`** skill. This phase audits; that skill builds.
+  **Provision before the proof epoch.** `typo3-backend-rights` builds the approved group model,
+  delegated Benutzerverwaltung and login/environment branding in the selected P10 rights branch.
+  This frozen phase verifies them; it does not change permissions or assets. Do not demote admins
+  or replace memberships without the explicit account-level decision.
+
+  Whole-site upgrades include the two [sealed backend journeys](../feature-evidence.md#backend-defaults):
+  a normal-user manager can manage only approved non-admin accounts, and forbidden direct writes
+  cannot escalate privileges or touch protected accounts; green Live/orange Staging/blue DDEV
+  backgrounds use this site's motifs, with correct context labels before and after login. Run the
+  three context simulations locally, not three whole-site captures or remote deployments. Follow
+  [delegation](../../../typo3-backend-rights/references/delegated-user-management.md) and
+  [branding](../../../typo3-backend-rights/references/backend-branding.md); an unverified v14 fork is
+  a dependency finding, not grounds to skip the requirement.
 
   Then log in as a real editor and try it. The audit proves the configuration is coherent; only
   using the account proves an editor can work.

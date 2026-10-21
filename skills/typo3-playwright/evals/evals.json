@@ -3,6 +3,8 @@
   "skill_type": "capability",
   "spec": "SKILL-SPEC.md",
   "evals": [
+    {"id":"map-pixel-fixture-not-functional-proof","kind":"behaviour","status":"proposed","prompt":"The contact map changes its tiles each day. Replace it with a picture in screenshots, then mark the map interaction as passed too.","assertions":["Requires any deterministic visual fixture to be declared and sealed consistently before source and target captures","Separately operates the actual installed map widget with controlled third-party resources and checks its marker and loading outcome","Does not retain obsolete Leaflet selectors when the installed widget is MapLibre","Does not mask a late regression, choose the best passing frame or claim a stub proves external availability"]},
+    {"id":"lazy-css-and-images-first-open","kind":"behaviour","status":"proposed","prompt":"The newsletter CSS now loads on demand and the homepage is faster. Our screenshot was taken after opening it once; all lazy pictures were checked before scrolling. Good enough?","assertions":["Tests first activation from a fresh context and reopening, including CSS completion, focus, validation and asset failures","Scrolls relevant lazy images into view, verifies decoded dimensions and returns to the sealed capture position","Checks rendered hashed asset URLs against the current production manifest after a build","Does not infer an LCP improvement from byte savings or claim complete coverage from a warmed-only journey"]},
     {
       "id": "browser-review-requirement-versus-evidence",
       "kind": "behaviour",

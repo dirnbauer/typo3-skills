@@ -131,4 +131,11 @@ installed editor plus server processing. A configuration-only correction must no
 Keep intentional plain text and raw-HTML fields separate; frontend parity and authenticated backend
 save/reopen are distinct proofs.
 
+### 8. Typed Link Values and No-Change Saves
+
+Follow [typed links and no-change saves](typed-link-migration.md) for migrated destinations and
+plugin types. A nonempty object may contain an empty URL; raw object interpolation can throw.
+An existing CType hidden by TSconfig can silently change on an otherwise untouched editor save.
+Prove both consequences with representative real-runtime fixtures, not only YAML lint.
+
 ---

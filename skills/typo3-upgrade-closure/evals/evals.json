@@ -2,6 +2,8 @@
   "skill_name": "typo3-upgrade-closure",
   "skill_type": "preference",
   "evals": [
+    {"id":"editor-no-change-ctype-save","kind":"behaviour","status":"proposed","prompt":"Our migrated blog header renders fine. Its current type is missing from the editor dropdown, but the module opens. Is that sufficient to close?","assertions":["Requires an authorized non-admin no-change save and reopen with stored CType and related fields compared","Checks effective removeItems and allowed choices for the stored type after list_type migration","Rejects silent conversion to the first available type and does not broadly expose infrastructure plugins","Keeps this in backend-editor coverage rather than adding a full-site browser sweep"]},
+    {"id":"same-file-replacement-cache-proof","kind":"behaviour","status":"proposed","prompt":"A replacement bottle image appears after an admin flushes everything. DDEV disables page caching. Mark the editor media check green.","assertions":["Uses a disposable same-name same-UID replacement under the intended editor role with persistent page and installed static caches warmed","Checks actual template-derived file dependencies, updated image bytes and reachable processed URLs while unrelated cache entries survive","Inspects Core frontend.cache.autoTagging and FAL invalidation before proposing a custom flush listener","Does not claim local proof verifies a real CDN or use NullBackend as cache evidence"]},
     {
       "id": "rte-fixture-is-not-backend-closure",
       "kind": "behaviour",

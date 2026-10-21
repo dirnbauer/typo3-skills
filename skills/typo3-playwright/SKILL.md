@@ -37,6 +37,10 @@ For a reported regression or a review of an existing journey suite, read
 [QA review patterns](references/qa-review-patterns.md): minimize the reproduction, distinguish
 missing requirements from weak assertions, and prioritize checks without waiving planned coverage.
 
+For maps, lazy media, on-demand CSS/JS or a changed asset build, read
+[dynamic-component proof](references/dynamic-component-proof.md). Keep deterministic pixel fixtures
+separate from real widget journeys and verify rendered asset hashes before expensive captures.
+
 ## Hard rules
 
 - **Never activate an external-scheme link.** A click, Enter or `goto` on `mailto:`, `tel:`, `sms:`,
@@ -57,6 +61,7 @@ missing requirements from weak assertions, and prioritize checks without waiving
 | RTE | Open real link browser, choose page/record/file link, save/reopen; toolbar, effective presets and observed stored formatting survive |
 | Backend preview | Real plugin record, raw FlexForm-backed and Record API-backed previews, category selection, media/video |
 | Hidden content | Authorized group exposes Admin Panel/Preview; editor chooses hidden-page/content visibility; public visitor still cannot see it |
+| Delegated user management | Named non-admin manager creates/edits only allowed fixture accounts; direct privilege changes and administrator targets are denied |
 
 For affected integration, cache or patch-update work, read the
 [fleet regression contracts](../typo3-upgrade-run/references/fleet-regression-contracts.md):
@@ -70,6 +75,8 @@ not more global screenshot states. Standalone browser work does not require init
 For migrated rich text, use the [field round-trip contract](../typo3-content-blocks/references/rich-text-roundtrip.md).
 Group fixtures by effective preset/processing/renderer. Record standalone editor, actual authenticated
 backend and frontend results separately; missing login is a coverage gap, not a pass.
+For migrated Link fields or CType restrictions, use the
+[typed-link and no-change-save contract](../typo3-content-blocks/references/typed-link-migration.md).
 
 For save/upload/delete operations, get exact local fixture scope and a snapshot first. Teardown
 through supported APIs, verify no test records/files/users remain, including after failure.
@@ -102,5 +109,5 @@ and `typo3-backend-rights` for role changes. A screenshot alone is not interacti
 
 Apply Playwright's [best practices](https://playwright.dev/docs/best-practices) and
 [authentication isolation](https://playwright.dev/docs/auth). Recheck installed package APIs
-before using configuration options. Fleet-derived cases are recorded in the September upgrade
-retrospective in `typo3-upgrade-run`.
+before using configuration options. Fleet-derived cases are recorded in the September and
+[October reviews](../typo3-upgrade-run/references/run-retrospective-2026-10-21.md).

@@ -1,7 +1,8 @@
-# Feature contracts learned from the August–September 2026 updates
+# Feature contracts learned from the August–October 2026 updates
 
 Use this at intake and when a dependency, integration or rendering change touches a listed feature.
 The [seven-project review](run-retrospective-2026-09-16.md) supplies observations, not universal fixes.
+The [twelve-project October review](run-retrospective-2026-10-21.md) adds specific missing assertions.
 Inspect the project's actual implementation before selecting assertions. Reuse its existing tests.
 
 ## One graph, feature-dependent evidence
@@ -10,7 +11,8 @@ Record applicability for `mail`, `newsletter`, `captcha`, `tracking`, `backend`,
 and `content`. These are inventory categories, **not eight browser states or eight new phases**.
 Backend and public routes apply to every whole-site run. Other categories need a present/absent
 decision with inventory evidence. Content applies to persisted-data migrations or an authorized
-refresh; it does not authorize a new import. Never install an absent feature to satisfy a check.
+refresh; it does not authorize a new import. Never install an absent optional feature to satisfy a
+check; the explicitly requested backend defaults below are planned implementations, not absences.
 
 Close `intake-join` with the [feature evidence plan](feature-evidence.md). Assign each applicable
 journey to an existing closure check. Reuse one fixture/report across several assertions. A
@@ -27,6 +29,14 @@ Keep at most three global visual states; additional states stay inside one repre
 - Trace each entry point to its actual handler, persistence, finishers, recipient policy, transport
   and user-visible result. A checkout, footer form and standalone signup may use different services.
   Share logic where appropriate; prove each distinct entry point, language and configuration.
+- Include non-contact notifications actually used: event reminder/cancellation/change templates,
+  confirmations and scheduled messages. Resolve configured template names against the installed
+  extension's loader and render each distinct variant locally into the intercepted transport.
+  An extension's `.fluid.html` change can break only these messages while contact mail stays green.
+- Check unsafe form/action URLs locally: GET/HEAD must not create records or send mail. Preserve
+  ordinary page requests and intentionally GET-based confirmation links. Prove allowed POST plus
+  denied methods without sending a real signup; never replace CSRF/CAPTCHA with a method guard.
+  Prefer the installed handler's supported method restriction before adding scoped middleware.
 - Assert configured sender and envelope behavior plus visitor Reply-To. Preserve the intended
   recipient policy: admin-only is valid when requested; customer mail is required only when promised.
   Use the [TYPO3 email finisher contract](https://docs.typo3.org/c/typo3/cms-form/14.3/en-us/I/Concepts/Finishers/ReadyToUseFinishers/EmailFinisher/Index.html),
@@ -73,6 +83,9 @@ Keep at most three global visual states; additional states stay inside one repre
 - After a Core or extension patch update, recheck used custom subclasses, constructors, DI aliases,
   link-handler class names and direct factory/preview-builder calls against the installed source.
   A patch-level version change can expose an extension's dependency on internal APIs.
+  Instantiate the real container/factory path as well as testing constructor forwarding: PHP lazy
+  proxies and a factory returning a subclass can fail only at runtime. Do not disable lazy services
+  globally or copy another site's service override without reproducing the exact incompatibility.
 - Prefer a compatible upstream release. If a scoped Composer patch/fork is necessary, pin package
   and patch hashes, test a clean install, fail on context drift, and name the removal condition.
   Never leave an unrecorded `vendor/` edit or weaken a security update to hide incompatibility.
@@ -85,6 +98,18 @@ Keep at most three global visual states; additional states stay inside one repre
   Inventory all affected field/type combinations cheaply, then test one representative per distinct
   preset/processing/rendering contract. Preserve formatting across save/load; plain text and raw
   HTML remain deliberate field choices. No extra global state or full-record browser sweep.
+- Use [typed links and no-change saves](../../typo3-content-blocks/references/typed-link-migration.md)
+  after Link/Content Blocks or list_type→CType changes. Assert stored type and relations survive an
+  untouched editor save; render actual link objects in frontend and preview, including affected
+  definitions without existing records. Do not hide missing coverage behind empty record counts.
+- Test newly created page inheritance, not only an old editable page. If moving between parents is
+  required, prove that operation and its denial boundary. Do not transplant `31/31/1`: move/delete
+  capabilities require the project's approved role policy; the default remains least privilege.
+- Whole-site upgrades include the owner's [delegated user-management convention](../../typo3-backend-rights/references/delegated-user-management.md)
+  and [three-colour login branding](../../typo3-backend-rights/references/backend-branding.md).
+  Keep normal managers non-admin and verify privilege denials. Prepare/implement in the existing
+  dependency/backend nodes; record exact actors/groups and backend-only visual declarations before
+  closure, not as an implied public redesign or deployment.
 - For an already-v14 maintenance request, repair/test the affected extension and integrations.
   Do not run the v12→v13 ladder again or retrofit old closure labels. A new current baseline can
   prove a patch transition, never the missing original v12→v14 invariance.
@@ -97,11 +122,29 @@ Keep at most three global visual states; additional states stay inside one repre
   with selected/featured. Verify local purge-request construction without calling a real CDN.
 - Separate page/data caches, compiled DI, OPcache and external CDN state. Do not add broad purges
   as a substitute for identifying the missing invalidation. Local checks cannot certify CDN POPs.
+- For file replacement, warm real page and installed static caches, render the actual image markup,
+  then replace one disposable file under the intended editor role with the same UID/name. Require
+  changed bytes, invalidated dependent HTML, a reachable regenerated image and surviving unrelated
+  cache entries. `NullBackend`, synthetic tags or a manual global flush do not prove this.
+  Inspect installed Core `frontend.cache.autoTagging` and FAL invalidation first (observed on
+  14.3.5 in `ResourceStorage::getPublicUrl()`); upgraded instances can retain the disabled setting.
+  Use the [Core cache contract](https://docs.typo3.org/c/typo3/cms-core/main/en-us/Changelog/13.3/Feature-104990-AutomaticFrontendCacheTagging.html),
+  not a new broad purge hook. Workspace physical-file limitations still apply.
+- After processor changes, regeneration alone may leave browser-cached bytes under the same URL.
+  Check derivative contents and URL/cache policy separately. A dated query suffix is an observed
+  repair, not a universal listener; prefer supported invalidation/versioning and record its expiry.
 - Test AJAX controls again after replacement. For touch-sensitive code, add one desktop-width
   touch-capable context plus resize across the actual breakpoint; viewport width alone does not
   prove pointer capability. Use these on affected components, not every URL.
 - Preserve search counts, tie ordering and editorial date semantics. Import/reindex timestamps or
   a navigation save must not silently replace a deliberate publication/update date.
+- Follow a real autocomplete result to its intended record/download and verify language and clean
+  query semantics. Keep unrelated search lists unchanged; `sys_file` and metadata UIDs differ.
+  Reuse the existing router/template permalink contract rather than hard-coding customer page IDs.
+- For dynamic maps, lazy images and on-demand styles, use
+  [dynamic-component proof](../../typo3-playwright/references/dynamic-component-proof.md).
+  Validate rendered production asset URLs before capture, including after a package fork/name
+  change. Do not copy hard-coded `_assets` symlinks as the permanent build solution.
 
 ## Routes and persisted content — `http-dom`, `redirects`, `schema`
 

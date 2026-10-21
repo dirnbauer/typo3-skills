@@ -67,8 +67,8 @@ nodes:
     resources: [browser-proof]
     outcomes: [pass, findings, blocked]
   backend-group-model-decision:
-    objective: "Decide whether Redirects editing goes to one new least-privilege group or into the existing editor groups."
-    done: "The decision cites the current group inventory; pass selects one new group, not-applicable preserves the existing groups."
+    objective: "Select the editor group model and scoped non-admin Benutzerverwaltung; record the three-colour site-specific login branding intent."
+    done: "The inventory and owner decisions name managed accounts/groups/actions, compatible package provenance and branding intent; pass selects one new group, not-applicable preserves existing groups, never skips backend capabilities."
     evidence: nodes/backend-group-model-decision/evidence.md
     review: required
     skill: typo3-backend-rights
@@ -346,8 +346,8 @@ nodes:
     resources: [browser-proof]
     outcomes: [pass, blocked]
   redirects-rights-single-group:
-    objective: "Verify Redirects and configure one new least-privilege editor group for it."
-    done: "A non-admin test editor can manage redirects in scope, is denied elsewhere, and the approval is recorded."
+    objective: "Configure the approved least-privilege editor group, Redirects, delegated Benutzerverwaltung and three-colour site-specific login branding."
+    done: "Approved non-admin editor/manager fixtures pass in-scope actions and privilege-denial tests; package provenance, three palettes, labels, site motifs and owner approval are evidenced."
     evidence: nodes/redirects-rights-single-group/evidence.md
     skill: typo3-backend-rights
     phase: P10
@@ -357,8 +357,8 @@ nodes:
     requires: [rung-14]
     outcomes: [pass, blocked]
   redirects-rights-preserved-groups:
-    objective: "Verify Redirects and extend the existing editor groups by the minimum needed."
-    done: "Existing groups keep their rights and gain only the intended Redirects access, proven with a test editor."
+    objective: "Preserve distinct editor roles while adding approved Redirects/delegated Benutzerverwaltung access and three-colour site-specific login branding."
+    done: "Existing roles keep their boundaries; approved non-admin fixtures prove Redirects and delegated management including denials; package provenance, palettes, labels, site motifs and scope decisions are evidenced."
     evidence: nodes/redirects-rights-preserved-groups/evidence.md
     skill: typo3-backend-rights
     phase: P10
@@ -450,8 +450,8 @@ nodes:
     resources: [project-write, browser-proof]
     outcomes: [pass, findings, invalid, blocked]
   backend-operations:
-    objective: "Prove backend login, module inventory, editor save and reopen, scheduler and runtime logs on the target."
-    done: "All planned backend assertions pass, with a non-admin editor wherever the plan names one."
+    objective: "Prove backend login, modules, editor save/reopen, delegated-user authorization, three-colour environment branding, scheduler and runtime logs on the frozen target."
+    done: "All planned backend assertions pass, including actual non-admin positive/negative journeys and local Live/Staging/DDEV branding proof; no provisioning occurs in this frozen node."
     evidence: nodes/backend-operations/evidence.md
     freeze: true
     skill: typo3-upgrade-closure
