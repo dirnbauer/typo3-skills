@@ -1,0 +1,61 @@
+# Same gate as .github/workflows/checks.yml; add checks to scripts/check.sh, not here.
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+    - when: never
+
+default:
+  image: python:3.12-trixie
+  interruptible: true
+
+variables:
+  # Match GitHub's Node 20 family. Checksums: https://nodejs.org/dist/v20.20.2/SHASUMS256.txt
+  NODE_VERSION: "20.20.2"
+  NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.npm"
+
+check:
+  stage: test
+  timeout: 15m
+  cache:
+    key:
+      prefix: npm-node20
+      files:
+        - skills/typo3-upgrade-run/scripts/package-lock.json
+    paths:
+      - .npm/
+  before_script:
+    # Never install system packages on a persistent shell/SSH runner host.
+    - test "${CI_DISPOSABLE_ENVIRONMENT:-}" = "true"
+    - apt-get update -qq
+    - apt-get install -y --no-install-recommends ca-certificates curl xz-utils git php-cli imagemagick
+    - |
+      case "$(uname -m)" in
+        x86_64)
+          node_arch=x64
+          node_sha256=df770b2a6f130ed8627c9782c988fda9669fa23898329a61a871e32f965e007d
+          ;;
+        aarch64|arm64)
+          node_arch=arm64
+          node_sha256=73093db209e4e9e09dd7d15a47aeaab1b74833830df03efa5f942a1122c5fa71
+          ;;
+        *) echo "Unsupported Node architecture" >&2; exit 1 ;;
+      esac
+      node_archive="node-v${NODE_VERSION}-linux-${node_arch}.tar.xz"
+      node_download_dir="$(mktemp -d)"
+      curl --fail --silent --show-error --proto '=https' --tlsv1.2 \
+        "https://nodejs.org/dist/v${NODE_VERSION}/${node_archive}" \
+        --output "${node_download_dir}/${node_archive}"
+      printf '%s  %s\n' "$node_sha256" "${node_download_dir}/${node_archive}" | sha256sum --check -
+      tar --extract --xz --file "${node_download_dir}/${node_archive}" \
+        --directory /usr/local --strip-components=1 --no-same-owner
+    - node --version
+    - python3 --version
+    # These binaries prevent the existing PHP and real-image tests from silently skipping.
+    - |
+      php -r 'exit(function_exists("token_get_all") ? 0 : 1);'
+    - convert -version
+  script:
+    - npm ci --prefix skills/typo3-upgrade-run/scripts --prefer-offline
+    - ./scripts/check.sh
