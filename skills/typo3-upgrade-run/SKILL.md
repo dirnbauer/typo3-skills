@@ -23,6 +23,11 @@ enforces every rule below. You never decide completion from memory or a transcri
 
 ## Run the graph
 
+For a T3 Ops assistant work order, first read
+[T3 Ops integration](references/t3ops-integration.md): distinguish routine minor
+batches from the full major graph, verify the project identity and preserve native
+admission, evidence and deployment boundaries.
+
 Install/test the harness once per changed harness source or lock, not once per node. Run the
 harness on the host; run application PHP, Composer, TYPO3, database and image commands inside DDEV.
 
