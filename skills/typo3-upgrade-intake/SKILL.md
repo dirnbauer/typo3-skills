@@ -15,6 +15,11 @@ metadata:
 
 One job: prove exactly what will be upgraded and define the graph before mutation.
 
+For T3 Ops major work orders, read the
+[assistant integration](../typo3-upgrade-run/references/t3ops-integration.md).
+Reconcile the saved plan against actual source, dataset and extension state;
+retain existing link-check coverage and distinguish old findings from regressions.
+
 ## Nodes you own
 
 Start every node from `t3u node-brief --node <id>`; it carries the contract, routes and budget.
