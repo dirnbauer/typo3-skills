@@ -2,23 +2,24 @@
   "schema": 1,
   "tool": "skill-doctor@0.1.0",
   "integrity": "sha512-80daQIGVLbKxjlGBc9ZBQXaKgz54vYayT1UsFV43j65ResKSjzLrNcY63r+1HhSBms4SeuXlDKAsSRlL8cvnRg==",
-  "checkedAt": "2026-09-05T21:16:38.210Z",
-  "skills": 59,
-  "diagnostics": 720,
+  "checkedAt": "2026-10-31T09:54:59.436Z",
+  "skills": 61,
+  "diagnostics": 966,
   "byRule": {
-    "evals.invalid-schema": 382,
-    "evals.missing-expected-output": 316,
+    "evals.invalid-schema": 483,
+    "evals.missing-expected-output": 403,
+    "skill.description-missing-trigger-guidance": 1,
     "skill.invalid-frontmatter-description": 2,
-    "skill.large-inline-skill": 1,
-    "skill.missing-mentioned-resource": 8,
+    "skill.missing-mentioned-resource": 9,
     "skill.missing-usage-guidance": 2,
-    "skill.reference-outside-root": 9
+    "skill.reference-outside-root": 66
   },
   "byDisposition": {
-    "native-schema-check-required": 695,
-    "upstream-advisory": 13,
-    "verified-command-with-arguments": 3,
-    "verified-sibling-reference": 9
+    "inspect-owned": 1,
+    "native-schema-check-required": 883,
+    "upstream-advisory": 12,
+    "verified-command-with-arguments": 4,
+    "verified-sibling-reference": 66
   },
   "caveat": "Advisory static scan, not behavioural validation. Native string-ID trigger suites are validated by scripts/validate_evals.py; do not convert reviewed cases to satisfy a different schema. Upstream files stay immutable. Inspect resource warnings individually.",
   "findings": [
@@ -73,10 +74,20 @@
       "disposition": "verified-sibling-reference"
     },
     {
+      "skill": "thermo-nuclear-code-quality-review",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 1,
+      "rule": "skill.description-missing-trigger-guidance",
+      "severity": "warning",
+      "message": "The description does not clearly say when the skill should be used.",
+      "disposition": "inspect-owned"
+    },
+    {
       "skill": "typo3-backend-rights",
       "vendored": false,
       "file": "SKILL.md",
-      "line": 248,
+      "line": 257,
       "rule": "skill.reference-outside-root",
       "severity": "error",
       "message": "Local reference `../typo3-workspaces/SKILL.md` resolves outside the skill root.",
@@ -86,7 +97,7 @@
       "skill": "typo3-backend-rights",
       "vendored": false,
       "file": "SKILL.md",
-      "line": 430,
+      "line": 452,
       "rule": "skill.reference-outside-root",
       "severity": "error",
       "message": "Local reference `../typo3-workspaces/SKILL.md` resolves outside the skill root.",
@@ -116,7 +127,7 @@
       "skill": "typo3-docs",
       "vendored": true,
       "file": "SKILL.md",
-      "line": 29,
+      "line": 52,
       "rule": "skill.missing-mentioned-resource",
       "severity": "warning",
       "message": "Referenced resource `scripts/validate_docs.sh /path/to/extension` was not found.",
@@ -126,7 +137,7 @@
       "skill": "typo3-docs",
       "vendored": true,
       "file": "SKILL.md",
-      "line": 30,
+      "line": 53,
       "rule": "skill.missing-mentioned-resource",
       "severity": "warning",
       "message": "Referenced resource `scripts/render_docs.sh /path/to/extension` was not found.",
@@ -146,7 +157,7 @@
       "skill": "typo3-extension-upgrade",
       "vendored": true,
       "file": "SKILL.md",
-      "line": 115,
+      "line": 224,
       "rule": "skill.missing-mentioned-resource",
       "severity": "warning",
       "message": "Referenced resource `scripts/scan-deprecations.sh <path>` was not found.",
@@ -156,7 +167,7 @@
       "skill": "typo3-icon14",
       "vendored": false,
       "file": "SKILL.md",
-      "line": 46,
+      "line": 47,
       "rule": "skill.missing-mentioned-resource",
       "severity": "warning",
       "message": "Referenced resource `scripts/verify-icon.sh <file> <type>` was not found.",
@@ -166,11 +177,101 @@
       "skill": "typo3-icon14",
       "vendored": false,
       "file": "SKILL.md",
-      "line": 233,
+      "line": 255,
       "rule": "skill.missing-mentioned-resource",
       "severity": "warning",
       "message": "Referenced resource `scripts/verify-icon.sh <file> <type>` was not found.",
       "disposition": "verified-command-with-arguments"
+    },
+    {
+      "skill": "typo3-news-tags",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 349,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-v14-reference/references/13-v14-only-changes-manual-not-handled-by-rector.md#extbase-follows-fallbacktype-v1436` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-news-tags",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 389,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/typo3-14-fix-pack.md#15-extbase-follows-fallbacktype-1436` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-playwright",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 67,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/fleet-regression-contracts.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-playwright",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 71,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/feature-evidence.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-playwright",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 75,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-content-blocks/references/rich-text-roundtrip.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-playwright",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 79,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-content-blocks/references/typed-link-migration.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-playwright",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 93,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/parallel-execution.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-playwright",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 113,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/run-retrospective-2026-10-21.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-powermail",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 41,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-jev/SKILL.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
     },
     {
       "skill": "typo3-project-upgrade",
@@ -233,10 +334,440 @@
       "disposition": "upstream-advisory"
     },
     {
+      "skill": "typo3-upgrade-baseline",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 35,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/graph-runner.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-baseline",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 38,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/graph-runner.md#evidence-file` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-baseline",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 48,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/typo3-14-fix-pack.md#9-dev-server-render-before-baseline-a` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-closure",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 25,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/database-health.md#db-health-target-the-comparison` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-closure",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 37,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/measurement-recipes.md#closure-kit-dry-run-before-the-epoch` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-closure",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 37,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/graph-runner.md#the-shared-attempt-budget` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-closure",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 48,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/graph-runner.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-closure",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 51,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/graph-runner.md#evidence-file` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-closure",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 63,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/feature-evidence.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-closure",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 72,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/parallel-execution.md#dispatch-what-the-graph-offers` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-closure",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 84,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/overnight-controller.md#who-runs-the-backend-login-journeys` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-closure",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 87,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-content-blocks/references/rich-text-roundtrip.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-closure",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 94,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-backend-rights/SKILL.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-closure",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 126,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/bootstrap-5-migration.md#sequence-inside-the-run` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
       "skill": "typo3-upgrade-intake",
       "vendored": false,
       "file": "SKILL.md",
+      "line": 19,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/t3ops-integration.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-intake",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 46,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/database-health.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-intake",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 51,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/graph-runner.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-intake",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 54,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/graph-runner.md#evidence-file` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-intake",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 68,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/known-problems.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-intake",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 75,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-ddev/references/webconsulting-additions.md#source-runtime-and-case-sensitive-media` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-intake",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 88,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/native-tools-first.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-intake",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 93,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-backend-rights/references/delegated-user-management.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-intake",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 94,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-backend-rights/references/backend-branding.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-intake",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 101,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/fleet-regression-contracts.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-intake",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 104,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/feature-evidence.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-intake",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 109,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/project-environment.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-intake",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 112,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/bootstrap-5-migration.md#intake-inventory-estimate-ask` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-intake",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 117,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/runtime-sizing.md#compatibility-blockers` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-intake",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 121,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/typo3-14-fix-pack.md#the-probe-and-the-evidence` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-intake",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 137,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-ddev/references/webconsulting-additions.md#image-processing-like-production` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-intake",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 142,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/rules/30-finding-classification.md#308-declared-changes-are-rules-not-edits` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-intake",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 143,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/overnight-controller.md#batch-the-owner-decisions` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-intake",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 150,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/runtime-sizing.md#measured-fleet-durations` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-intake",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 160,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/database-health.md#classification-at-intake` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-migration",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 29,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/typo3-14-fix-pack.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-migration",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 47,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/graph-runner.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-migration",
+      "vendored": false,
+      "file": "SKILL.md",
       "line": 50,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/graph-runner.md#evidence-file` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-migration",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 62,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/latest-version-policy.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-migration",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 66,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/native-tools-first.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-migration",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 73,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/typo3-14-fix-pack.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-migration",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 80,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-content-blocks/references/typed-link-migration.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-migration",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 92,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/fleet-regression-contracts.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-migration",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 99,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-upgrade-run/references/mask-to-content-blocks.md#backend-previews-that-crash-on-143` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-migration",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 107,
       "rule": "skill.reference-outside-root",
       "severity": "error",
       "message": "Local reference `../typo3-upgrade-run/references/project-environment.md` resolves outside the skill root.",
@@ -246,11 +777,71 @@
       "skill": "typo3-upgrade-migration",
       "vendored": false,
       "file": "SKILL.md",
-      "line": 49,
+      "line": 117,
       "rule": "skill.reference-outside-root",
       "severity": "error",
-      "message": "Local reference `../typo3-upgrade-run/references/project-environment.md` resolves outside the skill root.",
+      "message": "Local reference `../typo3-upgrade-run/references/bootstrap-5-migration.md` resolves outside the skill root.",
       "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-run",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 86,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-backend-rights/references/delegated-user-management.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-run",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 87,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-backend-rights/references/backend-branding.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-run",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 237,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-content-blocks/references/rich-text-roundtrip.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-run",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 238,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-content-blocks/references/typed-link-migration.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-run",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 239,
+      "rule": "skill.reference-outside-root",
+      "severity": "error",
+      "message": "Local reference `../typo3-playwright/references/dynamic-component-proof.md` resolves outside the skill root.",
+      "disposition": "verified-sibling-reference"
+    },
+    {
+      "skill": "typo3-upgrade-run",
+      "vendored": false,
+      "file": "SKILL.md",
+      "line": 261,
+      "rule": "skill.missing-mentioned-resource",
+      "severity": "warning",
+      "message": "Referenced resource `scripts/typo3-14-readiness.mjs --php \"ddev exec php\"` was not found.",
+      "disposition": "verified-command-with-arguments"
     },
     {
       "skill": "typo3-vite",
@@ -260,16 +851,6 @@
       "rule": "skill.missing-usage-guidance",
       "severity": "warning",
       "message": "The body does not obviously explain how the skill should be used once triggered.",
-      "disposition": "upstream-advisory"
-    },
-    {
-      "skill": "web-platform-design",
-      "vendored": true,
-      "file": "SKILL.md",
-      "line": 5,
-      "rule": "skill.large-inline-skill",
-      "severity": "warning",
-      "message": "The skill is large but does not appear to lean on references or scripts for progressive disclosure.",
       "disposition": "upstream-advisory"
     }
   ]

@@ -14,7 +14,9 @@ The description is the only text an agent sees for every skill on every turn. It
 metadata: **what the skill does** and **when to use it**, in words a user would type. Most
 skill failures are trigger failures, not instruction failures.
 
-**Do:** name the artefacts, versions and situations.
+**Do:** write in the third person ("Builds…", not "Build…" or "I/you"), name the artefacts,
+versions and situations, and follow the *what* sentence with a "Use when…" clause. Put the
+distinctive terms first: listings truncate long descriptions.
 **Don't:** describe the skill's ambition — "helps with upgrades" routes nothing.
 
 ```yaml

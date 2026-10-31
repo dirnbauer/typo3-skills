@@ -17,7 +17,7 @@ Write what the model does not already know, as commands rather than background.
 
 Three layers, loaded on demand: frontmatter always → `SKILL.md` when triggered →
 `references/` only when the skill asks. Keep `SKILL.md` under 500 lines; give a reference
-over ~300 lines a table of contents.
+over 100 lines a table of contents.
 
 Describe outcomes and constraints, not step-by-step procedure — the agent needs room to
 adapt. Where a sequence genuinely must be exact, it belongs in a **script**:

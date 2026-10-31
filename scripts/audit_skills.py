@@ -716,6 +716,21 @@ def audit_skill(skill_dir: Path, duplicate_names: dict[str, list[str]]) -> Skill
             + ", ".join(f"`{key}`" for key in unexpected)
         )
 
+    # Open Agent Skills spec (agentskills.io) and the claude.ai / Skills API upload validator.
+    if skill_name and not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", skill_name or "") or len(skill_name or "") > 64:
+        pass_1.append("name must be 1-64 chars of a-z, 0-9 and single inner hyphens")
+    if skill_name and re.search(r"anthropic|claude", skill_name):
+        pass_1.append("name uses a reserved word (anthropic, claude)")
+    if description and re.search(r"[<>]", description):
+        pass_1.append("description contains < or >, which upload validators reject as XML")
+    compatibility = frontmatter.get("compatibility")
+    if isinstance(compatibility, str) and len(compatibility) > 500:
+        pass_1.append("compatibility exceeds the 500 character limit")
+    metadata = frontmatter.get("metadata")
+    if metadata is not None and (not isinstance(metadata, dict)
+                                 or any(not isinstance(v, str) for v in metadata.values())):
+        pass_1.append("metadata must map string keys to string values")
+
     owner, source_url, markers = discover_source_info(skill_dir.name, text)
     if line_count > 500 and owner == "webconsulting":
         pass_1.append(f"SKILL.md is {line_count} lines; skill-creator recommends keeping it under 500")
