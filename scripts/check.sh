@@ -93,6 +93,10 @@ else
     HARNESS="skills/typo3-upgrade-run/scripts"
     if [ ! -d "$HARNESS/node_modules" ]; then
         bad "harness suite unavailable (run: cd $HARNESS && npm ci); use --fast only for an explicit partial check"
+    elif ! drift=$(node scripts/check_harness_deps.mjs 2>&1); then
+        # A stale install fails deep inside a dependency and reads like a code regression.
+        bad "harness dependencies differ from package-lock.json; the suite would not test this tree"
+        printf '%s\n' "$drift" | sed 's/^/      /'
     else
         run "harness unit and e2e suite" \
             bash -c "cd '$HARNESS' && npm test --silent"
