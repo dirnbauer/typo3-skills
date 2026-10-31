@@ -368,7 +368,9 @@
       "name",
       "description"
     ],
-    "pass_1": [],
+    "pass_1": [
+      "description contains < or >, which upload validators reject as XML"
+    ],
     "pass_2": [],
     "pass_3": []
   },
@@ -398,7 +400,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-icon14/SKILL.md",
-    "line_count": 276,
+    "line_count": 282,
     "frontmatter_keys": [
       "name",
       "description",
@@ -468,11 +470,11 @@
   {
     "directory": "typo3-news-tags",
     "skill_name": "typo3-news-tags",
-    "description": "Bulk-generates thematic tags for georgringer/news (EXT:news) and assigns them to existing news records via keyword matching. Use when tagging large news corpora, defining a generic tag catalogue, building a Symfony console command for tag assignment, working with tx_news_domain_model_tag / tx_news_domain_model_news_tag_mm, or installing b13/tag as a generic site-wide tagging capability alongside news tags.",
+    "description": "Bulk-generates thematic tags for georgringer/news (EXT:news) and assigns them to existing news records via keyword matching. Use when tagging large news corpora, defining a generic tag catalogue, building a Symfony console command for tag assignment, working with tx_news_domain_model_tag / tx_news_domain_model_news_tag_mm, or installing b13/tag as a generic site-wide tagging capability alongside news tags. Also use when, after a TYPO3 14.3 update, news detail pages answer 404 or lose their categories in a translated language (fallbackType strict), to count the news per language before and after.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-news-tags/SKILL.md",
-    "line_count": 362,
+    "line_count": 424,
     "frontmatter_keys": [
       "name",
       "description",
@@ -617,7 +619,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-seo/SKILL.md",
-    "line_count": 321,
+    "line_count": 323,
     "frontmatter_keys": [
       "name",
       "description",
@@ -691,7 +693,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-solr/SKILL.md",
-    "line_count": 339,
+    "line_count": 348,
     "frontmatter_keys": [
       "name",
       "description",
@@ -710,7 +712,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-structured-data/SKILL.md",
-    "line_count": 139,
+    "line_count": 144,
     "frontmatter_keys": [
       "name",
       "description",
@@ -768,7 +770,9 @@
       "name",
       "description"
     ],
-    "pass_1": [],
+    "pass_1": [
+      "description contains < or >, which upload validators reject as XML"
+    ],
     "pass_2": [],
     "pass_3": []
   },
@@ -834,7 +838,7 @@
     "source_owner": "webconsulting",
     "source_url": null,
     "file_path": "skills/typo3-upgrade-intake/SKILL.md",
-    "line_count": 180,
+    "line_count": 185,
     "frontmatter_keys": [
       "name",
       "description",
@@ -891,7 +895,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-upgrade-run/SKILL.md",
-    "line_count": 334,
+    "line_count": 345,
     "frontmatter_keys": [
       "name",
       "description",
@@ -908,7 +912,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-v14-reference/SKILL.md",
-    "line_count": 353,
+    "line_count": 359,
     "frontmatter_keys": [
       "name",
       "description",
@@ -997,7 +1001,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-webmcp/SKILL.md",
-    "line_count": 158,
+    "line_count": 164,
     "frontmatter_keys": [
       "name",
       "description",

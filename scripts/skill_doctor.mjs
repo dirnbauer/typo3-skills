@@ -8,8 +8,10 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const version = '0.1.0';
 const integrity = 'sha512-80daQIGVLbKxjlGBc9ZBQXaKgz54vYayT1UsFV43j65ResKSjzLrNcY63r+1HhSBms4SeuXlDKAsSRlL8cvnRg==';
-const registry = JSON.parse(execFileSync('npm', ['view', `skill-doctor@${version}`, 'dist', '--json'], { encoding: 'utf8', timeout: 30000 }));
-if (registry.integrity !== integrity) throw new Error('Skill Doctor package integrity changed; review before execution.');
+// npm 11+ prints `npm view <pkg>@<version> --json` as a one-element array.
+const viewed = JSON.parse(execFileSync('npm', ['view', `skill-doctor@${version}`, 'dist', '--json'], { encoding: 'utf8', timeout: 30000 }));
+const registry = Array.isArray(viewed) ? viewed[0] : viewed;
+if (registry?.integrity !== integrity) throw new Error('Skill Doctor package integrity changed; review before execution.');
 const raw = JSON.parse(execFileSync('npx', ['--yes', '--ignore-scripts', `--package=skill-doctor@${version}`,
   'skill-doctor', 'skills', '--format', 'json', '--fail-on', 'none'],
 { cwd: root, encoding: 'utf8', timeout: 60000, maxBuffer: 32 * 1024 * 1024 }));
@@ -20,7 +22,7 @@ function disposition(s, d) {
   if (['evals.invalid-schema', 'evals.missing-expected-output'].includes(d.ruleId)) return 'native-schema-check-required';
   const ref = d.message.match(/`([^`]+)`/)?.[1];
   if (d.ruleId === 'skill.reference-outside-root' && ref) {
-    const target = path.resolve(root, 'skills', s.skill.name, ref);
+    const target = path.resolve(root, 'skills', s.skill.name, ref.split('#')[0]);
     if (target.startsWith(path.join(root, 'skills') + path.sep) && existsSync(target)) return 'verified-sibling-reference';
   }
   if (d.ruleId === 'skill.missing-mentioned-resource' && ref?.includes(' ')) {
