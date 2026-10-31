@@ -11,11 +11,11 @@ declare(strict_types=1);
  * tags per news instead of memorising compound names.
  *
  * Catalogue was derived from a frequency analysis of the actual corpus (title + teaser
- * + linked tt_content harvested via tx_news_related_news) — see SKILL.md
- * §"Default workflow" steps 1–2. Tags are ordered roughly by descending corpus
+ * + linked tt_content harvested via tx_news_related_news) — see
+ * references/tag-workflow.md §1–2. Tags are ordered roughly by descending corpus
  * frequency. Adjust the catalogue to your domain before adopting.
  *
- * Keyword design notes (see SKILL.md §"Keyword design rules"):
+ * Keyword design notes (see "Keyword rules" in references/tag-workflow.md §2):
  *   - Short bare prefixes like 'auto' over-match in German (autor, automatisch, …).
  *     Prefer compound forms: autokauf, autoverkauf, autohändler, kfz, gebrauchtwagen.
  *   - 'min_per_news' is aspirational; the command accepts fewer if the corpus does

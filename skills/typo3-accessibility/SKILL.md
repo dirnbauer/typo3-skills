@@ -10,7 +10,7 @@ license: "MIT / CC-BY-SA-4.0"
 ---
 # TYPO3 Accessibility (WCAG 2.2 AA)
 
-> Source: https://github.com/dirnbauer/webconsulting-skills
+> Source: https://github.com/dirnbauer/typo3-skills
 
 ## Rules
 
@@ -18,9 +18,11 @@ license: "MIT / CC-BY-SA-4.0"
 - Use TYPO3's built-in APIs, Fluid ViewHelpers and Core features before custom markup, and
   check every class, ViewHelper and argument against the installed v14 source.
 - Prefer native HTML over ARIA; add ARIA only where no native element carries the semantics.
-- Solve with Fluid partials, PHP middleware and vanilla JavaScript; this skill avoids TypoScript.
+- Solve with Fluid partials, PHP middleware and vanilla JavaScript; this skill does not author
+  TypoScript. Menus come from the project's existing `lib.*` objects.
 - A passing automated scan is evidence, not a WCAG conformance claim.
-- This skill owns the correct markup. Scanning a URL with Playwright and axe, a CI baseline or the
+- This skill owns the correct markup and spot-checks it: run `scripts/wcag22_audit.cjs` against
+  the single page you just changed. A site inventory, a CI baseline, programme reports and the
   Erklaerung zur Barrierefreiheit belong to `typo3-wcag22-aa-agentic`.
 
 ## References: when to load
@@ -31,8 +33,7 @@ Load one file only when the task needs it:
 - [JavaScript widgets](references/04-javascript-accessible-widgets.md): keyboard handlers for accordion, tabs and dialogs, reduced motion, a live-region announcer.
 - [CSS focus and contrast](references/05-css-focus-and-contrast-essentials.md): focus rings, `prefers-reduced-motion`, contrast tokens.
 - [TYPO3-specific configuration](references/06-typo3-specific-configuration.md): TCA that requires alt text, header layouts, EXT:form markup, CSP for focus styles.
-- [Testing and tools](references/07-testing-and-tools.md): before running `scripts/wcag22_audit.cjs` or writing an audit report.
-- [Accessibility extensions](references/08-accessibility-extensions.md): when asked which TER extensions help.
+- [Testing and tools](references/07-testing-and-tools.md): before running `scripts/wcag22_audit.cjs` on the page you changed, or when the user asks how to verify a fix.
 - [WCAG 2.2 quick reference](references/09-wcag-2-2-quick-reference.md): when mapping a finding to a success criterion.
 - [Anti-patterns](references/10-anti-patterns-flag-these-in-reviews.md): when reviewing template or element code.
 - [v14-only changes](references/v14-only-accessibility-changes.md): backend combobox, native `<dialog>` modals, Fluid 5 typing.
@@ -100,9 +101,10 @@ Run through this checklist before every deployment. Mark items as you fix them.
 - [ ] Fluid templates use `<f:link.page>` / `<f:link.typolink>` (not `<a>` with manual hrefs)
 - [ ] Content Block / Content Element templates follow accessible patterns below
 
-## 2. WCAG 2.2 Conformance Audit Workflow
+## 2. Spot-check the page you changed
 
-When asked for a WCAG 2.2 audit, do the work that can be done by the agent before handing anything back:
+After fixing markup, verify it on the rendered page before handing anything back. For a site-wide
+WCAG 2.2 audit, inventory or CI baseline, hand over to `typo3-wcag22-aa-agentic`.
 
 1. Identify audited URLs, languages, viewports, forms, dialogs, menus, media, downloads, and third-party embeds.
 2. Run `scripts/wcag22_audit.cjs` against the rendered pages with axe-core tags for WCAG 2.0/2.1/2.2 A/AA.
@@ -113,7 +115,7 @@ When asked for a WCAG 2.2 audit, do the work that can be done by the agent befor
    - **Agent-completed evidence:** commands, URLs, viewport, tool versions, violations, fixes, residual technical risks.
    - **Human/user follow-up only:** screen reader confirmation, legal statement approval, and only applicable device-only, third-party/PDF/media, or user-testing tasks.
 
-Use the detailed procedure in [Testing & Tools](references/07-testing-and-tools.md) when a conformance audit is requested. A successful automated run is not a WCAG conformance claim; it is evidence for the parts that automation and code inspection can cover.
+Use the detailed procedure in [Testing & Tools](references/07-testing-and-tools.md) for the script options and the report layout. A successful automated run is not a WCAG conformance claim; it is evidence for the parts that automation and code inspection can cover.
 
 ## 3. Fluid Template Patterns
 
@@ -317,7 +319,3 @@ For decorative images (no informational value):
 </div>
 ```
 
-
-## Detailed Reference
-
-Read [the full guide](references/full-guide.md) when the task needs detailed examples, long templates, troubleshooting matrices, appendices, or sections not included above. Keep this file unloaded for narrow tasks so the skill follows progressive disclosure.

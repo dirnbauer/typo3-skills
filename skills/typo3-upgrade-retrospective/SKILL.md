@@ -80,8 +80,9 @@ does not prove visual invariance, permissions, security, or closure. Stale statu
 3. Ranked skill/graph/harness/eval changes with acceptance criteria.
 4. Public-safe article notes if requested.
 
-Remain read-only unless the user explicitly asks to update skills. When edits are authorized, use
-`skill-creator`, preserve trigger boundaries, add/adjust evals as `proposed`, run `./scripts/check.sh`
+Remain read-only unless the user explicitly asks to update skills. When edits are authorized, follow
+the collection's skill update rules (`skill-update-rules.md` in the repository's references folder) and
+`SKILL-SPEC.md` at the repository root, preserve trigger boundaries, add/adjust evals as `proposed`, run `./scripts/check.sh`
 in the skill collection, and report
 which conclusions changed the skill.
 

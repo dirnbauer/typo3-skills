@@ -11,7 +11,7 @@ license: "MIT / CC-BY-SA-4.0"
 
 # TYPO3 News Tags — Bulk Generation & Assignment
 
-> Source: https://github.com/dirnbauer/webconsulting-skills
+> Source: https://github.com/dirnbauer/typo3-skills
 
 Targets TYPO3 14.3 with `georgringer/news` 14 (14.1.2 requires `^13.4.29 || ^14.3`, Packagist,
 verified 2026-10-31). Do not use this skill for v12/v13 sites.
@@ -34,7 +34,9 @@ system `b13/tag` (`sys_tag`); and the per-language news count around a TYPO3 14.
   crosscuts (5–10 per news), not copies of the categories.
 - **Tags through DataHandler, MM rows through bulk SQL.** DataHandler generates the slug and the
   reference index for the ~65 tag rows; multi-row `INSERT` writes the MM rows, then update the
-  `tx_news_domain_model_news.tags` counter. Look a tag up by slug before creating it.
+  `tx_news_domain_model_news.tags` counter. The raw `INSERT` bypasses DataHandler, so finish with
+  `ddev exec vendor/bin/typo3 referenceindex:update` to rebuild `sys_refindex` for the MM rows.
+  Look a tag up by slug before creating it.
 - **Dry run before the real run.** Review the distribution; run `--reset --force` only after it
   meets the targets, then flush caches.
 - **Wire the `NewsTag` route aspect before publishing tag URLs.**
@@ -56,8 +58,8 @@ dry-run targets and verification SQL of each step.
    [NewsThematicTags.example.php](references/NewsThematicTags.example.php).
 5. **Iterate with `--dry-run --limit=300`** until median ≥ 5, p25 ≥ 3, unmatched under 1 %, the top
    tag covers at most 60 % and every tag at least 1 %.
-6. **Run for real** with `--reset --force`, then `cache:flush`. Drop `--reset` once the catalogue is
-   stable.
+6. **Run for real** with `--reset --force`, then `referenceindex:update` and `cache:flush`. Drop
+   `--reset` once the catalogue is stable.
 7. **Verify** in SQL (counts, distribution, counter consistency), in the News module ("Relations"
    tab) and at `https://<site>/<tag-slug>/`.
 
@@ -94,6 +96,7 @@ Before reporting "done":
 - [ ] Storage PID confirmed and tags created there
 - [ ] `--dry-run` distribution reviewed against the targets in step 5
 - [ ] Counter consistency query returns 0 rows
+- [ ] `ddev exec vendor/bin/typo3 referenceindex:update` ran after the last MM write
 - [ ] Backend News module shows tags on a recent record
 - [ ] `https://<site>/<tag-slug>/` resolves to the filtered news list
 - [ ] Command is re-runnable (`--reset` works; a second run is idempotent)

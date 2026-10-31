@@ -12,7 +12,9 @@ Full narration script from the T3 Monitoring product tour, plus guidelines for w
 
 Scene durations are **driven by audio length** (not hardcoded). The generate script
 probes each file and writes `remotion/narration-durations.ts` with frame counts.
-Timings below are approximate for reference.
+Timings below are approximate for reference. The script covers scenes 1–6 (about 66 s of
+audio); the 1.5 s lead-in and the 7 s end card (scene 7) have no narration, which is how the
+tour reaches its ~75 s.
 
 ### Scene 1: Intro (~7.9s audio → 9.9s scene)
 

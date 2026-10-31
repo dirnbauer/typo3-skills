@@ -8,5 +8,5 @@ Read only the section that matches the current task. These files continue the ma
 - [7. Writing Custom Rules](07-writing-custom-rules.md)
 - [8. Upgrade Workflow Integration](08-upgrade-workflow-integration.md)
 - [9. Troubleshooting](09-troubleshooting.md)
-- [Appendix](appendix.md)
+- [Resources and v14 notes](resources-and-v14.md)
 - [Credits & Attribution](credits-and-attribution.md)

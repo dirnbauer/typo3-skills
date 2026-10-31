@@ -147,7 +147,8 @@ At least once per quarter, and after any Anthropic or agentskills.io announcemen
 1. Read the Claude Code changelog, the platform skill best-practices page, the agentskills.io spec
    and `anthropics/skills` `skill-creator` since the last dated note in `references/`.
 2. Write a dated note like [the October one](anthropic-skills-update-2026-10.md): change, source,
-   consequence, decision.
+   consequence, decision. A substance review (facts, contradictions, unfollowable steps) gets its
+   own note, like [the second pass of 2026-10-31](skill-review-2026-10-31.md).
 3. Update this file and SKILL-SPEC.md only for changes adopted; make each new rule enforceable by a
    script where possible (S13).
 4. Walk every owned skill against the checklist below.

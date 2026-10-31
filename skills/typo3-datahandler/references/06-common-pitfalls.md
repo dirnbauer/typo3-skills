@@ -1,7 +1,5 @@
 # 6. Common Pitfalls
 
-Continues `typo3-datahandler` from [full guide](full-guide.md).
-
 ## 6. Common Pitfalls
 
 ### Pitfall 1: Missing PID for New Records

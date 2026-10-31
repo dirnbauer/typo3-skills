@@ -27,6 +27,9 @@ For **show Other details only when category = other**, use **unhide (1)** + **is
 not translated labels. Use separate conditions for separate targets.
 
 Source: [Condition apply/negate](https://github.com/dirnbauer/powermail_cond/blob/fc5324f9d22ee1bcd3515d3d2ca51793b5545ec1/Classes/Domain/Model/Condition.php).
+The source anchors in this file are the 2026-09-26 snapshot (`fc5324f9`); tag 14.0.0 was not
+re-reviewed. The repository is private; the same paths exist in the installed
+`vendor/in2code/powermail-cond`.
 
 ## Operators and edge cases
 

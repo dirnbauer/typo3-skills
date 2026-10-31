@@ -9,9 +9,7 @@ license: "MIT / CC-BY-SA-4.0"
 ---
 # Security Incident Reporting
 
-> Source: https://github.com/dirnbauer/webconsulting-skills
-
-Comprehensive framework for documenting and analyzing security incidents, drawing from NIST SP 800-61 and SANS methodologies.
+> Source: https://github.com/dirnbauer/typo3-skills
 
 ## Rules
 
@@ -29,19 +27,15 @@ Comprehensive framework for documenting and analyzing security incidents, drawin
   how much technical detail each reader gets; no version contradicts the full report.
 - Figures, names, IPs and costs in the templates below are illustrations. Replace or delete them.
 
-## When to Use
+## Sub-guide
 
-- After a security incident (DDoS, breach, vulnerability exploitation)
-- Creating post-mortem documentation
-- Communicating with stakeholders (C-level, legal, security teams)
-- Correlating attack patterns with known CVEs
-- Establishing incident response metrics (MTTR, dwell time)
+- [SKILL-TYPO3.md](./SKILL-TYPO3.md): load when the compromised site is TYPO3 (forensic checklist,
+  vulnerability classification, Security Team communication).
 
 ## Related Skills
 
 - [security-audit](../security-audit/SKILL.md) - Pre-incident vulnerability assessment
 - [typo3-security](../typo3-security/SKILL.md) - TYPO3 hardening
-- [SKILL-TYPO3.md](./SKILL-TYPO3.md) - TYPO3-specific incident reporting
 
 ---
 
@@ -347,7 +341,7 @@ SLP reflectors. Recommend:
 | Legal | Legal, Compliance | Data impact, regulatory implications |
 | Public | Customers, Press | Sanitized summary, no technical details |
 
-### Retention Requirements
+### Retention (example policy; set per jurisdiction)
 
 | Document Type | Retention | Storage |
 |---------------|-----------|---------|
@@ -403,4 +397,4 @@ incorporating elements of NIST SP 800-61, SANS frameworks, and industry best pra
 Developed by webconsulting.at for the Claude skill collection.
 
 
-Source: https://github.com/dirnbauer/webconsulting-skills
+Source: https://github.com/dirnbauer/typo3-skills

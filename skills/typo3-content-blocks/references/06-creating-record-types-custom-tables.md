@@ -17,7 +17,7 @@ Record Types create **custom database tables** for structured data like teams, p
 
 ### Extbase-Compatible Table Naming
 
-**IMPORTANT:** For Extbase compatibility, use the `tx_extensionkey_domain_model_*` naming convention:
+For Extbase compatibility, use the `tx_extensionkey_domain_model_*` naming convention:
 
 ```yaml
 # ✅ CORRECT - Extbase compatible table name

@@ -33,7 +33,8 @@ rotation finding; moving it into `.env` does not undo exposure.
 ## Required Deployer information
 
 The package is **`spooner/deployer-information`**, extension key `deployer_information`, not the
-Deployer CLI. Release **2.0.1** requires PHP `^8.2` and Core `^13.4 || ^14.3`. Include its compatible
+Deployer CLI. The newest release, **2.0.0** (2026-05-13), requires PHP `^8.4` and Core
+`^13.4 || ^14.3` (Packagist, verified 2026-10-31). Include its compatible
 stable release in the narrow planned Composer transaction. Verify package registration and the
 System Information toolbar under the intended backend session. Local “no deployment yet” is valid;
 inventing a timestamp is not. Standard Deployer metadata or an approved custom `LAST_DEPLOY` file

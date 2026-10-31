@@ -29,15 +29,16 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  * IMPORTANT: This is a reference example. Before adopting it:
  *   - replace `Vendor\YourExt` with your namespace
  *   - update `loadConfig()` to point at your extension key
- *   - tune `self::CONTENT_TYPES` to match your tt_content harvest set
- *     (mask CTypes vary by project; verify with:
+ *   - tune `self::CONTENT_TYPES` and `self::CONTENT_TEXT_COLUMNS` to match your
+ *     tt_content harvest set; the defaults cover a plain EXT:news site. With Mask, set
+ *     `self::MASK_CONTENT` (CTypes and the text column vary by project; verify with:
  *       SELECT CType, COUNT(*) FROM tt_content
  *         WHERE tx_news_related_news>0 AND deleted=0 AND hidden=0
  *         GROUP BY CType ORDER BY 2 DESC)
  *   - register in your Configuration/Services.yaml — see Services.example.yaml
  *
- * See SKILL.md §8 for the DBAL `createNamedParameter(PARAM_INT)` workaround
- * used in fetchNews(), fetchContentByNews() and the news.tags counter UPDATE.
+ * See references/matching-and-performance.md for the DBAL `createNamedParameter(PARAM_INT)`
+ * workaround used in fetchNews(), fetchContentByNews() and the news.tags counter UPDATE.
  */
 final class AssignNewsTagsCommand extends Command
 {
@@ -45,13 +46,20 @@ final class AssignNewsTagsCommand extends Command
     private const NEWS_TABLE = 'tx_news_domain_model_news';
     private const MM_TABLE = 'tx_news_domain_model_news_tag_mm';
     private const TT_CONTENT = 'tt_content';
-    private const CONTENT_TYPES = [
-        'text',
-        'mask_text_icon',
-        'mask_aufzaehlungbox',
-        'mask_box_lamp',
-        'mask_box_achtung',
+    /**
+     * Project-specific Mask content. Both lists are empty for a plain EXT:news site; fill
+     * them only when the corpus text lives in Mask elements (see the CType query in the
+     * class comment). 'columns' are extra tt_content text columns Mask added, 'ctypes'
+     * the Mask CTypes that carry readable text.
+     */
+    private const MASK_CONTENT = [
+        'ctypes' => [],   // e.g. ['mask_text_icon', 'mask_box_achtung']
+        'columns' => [],  // e.g. ['tx_mask_text']
     ];
+    /** Core CTypes whose header/bodytext hold the readable text on a plain EXT:news site. */
+    private const CONTENT_TYPES = ['text', 'textmedia', 'textpic', ...self::MASK_CONTENT['ctypes']];
+    /** tt_content columns harvested per element; Mask columns are appended. */
+    private const CONTENT_TEXT_COLUMNS = ['header', 'bodytext', ...self::MASK_CONTENT['columns']];
 
     protected function configure(): void
     {
@@ -346,18 +354,17 @@ final class AssignNewsTagsCommand extends Command
             if ($intIds === '') {
                 continue;
             }
-            $sql = 'SELECT tx_news_related_news AS news, bodytext, tx_mask_text, header'
+            $sql = 'SELECT tx_news_related_news AS news, ' . implode(', ', self::CONTENT_TEXT_COLUMNS)
                 . ' FROM ' . self::TT_CONTENT
                 . ' WHERE tx_news_related_news IN (' . $intIds . ')'
                 . ' AND deleted = 0 AND hidden = 0'
                 . ' AND CType IN (' . $cTypeList . ')';
             foreach ($conn->executeQuery($sql)->fetchAllAssociative() as $row) {
                 $uid = (int)$row['news'];
-                $parts = array_filter([
-                    (string)($row['header'] ?? ''),
-                    (string)($row['bodytext'] ?? ''),
-                    (string)($row['tx_mask_text'] ?? ''),
-                ], static fn($s) => $s !== '');
+                $parts = array_filter(
+                    array_map(static fn(string $column): string => (string)($row[$column] ?? ''), self::CONTENT_TEXT_COLUMNS),
+                    static fn($s) => $s !== ''
+                );
                 if ($parts !== []) {
                     $result[$uid][] = implode(' ', $parts);
                 }

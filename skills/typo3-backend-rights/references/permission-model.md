@@ -277,7 +277,7 @@ Apply this only when `typo3/cms-workspaces` and `workspaces_publish` are registe
 - User TSconfig: `options.workspaces.previewLinkTTLHours = 48`.
 - Keep the default Editing and Ready to publish stages.
 - Add the main editor group as a custom Workspace **member**, never as an owner by default.
-- Use `publish_access = 2`; publishing remains an approved owner responsibility.
+- Set `publish_access` bit 2 (owners only; the field is a bitmask: 1 publish-stage only, 2 owners only, 4 hide the "Entire workspace" action, `WorkspaceService::PUBLISH_ACCESS_*`); publishing remains an approved owner responsibility.
 - Use groups rather than individual users for Workspace membership and ownership.
 - Ask for the owner/publisher before creating a missing custom Workspace, then write it through
   DataHandler. Do not grant editor access to the administrator-only `sys_workspace` table.

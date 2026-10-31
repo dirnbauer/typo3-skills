@@ -9,11 +9,11 @@ license: "MIT / CC-BY-SA-4.0"
 ---
 # Austrian Impressum Requirements
 
-> Source: https://github.com/dirnbauer/webconsulting-skills
+> Source: https://github.com/dirnbauer/typo3-skills
 
 > **Jurisdiction:** Austria (Österreich)
 > 
-> **Related Skills:**
+> **Sub-guides:**
 > - [SKILL-GERMANY.md](./SKILL-GERMANY.md) - German requirements
 > - [SKILL-EU.md](./SKILL-EU.md) - EU-wide requirements
 > - [SKILL-WORLD.md](./SKILL-WORLD.md) - International requirements
@@ -36,6 +36,10 @@ This skill provides comprehensive guidance on Austrian Impressum (legal notice) 
 
 ## References: when to load
 
+- [SKILL-GERMANY.md](./SKILL-GERMANY.md): when the operator is a German entity (DDG, MStV).
+- [SKILL-EU.md](./SKILL-EU.md): when the site addresses several EU member states or needs the
+  country-by-country matrix.
+- [SKILL-WORLD.md](./SKILL-WORLD.md): when the operator is a UK, Swiss, US or other non-EU entity.
 - [Offenlegung (§ 25 MedienG)](references/05-oeffentliches-medium-full-offenlegungspflicht.md):
   when the site carries editorial content beyond self-presentation, or for the full template.
 - [Compliance details](references/compliance.md): when the task also covers privacy notice, cookie
@@ -66,8 +70,8 @@ This skill provides comprehensive guidance on Austrian Impressum (legal notice) 
 |--------------|------------|-----------------|---------------|
 | Einzelunternehmen (not registered) | No | Name, address, trade, chamber | § 63 GewO applies |
 | Einzelunternehmen e.U. | Yes | Firm name, FB-Nr, court, address | § 14 UGB applies |
-| OG (Offene Gesellschaft) | Yes | Firm, FB-Nr, court, all partners | Partners' names required |
-| KG (Kommanditgesellschaft) | Yes | Firm, FB-Nr, court, Komplementäre | Kommanditisten optional |
+| OG (Offene Gesellschaft) | Yes | Firm, FB-Nr, court, seat | Partner details only when no unlimited partner is a natural person (§ 14 Abs 1 UGB); listing the partners is otherwise optional |
+| KG (Kommanditgesellschaft) | Yes | Firm, FB-Nr, court, seat | Komplementär details only when no unlimited partner is a natural person (§ 14 Abs 1 UGB); Kommanditisten optional |
 | GmbH | Yes | Firm, FB-Nr, court, seat; check other applicable disclosures | Capital disclosure is conditional under § 14(2) UGB, not universally mandatory |
 | FlexCo (FlexKapG) | Yes | Firm, FB-Nr, court, seat; check other applicable disclosures | Distinguish formation capital rules from website disclosure duties |
 | GmbH & Co KG | Yes | Both entities' details | Dual disclosure |
@@ -83,20 +87,20 @@ This skill provides comprehensive guidance on Austrian Impressum (legal notice) 
 
 ### 3.1 E-Commerce-Gesetz (§ 5 ECG)
 
-Applies to **all commercial websites**:
+Applies to **all commercial websites** (Ziffern of § 5 Abs 1 ECG, verified in RIS 2026-10-31):
 
-| Field | Description | Required |
-|-------|-------------|----------|
-| Name/Firma | Full legal name or company name | ✓ |
-| Geographic address | Physical address (no P.O. Box) | ✓ |
-| Email | Contact email address | ✓ |
-| Phone | Contact phone (if available) | Optional but recommended |
-| Firmenbuch number | FN XXXXXX + court (if applicable) | ✓ if registered |
-| Aufsichtsbehörde | Supervisory authority (if regulated) | ✓ if applicable |
-| Kammer/Berufsverband | Chamber membership (trade businesses) | ✓ if applicable |
-| Berufsrecht | Professional regulations, access link | ✓ if regulated profession |
-| UID-Nummer | VAT ID (if VAT registered) | ✓ if applicable |
-| Unternehmensgegenstand | Business purpose — required by § 25 Abs 5 MedienG (Offenlegung), not § 5 ECG | ✓ per MedienG |
+| Field | Z | Description | Required |
+|-------|---|-------------|----------|
+| Name/Firma | Z 1 | Full legal name or company name | ✓ |
+| Geographic address | Z 2 | Physical address (no P.O. Box) | ✓ |
+| Email | Z 3 | Contact details including the e-mail address | ✓ |
+| Phone | Z 3 | Contact phone (if available) | Optional but recommended |
+| Firmenbuch number | Z 4 | FN XXXXXX + court (if applicable) | ✓ if registered |
+| Aufsichtsbehörde | Z 5 | Supervisory authority; for trade businesses the Gewerbebehörde (Bezirkshauptmannschaft or Magistrat) | ✓ if applicable |
+| Kammer/Berufsverband | Z 6 | Chamber membership, e.g. WKO (Bundesland) for trade businesses | ✓ if applicable |
+| Berufsrecht | Z 6 | Trade or professional designation (Gewerbe), the applicable regulations and how to access them | ✓ if trade or regulated profession |
+| UID-Nummer | Z 7 | VAT ID (if VAT registered) | ✓ if applicable |
+| Unternehmensgegenstand | — | Business purpose — required by § 25 Abs 5 MedienG (Offenlegung), not § 5 ECG | ✓ per MedienG |
 
 ### 3.2 Unternehmensgesetzbuch (§ 14 UGB)
 
@@ -120,15 +124,16 @@ have uncertain entity-specific duties reviewed by a qualified Austrian legal pro
 
 ### 3.3 Gewerbeordnung (§ 63 GewO)
 
-For **trade businesses not registered in the Firmenbuch**:
+For **trade businesses not registered in the Firmenbuch**, § 63 Abs 1 GewO requires only two
+items on business letters, order forms and the website (verified in RIS 2026-10-31):
 
 | Field | Description |
 |-------|-------------|
-| Name | Full name of owner |
-| Standort | Business location |
-| Gewerbe | Trade/business type |
-| Behörde | Issuing authority (Bezirkshauptmannschaft) |
-| Kammer | WKO membership (Bundesland) |
+| Name | Full name of the owner |
+| Standort der Gewerbeberechtigung | Location of the trade licence |
+
+Trade designation, Gewerbebehörde and chamber membership are § 5 ECG duties (Z 5 and Z 6 in the
+table above), not § 63 GewO; the template in 4.1 lists them for that reason.
 
 ---
 
@@ -198,7 +203,7 @@ Firmenbuchnummer: FN 123456g
 Firmenbuchgericht: Handelsgericht Wien
 Sitz: Wien
 
-Gesellschafter:
+Gesellschafter (optional while a natural person is an unlimited partner, § 14 Abs 1 UGB):
 - Max Mustermann
 - Maria Musterfrau
 
@@ -225,7 +230,7 @@ Firmenbuchnummer: FN 123456k
 Firmenbuchgericht: Handelsgericht Wien
 Sitz: Wien
 
-Komplementär(e):
+Komplementär(e) (optional while a natural person is an unlimited partner, § 14 Abs 1 UGB):
 - Max Mustermann (unbeschränkt haftend)
 
 Unternehmensgegenstand: Handel mit Waren aller Art
@@ -409,9 +414,3 @@ Vorstand:
 Vereinszweck: Förderung von Kunst und Kultur
 ```
 
----
-
-
-## Detailed Reference
-
-Read [the full guide](references/full-guide.md) when the task needs detailed examples, long templates, troubleshooting matrices, appendices, or sections not included above. Keep this file unloaded for narrow tasks so the skill follows progressive disclosure.

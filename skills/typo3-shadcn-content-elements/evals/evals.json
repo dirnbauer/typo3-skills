@@ -24,9 +24,9 @@
       "id": "typo3-shadcn-content-elements-trigger-pos-03",
       "kind": "trigger-positive",
       "status": "proposed",
-      "prompt": "Add Tailwind v4 tokens and some seed data for the new hero element.",
+      "prompt": "Make the new hero element use our shadcn preset colours and give it some demo content.",
       "expect_skill": "typo3-shadcn-content-elements",
-      "note": "Tokens plus seed data."
+      "note": "Preset styling plus seed data, in the words an editor or integrator uses."
     },
     {
       "id": "typo3-shadcn-content-elements-trigger-pos-04",

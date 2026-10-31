@@ -26,7 +26,9 @@
 
 ### Htaccess Migrations **[v14 only]**
 
-- **Updated default `.htaccess` template** (#105244) — Fractor can apply the updated template.
+- **Updated default `.htaccess` template** (#105244) — Fractor's only Htaccess rule,
+  `RemoveUploadsFromDefaultHtaccessFractor`, rewrites `uploads/` to `_assets/` in the RewriteRule
+  (verified in a9f/typo3-fractor 1.1.0). Apply the rest of the #105244 template by hand.
 
 ### FlexForm / XML Migrations **[v14 only]**
 

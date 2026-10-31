@@ -119,7 +119,8 @@ implementation that:
 - normalizes HTML → lowercase → collapsed whitespace;
 - scores each tag by distinct keyword matches, not total occurrences;
 - selects the top N tags per news (5–10 typical, threshold ≥ 1);
-- bulk-inserts MM rows with a multi-row `INSERT` (batches of 500);
+- bulk-inserts MM rows with a multi-row `INSERT` (batches of 500), which bypasses DataHandler and
+  therefore `sys_refindex`; run `ddev exec vendor/bin/typo3 referenceindex:update` after the run;
 - updates the `tx_news_domain_model_news.tags` counter for the backend list;
 - supports `--dry-run`, `--reset`, `--limit`, `--storage-pid`, `--force`, `--debug-uid`.
 
@@ -145,6 +146,7 @@ fix or replace it.
 
 ```bash
 ddev exec vendor/bin/typo3 <vendor>:news:assign-tags --reset --force
+ddev exec vendor/bin/typo3 referenceindex:update
 ddev exec vendor/bin/typo3 cache:flush
 ```
 

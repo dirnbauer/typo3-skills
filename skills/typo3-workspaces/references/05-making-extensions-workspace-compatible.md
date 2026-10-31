@@ -131,7 +131,7 @@ final class BackendItemController
 
         $items = [];
         while ($row = $result->fetchAssociative()) {
-            // CRITICAL: Apply workspace overlay to each row
+            // Apply the workspace overlay to each row; without it the live row is returned
             BackendUtility::workspaceOL('tx_myextension_domain_model_item', $row);
             if (is_array($row)) {
                 $items[] = $row;

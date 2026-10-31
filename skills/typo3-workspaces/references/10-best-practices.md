@@ -60,7 +60,7 @@ Generate via Workspaces module: "Generate page preview links" button. The link w
 ### Scheduler Auto-Publish
 
 1. Set a "Publish" date on the workspace record (Publishing tab)
-2. Create Scheduler task: "Workspaces auto-publication"
+2. Create an "Execute console command" Scheduler task running `workspace:autopublish`
 3. Set task frequency (e.g., every 15 minutes)
 4. Only content in "Ready to publish" stage gets published
 

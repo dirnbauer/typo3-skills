@@ -64,9 +64,10 @@ GitHub supports `<picture>` with `prefers-color-scheme` media queries:
 
 ### Generating screenshots for README
 
-You have two approaches:
+You have two approaches. Real screenshots are the default; `GenerateImage` is a client-provided
+tool that not every session has.
 
-**1. AI-generated illustrations (fast, always available):**
+**1. AI-generated illustrations (fast when the client offers the tool):**
 
 ```
 GenerateImage({
@@ -224,8 +225,8 @@ When the UI changes, re-run the documentation pipeline:
 # 1. Capture fresh screenshots (if using Playwright)
 npm run screenshots:capture
 
-# 2. Regenerate illustrations (if using AI)
-# → Use GenerateImage tool with updated descriptions
+# 2. Regenerate illustrations (if using AI and the client provides GenerateImage)
+# → Use GenerateImage tool with updated descriptions; otherwise step 1 is the path
 
 # 3. Update narration if features changed
 # → Edit NARRATION_SCRIPT in remotion/ProductTour.tsx

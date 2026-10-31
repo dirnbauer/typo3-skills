@@ -53,7 +53,7 @@
       "note": "Backend JavaScript."
     },
     {
-      "id": "typo3-powermail-trigger-pos-05",
+      "id": "typo3-powermail-behaviour-fork-verification",
       "kind": "behaviour",
       "status": "proposed",
       "prompt": "Our Powermail v14 fork resolves in Composer but Scanner reports aliases and the form submit path is untested. Verify the fork properly.",
@@ -85,7 +85,7 @@
         "Explains that a nonmatching condition applies the opposite action",
         "Tests empty, matching and nonmatching selections"
       ],
-      "expected_output": "Uses unhide action 1 when exact comparison operator 4 matches other; Explains that a nonmatching condition applies the opposite action; Tests empty, matching and nonmatching selections",
+      "expected_output": "Configures unhide action 1 with exact operator 4 on the value other, explains that a nonmatching rule applies the opposite action, and tests the empty, matching and nonmatching selections.",
       "files": []
     },
     {
@@ -98,7 +98,7 @@
         "Uses exact server-side validation for email equality",
         "Identifies the direction of contains: equal field contains start-field value"
       ],
-      "expected_output": "Explains substring or membership behavior, not equality; Uses exact server-side validation for email equality; Identifies the direction of contains: equal field contains start-field value",
+      "expected_output": "Explains that operator 8 checks whether the equal field contains the start-field value as a substring or array member, so it cannot prove equality, and recommends exact server-side validation instead.",
       "files": []
     },
     {
@@ -111,7 +111,7 @@
         "Identifies powermail_cond versioningWS false in the reviewed fork",
         "Does not fabricate workspace SQL or promise atomic publication"
       ],
-      "expected_output": "Inspects both installed packages' TCA versioningWS; Identifies powermail_cond versioningWS false in the reviewed fork; Does not fabricate workspace SQL or promise atomic publication",
+      "expected_output": "Inspects versioningWS in both installed packages, reports that the reviewed powermail_cond fork sets it to false, and declines to promise atomic workspace publication or invent workspace SQL.",
       "files": []
     },
     {
@@ -125,7 +125,7 @@
         "Uses compatible released tags for both forks (conditions 14.0.0 or newer) rather than a moving development branch",
         "Reports source checks separately from runtime compatibility"
       ],
-      "expected_output": "Checks official public upstream separately from dirnbauer forks; Configures both VCS repositories at root because dependency repository entries are ignored; Uses compatible released tags for both forks (conditions 14.0.0 or newer) rather than a moving development branch; Reports source checks separately from runtime compatibility",
+      "expected_output": "Checks public upstream and the dirnbauer forks separately, registers both VCS repositories in the root composer.json, requires released tags (conditions 14.0.0 or newer) instead of a development branch, and reports source checks apart from runtime compatibility.",
       "files": []
     },
     {

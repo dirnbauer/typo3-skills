@@ -13,7 +13,7 @@ return [
     'web_myextension' => [
         'parent' => 'content',
         'position' => ['after' => 'records'],
-        'access' => 'user,group',
+        'access' => 'user', // 14.3 gates: user, admin, systemMaintainer (ModuleAccessGate); 'user,group' is rejected
         'iconIdentifier' => 'myextension-module',
         'path' => '/module/content/myextension',
         'labels' => 'LLL:EXT:my_extension/Resources/Private/Language/locallang_mod.xlf',

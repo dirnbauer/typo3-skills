@@ -101,17 +101,11 @@ services:
 
 ### JavaScript Hooks
 
-The extension does not dispatch custom namespaced events. The shipped modules (`GridViewActions.js`, `HistoryOverlay.js`, `RecordFilters.js`) dispatch standard TYPO3/DOM events you can listen to:
+The extension does not dispatch custom namespaced events. The only Core event the shipped modules (`GridViewActions.js`, `HistoryOverlay.js`, `RecordFilters.js`) dispatch is the page-tree refresh:
 
 ```javascript
-// Fired on the top document after drag-drop moves a page record
+// Fired on the top document after drag-drop moves a page record (GridViewActions.js)
 top.document.addEventListener('typo3:pagetree:refresh', () => {
     console.log('Page tree refreshed after record move');
 });
-
-// Fired on the clipboard panel after clipboard actions
-document.querySelector('typo3-backend-clipboard-panel')
-    ?.addEventListener('typo3:clipboard:update', () => {
-        console.log('Clipboard contents changed');
-    });
 ```

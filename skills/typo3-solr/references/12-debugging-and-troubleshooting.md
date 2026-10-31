@@ -53,16 +53,10 @@ A problem at **any** of these four parts breaks search. The steps below check ea
 
 **If red -- things to check:**
 
-Open your site configuration file `config/sites/<your-site>/config.yaml` and verify these settings:
-
-```yaml
-solr_enabled_read: true
-solr_host_read: solr              # hostname where Solr runs
-solr_port_read: '8983'            # port (8983 for standalone, 8984 for DDEV)
-solr_scheme_read: http            # http or https (DDEV uses https)
-solr_path_read: /                 # usually just /
-solr_core_read: core_en           # must match the actual core name in Solr
-```
+Open `config/sites/<your-site>/config.yaml` and compare the `solr_*_read` keys with the example in
+[SKILL.md, section 3 "TYPO3 Site Configuration"](../SKILL.md#typo3-site-configuration): host and
+port must be the ones Solr listens on (8983 standalone, 8984 with https on DDEV), and
+`solr_core_read` must match the actual core name.
 
 **For DDEV users:**
 
@@ -82,13 +76,13 @@ ddev exec curl -s http://typo3-solr:8983/solr/core_en/admin/ping
 # If "Connection refused": Solr container is not running → ddev restart
 ```
 
-**After fixing:** Always click "Initialize connection" in the EXT:solr backend module (Web → Search → Overview tab).
+**After fixing:** Always click "Initialize connection" in the EXT:solr backend module (top-level "Search" module → Overview tab; it is registered as `searchbackend`, not under Web).
 
 ---
 
 #### Step 3: Is Content in the Index Queue? (Indexing Check)
 
-**Where:** TYPO3 Backend → Web → Search → "Index Queue" tab
+**Where:** TYPO3 Backend → Search → "Index Queue" tab
 
 **What you see:** A table showing record types (pages, news, etc.) with counts.
 
@@ -106,7 +100,7 @@ ddev exec curl -s http://typo3-solr:8983/solr/core_en/admin/ping
    - If it's missing, add it: click "Include static (from extensions)" and select "Search - Base Configuration (solr)"
 
 2. Initialize the queue:
-   - Go to Web → Search → "Index Queue" tab
+   - Go to Search → "Index Queue" tab
    - Select the checkboxes for the record types you want to index (e.g., "pages")
    - Click "Queue selected content"
    - The table should now show a count
@@ -197,7 +191,7 @@ Since EXT:solr 14 the hash comes from the application context, the site identifi
 `encryptionKey` ([siteHash and shared cores](v14-only-solr-changes.md#application-context-sitehash-and-shared-cores)):
 a web request and a CLI indexer with different `TYPO3_CONTEXT` values produce different hashes.
 
-If the hashes don't match: **re-index** (Backend → Web → Search → Index Queue → clear and re-queue all).
+If the hashes don't match: **re-index** (Backend → Search → Index Queue → clear and re-queue all).
 
 **Other causes of 0 results:**
 
@@ -224,17 +218,9 @@ plugin.tx_solr.logging {
 }
 ```
 
-**2. Write logs to a file** (in `config/system/additional.php`):
-
-```php
-$GLOBALS['TYPO3_CONF_VARS']['LOG']['ApacheSolrForTypo3']['Solr']['writerConfiguration'] = [
-    \Psr\Log\LogLevel::DEBUG => [
-        \TYPO3\CMS\Core\Log\Writer\FileWriter::class => [
-            'logFile' => \TYPO3\CMS\Core\Core\Environment::getVarPath() . '/log/solr.log',
-        ],
-    ],
-];
-```
+**2. Write logs to a file:** add the `writerConfiguration` for `ApacheSolrForTypo3\Solr` to
+`config/system/additional.php` as shown in [12.0 How to get debug data](12-0-how-to-get-debug-data.md)
+(section "Logging"); it is not repeated here.
 
 **3. Watch the log file:**
 

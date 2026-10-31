@@ -1,14 +1,15 @@
 # 9. Extending DataHandler: Hooks and Real Core Events
 
-Continues `typo3-datahandler` from [full guide](full-guide.md).
-
 ## 9. Extending DataHandler: Hooks and Real Core Events
 
 > **Facts for TYPO3 v14:** TYPO3 Core does **not** ship PSR-14 events named like `BeforeRecordOperationEvent`, `AfterDatabaseOperationsEvent`, or `ModifyRecordBeforeInsertEvent`. Those names are not part of Core. For datamap/cmdmap extension points beyond documented PSR-14 events, use **`SC_OPTIONS` hook classes** (below). Those hooks expose callbacks throughout the lifecycle (`*_beforeStart`, `*_preProcess`, `*_postProcess`, `*_afterDatabaseOperations`, `*_afterAllOperations` / `*_afterFinish`, etc.) — not a single “after everything” moment. Always confirm APIs in [TYPO3 Explained — Events (DataHandling)](https://docs.typo3.org/m/typo3/reference-coreapi/main/en-us/ApiOverview/Events/Events/Core/DataHandling/Index.html) and [`\TYPO3\CMS\Core\DataHandling\Event`](https://api.typo3.org/main/namespaces/typo3-cms-core-datahandling-event.html).
 
 ### 9.1 `SC_OPTIONS` hook classes (primary pattern for datamap/cmdmap)
 
-Register classes on `t3lib/class.t3lib_tcemain.php` — e.g. `processDatamapClass` / `processCmdmapClass`. Core still invokes these on **TYPO3 v14**. Each registration receives **multiple** hook methods over the datamap/cmdmap lifecycle (before start, pre/post process, after DB, after all) — see your hook class naming pattern in Core’s `DataHandler`.
+Register classes on `t3lib/class.t3lib_tcemain.php` — e.g. `processDatamapClass` / `processCmdmapClass`. Core still invokes these on **TYPO3 v14**. Each registration receives **multiple** hook methods over the datamap/cmdmap lifecycle. The methods Core calls (grep of `DataHandler.php`, 14.3):
+
+- `processDatamapClass`: `processDatamap_beforeStart`, `processDatamap_preProcessFieldArray`, `processDatamap_postProcessFieldArray`, `processDatamap_afterDatabaseOperations`, `processDatamap_afterAllOperations`
+- `processCmdmapClass`: `processCmdmap_beforeStart`, `processCmdmap_preProcess`, `processCmdmap_postProcess`, `processCmdmap_deleteAction`, `processCmdmap_discardAction`, `processCmdmap_afterFinish`
 
 `ext_localconf.php`:
 
@@ -62,12 +63,13 @@ Other keys on the same `SC_OPTIONS` path include `moveRecordClass`, `processTran
 
 ### 9.2 Real PSR-14 events in `TYPO3\CMS\Core\DataHandling\Event`
 
-Core currently documents **only** these events under that namespace (reference index / link parsing — **not** generic “before every save”):
+The namespace holds three events in 14.3 (`Classes/DataHandling/Event/`); none is a generic “before every save”:
 
 | Event | Purpose |
 |-------|---------|
 | [`IsTableExcludedFromReferenceIndexEvent`](https://docs.typo3.org/m/typo3/reference-coreapi/main/en-us/ApiOverview/Events/Events/Core/DataHandling/IsTableExcludedFromReferenceIndexEvent.html) | Exclude a table from the Reference Index |
 | [`AppendLinkHandlerElementsEvent`](https://docs.typo3.org/m/typo3/reference-coreapi/main/en-us/ApiOverview/Events/Events/Core/DataHandling/AppendLinkHandlerElementsEvent.html) | Extend SoftRef link-handler UI elements |
+| `BeforeRemoveNonCopyableFieldsEvent` | Adjust which fields DataHandler strips when it copies or localizes a row (`removeNonCopyableFields()`); receives table, row, calling operation and the field list |
 
 Example listener (Reference Index exclusion):
 

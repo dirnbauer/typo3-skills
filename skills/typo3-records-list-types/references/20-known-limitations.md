@@ -8,4 +8,4 @@ Continues `typo3-records-list-types` from [full guide](full-guide.md).
 - **Drag-and-drop accessibility**: Keyboard-based drag-and-drop is implemented with ARIA, but screen reader testing (NVDA, JAWS, VoiceOver) has been limited. Standard List View is a more tested fallback.
 
 
-Source: https://github.com/dirnbauer/webconsulting-skills
+Source: https://github.com/dirnbauer/typo3-skills

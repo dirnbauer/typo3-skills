@@ -218,7 +218,7 @@ inventory come from `./install.sh --generate-only`. Edit the generators in `inst
 ```
 
 A generated eval is a **draft**, a hand-written one **proposed**, and only a **reviewed** case
-signed by a person counts as coverage. Current: 41/41 collection-maintained skills have suites, 5/41 have human-reviewed coverage, and 40 suites include proposed cases awaiting signature.
+signed by a person counts as coverage. Current: 41/41 collection-maintained skills have suites, 5/41 have human-reviewed coverage, and 41 suites include proposed cases awaiting signature.
 
 **Publication boundary.** Push only to `gitlab.webconsulting.at` or `github.com/dirnbauer`
 repositories, and only when asked. Verify the effective push URLs first with the

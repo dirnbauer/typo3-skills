@@ -27,7 +27,7 @@
       ]
     },
     {
-      "status": "draft",
+      "status": "proposed",
       "id": "legal-impressum-pos-01",
       "kind": "trigger-positive",
       "expect_skill": "legal-impressum",
@@ -35,7 +35,7 @@
       "note": "The canonical case: Austrian company, Impressum completeness review."
     },
     {
-      "status": "draft",
+      "status": "proposed",
       "id": "legal-impressum-pos-02",
       "kind": "trigger-positive",
       "expect_skill": "legal-impressum",
@@ -43,7 +43,7 @@
       "note": "Names the Austrian statutes and a company form without saying the word Impressum."
     },
     {
-      "status": "draft",
+      "status": "proposed",
       "id": "legal-impressum-pos-03",
       "kind": "trigger-positive",
       "expect_skill": "legal-impressum",
@@ -51,7 +51,7 @@
       "note": "Offenlegung under MedienG is squarely this skill; Verein is a covered company form."
     },
     {
-      "status": "draft",
+      "status": "proposed",
       "id": "legal-impressum-neg-01",
       "kind": "trigger-negative",
       "expect_skill": "typo3-seo",
@@ -68,7 +68,7 @@
       "known_limitation": "Lexical proxy: 'legal', 'Impressum' and 'privacy policy' are this skill's own vocabulary, and the deliverable (a Content Block) is only implied by 'reusable content element'. Rewording either description to win would tune the proxy, not routing (SKILL-SPEC S4)."
     },
     {
-      "status": "draft",
+      "status": "proposed",
       "id": "legal-impressum-beh-01",
       "kind": "behaviour",
       "prompt": "Just copy the Impressum from our German parent company's site and swap the address to the Vienna office. Same thing, right?",
@@ -80,6 +80,14 @@
         "Offers to build the correct Austrian version",
         "Does not claim to be legal advice"
       ]
+    },
+    {
+      "status": "proposed",
+      "id": "legal-impressum-pos-04",
+      "kind": "trigger-positive",
+      "expect_skill": "legal-impressum",
+      "prompt": "Impressum für unsere deutsche GmbH nach DDG – was muss rein?",
+      "note": "German entity under DDG; routed here and handled by the SKILL-GERMANY.md sub-guide."
     }
   ]
 }

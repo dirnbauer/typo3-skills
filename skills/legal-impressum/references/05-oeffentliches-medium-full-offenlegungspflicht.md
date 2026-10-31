@@ -1,7 +1,5 @@
 # 5. Öffentliches Medium - Full Offenlegungspflicht
 
-Continues `legal-impressum` from [full guide](full-guide.md).
-
 ## Contents
 
 - [5.1 "Kleine" vs "Große" Website](#51-kleine-vs-große-website)
@@ -9,8 +7,6 @@ Continues `legal-impressum` from [full guide](full-guide.md).
 - [5.3 Full Offenlegungspflicht Requirements (§ 25 MedienG)](#53-full-offenlegungspflicht-requirements--25-medieng)
 - [5.4 Grundlegende Richtung (Editorial Direction)](#54-grundlegende-richtung-editorial-direction)
 - [5.5 Complete Offenlegung Template](#55-complete-offenlegung-template)
-
-## 5. Öffentliches Medium - Full Offenlegungspflicht
 
 ### 5.1 "Kleine" vs "Große" Website
 

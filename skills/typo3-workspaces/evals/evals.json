@@ -51,6 +51,19 @@
       "prompt": "Define the fields for a new record type.",
       "expect_skill": "typo3-content-blocks",
       "note": "Modelling."
+    },
+    {
+      "id": "typo3-workspaces-behaviour-01",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Our import command leaves the new pages as workspace drafts. Publish them from the CLI so the live pages pick up the changes.",
+      "expected_output": "Publishes through DataHandler with a cmdmap `version` command (`action => 'publish'`, `swapWith` set to the workspace version uid) run as a backend user, then checks the reference index; it does not rewrite t3ver_* columns with SQL.",
+      "assertions": [
+        "Uses a DataHandler cmdmap version command with action publish and swapWith, not an SQL UPDATE on t3ver_* fields",
+        "Runs under an authenticated backend user with access to the workspace",
+        "Mentions verifying the reference index or publish result afterwards"
+      ],
+      "note": "Added 2026-10-31."
     }
   ]
 }

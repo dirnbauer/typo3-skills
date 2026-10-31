@@ -11,7 +11,7 @@ license: "MIT / CC-BY-SA-4.0"
 
 # TYPO3 shadcn Content Elements
 
-> Source: https://github.com/dirnbauer/webconsulting-skills
+> Source: https://github.com/dirnbauer/typo3-skills
 
 Builds TYPO3 Content Blocks content elements that behave like one coherent shadcn/ui system:
 preset-driven tokens, shared Fluid atoms/molecules, complete field coverage, useful backend
@@ -46,9 +46,9 @@ borders, radius and typography.
 - **Links are TYPO3 `Link` fields** with visible text in a separate field. Never encode
   `Label|https://...` pairs in textareas.
 - **Backend previews keep `<f:section name="Header"></f:section>` present and empty.** Removing
-  the section makes Content Blocks fall back to the Core header renderer (it catches
-  `InvalidSectionException`, verified in Content Blocks 2.4.10), which re-adds a duplicate
-  headline above the card.
+  the section makes Content Blocks fall back to the Core header renderer (`PreviewRenderer`
+  catches both `InvalidSectionException` and `InvalidTemplateResourceException`, verified in
+  Content Blocks 2.4.10 on 2026-10-31), which re-adds a duplicate headline above the card.
 - **`Style`/`variant` fields are contracts.** Keep one only when it drives an existing
   shadcn-backed component variant or a real layout/behavior branch; otherwise remove it from
   `config.yaml`, templates, previews and fixtures.
@@ -106,9 +106,8 @@ Run before declaring a Collection sweep complete; each command should print noth
 rg -nP '^\s*type: Collection\s*$' --no-heading -A1 ContentBlocks/ContentElements \
   | rg -B1 -v 'table:'
 
-# Bare table names that are MySQL/MariaDB reserved words.
-rg -n '^\s+table:\s+(rows|groups|range|order|system|values|user|cross|dense_rank|window)\s*$' \
-  ContentBlocks/ContentElements
+# Bare table names that are MySQL/MariaDB reserved words: run the reserved-word scan from
+# references/content-element-contract.md (section "Collection audit"); that list is the canonical one.
 
 # Bare unprefixed names; review every remaining match by hand.
 rg -nP '^\s+table:\s+[a-z][a-z0-9_]*\s*$' ContentBlocks/ContentElements \

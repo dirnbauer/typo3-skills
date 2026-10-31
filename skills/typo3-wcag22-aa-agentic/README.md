@@ -16,7 +16,6 @@ It contains:
 
 ## Contents
 
-- [Add to webconsulting-skills repo](#add-to-webconsulting-skills-repo)
 - [Fast use inside a TYPO3 project](#fast-use-inside-a-typo3-project)
 - [Manual Chrome review helper](#manual-chrome-review-helper)
 - [Legal profiles](#legal-profiles)
@@ -25,25 +24,6 @@ It contains:
 - [Optional Deque axe MCP](#optional-deque-axe-mcp)
 - [Main commands after scaffold](#main-commands-after-scaffold)
 - [What this does not replace](#what-this-does-not-replace)
-
-## Add to webconsulting-skills repo
-
-This bundle is prepared for `https://github.com/dirnbauer/webconsulting-skills`.
-
-Unzip the repo-ready archive in the repository root so the skill lands here:
-
-```text
-skills/typo3-wcag22-aa-agentic/SKILL.md
-```
-
-Then regenerate/install the repository skills in the usual repo workflow, for example:
-
-```bash
-cd /path/to/webconsulting-skills
-unzip /path/to/webconsulting-skills-typo3-wcag22-aa-agentic-final.zip
-./install.sh --generate-only
-./install.sh
-```
 
 ## Fast use inside a TYPO3 project
 
@@ -54,7 +34,7 @@ cd /path/to/typo3-project
 cp .a11y/a11y.config.example.yml .a11y/a11y.config.yml
 # edit baseUrl, sitemapUrl, contact data, legal.profile and sitepackage paths
 npm install
-npx playwright install chromium
+npx playwright install --with-deps chromium
 npm run a11y:all
 ```
 

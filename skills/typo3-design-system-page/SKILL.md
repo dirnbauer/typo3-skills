@@ -14,10 +14,11 @@ selects. Keep machine-readable sources, rendered documentation, and the one-page
 
 ## Select the TYPO3 installation
 
-1. Identify the target project before writing. Read `.ddev/config.yaml`, confirm the project root,
-   and obtain the URL with `ddev describe`; never infer an installation from the current directory.
-2. If more than one installation could be meant, ask which project to use. Modify only the selected
-   installation and report its DDEV name, root, TYPO3 version, sitepackage, and public URL.
+1. Identify the target project before writing. Ask which project is meant when more than one DDEV
+   project exists; otherwise confirm the current `.ddev/config.yaml` with the user before writing,
+   then obtain the URL with `ddev describe`.
+2. Modify only the selected installation and report its DDEV name, root, TYPO3 version,
+   sitepackage, and public URL.
 3. Add or update the actual sitepackage assets and content for that installation. A design audit or
    generated document without integration is incomplete unless the user explicitly requests an
    audit-only result.
@@ -61,7 +62,9 @@ example values with evidence from the selected installation.
 - Set `meta.color_ramp_status` to `approved`, `audited_existing`, or `proposed`. Never publish
   extrapolated shades as approved. When no approved single-hue ramp exists, either order colors
   already present in the implementation as `audited_existing`, or label a derived candidate
-  `proposed` everywhere it appears.
+  `proposed` everywhere it appears. An `audited_existing` ramp may leave 50–950 steps empty;
+  the audit script reports the gaps as a warning (and as an error for `approved` or `proposed`),
+  so document them on the page instead of filling them in.
 - Render the on-page documentation from these sources or generated partials. Do not maintain a
   shortened hand-written copy that can drift.
 - Run `python3 scripts/audit_design_tokens.py /path/to/tokens.json` and resolve every error.
@@ -83,7 +86,8 @@ Build one coherent page in this order:
 6. **Imagery and signature:** approved subject matter, treatment, forbidden clichés, and any
    distinctive graphic motif with a usage limit.
 7. **System facts:** publish the eight evidence-backed categories described in
-   [page-anatomy.md](references/page-anatomy.md) under “Das System im Überblick.”
+   [page-anatomy.md](references/page-anatomy.md) under a heading in the site language, e.g.
+   “Das System im Überblick” / “The system at a glance”.
 8. **Files:** visible download links for the PDF, `design.md`, and `tokens.json`, followed by
    accessible on-page views of both source documents.
 9. **Creator credit:** add a quiet Webconsulting credit with the approved logo/link and a concise
@@ -96,6 +100,9 @@ keyboard-operable document tabs. Never encode a token or status by color alone.
 
 1. Use the built-in image generator for one supporting, text-free project visual. Derive its
    subject, palette, and avoid-list from `design.md`. Save the selected image inside the project.
+   When no image-generation tool is available, use an approved existing project visual or
+   deterministic vector artwork built from the tokens instead, and say in the report which of
+   the three routes was used.
 2. Keep all text, logos, color values, contrast ratios, diagrams, and layout deterministic in the
    PDF renderer. AI-generated typography is not acceptable source documentation.
 3. Produce exactly one landscape A4 overview page with intro, visual, essential contrast evidence,

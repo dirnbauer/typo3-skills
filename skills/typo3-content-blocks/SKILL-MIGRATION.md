@@ -2,7 +2,7 @@
 
 > Sub-guide of `typo3-content-blocks`, loaded from its `SKILL.md` when needed: Bidirectional migration between classic TYPO3 TCA/SQL extensions and Content Blocks. Includes step-by-step guides, field mappings, data migration scripts, and checklists for both directions.
 
-> **Compatibility:** TYPO3 v14.x
+> **Compatibility:** TYPO3 v14.3+, Content Blocks 2.x
 > 
 > **Related Skill:** [typo3-content-blocks](./SKILL.md) - Main Content Blocks development guide
 
@@ -78,7 +78,7 @@ This section guides you through converting traditional TYPO3 extensions (with se
 | `select` | `selectMultipleSideBySide` | `Select` + `renderType: selectMultipleSideBySide` + `maxitems: 2` (or higher) | Side-by-side multi-select |
 | `select` | `selectCheckBox` | `Select` + `renderType: selectCheckBox` | Checkbox group |
 | `group` | - | `Relation` | `group` always maps to `Relation` in v14 |
-| `file` | - | `File` | FAL references (standalone TCA type since v10) |
+| `file` | - | `File` | FAL references (standalone TCA type since v12, #98479) |
 | `inline` | - | `Collection` | IRRE relations |
 | `category` | - | `Category` | System categories |
 | `flex` | - | `FlexForm` | FlexForm container |
@@ -88,7 +88,7 @@ This section guides you through converting traditional TYPO3 extensions (with se
 
 **BEFORE (Classic):**
 
-> `ExtensionManagementUtility::addPlugin()` for CType registration is **deprecated since TYPO3 v12** — shown here for legacy codebases; new extensions should register via `Configuration/TCA/Overrides/tt_content.php` `items` or Content Blocks.
+> `ExtensionManagementUtility::addPlugin()` is not deprecated; its `list_type` sub-type registration is (13.4, #105076) and was removed in v14. Shown here for legacy codebases; new extensions register a CType via `Configuration/TCA/Overrides/tt_content.php` `items` or Content Blocks.
 
 ```php
 // Configuration/TCA/Overrides/tt_content.php
@@ -197,7 +197,7 @@ fields:
 </section>
 ```
 
-**That's it!** No TCA files, no SQL, no TypoScript for rendering.
+No TCA files, no SQL, no TypoScript for rendering.
 
 ### Migration Example 2: Custom Record Table
 
@@ -223,7 +223,7 @@ return [
         ],
         'iconfile' => 'EXT:my_ext/Resources/Public/Icons/product.svg',
     ],
-    // hidden, starttime, endtime columns are auto-created from ctrl (TYPO3 v14)
+    // hidden, starttime, endtime columns are auto-created from ctrl (TYPO3 13.3+, #104311)
     'palettes' => [
         'visibility' => ['showitem' => 'hidden'],
         'access' => ['showitem' => 'starttime, endtime'],
@@ -306,7 +306,7 @@ fields:
     enableRichtext: true
 ```
 
-**That's it!** No TCA file, no SQL file.
+No TCA file, no SQL file.
 
 ### Migration Example 3: IRRE Child Records
 
@@ -631,7 +631,7 @@ defined('TYPO3') or die();
 
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 
-// Register CType in tt_content selector (avoid deprecated addPlugin for new code)
+// Register CType in tt_content selector (addPlugin() with list_type is the removed legacy path)
 $GLOBALS['TCA']['tt_content']['columns']['CType']['config']['items'][] = [
     'label' => 'LLL:EXT:my_ext/Resources/Private/Language/locallang.xlf:ce.hero.title',
     'value' => 'myext_hero',

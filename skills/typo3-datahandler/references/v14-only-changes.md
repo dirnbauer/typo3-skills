@@ -1,7 +1,5 @@
 # v14-Only Changes
 
-Continues `typo3-datahandler` from [full guide](full-guide.md).
-
 ## v14-Only Changes
 
 > The following DataHandler changes apply **exclusively to TYPO3 v14**.

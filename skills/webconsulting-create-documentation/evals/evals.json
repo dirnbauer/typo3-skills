@@ -51,6 +51,30 @@
       "prompt": "Record the architecture decision and the alternatives we rejected.",
       "expect_skill": "architecture-decision-records",
       "note": "A decision record, not product documentation."
+    },
+    {
+      "id": "webconsulting-create-documentation-behaviour-01",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Add burned-in subtitles to the product tour video. Here is the voice-over text, paste it into the subtitle component.",
+      "expected_output": "Builds the subtitle component on the existing NARRATION_SCRIPT constant imported from the Remotion composition instead of pasting the text a second time, so audio and subtitles cannot drift.",
+      "assertions": [
+        "Imports NARRATION_SCRIPT rather than copying the narration text into the subtitle component",
+        "Explains that the generate script reads the same constant for the TTS audio"
+      ],
+      "note": "Added 2026-10-31."
+    },
+    {
+      "id": "webconsulting-create-documentation-behaviour-02",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Set up Remotion in the client's repository so we can render their tour video.",
+      "expected_output": "Asks which Remotion licence applies to the client (free tier for individuals and small companies, company licence otherwise) before adding the dependency, and records the answer in the project.",
+      "assertions": [
+        "Asks about or verifies the applicable Remotion licence before installing it in the client project",
+        "Does not assume the free licence covers the client"
+      ],
+      "note": "Added 2026-10-31."
     }
   ]
 }

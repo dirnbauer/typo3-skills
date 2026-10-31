@@ -1,8 +1,8 @@
 # TYPO3 Security Checklists
 
-## Rate Limiting (TYPO3 v14)
+## Login Rate Limiting
 
-TYPO3 v14 includes built-in rate limiting:
+Core limits failed logins since v11.3 (#93825); v14 changed nothing here:
 
 ```php
 // config/system/additional.php
@@ -53,24 +53,5 @@ $GLOBALS['TYPO3_CONF_VARS']['BE']['loginRateLimit'] = 5;  // max attempts per `l
 - **Security Guide**: https://docs.typo3.org/m/typo3/reference-coreapi/main/en-us/Security/Index.html
 - **v14 changelog index**: https://docs.typo3.org/c/typo3/cms-core/main/en-us/Changelog-14.html
 
-## Remaining v14 Security Changes
-
-> The following security changes apply **exclusively to TYPO3 v14**.
-
-### Stronger HMAC Algorithm **[v14 only]**
-
-TYPO3 v14 uses a **stronger cryptographic algorithm for HMAC** (#106307). Existing HMAC tokens (e.g., in URLs, form tokens) generated with the old algorithm will be invalid after upgrade. Plan for token regeneration.
-
-### Built-in CipherService **[v14 only]**
-
-New `CipherService` (#108002) provides **symmetric encryption/decryption** out of the box. Use it instead of custom encryption implementations:
-
-```php
-use TYPO3\CMS\Core\Crypto\Cipher\CipherService;
-
-$cipherService = GeneralUtility::makeInstance(CipherService::class);
-$keyFactory = GeneralUtility::makeInstance(\TYPO3\CMS\Core\Crypto\Cipher\KeyFactory::class);
-$key = $keyFactory->deriveSharedKeyFromEncryptionKey('my-context');
-$cipherValue = $cipherService->encrypt('sensitive data', $key);
-$decrypted = $cipherService->decrypt($cipherValue, $key);
-```
+The v14-only security changes (HMAC algorithm, `CipherService`, MFA notifications, Install Tool
+CLI and sessions, credential residue) are collected in [v14-notes.md](v14-notes.md).

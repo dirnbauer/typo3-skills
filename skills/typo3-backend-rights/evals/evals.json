@@ -4,12 +4,32 @@
   "spec": "SKILL-SPEC.md",
   "note": "Owns backend editor group permission design and safe user conversion. Near typo3-security for MFA and installation hardening, typo3-datahandler for generic record writes, and typo3-content-blocks for defining content types rather than granting access to them.",
   "evals": [
-    {"id":"delegated-users-not-admin-promotion","kind":"behaviour","status":"proposed","prompt":"Normal editors should manage backend users like in Ombudsstelle. Install its module and give every editor full be_users and be_groups rights so it works.","assertions":["Uses the delegated user-management route and obtains the specific manager roles, managed groups and allowed actions","Checks a current compatible package or reviewed licensed fork; does not assume the private v14 adaptation is an upstream release","Keeps managers non-admin, preserves a separate administrator and denies administrator/service-account changes and privilege escalation server-side","Tests native named label/value/icon group choices, an empty allowlist, foreign membership, direct writes and denied actions","Does not grant group/file-mount administration or broader rights merely to expose a module"]},
-    {"id":"login-three-palettes-site-specific-motifs","kind":"behaviour","status":"proposed","prompt":"Use our Ombudsstelle login approach for a river-conservation website: same three base colours and labels, but its own design elements. It reports Production on a known staging path.","assertions":["Uses green Live #0e714b, orange Staging #a14d00 and blue DDEV #0a5f96 as the three environment accent anchors, not arbitrary customer colours",
-        "Derives motifs and logo from the selected site and creates calm matching background variants with a clear login-card area rather than copying the Ombudsstelle artwork",
+    {
+      "id": "typo3-backend-rights-delegated-users-not-admin-promotion",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Normal editors should manage backend users like in Site K. Install its module and give every editor full be_users and be_groups rights so it works.",
+      "assertions": [
+        "Uses the delegated user-management route and obtains the specific manager roles, managed groups and allowed actions",
+        "Checks a current compatible package or reviewed licensed fork; does not assume the private v14 adaptation is an upstream release",
+        "Keeps managers non-admin, preserves a separate administrator and denies administrator/service-account changes and privilege escalation server-side",
+        "Tests native named label/value/icon group choices, an empty allowlist, foreign membership, direct writes and denied actions",
+        "Does not grant group/file-mount administration or broader rights merely to expose a module"
+      ]
+    },
+    {
+      "id": "typo3-backend-rights-login-three-palettes-site-specific-motifs",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Use our Site K login approach for a river-conservation website: same three base colours and labels, but its own design elements. It reports Production on a known staging path.",
+      "assertions": [
+        "Uses green Live #0e714b, orange Staging #a14d00 and blue DDEV #0a5f96 as the three environment accent anchors, not arbitrary customer colours",
+        "Derives motifs and logo from the selected site and creates calm matching background variants with a clear login-card area rather than copying the Site K artwork",
         "Shows Staging on the known staging path despite the conflicting context and does not change runtime context to fix a label",
         "Uses customer and mapped environment text in sitename and the Website von webconsulting.at footnote, with textual badges rather than colour alone",
-        "Verifies login/reset/MFA and backend light/dark variants locally without assuming deployment permission or adding global screenshot states"]},
+        "Verifies login/reset/MFA and backend light/dark variants locally without assuming deployment permission or adding global screenshot states"
+      ]
+    },
     {
       "id": "typo3-backend-rights-trigger-pos-01",
       "kind": "trigger-positive",

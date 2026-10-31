@@ -22,8 +22,8 @@ Continues `typo3-v14-reference` from [full guide](full-guide.md).
 
 ## 13. v14-Only Changes (Manual — Not Handled by Rector)
 
-> The following changes apply **exclusively to TYPO3 v14** and require **manual migration**.
-> They are NOT fully covered by `ssch/typo3-rector` (check your installed version; the TYPO3 14 rule set counts **tens** of rules and changes between releases).
+> The following changes apply only to TYPO3 v14 and need a manual migration.
+> `ssch/typo3-rector` does not cover them fully (check your installed version; the TYPO3 14 rule set counts tens of rules and changes between releases).
 > For automated migrations, run `Typo3LevelSetList::UP_TO_TYPO3_14` first, then address these manually.
 
 ### Extbase follows fallbackType **[v14.3.6+]**
@@ -237,7 +237,13 @@ Rector handles parser class replacement (`ReplaceLocalizationParsersWithLoaders`
 
 ### v14.1 Features **[v14.1+ only]**
 
-Verify each item in the [official v14.1 changelog](https://docs.typo3.org/c/typo3/cms-core/main/en-us/Changelog-14.html) for your minor (entries change over time). Examples that have appeared in v14.1 discussions include **default theme “Camino”**, **per-column content restrictions**, **Fluid Components** tuning, and **PHP 8.5** support — confirm before documenting them for a specific project.
+Verified against the [14.1 changelog](https://docs.typo3.org/c/typo3/cms-core/main/en-us/Changelog/14.1/Index.html) (2026-10-31):
+
+- **Default theme "Camino"** — Feature #108539.
+- **Content element restrictions per colPos** — Feature #108623.
+- **Fluid components integration** and their PSR-14 events — Feature #108508.
+
+PHP 8.5 has no 14.x changelog entry; `typo3/cms-core` 14.3.7 still requires `php ^8.2`. Record a project's 8.5 attempt as an outcome, not as a supported platform.
 
 ### v14.2 Features **[v14.2+ only]**
 

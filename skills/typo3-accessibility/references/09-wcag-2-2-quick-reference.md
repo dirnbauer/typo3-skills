@@ -1,7 +1,5 @@
 # 9. WCAG 2.2 Quick Reference
 
-Continues `typo3-accessibility` from [full guide](full-guide.md).
-
 ## 9. WCAG 2.2 Quick Reference
 
 | Success Criterion | Level | TYPO3 Solution |

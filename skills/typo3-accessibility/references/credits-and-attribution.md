@@ -1,7 +1,5 @@
 # Credits & Attribution
 
-Continues `typo3-accessibility` from [full guide](full-guide.md).
-
 ## Credits & Attribution
 
 Accessibility patterns adapted from:
@@ -12,4 +10,4 @@ Accessibility patterns adapted from:
 - [WCAG 2.2 Specification](https://www.w3.org/TR/WCAG22/)
 
 
-Source: https://github.com/dirnbauer/webconsulting-skills
+Source: https://github.com/dirnbauer/typo3-skills

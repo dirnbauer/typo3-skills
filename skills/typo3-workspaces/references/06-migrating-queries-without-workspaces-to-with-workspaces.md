@@ -112,13 +112,13 @@ $queryBuilder->getRestrictions()
     ->add(GeneralUtility::makeInstance(WorkspaceRestriction::class, $workspaceId));
 ```
 
-> **Important:** `WorkspaceRestriction` only filters the SQL result to exclude wrong workspace records. You **still must call** `versionOL()` or `workspaceOL()` on each row to get the actual workspace content overlaid.
+> `WorkspaceRestriction` only filters the SQL result to exclude wrong workspace records. You still call `versionOL()` or `workspaceOL()` on each row to get the actual workspace content overlaid.
 
 ### Pattern D: Extbase Repository (Mostly Transparent)
 
 Extbase repositories handle workspace overlays **automatically** via the persistence layer. No changes needed for standard `findBy*` methods.
 
-> **CRITICAL: Extbase DataMapper does NOT populate `t3ver_*` system fields.**
+> **Extbase DataMapper does not populate `t3ver_*` system fields.**
 > If you add `$t3verWsid`, `$t3verState`, or `$t3verOid` properties to an Extbase domain model, they will **always remain at their default value** (typically `0`). The `t3ver_*` columns are `ctrl` fields in TCA, not `columns` — Extbase's `DataMapFactory` does not create column maps for them.
 >
 > To inspect workspace state of Extbase model objects, query the database directly via `ConnectionPool`:

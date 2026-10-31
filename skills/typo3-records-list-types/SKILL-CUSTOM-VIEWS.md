@@ -253,12 +253,12 @@ mod.web_list.viewMode.types.fulllist {
 
 ## Column Display: `columnsFromTCA` vs `displayColumns`
 
-**`columnsFromTCA = 1`** (default) -- resolution order:
+**`columnsFromTCA = 1`** (default) -- resolution order in `RecordDisplayColumnResolver::getDisplayColumns()` (v2.0.2):
 
-1. **Editor's "Show columns" selection** (stored per-user per-table)
-2. **This extension’s TSconfig / resolver logic** — not Core `mod.web_list.table.*.showFields`.
-3. **TCA label + heuristics** — TYPO3 v14 removed `ctrl.searchFields`; list display does not use backend “search fields”.
-4. **Label field only** (final fallback)
+1. **Editor's "Show columns" selection** (module data `list/displayFields`, per user and table)
+2. **Page TSconfig `mod.web_list.table.<table>.showFields`**
+3. **TCA `ctrl.searchFields`**, when the table still declares it (TYPO3 v14 Core no longer reads this key)
+4. **Label field only** (`ctrl.label`, final fallback)
 
 **`columnsFromTCA = 0`** -- uses the explicit `displayColumns` list exactly.
 
@@ -288,8 +288,6 @@ Your template receives these variables:
 | `searchTerm` | Current search term |
 | `viewMode` | View type identifier |
 | `viewConfig` | View type configuration array |
-| `middlewareWarning` | Middleware diagnostic warning (if any) |
-| `forceListViewUrl` | URL to force list view (if middleware issue) |
 
 ### Each item in `tableData`
 

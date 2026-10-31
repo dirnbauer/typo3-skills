@@ -8,10 +8,10 @@
       "id": "server-and-file-indexing-compatibility",
       "kind": "behaviour",
       "status": "proposed",
-      "prompt": "Our new TYPO314 search stack pairs ext_solr_14_0_0 with the DDEV add-on's old Solr9 image. Can we index uploaded PDFs, and should I publish port8983 on the production host?",
+      "prompt": "Our new TYPO3 14 search stack pairs ext_solr_14_0_0 with the DDEV add-on's old Solr 9 image. Can we index uploaded PDFs, and should I publish port 8983 on the production host?",
       "assertions": [
         "Verifies the extension, Tika, server and configset together against current primary metadata rather than assuming add-on defaults match.",
-        "Does not repeat the obsolete claim that no Tika14 release exists.",
+        "Does not repeat the obsolete claim that no Tika 14 release exists.",
         "Keeps the Solr administrative endpoint off public interfaces and calls for explicit authentication and network controls."
       ]
     },
@@ -19,25 +19,25 @@
       "id": "typo3-solr-trigger-pos-01",
       "kind": "trigger-positive",
       "status": "proposed",
-      "prompt": "Search returns nothing after we added a new page type.",
+      "prompt": "Since we introduced the new event records, the site search does not find any of them.",
       "expect_skill": "typo3-solr",
-      "note": "Indexing gap via the symptom."
+      "note": "Indexing gap via the symptom, in editor words."
     },
     {
       "id": "typo3-solr-trigger-pos-02",
       "kind": "trigger-positive",
       "status": "proposed",
-      "prompt": "How do I add facets for category and year to the results page?",
+      "prompt": "Editors want to narrow the search results page by topic and by publication year with checkboxes on the left.",
       "expect_skill": "typo3-solr",
-      "note": "Facets."
+      "note": "Facets described without the word."
     },
     {
       "id": "typo3-solr-trigger-pos-03",
       "kind": "trigger-positive",
       "status": "proposed",
-      "prompt": "PDF attachments are not searchable. Do we need Tika for that?",
+      "prompt": "Site search finds our pages but nothing inside the uploaded PDF brochures, even for words that are definitely in them.",
       "expect_skill": "typo3-solr",
-      "note": "File indexing."
+      "note": "File indexing described as the symptom."
     },
     {
       "id": "typo3-solr-trigger-pos-04",
@@ -73,6 +73,14 @@
         "Does not downgrade to the TYPO3-13 line or select an unverified development container image.",
         "Records the resolved extension and server/configset compatibility rather than relying on a stale date."
       ]
+    },
+    {
+      "id": "typo3-solr-trigger-neg-03",
+      "kind": "trigger-negative",
+      "status": "proposed",
+      "prompt": "Set up the cron for the Solr index queue worker.",
+      "expect_skill": "typo3-scheduler-jobs",
+      "note": "Scheduler task cadence; the solr skill delegates worker setup there."
     }
   ]
 }

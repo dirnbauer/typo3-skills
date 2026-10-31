@@ -16,9 +16,23 @@ vendor/bin/typo3 install:password:set
 
 Install Tool sessions can now be stored in **Redis** (#101059) instead of the filesystem. This enables Install Tool access in multi-server / shared-nothing deployments without shared filesystems.
 
-### Modal Migration **[v14 only]**
+### Stronger HMAC Algorithm **[v14 only]**
 
-Backend modals migrated from **Bootstrap Modal to native `<dialog>`** element (#107443). Custom backend JavaScript using Bootstrap Modal API must be updated.
+TYPO3 v14 uses a **stronger cryptographic algorithm for HMAC** (#106307). Existing HMAC tokens (e.g., in URLs, form tokens) generated with the old algorithm will be invalid after upgrade. Plan for token regeneration.
+
+### Built-in CipherService **[v14 only]**
+
+New `CipherService` (#108002) provides **symmetric encryption/decryption** out of the box. Use it instead of custom encryption implementations:
+
+```php
+use TYPO3\CMS\Core\Crypto\Cipher\CipherService;
+
+$cipherService = GeneralUtility::makeInstance(CipherService::class);
+$keyFactory = GeneralUtility::makeInstance(\TYPO3\CMS\Core\Crypto\Cipher\KeyFactory::class);
+$key = $keyFactory->deriveSharedKeyFromEncryptionKey('my-context');
+$cipherValue = $cipherService->encrypt('sensitive data', $key);
+$decrypted = $cipherService->decrypt($cipherValue, $key);
+```
 
 ## Credential residue in `be_users` settings (#109585)
 

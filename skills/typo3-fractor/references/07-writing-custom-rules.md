@@ -2,8 +2,6 @@
 
 Continues `typo3-fractor` from [full guide](full-guide.md).
 
-## 7. Writing Custom Rules
-
 ### Custom XML/FlexForm Rule
 
 Extend `AbstractXmlFractor` (in package `a9f/fractor-xml`). `XmlFractor` in `a9f\FractorXml\Contract` is the interface; the abstract base provides the DOM visitor wiring.

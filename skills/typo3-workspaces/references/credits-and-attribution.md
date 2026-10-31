@@ -32,4 +32,4 @@ This skill is based on 17 authoritative sources:
 17. [Forge Feature #97923: Combined folder_identifier field for sys_file_collection](https://forge.typo3.org/issues/97923)
 
 
-Source: https://github.com/dirnbauer/webconsulting-skills
+Source: https://github.com/dirnbauer/typo3-skills

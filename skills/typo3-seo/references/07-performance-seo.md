@@ -17,14 +17,11 @@ page.headerData.50.value (
 # Self-host web fonts instead of fonts.googleapis.com: a CSS @import of Google Fonts is a
 # render-blocking chain and sends the visitor's IP to Google (see 11-lighthouse-pass.md).
 
-# Lazy load images (built-in TYPO3 v14)
-lib.contentElement {
-    settings {
-        media {
-            lazyLoading = lazy
-        }
-    }
-}
+# Lazy loading is already on: fluid_styled_content wires the constant
+# styles.content.image.lazyLoading (default `lazy`) into lib.contentElement.settings.media.lazyLoading
+# (ContentElement.typoscript:21, 14.3.7). Setting the setup key again is a no-op; the constant
+# (or the site set setting of the same name) is the knob, for example to opt out:
+# styles.content.image.lazyLoading = eager
 ```
 
 ### Image Optimization (TYPO3 v14)

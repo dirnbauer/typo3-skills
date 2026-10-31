@@ -44,7 +44,9 @@ ddev exec php /dev/stdin --plan=/var/www/html/var/transient/backend-rights-plan.
 ```
 
 The command validates live CTypes, exception reasons, tables, mounts, and admin presence before a
-transactional insert/update of the main group and four required leaves. It preserves additional
+transactional insert/update of the main group and four required leaves. It writes `be_groups`
+through the Connection API (no DataHandler backend-user context on the CLI), so run
+`ddev typo3 referenceindex:update` (`typo3/cms-backend`, 14.3) after a real run. It preserves additional
 leaf references and never changes users or deletes old groups. It resolves group UIDs with a
 `SELECT` by unique title after the transaction instead of trusting the driver's last insert ID; if a
 run aborts after commit, look the uniquely titled group up before retrying so no duplicate appears.
@@ -92,15 +94,28 @@ default owner and `31/27/1` matrix to every configured or flagged Site tree. Sta
 and name the default owner explicitly; the script never guesses it:
 
 ```bash
+# 1. Pre-cutover: add the main group, keep the old memberships (dry run first, then real).
+ddev exec php /dev/stdin --dry-run \
+  --group-title='Editorial Main' --owner-username='default-owner' \
+  --usernames='editor-one,editor-two' --membership-mode=append \
+  < /absolute/path/to/typo3-backend-rights/scripts/apply-page-permissions.php
+
+# 2. After one of these users has logged in and edited successfully: page ownership only.
+ddev exec php /dev/stdin --dry-run \
+  --group-title='Editorial Main' --owner-username='default-owner' \
+  --membership-mode=none --apply-pages \
+  < /absolute/path/to/typo3-backend-rights/scripts/apply-page-permissions.php
+
+# 3. Only when the user approved replacement: drop the legacy group.
 ddev exec php /dev/stdin --dry-run \
   --group-title='Editorial Main' --owner-username='default-owner' \
   --usernames='editor-one,editor-two' --membership-mode=replace \
-  --replace-group-title='Legacy Editors' --apply-pages \
+  --replace-group-title='Legacy Editors' \
   < /absolute/path/to/typo3-backend-rights/scripts/apply-page-permissions.php
 ```
 
-Run without `--dry-run` only after review. Use `--membership-mode=append` for the pre-cutover login
-test, then `replace` only when the user approved replacement. The script preserves unrelated group
+Run each step without `--dry-run` only after review. The script cannot verify the login in step 2;
+a person confirms it in a real non-admin session before you continue. The script preserves unrelated group
 memberships, sets the two group-mount inheritance bits, deduplicates nested Site roots, and writes
 users/pages through DataHandler.
 

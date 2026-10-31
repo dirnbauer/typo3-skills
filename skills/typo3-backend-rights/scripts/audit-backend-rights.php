@@ -487,7 +487,9 @@ foreach ($groups as $group) {
         if ($isOwner) {
             $workspaceOwnerUids[] = (int)$workspaceRecord['uid'];
         }
-        if (($isMember || $isOwner) && (int)$workspaceRecord['publish_access'] !== 2) {
+        // publish_access is a bitmask (WorkspaceService::PUBLISH_ACCESS_*): 1 publish stage only,
+        // 2 owners only, 4 hide the "Entire workspace" action. Only bit 2 is required here.
+        if (($isMember || $isOwner) && ((int)$workspaceRecord['publish_access'] & 2) !== 2) {
             $workspacePublishingTooBroad[] = (int)$workspaceRecord['uid'];
         }
     }
@@ -539,7 +541,7 @@ foreach ($groups as $group) {
         $groupFindings[] = finding(
             'error',
             'workspace-publishing-too-broad',
-            'Use publish_access 2 so only approved workspace owners can publish.',
+            'Set publish_access bit 2 so only approved workspace owners can publish.',
             $workspacePublishingTooBroad
         );
     }

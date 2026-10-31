@@ -8,11 +8,11 @@ Continues `typo3-content-blocks` from [full guide](full-guide.md).
 
 ### New TCA Type `country` **[v14 only]**
 
-TYPO3 v14 introduces a native `country` TCA type (#99911). Content Blocks can use this for country selection fields. Check Content Blocks YAML documentation for support of this field type.
+TYPO3 v14 introduces a native `country` TCA type (#99911). Content Blocks 2.4.9 supports it as `type: Country` (`Classes/FieldType/CountryFieldType.php`, verified 2026-10-31).
 
 ### TCA `itemsProcessors` **[v14 only]**
 
-New `itemsProcessors` option (#107889) enables dynamic item generation for select fields. Content Blocks may expose this via YAML configuration for advanced select field customization.
+New `itemsProcessors` option (#107889) enables dynamic item generation for select fields. Content Blocks 2.4.9 passes `itemsProcessors` through for `Select`, `Radio` and `Checkbox` fields (`SelectFieldType`, `RadioFieldType`, `CheckboxFieldType`; verified 2026-10-31).
 
 ### Type-Specific TCA Properties **[v14 only]**
 

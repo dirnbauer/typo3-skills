@@ -7,7 +7,7 @@ description: "Writes and maintains architecture decision records (ADRs) and deci
 
 # Architecture decision records
 
-> Source: https://github.com/dirnbauer/webconsulting-skills
+> Source: https://github.com/dirnbauer/typo3-skills
 
 Write ADRs as a durable record of why one architecturally significant choice
 was made. Prefer a small factual record over a broad design guide.
@@ -50,10 +50,11 @@ was made. Prefer a small factual record over a broad design guide.
 ## Validation
 
 ```bash
-python3 skills/architecture-decision-records/scripts/validate_adrs.py docs/adr \
+python3 <skills>/architecture-decision-records/scripts/validate_adrs.py docs/adr \
   --git-repo . --require-history
 ```
 
+`<skills>` is the directory the skills are installed in (for example `~/.claude/skills`).
 Omit `--require-history` for prospective records. Add the repository's own
 renderer, link checker, or Markdown/ReST linter after this structural check.
 
@@ -72,7 +73,7 @@ Two rules apply there and are worth carrying to any similar process:
 - **Validate before the loop closes**, not at the end of the project:
 
   ```bash
-  python3 skills/architecture-decision-records/scripts/validate_adrs.py \
+  python3 <skills>/architecture-decision-records/scripts/validate_adrs.py \
     .typo3-update/decisions
   ```
 

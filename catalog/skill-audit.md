@@ -8,9 +8,9 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 3. Repository optimization gaps
 
 - Skills audited: 61
-- Total findings: 8
+- Total findings: 22
 - Skills with pass 1 findings: 2
-- Skills with pass 2 findings: 6
+- Skills with pass 2 findings: 13
 - Skills with pass 3 findings: 0
 
 ## High-Signal Repo Findings
@@ -22,9 +22,9 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 ## `architecture-decision-records`
 
 - Source owner: webconsulting
-- Source URL: https://github.com/dirnbauer/webconsulting-skills
+- Source URL: https://github.com/dirnbauer/typo3-skills
 - Frontmatter name: architecture-decision-records
-- SKILL.md lines: 91
+- SKILL.md lines: 92
 
 **Pass 1: Structure**
 - No pass 1 issues found.
@@ -54,9 +54,9 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 ## `legal-impressum`
 
 - Source owner: webconsulting
-- Source URL: https://github.com/dirnbauer/webconsulting-skills
+- Source URL: https://github.com/dirnbauer/typo3-skills
 - Frontmatter name: legal-impressum
-- SKILL.md lines: 418
+- SKILL.md lines: 417
 
 **Pass 1: Structure**
 - No pass 1 issues found.
@@ -118,9 +118,9 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 ## `security-incident-reporting`
 
 - Source owner: webconsulting
-- Source URL: https://github.com/dirnbauer/webconsulting-skills
+- Source URL: https://github.com/dirnbauer/typo3-skills
 - Frontmatter name: security-incident-reporting
-- SKILL.md lines: 407
+- SKILL.md lines: 401
 
 **Pass 1: Structure**
 - No pass 1 issues found.
@@ -166,9 +166,9 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 ## `typo3-accessibility`
 
 - Source owner: webconsulting
-- Source URL: https://github.com/dirnbauer/webconsulting-skills
+- Source URL: https://github.com/dirnbauer/typo3-skills
 - Frontmatter name: typo3-accessibility
-- SKILL.md lines: 324
+- SKILL.md lines: 322
 
 **Pass 1: Structure**
 - No pass 1 issues found.
@@ -184,7 +184,7 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source owner: webconsulting
 - Source URL: https://github.com/dirnbauer/typo3-skills
 - Frontmatter name: typo3-backend-rights
-- SKILL.md lines: 202
+- SKILL.md lines: 208
 
 **Pass 1: Structure**
 - No pass 1 issues found.
@@ -198,9 +198,9 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 ## `typo3-batch`
 
 - Source owner: webconsulting
-- Source URL: https://github.com/dirnbauer/webconsulting-skills
+- Source URL: https://github.com/dirnbauer/typo3-skills
 - Frontmatter name: typo3-batch
-- SKILL.md lines: 354
+- SKILL.md lines: 342
 
 **Pass 1: Structure**
 - No pass 1 issues found.
@@ -246,9 +246,9 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 ## `typo3-content-blocks`
 
 - Source owner: webconsulting
-- Source URL: https://github.com/dirnbauer/webconsulting-skills
+- Source URL: https://github.com/dirnbauer/typo3-skills
 - Frontmatter name: typo3-content-blocks
-- SKILL.md lines: 277
+- SKILL.md lines: 270
 
 **Pass 1: Structure**
 - No pass 1 issues found.
@@ -278,7 +278,7 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 ## `typo3-datahandler`
 
 - Source owner: webconsulting
-- Source URL: https://github.com/dirnbauer/webconsulting-skills
+- Source URL: https://github.com/dirnbauer/typo3-skills
 - Frontmatter name: typo3-datahandler
 - SKILL.md lines: 344
 
@@ -312,7 +312,7 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source owner: webconsulting
 - Source URL: https://github.com/dirnbauer/typo3-skills
 - Frontmatter name: typo3-design-system-page
-- SKILL.md lines: 155
+- SKILL.md lines: 162
 
 **Pass 1: Structure**
 - No pass 1 issues found.
@@ -358,7 +358,7 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 ## `typo3-fractor`
 
 - Source owner: webconsulting
-- Source URL: https://github.com/dirnbauer/webconsulting-skills
+- Source URL: https://github.com/dirnbauer/typo3-skills
 - Frontmatter name: typo3-fractor
 - SKILL.md lines: 325
 
@@ -374,9 +374,9 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 ## `typo3-icon14`
 
 - Source owner: webconsulting
-- Source URL: https://github.com/dirnbauer/webconsulting-skills
+- Source URL: https://github.com/dirnbauer/typo3-skills
 - Frontmatter name: typo3-icon14
-- SKILL.md lines: 284
+- SKILL.md lines: 285
 
 **Pass 1: Structure**
 - No pass 1 issues found.
@@ -398,7 +398,8 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - No pass 1 issues found.
 
 **Pass 2: Source**
-- No pass 2 issues found.
+- expected upstream source is not explicitly attributed inside SKILL.md
+- repo-level source override exists but the skill body does not mention it
 
 **Pass 3: Optimization**
 - No pass 3 issues found.
@@ -408,13 +409,14 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source owner: webconsulting
 - Source URL: https://github.com/dirnbauer/webconsulting-skills
 - Frontmatter name: typo3-initial-release
-- SKILL.md lines: 184
+- SKILL.md lines: 186
 
 **Pass 1: Structure**
 - No pass 1 issues found.
 
 **Pass 2: Source**
-- No pass 2 issues found.
+- expected upstream source is not explicitly attributed inside SKILL.md
+- repo-level source override exists but the skill body does not mention it
 
 **Pass 3: Optimization**
 - No pass 3 issues found.
@@ -440,13 +442,14 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source owner: webconsulting
 - Source URL: https://github.com/dirnbauer/webconsulting-skills
 - Frontmatter name: typo3-news-tags
-- SKILL.md lines: 113
+- SKILL.md lines: 116
 
 **Pass 1: Structure**
 - No pass 1 issues found.
 
 **Pass 2: Source**
-- No pass 2 issues found.
+- expected upstream source is not explicitly attributed inside SKILL.md
+- repo-level source override exists but the skill body does not mention it
 
 **Pass 3: Optimization**
 - No pass 3 issues found.
@@ -456,7 +459,7 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source owner: webconsulting
 - Source URL: https://github.com/dirnbauer/typo3-skills
 - Frontmatter name: typo3-playwright
-- SKILL.md lines: 114
+- SKILL.md lines: 115
 
 **Pass 1: Structure**
 - No pass 1 issues found.
@@ -472,7 +475,7 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source owner: webconsulting
 - Source URL: webconsulting-original / no external upstream recorded
 - Frontmatter name: typo3-powermail
-- SKILL.md lines: 107
+- SKILL.md lines: 114
 
 **Pass 1: Structure**
 - No pass 1 issues found.
@@ -502,9 +505,9 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 ## `typo3-records-list-types`
 
 - Source owner: webconsulting
-- Source URL: https://github.com/dirnbauer/webconsulting-skills
+- Source URL: https://github.com/dirnbauer/typo3-skills
 - Frontmatter name: typo3-records-list-types
-- SKILL.md lines: 337
+- SKILL.md lines: 267
 
 **Pass 1: Structure**
 - No pass 1 issues found.
@@ -518,9 +521,9 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 ## `typo3-rector`
 
 - Source owner: webconsulting
-- Source URL: https://github.com/dirnbauer/webconsulting-skills
+- Source URL: https://github.com/dirnbauer/typo3-skills
 - Frontmatter name: typo3-rector
-- SKILL.md lines: 325
+- SKILL.md lines: 327
 
 **Pass 1: Structure**
 - No pass 1 issues found.
@@ -550,9 +553,9 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 ## `typo3-security`
 
 - Source owner: webconsulting
-- Source URL: https://github.com/dirnbauer/webconsulting-skills
+- Source URL: https://github.com/dirnbauer/typo3-skills
 - Frontmatter name: typo3-security
-- SKILL.md lines: 457
+- SKILL.md lines: 442
 
 **Pass 1: Structure**
 - No pass 1 issues found.
@@ -566,7 +569,7 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 ## `typo3-seo`
 
 - Source owner: webconsulting
-- Source URL: https://github.com/dirnbauer/webconsulting-skills
+- Source URL: https://github.com/dirnbauer/typo3-skills
 - Frontmatter name: typo3-seo
 - SKILL.md lines: 320
 
@@ -584,13 +587,14 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source owner: webconsulting
 - Source URL: https://github.com/dirnbauer/webconsulting-skills
 - Frontmatter name: typo3-shadcn-content-elements
-- SKILL.md lines: 153
+- SKILL.md lines: 152
 
 **Pass 1: Structure**
 - No pass 1 issues found.
 
 **Pass 2: Source**
-- No pass 2 issues found.
+- expected upstream source is not explicitly attributed inside SKILL.md
+- repo-level source override exists but the skill body does not mention it
 
 **Pass 3: Optimization**
 - No pass 3 issues found.
@@ -630,9 +634,9 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 ## `typo3-solr`
 
 - Source owner: webconsulting
-- Source URL: https://github.com/dirnbauer/webconsulting-skills
+- Source URL: https://github.com/dirnbauer/typo3-skills
 - Frontmatter name: typo3-solr
-- SKILL.md lines: 369
+- SKILL.md lines: 390
 
 **Pass 1: Structure**
 - No pass 1 issues found.
@@ -648,7 +652,7 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source owner: webconsulting
 - Source URL: https://github.com/dirnbauer/typo3-skills
 - Frontmatter name: typo3-structured-data
-- SKILL.md lines: 145
+- SKILL.md lines: 146
 
 **Pass 1: Structure**
 - No pass 1 issues found.
@@ -680,13 +684,14 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source owner: webconsulting
 - Source URL: https://github.com/dirnbauer/webconsulting-skills
 - Frontmatter name: typo3-translations
-- SKILL.md lines: 362
+- SKILL.md lines: 366
 
 **Pass 1: Structure**
 - No pass 1 issues found.
 
 **Pass 2: Source**
-- No pass 2 issues found.
+- expected upstream source is not explicitly attributed inside SKILL.md
+- repo-level source override exists but the skill body does not mention it
 
 **Pass 3: Optimization**
 - No pass 3 issues found.
@@ -712,7 +717,7 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source owner: webconsulting
 - Source URL: webconsulting-original / no external upstream recorded
 - Frontmatter name: typo3-upgrade-baseline
-- SKILL.md lines: 97
+- SKILL.md lines: 99
 
 **Pass 1: Structure**
 - No pass 1 issues found.
@@ -728,7 +733,7 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source owner: webconsulting
 - Source URL: webconsulting-original / no external upstream recorded
 - Frontmatter name: typo3-upgrade-closure
-- SKILL.md lines: 140
+- SKILL.md lines: 143
 
 **Pass 1: Structure**
 - No pass 1 issues found.
@@ -792,7 +797,7 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source owner: webconsulting
 - Source URL: webconsulting-original / no external upstream recorded
 - Frontmatter name: typo3-upgrade-retrospective
-- SKILL.md lines: 92
+- SKILL.md lines: 93
 
 **Pass 1: Structure**
 - No pass 1 issues found.
@@ -808,7 +813,7 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source owner: webconsulting
 - Source URL: https://github.com/dirnbauer/typo3-skills
 - Frontmatter name: typo3-upgrade-run
-- SKILL.md lines: 348
+- SKILL.md lines: 396
 
 **Pass 1: Structure**
 - No pass 1 issues found.
@@ -822,9 +827,9 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 ## `typo3-v14-reference`
 
 - Source owner: webconsulting
-- Source URL: https://github.com/dirnbauer/webconsulting-skills
+- Source URL: https://github.com/dirnbauer/typo3-skills
 - Frontmatter name: typo3-v14-reference
-- SKILL.md lines: 392
+- SKILL.md lines: 396
 
 **Pass 1: Structure**
 - No pass 1 issues found.
@@ -840,13 +845,14 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source owner: webconsulting
 - Source URL: https://github.com/dirnbauer/webconsulting-skills
 - Frontmatter name: typo3-visual-editor
-- SKILL.md lines: 382
+- SKILL.md lines: 381
 
 **Pass 1: Structure**
 - No pass 1 issues found.
 
 **Pass 2: Source**
-- No pass 2 issues found.
+- expected upstream source is not explicitly attributed inside SKILL.md
+- repo-level source override exists but the skill body does not mention it
 
 **Pass 3: Optimization**
 - No pass 3 issues found.
@@ -872,13 +878,14 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source owner: webconsulting
 - Source URL: https://github.com/dirnbauer/webconsulting-skills
 - Frontmatter name: typo3-wcag22-aa-agentic
-- SKILL.md lines: 382
+- SKILL.md lines: 384
 
 **Pass 1: Structure**
 - No pass 1 issues found.
 
 **Pass 2: Source**
-- No pass 2 issues found.
+- expected upstream source is not explicitly attributed inside SKILL.md
+- repo-level source override exists but the skill body does not mention it
 
 **Pass 3: Optimization**
 - No pass 3 issues found.
@@ -886,7 +893,7 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 ## `typo3-webcomponents`
 
 - Source owner: webconsulting
-- Source URL: https://github.com/dirnbauer/webconsulting-skills
+- Source URL: https://github.com/dirnbauer/typo3-skills
 - Frontmatter name: typo3-webcomponents
 - SKILL.md lines: 84
 
@@ -918,7 +925,7 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 ## `typo3-workspaces`
 
 - Source owner: webconsulting
-- Source URL: https://github.com/dirnbauer/webconsulting-skills
+- Source URL: https://github.com/dirnbauer/typo3-skills
 - Frontmatter name: typo3-workspaces
 - SKILL.md lines: 364
 
@@ -966,9 +973,9 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 ## `webconsulting-branding`
 
 - Source owner: webconsulting
-- Source URL: https://github.com/dirnbauer/webconsulting-skills
+- Source URL: https://github.com/dirnbauer/typo3-skills
 - Frontmatter name: webconsulting-branding
-- SKILL.md lines: 418
+- SKILL.md lines: 416
 
 **Pass 1: Structure**
 - No pass 1 issues found.
@@ -982,9 +989,9 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 ## `webconsulting-create-documentation`
 
 - Source owner: webconsulting
-- Source URL: https://github.com/dirnbauer/webconsulting-skills
+- Source URL: https://github.com/dirnbauer/typo3-skills
 - Frontmatter name: webconsulting-create-documentation
-- SKILL.md lines: 298
+- SKILL.md lines: 302
 
 **Pass 1: Structure**
 - No pass 1 issues found.

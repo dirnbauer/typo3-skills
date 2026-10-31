@@ -69,6 +69,6 @@ working tree, so unrelated local edits stay out:
 
 ```bash
 git status --short
-git add composer.json composer.lock rector.php Classes/ Configuration/
+git add rector.php packages/my_extension/{Classes,Configuration}
 git commit -m "feat: Apply Rector migrations for TYPO3 v14"
 ```

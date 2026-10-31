@@ -22,7 +22,9 @@ Primary goal: move a TYPO3 site toward WCAG 2.2 AA and EN 301 549 readiness with
 
 Legal examples now cover Austria, Germany, and Switzerland. The skill can generate statement drafts and audit notes for different legal profiles, but it must not give final legal advice.
 
-Important boundary: never claim complete WCAG conformance from automated scans alone. Automated scans are evidence. Final conformance wording and legal publication require a small human review, especially for alt text, keyboard logic, screen-reader clarity, PDFs, videos, maps, and legal exceptions.
+Boundary to the sibling: `typo3-accessibility` ships a `wcag22_audit.cjs` script, a single-URL spot check of the markup it has just fixed; this skill owns the URL inventory, the CI baseline, the reports and the accessibility statement.
+
+Never claim complete WCAG conformance from automated scans alone. Automated scans are evidence. Final conformance wording and legal publication require a small human review, especially for alt text, keyboard logic, screen-reader clarity, PDFs, videos, maps, and legal exceptions.
 
 ## Tool model
 
@@ -220,7 +222,7 @@ npm run a11y:manual:merge
 npm run a11y:manual:merge:file -- .a11y/manual-review/2026-07-05-page-open-issues.yml
 ```
 
-Important: the Erklärung zur Barrierefreiheit must be generated from `.a11y/open-issues.yml` and documented exceptions. Do not free-write it from memory or from a chat summary.
+The Erklärung zur Barrierefreiheit must be generated from `.a11y/open-issues.yml` and documented exceptions. Do not free-write it from memory or from a chat summary.
 
 When Deque axe MCP is available, use it as acceleration, not as the single source of truth. The local Playwright/axe suite remains the repeatable project baseline.
 
@@ -249,7 +251,7 @@ legal:
   enStandard: "EN 301 549"
 ```
 
-Important jurisdiction rules:
+Jurisdiction rules:
 
 - Austria public sector: use the Web-Zugänglichkeits-Gesetz (WZG, BGBl. I Nr. 59/2019) for federal bodies, with the FFG as monitoring and complaints body, or the applicable Land/municipal law, and the österreichische Erklärung-zur-Barrierefreiheit structure.
 - Austria private sector: the Barrierefreiheitsgesetz (BaFG, BGBl. I Nr. 76/2023) applies since 2025-06-28, with market surveillance at the Sozialministeriumservice. Use BaFG/EAA only when the offered product/service is in scope; otherwise keep it as voluntary WCAG evidence. (Verified 2026-10-31 against RIS, sozialministerium.gv.at and ffg.at.)
@@ -378,4 +380,4 @@ Recommended phases:
 
 This skill is original webconsulting work.
 
-Original repository: https://github.com/dirnbauer/webconsulting-skills
+Original repository: https://github.com/dirnbauer/typo3-skills

@@ -37,8 +37,8 @@ section for the step you are on; read the whole file only for a complete catalog
 - For Desiderio, also run the project audit script (`php scripts/audit-content-elements.php`) because it
   contains repo-specific hard checks for inline styles, raw colors, variant branches, undeclared rendered
   fields, and seed gaps.
-- If local PHP cannot load Composer because the extension requires PHP 8.3+, run the audit and PHPUnit
-  through DDEV PHP 8.3. Copy the repo to a temporary path inside the DDEV project first so you do not
+- If local PHP cannot load Composer because the extension requires a newer PHP, run the audit and PHPUnit
+  through DDEV with PHP 8.4 (the project standard). Copy the repo to a temporary path inside the DDEV project first so you do not
   mutate a dirty vendor checkout.
 - Use the output to prioritize missing previews, undeclared rendered fields, unused configured fields,
   missing labels, missing icons, and repeatable-field gaps.

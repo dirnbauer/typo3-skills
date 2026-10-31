@@ -10,7 +10,7 @@ license: "MIT / CC-BY-SA-4.0"
 ---
 # TYPO3 DataHandler Operations
 
-> Source: https://github.com/dirnbauer/webconsulting-skills
+> Source: https://github.com/dirnbauer/typo3-skills
 
 ## 1. Rules
 
@@ -19,8 +19,9 @@ license: "MIT / CC-BY-SA-4.0"
   maintains: the reference index (`sys_refindex`), cache clearing, history (`sys_history`), workspace
   versions, Core hooks and events (see the hooks reference below), FlexForm handling and MM relations.
 - **Create one instance per operation** with `GeneralUtility::makeInstance(DataHandler::class)`.
-  DataHandler is stateful, so do not inject it through a constructor; avoid `new DataHandler()` so
-  Core wiring stays intact.
+  DataHandler is stateful, so do not inject it through a constructor. `new DataHandler()` fails:
+  the constructor takes Core services (event dispatcher, cache manager, connection pool and more;
+  `DataHandler.php` in 14.3), which `makeInstance()` resolves from the container.
 - **Run it with a real backend user.** In CLI and Scheduler context call
   `Bootstrap::initializeBackendAuthentication()` (the `_cli_` user) or pass a
   `BackendUserAuthentication` as the third `start()` argument. Never fake admin rights by mutating
@@ -176,9 +177,9 @@ The DataHandler API in TYPO3 14.3 (checked against 14.3.9):
    rows. `substNEWwithIDs` is public API; `errorLog` and `autoVersionIdMap` are annotated `@internal`
    in 14.3.9 but have no public replacement, so read them and never write them.
 
-**Cache:** Prefer `CacheManager` / cache groups or PSR-14 cache events instead of legacy DataHandler cache helpers.
+**Cache:** Avoid `clear_cacheCmd()`; flush through `CacheManager::flushCachesInGroupByTags()` (or `flushCachesInGroup()`) with the `pages` group and the `pageId_<uid>` tags, or listen to the PSR-14 cache events.
 
-The official docs do **not** define a general transaction contract for DataHandler. In normal extension code, use the plain API first and only add your own transaction handling after carefully validating the database connections and side effects involved in your specific use case.
+DataHandler has no transaction contract; do not wrap it in a transaction. It writes several tables, the reference index and history in separate statements, and a rollback would leave the caches and `sys_refindex` out of step with the rows.
 
 ```php
 <?php
@@ -340,4 +341,3 @@ Load only the file the current task needs:
   declaring the TYPO3 and PHP range of an extension that uses DataHandler.
 - [v14-only changes](references/v14-only-changes.md): when code written for v12 or v13 uses removed
   DataHandler properties or commands.
-- [Credits and attribution](references/credits-and-attribution.md): when citing sources.

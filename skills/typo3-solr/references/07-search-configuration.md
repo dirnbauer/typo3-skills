@@ -63,7 +63,7 @@ plugin.tx_solr.search {
 }
 ```
 
-**Facet / rendering modes:** `options` (default), `optionsFiltered`, `optionsPrefixGrouped`, `optionsSinglemode`, `optionsToggle`, `queryGroup`, `hierarchy`, `dateRange`, `numericRange`, `rootline`.
+**Facet types** (`type`, registered in `FacetRegistry` 14.0.2): `options` (default), `hierarchy`, `queryGroup`, `dateRange`, `numericRange`. Rendering variants such as `OptionsFiltered`, `OptionsPrefixGrouped`, `OptionsSinglemode` or `OptionsToggle` are `partialName` values for the `options` type, not facet types.
 
 ### Suggest / Autocomplete
 
@@ -80,7 +80,7 @@ plugin.tx_solr {
 }
 ```
 
-The built-in suggest uses the devbridge/jQuery-Autocomplete library. For a jQuery-free approach, see [SKILL-FRONTEND.md](../SKILL-FRONTEND.md).
+The built-in suggest in EXT:solr 14 is `suggest_controller.js` with `autocomplete.min.js`, no jQuery (EXT:solr 13 and older used devbridge/jQuery-Autocomplete). For custom markup and request handling, see [SKILL-FRONTEND.md](../SKILL-FRONTEND.md).
 
 ### Sorting, Highlighting, Spellcheck
 
@@ -121,20 +121,26 @@ plugin.tx_solr.search {
 
 SEO-friendly search URLs:
 
+The enhancer reads `extensionKey`, `routePath`, `_arguments`, `requirements`, `limitToPages` and
+`solr` (shape from `Documentation/Routing/FacetsInPathSegment.rst` in 14.0.2); it is not an Extbase
+enhancer and ignores `type: Extbase`, `plugin` or `routes`:
+
 ```yaml
 routeEnhancers:
-  SolrSearch:
+  products:
     type: SolrFacetMaskAndCombineEnhancer
-    extensionKey: solr
+    limitToPages:
+      - 42
+    extensionKey: tx_solr
+    routePath: '/{productType}'
+    # Arguments live in the tx_solr namespace: 'filter-productType' becomes 'tx_solr/filter-productType'
+    _arguments:
+      productType: filter-productType
+    # Configure a requirement for every field; '.*' allows empty values
+    requirements:
+      productType: '.*'
     solr:
-      type: Extbase
-      extension: Solr
-      plugin: pi_results
-      routes:
-        - routePath: '/search/{q}'
-          _controller: 'Search::results'
-          _arguments:
-            q: q
+      multiValueSeparator: ';'
 ```
 
 <!-- SCREENSHOT: frontend-search-facets.png - Search results with facets -->

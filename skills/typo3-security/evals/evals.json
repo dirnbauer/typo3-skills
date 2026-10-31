@@ -87,6 +87,14 @@
         "Verifies keys and defaults against the installed TYPO3 source rather than memory"
       ],
       "note": "Regression for an example that silently dropped Core defaults; added 2026-10-31."
+    },
+    {
+      "id": "typo3-security-trigger-neg-03",
+      "kind": "trigger-negative",
+      "status": "proposed",
+      "prompt": "Require MFA for the editor group and fix their missing module access.",
+      "expect_skill": "typo3-backend-rights",
+      "note": "Group rights work that happens to include MFA; the backend-rights skill owns be_groups."
     }
   ]
 }

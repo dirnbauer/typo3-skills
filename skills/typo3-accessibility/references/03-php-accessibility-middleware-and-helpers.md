@@ -1,7 +1,5 @@
 # 3. PHP: Accessibility Middleware & Helpers
 
-Continues `typo3-accessibility` from [full guide](full-guide.md).
-
 ## Contents
 
 - [3.1 Language Attribute Middleware (PSR-15)](#31-language-attribute-middleware-psr-15)

@@ -48,9 +48,9 @@
       "id": "typo3-design-system-page-trigger-neg-02",
       "kind": "trigger-negative",
       "status": "proposed",
-      "prompt": "Run a WCAG 2.2 AA audit across every template and form on this website and fix the failures.",
+      "prompt": "The screen reader does not announce our accordion as expandable. Fix the markup in the Fluid template.",
       "expect_skill": "typo3-accessibility",
-      "note": "Whole-site accessibility work rather than a design-system page."
+      "note": "Accessible markup fix rather than a design-system page. Reworded 2026-10-31: the earlier whole-site WCAG audit prompt routes to typo3-wcag22-aa-agentic in AGENTS.md."
     },
     {
       "id": "typo3-design-system-page-trigger-neg-03",

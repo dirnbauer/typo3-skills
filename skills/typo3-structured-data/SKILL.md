@@ -129,8 +129,9 @@ deploy or request indexing from this skill.
 - Use `typo3-seo` for canonical URLs, hreflang, meta tags, XML sitemaps, and robots rules.
 - Use `typo3-content-blocks` to create or migrate the visible FAQ/product/event/job/recipe model;
   this skill maps that model to entities.
-- Use the general `schema` skill for non-TYPO3 sites. This skill owns TYPO3 records, Fluid/API
-  integration, DDEV evidence, and the upgrade-graph contract.
+- No sibling skill in this collection covers non-TYPO3 sites; the upstream `schema` skill credited
+  below does. This skill owns TYPO3 records, Fluid/API integration, DDEV evidence, and the
+  upgrade-graph contract.
 
 ## Credits and licences
 

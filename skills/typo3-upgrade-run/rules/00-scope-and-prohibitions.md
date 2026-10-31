@@ -3,12 +3,28 @@
 Normative. These rules bind every phase and every loop of `typo3-upgrade-run`.
 When any other document in this skill appears to permit something forbidden here, this file wins.
 
+## Contents
+
+- [00.1 Where the work happens](#001-where-the-work-happens)
+- [00.2 Never](#002-never)
+- [00.3 Requires explicit approval](#003-requires-explicit-approval)
+- [00.4 Reversibility](#004-reversibility)
+- [00.5 Trust and instruction hierarchy](#005-trust-and-instruction-hierarchy)
+- [00.6 External documentation](#006-external-documentation)
+- [00.7 Sub-skill trust](#007-sub-skill-trust)
+- [00.8 API verification](#008-api-verification)
+- [00.9 Evidence](#009-evidence)
+
 ## 00.1 Where the work happens
 
 All work happens inside **one local DDEV project** that hosts a current sync of the site.
 
 - Composer runs through `ddev composer`, the TYPO3 CLI through `ddev typo3` (or `ddev exec vendor/bin/typo3`), tests and tools through `ddev exec`, and browser verification against the DDEV URL.
-- Creating the local sync is **outside this skill**. When the database and `fileadmin` sync is missing or stale, ask the user for a fresh dump. Never connect to production to obtain it.
+- The local sync comes from a dump the user provides or, after the user authorizes it for this
+  project, from `scripts/pull-live-dataset.mjs`. That script is the only way this skill touches
+  production, and it is read-only on the server (`readlink`, a file count, a streamed
+  `database:export`); see [live dataset and staging](../references/live-dataset-and-staging.md).
+  Ad-hoc commands against production are never acceptable.
 - The local database is the only database this skill migrates.
 
 ## 00.2 Never
@@ -17,9 +33,9 @@ These are unconditional. There is no approval that grants them, and no phase in 
 
 | Forbidden | Why |
 |---|---|
-| Deploy to staging or live | Deployment is a separate task that begins only after this skill's completion gate, on explicit request |
-| Run commands against production servers, remote databases, DNS, CDN, proxies, or hosting panels | The skill has no mandate over remote infrastructure and no way to roll it back |
-| Change remote infrastructure or remote data of any kind | Same |
+| Deploy to live, or to any target other than staging | Live deployment is a separate task that begins only after this skill's completion gate. Staging is the one publication target, only through `scripts/deploy-staging.mjs` after the user authorizes it for this project, and only after the closure certificate exists |
+| Run commands against production servers, remote databases, DNS, CDN, proxies, or hosting panels | The skill has no mandate over remote infrastructure and no way to roll it back. The single exception is the read-only dataset pull in 00.1 |
+| Change remote infrastructure or remote data of any kind | Same; the dataset pull reads, the staging deploy writes only to staging |
 | Overwrite, edit, or delete `baseline/A-original/` | It is the only evidence that the update was invisible; see `20-baseline-integrity.md` |
 | Raise a visual threshold, shrink the sample, or exclude a page to make a comparison pass | This converts a defect into a false green; see `20-baseline-integrity.md` |
 | Commit credentials, database dumps, or `.env` values | They leak into history permanently |

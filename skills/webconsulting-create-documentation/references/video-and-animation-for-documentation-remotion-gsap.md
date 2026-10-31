@@ -258,4 +258,4 @@ export const AnimatedNumber = ({ targetValue = 10000 }) => {
 ```
 
 
-Source: https://github.com/dirnbauer/webconsulting-skills
+Source: https://github.com/dirnbauer/typo3-skills

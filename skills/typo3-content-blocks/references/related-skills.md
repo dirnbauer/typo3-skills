@@ -4,9 +4,9 @@ Continues `typo3-content-blocks` from [full guide](full-guide.md).
 
 ## Related Skills
 
-For migration between classic TYPO3 extensions and Content Blocks, see the dedicated migration skill:
+For migration between classic TYPO3 extensions and Content Blocks, load the migration sub-guide:
 
-- **[typo3-content-blocks-migration](../SKILL-MIGRATION.md)** - Bidirectional migration guide with:
+- **[SKILL-MIGRATION.md](../SKILL-MIGRATION.md)** - Bidirectional migration guide with:
   - TCA → Content Blocks field mapping
   - Content Blocks → TCA reverse mapping
   - Data migration scripts

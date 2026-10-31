@@ -4,12 +4,12 @@
 
 > **Jurisdiction:** European Union (27 Member States)
 > 
-> **Related Skills:**
+> **Sub-guides:**
 > - [SKILL.md](./SKILL.md) - Austrian requirements (main skill)
 > - [SKILL-GERMANY.md](./SKILL-GERMANY.md) - German requirements
 > - [SKILL-WORLD.md](./SKILL-WORLD.md) - International requirements
 
-This skill covers EU-wide legal notice requirements based on the eCommerce Directive.
+This sub-guide covers EU-wide legal notice requirements based on the eCommerce Directive.
 
 ---
 
@@ -293,7 +293,7 @@ Since January 2021:
 
 - **EUR-Lex (EU law)**: https://eur-lex.europa.eu/
 - **Your Europe Business**: https://europa.eu/youreurope/business/
-- **ECC-Net (Consumer disputes)**: https://ec.europa.eu/info/ecc-net
+- **ECC-Net (Consumer disputes)**: https://commission.europa.eu/live-work-travel-eu/consumer-rights-and-complaints/resolve-your-consumer-complaint/european-consumer-centres-network-ecc-net_en (verified 2026-10-31)
 
 ---
 

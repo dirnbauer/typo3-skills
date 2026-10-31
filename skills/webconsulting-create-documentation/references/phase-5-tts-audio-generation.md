@@ -63,7 +63,7 @@ remotion/
 └── narration-durations.ts   ← auto-generated, per-scene frame counts + total
 ```
 
-### Audio-video sync (critical)
+### Audio-video sync
 
 Scene durations are driven by audio length, not hardcoded. The generate script:
 1. Probes each audio file's duration (e.g., intro = 8.5s)
@@ -76,7 +76,7 @@ Each scene also has:
 - **Visual fade-to-black** (last 0.5s) — smooth scene transitions
 - **Total video duration** is computed from sum of all scene frames
 
-### Important: format config
+### Format config
 
 `staticFile()` in Remotion does NOT throw when a file is missing — it returns a URL
 that 404s at render time. That's why the generate script writes `narration-format.ts`

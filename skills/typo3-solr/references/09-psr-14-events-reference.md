@@ -101,7 +101,8 @@ final class EnrichSolrDocuments
 
     private function calculateScore(\ApacheSolrForTypo3\Solr\System\Solr\Document\Document $document): float
     {
-        return match ($document->getField('type')['value'] ?? '') {
+        // Document extends Solarium's AbstractDocument (ArrayAccess); there is no getField()
+        return match ($document['type'] ?? '') {
             'pages' => 1.0,
             'tx_news_domain_model_news' => 0.8,
             default => 0.5,

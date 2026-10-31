@@ -185,7 +185,8 @@ The controller owns project identity, contracts, approvals, budgets, routing and
 for one local DDEV clone. A user-authorized pull from live uses `scripts/pull-live-dataset.mjs`
 (read-only on the server; **the local fileadmin is deleted before any fileadmin sync**). Publication
 goes to staging only, through `scripts/deploy-staging.mjs`, which also refuses a staging platform
-below the target (exit 6); live deployment is never part of a run.
+below the target (exit 6); live deployment is never part of a run. "Never deploys" in this skill's
+description means live: staging is the one authorized publication target.
 See [live dataset and staging](references/live-dataset-and-staging.md). Record the approval/ADR and
 measured content timestamps for any accepted dated dataset.
 
@@ -343,5 +344,52 @@ for the normative graph and [the architecture note](references/graph-architectur
 - [`references/quality-bars.md`](references/quality-bars.md) · [`references/deployment-handover.md`](references/deployment-handover.md)
 - [TYPO3 14 readiness checks](references/typo3-14-readiness-checks.md) — INCLUDE_TYPOSCRIPT/@import, relative links, class names outside PHP, parseFunc overrides, site-package class shapes
 - [TYPO3 14 fix pack](references/typo3-14-fix-pack.md) — fifteen known breakers (fourteen from the fleet, one 14.3.6 Core change) with detection, fix, proof and approval, applied at the rung
+
+### Files not linked elsewhere
+
+Load each one only in the situation named.
+
+- Phase notes in `references/phases/` (p00 to p15) — load the note whose id matches the `phase` field of the
+  node brief (`t3u node-brief --node <id>`): [P00 intake](references/phases/p00-intake-and-scope.md),
+  [P01 environment freeze](references/phases/p01-environment-freeze.md),
+  [P02 determinism self-test](references/phases/p02-determinism-selftest.md),
+  [P03 Baseline A](references/phases/p03-baseline-a.md),
+  [P04 blocker remediation](references/phases/p04-pre-update-stabilisation.md),
+  [P05 target and dependencies](references/phases/p05-target-and-dependencies.md),
+  [P06 rung 13.4](references/phases/p06-rung-13-4.md),
+  [P07 mechanical migration](references/phases/p07-mechanical-migration.md),
+  [P08 manual migration](references/phases/p08-manual-migration.md),
+  [P09 rung 14.3](references/phases/p09-rung-14-3.md),
+  [P10 feature parity](references/phases/p10-feature-parity.md),
+  [P11 invariance closure](references/phases/p11-invariance-closure.md),
+  [P12 backend and operations](references/phases/p12-backend-operations-quality.md),
+  [P13 Contract A closure](references/phases/p13-contract-a-closure.md),
+  [P14 elevation](references/phases/p14-elevation.md),
+  [P15 report and handover](references/phases/p15-report-and-handover.md)
+- [`rules/30-finding-classification.md`](rules/30-finding-classification.md) — when a measurement
+  produced a difference and its class (regression, harness-noise, content-drift) is in question
+- [`rules/50-evidence-and-determinism.md`](rules/50-evidence-and-determinism.md) — when deciding
+  whether an artifact counts as evidence or a comparison is meaningful
+- [Fleet survey](references/fleet-survey.md) — before any run starts, when choosing which of many
+  projects to upgrade and what each will cost
+- [KPI report](references/kpi-report.md) — when writing or updating `report/KPI-REPORT.md` during the run
+- [Metadata and social](references/metadata-and-social.md) — in P10/P14 when the `<head>`, Open Graph
+  card or Impressum is on the plan
+- [Native Fluid components](references/native-fluid-components.md) — when `fluidtypo3/fluid-components`
+  blocks the target
+- [Mask to Content Blocks](references/mask-to-content-blocks.md) — when `EXT:mask` blocks the target
+  or the owner approved the migration
+- [Feature upgrades](references/feature-upgrades.md) — P10 recipes for Redirects, Solr, CKEditor and
+  other feature-parity nodes
+- [Backend permissions](references/backend-permissions.md) — P12 audit of what the upgrade broke in
+  editor rights
+- [Database integrity](references/database-integrity.md) — when the schema is green but values,
+  relations or workspace overlays may be wrong
+- [Image formats](references/image-formats.md) — when processed-image output format is on the
+  elevation plan
+- [Known problems](references/known-problems.md) — symptom-first list to check before diagnosing a
+  fault from scratch
+- [Rollback](references/rollback.md) — before the first stateful node, and whenever a snapshot restore
+  is about to run
 - Overview: [`assets/typo3-upgrade-run-infographic.png`](assets/typo3-upgrade-run-infographic.png) and the
   interactive [Archify workflow](assets/typo3-upgrade-run.archify.html); the YAML graph and executable checks are authoritative

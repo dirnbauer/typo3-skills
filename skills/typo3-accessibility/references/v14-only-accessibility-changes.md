@@ -1,7 +1,5 @@
 # v14-Only Accessibility Changes
 
-Continues `typo3-accessibility` from [full guide](full-guide.md).
-
 ## v14-Only Accessibility Changes
 
 > The following accessibility-related changes apply **exclusively to TYPO3 v14**.

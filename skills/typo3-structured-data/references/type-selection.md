@@ -1,6 +1,6 @@
 # Page-purpose and entity selection
 
-Source snapshot: 2026-08-27. Consumer galleries and eligibility rules change; recheck the current
+Source snapshot: 2026-10-31. Consumer galleries and eligibility rules change; recheck the current
 primary documentation when internet access is available.
 
 ## Selection order

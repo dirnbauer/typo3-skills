@@ -21,11 +21,10 @@ ddev typo3 upgrade:run
 # 4. Clear caches
 ddev typo3 cache:flush
 
-# 5. Register extensions and align database schema
+# 5. Register extensions and align database schema (Core command; it runs the schema update)
 ddev typo3 extension:setup
-# Schema compare/apply (CLI entry point depends on your project: `typo3`, `vendor/bin/typo3`, typo3-console, etc.)
-# `database:updateschema` is from **helhum/typo3-console**, not plain Core — omit if you only have `vendor/bin/typo3`.
-ddev typo3 database:updateschema
+# With helhum/typo3-console installed you can run the schema step on its own instead:
+#   ddev typo3 database:updateschema
 
 # 6. Test thoroughly
 ```

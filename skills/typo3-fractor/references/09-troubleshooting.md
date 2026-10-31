@@ -2,8 +2,6 @@
 
 Continues `typo3-fractor` from [full guide](full-guide.md).
 
-## 9. Troubleshooting
-
 ### Fractor Fails to Parse TypoScript
 
 ```bash

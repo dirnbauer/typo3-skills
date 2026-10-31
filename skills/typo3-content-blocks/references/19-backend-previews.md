@@ -83,10 +83,10 @@ edit buttons. List the items yourself:
                     <span class="content-block-preview__item-title">{item.title}</span>
                     <span class="content-block-preview__item-meta">{item.position}</span>
                 </span>
-                <cb:link.editRecord record="{item}" contextual="1" class="content-block-preview__item-edit"
+                <be:link.editRecord uid="{item.uid}" table="{item.mainType}" contextual="1" class="content-block-preview__item-edit"
                                     title="{f:translate(key: 'LLL:EXT:site_package/Resources/Private/Language/locallang_be.xlf:backend.edit_item')}">
                     <core:icon identifier="actions-open" size="small"/>
-                </cb:link.editRecord>
+                </be:link.editRecord>
             </li>
         </f:if>
     </f:for>
@@ -97,8 +97,10 @@ edit buttons. List the items yourself:
 </f:if>
 ```
 
-- `cb:link.editRecord record="{item}" contextual="1"` opens the item in TYPO3 14's side panel, so the
-  editor changes one item without leaving the page.
+- `be:link.editRecord uid table contextual="1"` (namespace `xmlns:be="http://typo3.org/ns/TYPO3/CMS/Backend/ViewHelpers"`)
+  opens the item in TYPO3 14's side panel, so the editor changes one item without leaving the page.
+  `cb:link.editRecord` takes `record`, `uid`, `table`, `fields` and `returnUrl` but has no `contextual`
+  argument (Content Blocks 2.4.9 source, verified 2026-10-31).
 - Counts per status work with Fluid arithmetic inside the loop: initialise `<f:variable name="sold"
   value="0"/>`, then `<f:variable name="sold" value="{sold + 1}"/>` in a `f:switch` case.
 - Show six to eight items and a "+ N more" line; a lot plan with 30 rows is still one glance.
@@ -151,8 +153,9 @@ TYPO3 14 renders no thumbnail in inline headers; the page-module preview carries
 
 ## Verify
 
-Lint (`content-blocks:lint`), confirm no schema change (`database:updateschema '*.add,*.change'
---dry-run`) and look at the page module in both colour schemes. After a migration, probe every page
+Lint (`content-blocks:lint`), confirm no schema change (`extension:setup` reports nothing to do;
+`database:updateschema '*.add,*.change' --dry-run` exists only with helhum/typo3-console) and look at
+the page module in both colour schemes. After a migration, probe every page
 that carries Content Block elements, child rows included, and require 0 exceptions; a frontend
 comparison never renders a preview. Probe on a clone: previews with `f:image` write image derivatives
 (and sidecars of WebP extensions) into `fileadmin`. In a browser test the module content

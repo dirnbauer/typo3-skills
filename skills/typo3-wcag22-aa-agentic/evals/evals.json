@@ -73,6 +73,7 @@
       "kind": "behaviour",
       "status": "proposed",
       "prompt": "The same missing button name appears on 400 TYPO3 pages. We have ninety minutes left in the migration window.",
+      "expected_output": "Traces the 400 findings to the one Fluid partial that renders the button, fixes it there, re-scans a few representative pages, and reports the remaining coverage gap instead of claiming a full audit.",
       "assertions": [
         "Repairs the shared component once and checks affected representatives.",
         "Returns bounded upgrade findings to the parent; does not start a full separate accessibility improvement programme.",

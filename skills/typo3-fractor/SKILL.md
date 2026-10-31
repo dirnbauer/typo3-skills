@@ -10,7 +10,7 @@ license: "MIT / CC-BY-SA-4.0"
 ---
 # TYPO3 Fractor Skill
 
-> Source: https://github.com/dirnbauer/webconsulting-skills
+> Source: https://github.com/dirnbauer/typo3-skills
 
 Fractor rewrites TYPO3 **non-PHP files** toward v14: FlexForms, TypoScript and TSconfig, Fluid
 templates, YAML, XLIFF, Htaccess and (with an extra package) composer.json. PHP belongs to
@@ -319,6 +319,6 @@ Load only the file the current task needs:
   formatting of rewritten XML, TypoScript or YAML must match the project.
 - [Writing custom rules](references/07-writing-custom-rules.md): when no upstream rule covers a
   repeated non-PHP change.
-- [Resources and v14 notes](references/resources-and-v14.md) and [appendix](references/appendix.md):
-  when linking upstream documentation or looking up less common options.
+- [Resources and v14 notes](references/resources-and-v14.md): when linking upstream documentation
+  or looking up less common options.
 - [Credits and attribution](references/credits-and-attribution.md): when citing sources.

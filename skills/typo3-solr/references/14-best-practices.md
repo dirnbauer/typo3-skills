@@ -8,7 +8,7 @@ Continues `typo3-solr` from [full guide](full-guide.md).
 
 - [ ] Correct configset version deployed (`ext_solr_14_0_0`)
 - [ ] Solr JVM memory configured (`SOLR_JAVA_MEM=-Xms512m -Xmx1g`)
-- [ ] Solr NOT publicly accessible (firewall, reverse proxy)
+- [ ] Solr not publicly accessible (firewall, reverse proxy)
 - [ ] Scheduler task "Index Queue Worker" running regularly
 - [ ] Logging disabled in production
 - [ ] Solr data volume backed up
@@ -17,10 +17,10 @@ Continues `typo3-solr` from [full guide](full-guide.md).
 
 ### Security
 
-- Solr must **never** be publicly accessible. Use firewall rules or bind to `127.0.0.1`
+- Keep Solr off public interfaces: firewall rules or bind to `127.0.0.1`
 - Use a reverse proxy (nginx/Apache) with authentication if remote access is needed
 - Monitor [Apache Solr security advisories](https://solr.apache.org/security.html)
-- Keep Tika Server updated (EXT:tika 13.1 requires Apache Tika **3.2.3+** — verify current advisories on Apache Tika / Solr sites)
+- Keep Tika Server updated (EXT:tika 14.0.0 documents Tika 3.2 or newer; this skill pins `apache/tika:3.2.3` as the floor, newest 3.x image 3.3.3.0, verified 2026-10-31 — check current Apache Tika advisories)
 
 ### Performance
 

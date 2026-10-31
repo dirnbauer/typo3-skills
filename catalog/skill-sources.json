@@ -4,9 +4,9 @@
     "skill_name": "architecture-decision-records",
     "description": "Writes and maintains architecture decision records (ADRs) and decision logs: what was decided, why, which alternatives were considered and rejected, and what would make the team revisit it later. Use when the same argument keeps coming back every few months and nobody remembers the rationale, when you need to document a choice between two technologies together with its trade-offs, when a decision has been superseded and the old entry must stay intact rather than be deleted, or when an existing decision log needs auditing, standardizing or validating against a template. Markdown or reStructuredText.",
     "source_owner": "webconsulting",
-    "source_url": "https://github.com/dirnbauer/webconsulting-skills",
+    "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/architecture-decision-records/SKILL.md",
-    "line_count": 91,
+    "line_count": 92,
     "frontmatter_keys": [
       "name",
       "metadata",
@@ -41,9 +41,9 @@
     "skill_name": "legal-impressum",
     "description": "Creates and reviews Austrian Impressum and disclosure content for websites, including ECG, UGB, GewO, MedienG, Offenlegung, and company-form-specific templates. Use when the user mentions Impressum, legal notice, imprint, Austria, Oesterreich, Mediengesetz, Offenlegung, or website operator disclosure.",
     "source_owner": "webconsulting",
-    "source_url": "https://github.com/dirnbauer/webconsulting-skills",
+    "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/legal-impressum/SKILL.md",
-    "line_count": 418,
+    "line_count": 417,
     "frontmatter_keys": [
       "name",
       "description",
@@ -115,9 +115,9 @@
     "skill_name": "security-incident-reporting",
     "description": "Builds security incident reports, DDoS post-mortems, timelines, IoC sections, CVE correlation, severity scoring, and blameless root cause analysis. Use when the user needs an incident report, post-mortem, forensics summary, security timeline, DDoS analysis, SIR, root cause analysis, or communication for a security event.",
     "source_owner": "webconsulting",
-    "source_url": "https://github.com/dirnbauer/webconsulting-skills",
+    "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/security-incident-reporting/SKILL.md",
-    "line_count": 407,
+    "line_count": 401,
     "frontmatter_keys": [
       "name",
       "description",
@@ -167,9 +167,9 @@
     "skill_name": "typo3-accessibility",
     "description": "Writes and fixes accessible markup patterns for TYPO3 v14: skip links, landmark regions, heading structure, keyboard and tab order, visible focus rings and outlines, ARIA for accordions, dropdowns and modals, accessible form labels and error messages, alt text and colour contrast, in Fluid templates, PHP helpers and vanilla JavaScript widgets - plus a manual go-live checklist to verify by hand before launch. Use when a screen reader such as NVDA or VoiceOver does not announce something as expandable, checked or invalid, when a keyboard or focus problem needs the correct markup, or when reviewing template and element code against WCAG 2.2 AA. Companion skill for automated scanning: typo3-wcag22-aa-agentic.",
     "source_owner": "webconsulting",
-    "source_url": "https://github.com/dirnbauer/webconsulting-skills",
+    "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-accessibility/SKILL.md",
-    "line_count": 324,
+    "line_count": 322,
     "frontmatter_keys": [
       "name",
       "description",
@@ -187,7 +187,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-backend-rights/SKILL.md",
-    "line_count": 202,
+    "line_count": 208,
     "frontmatter_keys": [
       "name",
       "metadata",
@@ -202,9 +202,9 @@
     "skill_name": "typo3-batch",
     "description": "Rolls out one repeated change over multiple TYPO3 extensions in a monorepo or packages/ directory. Use when inventorying which packages still call a removed API such as HashService and fixing them together, applying a shared codemod, or splitting a mass refactor into reviewable batches. Owns cross-package inventory, ordering and per-batch verification, not explaining individual Core APIs. Requires more than one extension; a single-package mechanical PHP rewrite belongs to typo3-rector.",
     "source_owner": "webconsulting",
-    "source_url": "https://github.com/dirnbauer/webconsulting-skills",
+    "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-batch/SKILL.md",
-    "line_count": 354,
+    "line_count": 342,
     "frontmatter_keys": [
       "name",
       "description",
@@ -254,9 +254,9 @@
     "skill_name": "typo3-content-blocks",
     "description": "Defines what a TYPO3 block is: its field definitions in config.yaml, and how fields nest into collections or repeatable children. Covers Content Blocks for elements, records, page types and file types as the single source of truth. Use when creating a new block, writing or debugging config.yaml and make:content-block output, migrating Mask or legacy fluid_styled_content while preserving existing records, fixing a block preview that renders blank in the backend, or working with IRRE, labels and friendsoftypo3/content-blocks behaviour. For visual design of blocks: typo3-shadcn-content-elements.",
     "source_owner": "webconsulting",
-    "source_url": "https://github.com/dirnbauer/webconsulting-skills",
+    "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-content-blocks/SKILL.md",
-    "line_count": 277,
+    "line_count": 270,
     "frontmatter_keys": [
       "name",
       "description",
@@ -289,7 +289,7 @@
     "skill_name": "typo3-datahandler",
     "description": "Creates, updates, moves, localizes and deletes TYPO3 records programmatically from PHP - import scripts, CLI commands, data migrations - using DataHandler datamaps and cmdmaps. Use when writing hundreds of pages or records from JSON, CSV or another system and the parent references must stay intact, when the reference index goes stale after moving records, when imported records show up owned by nobody because the backend user context is wrong, when localizing an existing element into another language from code, or when extending record operations with hooks and PSR-14 events. Workspace-aware.",
     "source_owner": "webconsulting",
-    "source_url": "https://github.com/dirnbauer/webconsulting-skills",
+    "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-datahandler/SKILL.md",
     "line_count": 344,
     "frontmatter_keys": [
@@ -326,7 +326,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-design-system-page/SKILL.md",
-    "line_count": 155,
+    "line_count": 162,
     "frontmatter_keys": [
       "name",
       "metadata",
@@ -379,7 +379,7 @@
     "skill_name": "typo3-fractor",
     "description": "Automatically rewrites TYPO3 non-PHP files with Fractor: outdated TypoScript condition syntax, FlexForm XML migrations to v14, deprecated ViewHelper syntax in Fluid .html templates, YAML, XLIFF and Htaccess. Use when a tool should fix configuration or template files, or Rector left the .typoscript, .yaml and .html upgrade work untouched. Owns mechanical transformations of these formats, not general TypoScript authoring or PHP changes.",
     "source_owner": "webconsulting",
-    "source_url": "https://github.com/dirnbauer/webconsulting-skills",
+    "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-fractor/SKILL.md",
     "line_count": 325,
     "frontmatter_keys": [
@@ -398,9 +398,9 @@
     "skill_name": "typo3-icon14",
     "description": "Designs and migrates TYPO3 extension icons to the v14 line-art style, including source SVG cleanup, light/dark behavior, IconRegistry naming, backend module icons, and verification. Use when the user asks for TYPO3 v14 icons, backend module icon migration, extension icon modernization, SVG icon rules, or icon registration.",
     "source_owner": "webconsulting",
-    "source_url": "https://github.com/dirnbauer/webconsulting-skills",
+    "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-icon14/SKILL.md",
-    "line_count": 284,
+    "line_count": 285,
     "frontmatter_keys": [
       "name",
       "description",
@@ -428,7 +428,10 @@
       "license"
     ],
     "pass_1": [],
-    "pass_2": [],
+    "pass_2": [
+      "expected upstream source is not explicitly attributed inside SKILL.md",
+      "repo-level source override exists but the skill body does not mention it"
+    ],
     "pass_3": []
   },
   {
@@ -438,7 +441,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-initial-release/SKILL.md",
-    "line_count": 184,
+    "line_count": 186,
     "frontmatter_keys": [
       "name",
       "description",
@@ -446,7 +449,10 @@
       "license"
     ],
     "pass_1": [],
-    "pass_2": [],
+    "pass_2": [
+      "expected upstream source is not explicitly attributed inside SKILL.md",
+      "repo-level source override exists but the skill body does not mention it"
+    ],
     "pass_3": []
   },
   {
@@ -474,7 +480,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-news-tags/SKILL.md",
-    "line_count": 113,
+    "line_count": 116,
     "frontmatter_keys": [
       "name",
       "description",
@@ -483,7 +489,10 @@
       "license"
     ],
     "pass_1": [],
-    "pass_2": [],
+    "pass_2": [
+      "expected upstream source is not explicitly attributed inside SKILL.md",
+      "repo-level source override exists but the skill body does not mention it"
+    ],
     "pass_3": []
   },
   {
@@ -493,7 +502,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-playwright/SKILL.md",
-    "line_count": 114,
+    "line_count": 115,
     "frontmatter_keys": [
       "name",
       "description",
@@ -510,7 +519,7 @@
     "source_owner": "webconsulting",
     "source_url": null,
     "file_path": "skills/typo3-powermail/SKILL.md",
-    "line_count": 107,
+    "line_count": 114,
     "frontmatter_keys": [
       "name",
       "description",
@@ -544,9 +553,9 @@
     "skill_name": "typo3-records-list-types",
     "description": "Changes how records are presented in the TYPO3 v14 Records module: cards with thumbnails instead of a plain table of rows, a timeline, a board with columns, or grid, compact and teaser views - configured per record type through TSconfig with Fluid templates, icons and accessibility. Use when editors want to see something other than a table, when one record type needs its own layout in the backend, or when building custom Records module views.",
     "source_owner": "webconsulting",
-    "source_url": "https://github.com/dirnbauer/webconsulting-skills",
+    "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-records-list-types/SKILL.md",
-    "line_count": 337,
+    "line_count": 267,
     "frontmatter_keys": [
       "name",
       "description",
@@ -562,9 +571,9 @@
     "skill_name": "typo3-rector",
     "description": "Automatically fixes deprecated PHP calls in TYPO3 code by running Rector: configuration, dry run, review the diff, apply, second dry run. Covers rule sets for the v12 or v13 to v14 path, ViewFactory, Extbase responses, PSR-14 events, backend modules, TCA and the manual follow-ups the tool cannot do. Use when the user says run Rector, automatically fix the deprecated calls in this extension, automate the PHP migration, which Rector sets do I need, or asks how to review a large Rector diff. Scope: PHP source files only, and one extension at a time.",
     "source_owner": "webconsulting",
-    "source_url": "https://github.com/dirnbauer/webconsulting-skills",
+    "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-rector/SKILL.md",
-    "line_count": 325,
+    "line_count": 327,
     "frontmatter_keys": [
       "name",
       "description",
@@ -598,9 +607,9 @@
     "skill_name": "typo3-security",
     "description": "Hardens TYPO3 v14 installations and extensions: secure configuration, trusted hosts, file permissions, locking down the Install Tool, backend user accounts and two-factor authentication, CSP, and safe database access. Use when user input is concatenated straight into an SQL query and should be written with QueryBuilder instead, when output needs escaping against XSS, when CSRF checks are missing, when the Install Tool may be reachable from outside, or when asking what must be locked down before an installation goes live.",
     "source_owner": "webconsulting",
-    "source_url": "https://github.com/dirnbauer/webconsulting-skills",
+    "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-security/SKILL.md",
-    "line_count": 457,
+    "line_count": 442,
     "frontmatter_keys": [
       "name",
       "description",
@@ -617,7 +626,7 @@
     "skill_name": "typo3-seo",
     "description": "Makes TYPO3 pages show up correctly in search engines like Google through XML sitemaps, canonical URLs, hreflang across languages, meta tags, Open Graph, social previews, and robots rules. Use when the wrong pages are indexed, language versions get mixed up, the sitemap is empty or missing pages, a staging site must stay out of the index, or social cards are wrong. Page-type schema.org and JSON-LD implementation belongs to typo3-structured-data; on-site search belongs to typo3-solr.",
     "source_owner": "webconsulting",
-    "source_url": "https://github.com/dirnbauer/webconsulting-skills",
+    "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-seo/SKILL.md",
     "line_count": 320,
     "frontmatter_keys": [
@@ -638,7 +647,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-shadcn-content-elements/SKILL.md",
-    "line_count": 153,
+    "line_count": 152,
     "frontmatter_keys": [
       "name",
       "description",
@@ -647,7 +656,10 @@
       "license"
     ],
     "pass_1": [],
-    "pass_2": [],
+    "pass_2": [
+      "expected upstream source is not explicitly attributed inside SKILL.md",
+      "repo-level source override exists but the skill body does not mention it"
+    ],
     "pass_3": []
   },
   {
@@ -691,9 +703,9 @@
     "skill_name": "typo3-solr",
     "description": "Runs and debugs the site's own search with Apache Solr in TYPO3 (EXT:solr): what gets indexed and why results come back empty after adding a new page type, facets for category or year on the results page, autocomplete and suggest, PDF and file indexing through Tika, and an indexing queue that is stuck. Use when searching the site returns nothing or the wrong things, or when configuring configsets, custom indexers, routing, solrfal or vector search. Visibility in external search engines is typo3-seo.",
     "source_owner": "webconsulting",
-    "source_url": "https://github.com/dirnbauer/webconsulting-skills",
+    "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-solr/SKILL.md",
-    "line_count": 369,
+    "line_count": 390,
     "frontmatter_keys": [
       "name",
       "description",
@@ -712,7 +724,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-structured-data/SKILL.md",
-    "line_count": 145,
+    "line_count": 146,
     "frontmatter_keys": [
       "name",
       "description",
@@ -746,7 +758,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-translations/SKILL.md",
-    "line_count": 362,
+    "line_count": 366,
     "frontmatter_keys": [
       "name",
       "description",
@@ -755,7 +767,10 @@
       "license"
     ],
     "pass_1": [],
-    "pass_2": [],
+    "pass_2": [
+      "expected upstream source is not explicitly attributed inside SKILL.md",
+      "repo-level source override exists but the skill body does not mention it"
+    ],
     "pass_3": []
   },
   {
@@ -783,7 +798,7 @@
     "source_owner": "webconsulting",
     "source_url": null,
     "file_path": "skills/typo3-upgrade-baseline/SKILL.md",
-    "line_count": 97,
+    "line_count": 99,
     "frontmatter_keys": [
       "name",
       "description",
@@ -802,7 +817,7 @@
     "source_owner": "webconsulting",
     "source_url": null,
     "file_path": "skills/typo3-upgrade-closure/SKILL.md",
-    "line_count": 140,
+    "line_count": 143,
     "frontmatter_keys": [
       "name",
       "description",
@@ -876,7 +891,7 @@
     "source_owner": "webconsulting",
     "source_url": null,
     "file_path": "skills/typo3-upgrade-retrospective/SKILL.md",
-    "line_count": 92,
+    "line_count": 93,
     "frontmatter_keys": [
       "name",
       "description",
@@ -895,7 +910,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-upgrade-run/SKILL.md",
-    "line_count": 348,
+    "line_count": 396,
     "frontmatter_keys": [
       "name",
       "description",
@@ -910,9 +925,9 @@
     "skill_name": "typo3-v14-reference",
     "description": "Shows how to write TYPO3 v14 code as a v14 API reference. Covers controllers, building a view with ViewFactory, Fluid templates, PSR-14 events that replaced old hooks, backend modules, TCA, QueryBuilder queries without SQL injection, CLI commands and tests. Use when the user asks what a v14 API looks like, which event replaced a hook, how to build or write a specific piece of v14 code, or which class, interface or namespace to use. It does not run upgrades or migrations: for a whole project or site upgrade use typo3-upgrade-run, which owns the version constraint, the PHP target and the process.",
     "source_owner": "webconsulting",
-    "source_url": "https://github.com/dirnbauer/webconsulting-skills",
+    "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-v14-reference/SKILL.md",
-    "line_count": 392,
+    "line_count": 396,
     "frontmatter_keys": [
       "name",
       "description",
@@ -931,7 +946,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-visual-editor/SKILL.md",
-    "line_count": 382,
+    "line_count": 381,
     "frontmatter_keys": [
       "name",
       "description",
@@ -939,7 +954,10 @@
       "license"
     ],
     "pass_1": [],
-    "pass_2": [],
+    "pass_2": [
+      "expected upstream source is not explicitly attributed inside SKILL.md",
+      "repo-level source override exists but the skill body does not mention it"
+    ],
     "pass_3": []
   },
   {
@@ -965,7 +983,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-wcag22-aa-agentic/SKILL.md",
-    "line_count": 382,
+    "line_count": 384,
     "frontmatter_keys": [
       "name",
       "description",
@@ -974,7 +992,10 @@
       "metadata"
     ],
     "pass_1": [],
-    "pass_2": [],
+    "pass_2": [
+      "expected upstream source is not explicitly attributed inside SKILL.md",
+      "repo-level source override exists but the skill body does not mention it"
+    ],
     "pass_3": []
   },
   {
@@ -982,7 +1003,7 @@
     "skill_name": "typo3-webcomponents",
     "description": "Builds, reviews, or migrates TYPO3 v14 backend Web Components with Lit, ES module import maps, AssetCollector/f:asset.module, backend modules, FormEngine/Form Editor integrations, AJAX routes, and reusable TYPO3 backend components. Use whenever the user mentions TYPO3 backend JavaScript, Web Components, Lit, LitElement, custom elements, @typo3/* modules, JavaScriptModules.php, backend module UI, Form Editor stage components, Camp Vienna Lit examples, component performance, or whether TYPO3 backend Web Components should be used in the frontend.",
     "source_owner": "webconsulting",
-    "source_url": "https://github.com/dirnbauer/webconsulting-skills",
+    "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-webcomponents/SKILL.md",
     "line_count": 84,
     "frontmatter_keys": [
@@ -1017,7 +1038,7 @@
     "skill_name": "typo3-workspaces",
     "description": "Lets TYPO3 editors prepare and hold finished content before it goes live, then stage, review and publish it. Use when finished work must wait for a launch, when previewing unpublished work returns the already-published page, when publishing loses file references, when your own code must query records so drafts resolve correctly, or when working with workspace overlays, versioning, staging, permissions, review workflows and workspace-specific bugs.",
     "source_owner": "webconsulting",
-    "source_url": "https://github.com/dirnbauer/webconsulting-skills",
+    "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-workspaces/SKILL.md",
     "line_count": 364,
     "frontmatter_keys": [
@@ -1068,9 +1089,9 @@
     "skill_name": "webconsulting-branding",
     "description": "Applies the current webconsulting.at design system: borderless square surfaces, Hanken Grotesk typography, teal/ink color tokens, invoice-led information hierarchy, a header-only brand notice, logo-first project icons, MDX patterns, dark mode, accessibility, and shadcn/ui integration. Use when building or reviewing webconsulting.at pages, internal tools, tracker/GitLab themes, project catalogs, TYPO3 templates, brand assets, or visual consistency.",
     "source_owner": "webconsulting",
-    "source_url": "https://github.com/dirnbauer/webconsulting-skills",
+    "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/webconsulting-branding/SKILL.md",
-    "line_count": 418,
+    "line_count": 416,
     "frontmatter_keys": [
       "name",
       "description",
@@ -1087,9 +1108,9 @@
     "skill_name": "webconsulting-create-documentation",
     "description": "Creates product documentation systems with help pages, AI-generated screenshots, Remotion product tours, GSAP animation, narration scripts, TTS, background music, README visuals, and deployment steps. Use when the user asks for product docs, help pages, documentation videos, narrated tours, screenshots, README media, Remotion docs workflows, or webconsulting-style documentation assets.",
     "source_owner": "webconsulting",
-    "source_url": "https://github.com/dirnbauer/webconsulting-skills",
+    "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/webconsulting-create-documentation/SKILL.md",
-    "line_count": 298,
+    "line_count": 302,
     "frontmatter_keys": [
       "name",
       "description",

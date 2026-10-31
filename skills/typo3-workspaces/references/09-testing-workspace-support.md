@@ -2,11 +2,11 @@
 
 ## Contents
 
-- [9. Testing Workspace Support](#9-testing-workspace-support) — line 5
-  - [Prerequisites: Install Testing Framework](#prerequisites-install-testing-framework) — line 7
-  - [Functional Test Setup](#functional-test-setup) — line 94
-  - [CSV Fixture File](#csv-fixture-file) — line 270
-  - [Run Tests](#run-tests) — line 293
+- [9. Testing Workspace Support](#9-testing-workspace-support)
+  - [Prerequisites: Install Testing Framework](#prerequisites-install-testing-framework)
+  - [Functional Test Setup](#functional-test-setup)
+  - [CSV Fixture File](#csv-fixture-file)
+  - [Run Tests](#run-tests)
 
 Continues `typo3-workspaces` from [full guide](full-guide.md).
 
@@ -73,8 +73,7 @@ your-extension/
 │       ├── Fixtures/
 │       │   └── WorkspaceTestData.csv ← Test data
 │       └── WorkspaceAwareTest.php    ← Test class
-├── composer.json
-└── ext_emconf.php
+└── composer.json
 ```
 
 **Step 4: Ensure composer.json has autoload-dev**

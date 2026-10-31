@@ -10,4 +10,3 @@ Read only the section that matches the current task. These files continue the ma
 - [9. Common Rector Rules](09-common-rector-rules.md)
 - [10. Resources](10-resources.md)
 - [v14-only Rector targets](v14-only-rector-targets.md)
-- [Credits & Attribution](credits-and-attribution.md)

@@ -123,5 +123,5 @@ $workspaceAccess = $GLOBALS['BE_USER']->checkWorkspace($workspaceId);
 | Publish does nothing | Content not in "Ready to publish" stage | Advance content through stages, or disable stage restriction |
 | File changed in all workspaces | Files are not versioned (by design) | Upload new files with unique names instead of overwriting |
 | Translation missing in workspace | Language not allowed in workspace | Set `options.workspaces.allowed_languages.<wsId>` TSconfig |
-| Auto-publish not working | Scheduler task not configured or not running | Create "Workspaces auto-publication" task, verify cron job |
+| Auto-publish not working | Scheduler task not configured or not running | Create an "Execute console command" task running `workspace:autopublish`, verify cron job |
 | Workspace selector not visible | User has no workspace access | Assign user/group as workspace member or owner |

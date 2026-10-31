@@ -37,8 +37,9 @@ tasks only after proving what Deployer 8 already supplies.
 
 The Composer package is `spooner/deployer-information`; the TYPO3 extension key is
 `deployer_information`. Verify current metadata at execution time rather than freezing this guide
-to a release; apply [latest stable by default](latest-version-policy.md). Historical 2.0.1 metadata
-supports TYPO3 13.4/14.3 and PHP ^8.2; 2.0.0 required PHP ^8.4. Neither example caps the selected major.
+to a release; apply [latest stable by default](latest-version-policy.md). The newest release is 2.0.0
+(2026-05-13): TYPO3 `^13.4 || ^14.3`, PHP `^8.4` (Packagist, verified 2026-10-31); 1.5.0 was the last
+release for TYPO3 13 and older on PHP 8.0+. Neither constraint caps the selected major.
 Keep the project's PHP 8.4 standard and install after reaching the compatible rung:
 
 - [TYPO3 Extension Repository](https://extensions.typo3.org/extension/deployer_information)

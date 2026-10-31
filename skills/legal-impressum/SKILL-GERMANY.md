@@ -4,12 +4,12 @@
 
 > **Jurisdiction:** Germany (Deutschland)
 > 
-> **Related Skills:**
+> **Sub-guides:**
 > - [SKILL.md](./SKILL.md) - Austrian requirements (main skill)
 > - [SKILL-EU.md](./SKILL-EU.md) - EU-wide requirements
 > - [SKILL-WORLD.md](./SKILL-WORLD.md) - International requirements
 
-This skill covers German Impressum (Anbieterkennzeichnung) requirements for websites and telemedien.
+This sub-guide covers German Impressum (Anbieterkennzeichnung) requirements for websites and telemedien.
 
 ---
 
@@ -95,13 +95,13 @@ Additional requirement for websites with journalistic-editorial content:
 - HR = Handelsregister (commercial register)
 - PR = Partnerschaftsregister
 - GR = Genossenschaftsregister
+- VR = Vereinsregister
 
 Under [§ 5(1) Nr. 1 DDG](https://www.gesetze-im-internet.de/ddg/__5.html), capital
 disclosure is conditional: if capital is mentioned, state the relevant capital and, where
 cash contributions remain unpaid, their total outstanding amount. Do not use formation
 minimums as invented company data. Templates below omit optional capital statements;
 verify actual register data and other applicable disclosure duties before publication.
-- VR = Vereinsregister
 
 ---
 
@@ -417,7 +417,7 @@ Musterstraße 1
 |--------|---------|---------|
 | Primary law | § 5 ECG | § 5 DDG |
 | Commercial register | Firmenbuch | Handelsregister |
-| Mini-GmbH | N/A | UG (haftungsbeschränkt) |
+| Mini-GmbH | FlexCo (FlexKapG) | UG (haftungsbeschränkt) |
 | Media disclosure | § 25 MedienG | § 18 MStV |
 | Editorial direction | "Grundlegende Richtung" | "Verantwortlicher" |
 | Regulated professions | Berufsrecht link | Berufsrechtliche Regelungen |
@@ -443,7 +443,7 @@ Musterstraße 1
 - [ ] Phone number or contact form
 - [ ] Register + registration number (if applicable)
 - [ ] VAT ID (USt-IdNr.) if applicable
-- [ ] Share capital (GmbH, UG, AG)
+- [ ] Share capital and outstanding contributions (only if capital is mentioned, § 5 Abs 1 Nr 1 DDG)
 - [ ] Representatives (Geschäftsführer, Vorstand)
 - [ ] Supervisory authority (if regulated)
 - [ ] Professional regulations (if regulated profession)

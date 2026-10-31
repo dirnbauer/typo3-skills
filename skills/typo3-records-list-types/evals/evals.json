@@ -8,9 +8,9 @@
       "id": "verify-release-constraints-and-accessibility",
       "kind": "behaviour",
       "status": "proposed",
-      "prompt": "Can we install the newest Records List Types package on TYPO314.0 with PHP8.3 and claim that its drag-and-drop board is fully WCAG compliant?",
+      "prompt": "Can we install the newest Records List Types package on TYPO3 14.0 with PHP 8.3 and claim that its drag-and-drop board is fully WCAG compliant?",
       "assertions": [
-        "Checks the selected release's actual composer.json, not the old blanket v14.0 and PHP8.3 claim.",
+        "Checks the selected release's actual composer.json, not the old blanket v14.0 and PHP 8.3 claim.",
         "Distinguishes implemented keyboard/ARIA patterns from an evidenced WCAG conformance assessment.",
         "Requires installed-version keyboard, focus and assistive-technology checks before making an accessibility claim."
       ]

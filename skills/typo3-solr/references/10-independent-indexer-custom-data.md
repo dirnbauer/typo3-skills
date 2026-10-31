@@ -33,7 +33,11 @@ final class ExternalDataIndexer
 
     public function index(array $rows, int $rootPageId = 1, int $language = 0): void
     {
+        // getSiteByRootPageId() returns ?Site: null when no Solr-enabled site has this root page
         $site = $this->siteRepository->getSiteByRootPageId($rootPageId);
+        if ($site === null) {
+            throw new \RuntimeException('No Solr site for root page ' . $rootPageId, 1761900000);
+        }
         $connection = $this->connectionManager->getConnectionByPageId($rootPageId, $language);
         $documents = [];
 
