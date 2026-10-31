@@ -2,27 +2,27 @@
 
 ## Contents
 
-- [12.0 How to Get Debug Data](#120-how-to-get-debug-data) — line 5
-  - [Layer 1: Quick checks (zero configuration)](#layer-1-quick-checks-zero-configuration) — line 34
-  - [Layer 2: Enable TypoScript debug logging](#layer-2-enable-typoscript-debug-logging) — line 53
-  - [Layer 3: Solr debugQuery (score explanation)](#layer-3-solr-debugquery-score-explanation) — line 112
-  - [Layer 4: EXT:solrdebugtools (funding extension)](#layer-4-extsolrdebugtools-funding-extension) — line 155
-  - [Layer 5: CLI curl to Solr API](#layer-5-cli-curl-to-solr-api) — line 171
-  - [Layer 6: Database-level inspection](#layer-6-database-level-inspection) — line 203
-  - [Putting it all together: Debug workflow](#putting-it-all-together-debug-workflow) — line 235
-- [12.1 Where to Start: Diagnostic Flowchart](#121-where-to-start-diagnostic-flowchart) — line 253
-- [12.2 Connection Problems](#122-connection-problems) — line 279
-- [12.3 Indexing Problems](#123-indexing-problems) — line 296
-  - [Nothing in Index Queue](#nothing-in-index-queue) — line 298
-  - [Items in Queue but Not Indexed](#items-in-queue-but-not-indexed) — line 305
-  - [Items Indexed but Wrong/Missing Content](#items-indexed-but-wrongmissing-content) — line 318
-  - [Re-indexing](#re-indexing) — line 328
-- [12.4 Search / Query Problems](#124-search--query-problems) — line 334
-  - [No Results in Frontend](#no-results-in-frontend) — line 336
-  - [Wrong Results / Bad Relevance](#wrong-results--bad-relevance) — line 354
-  - [Facets Not Showing](#facets-not-showing) — line 366
-- [12.5 Logging Deep Dive](#125-logging-deep-dive) — line 373
-- [12.6 Solr Admin UI as Debugging Tool](#126-solr-admin-ui-as-debugging-tool) — line 416
+- [12.0 How to Get Debug Data](#120-how-to-get-debug-data)
+  - [Layer 1: Quick checks (zero configuration)](#layer-1-quick-checks-zero-configuration)
+  - [Layer 2: Enable TypoScript debug logging](#layer-2-enable-typoscript-debug-logging)
+  - [Layer 3: Solr debugQuery (score explanation)](#layer-3-solr-debugquery-score-explanation)
+  - [Layer 4: EXT:solrdebugtools (funding extension)](#layer-4-extsolrdebugtools-funding-extension)
+  - [Layer 5: CLI curl to Solr API](#layer-5-cli-curl-to-solr-api)
+  - [Layer 6: Database-level inspection](#layer-6-database-level-inspection)
+  - [Putting it all together: Debug workflow](#putting-it-all-together-debug-workflow)
+- [12.1 Where to Start: Diagnostic Flowchart](#121-where-to-start-diagnostic-flowchart)
+- [12.2 Connection Problems](#122-connection-problems)
+- [12.3 Indexing Problems](#123-indexing-problems)
+  - [Nothing in Index Queue](#nothing-in-index-queue)
+  - [Items in Queue but Not Indexed](#items-in-queue-but-not-indexed)
+  - [Items Indexed but Wrong/Missing Content](#items-indexed-but-wrongmissing-content)
+  - [Re-indexing](#re-indexing)
+- [12.4 Search / Query Problems](#124-search--query-problems)
+  - [No Results in Frontend](#no-results-in-frontend)
+  - [Wrong Results / Bad Relevance](#wrong-results--bad-relevance)
+  - [Facets Not Showing](#facets-not-showing)
+- [12.5 Logging Deep Dive](#125-logging-deep-dive)
+- [12.6 Solr Admin UI as Debugging Tool](#126-solr-admin-ui-as-debugging-tool)
 
 Continues `typo3-solr` from [full guide](full-guide.md).
 
@@ -61,7 +61,7 @@ graph TD
 - Shows connection status, configset match, core availability per language
 - If anything is red/yellow here, fix it before debugging further
 
-**EXT:solr backend module** (Web -> Search):
+**EXT:solr backend module** (top-level "Search" module, `searchbackend` in `Configuration/Backend/Modules.php`):
 - **Overview tab**: connection status per site and language
 - **Index Queue tab**: record counts by type, error counts, last indexed timestamp
 - **Index Fields tab**: all fields in the Solr schema with types and stored/indexed flags
@@ -253,7 +253,8 @@ WHERE indexed > 0;
 SELECT uid, title, slug
 FROM pages
 WHERE uid = 1;
--- Then check: the site hash comes from the site identifier in config.yaml
+-- Then check: the site hash is sha1(applicationContext . siteIdentifier . encryptionKey . 'tx_solr')
+-- (SiteHashService, 14.0.2); the domain is not part of it
 ```
 
 #### Putting it all together: Debug workflow
@@ -324,7 +325,7 @@ graph TD
 - **TypoScript not loaded:** Check the Template module on the root page. EXT:solr static templates must be included.
 - **Queue not initialized:** Backend module -> "Index Queue" tab -> select record types -> click "Queue selected content"
 - **Missing config:** `plugin.tx_solr.index.queue.[table] = 1` must exist for each table
-- **Records outside siteroot:** Set `additionalPageIds` and enable "tracking of records outside siteroot" in Extension Settings
+- **Records outside siteroot:** Set `additionalPageIds` and enable "Enable/Disable record tracking outside siteroot" in Extension Settings
 
 #### Items in Queue but Not Indexed
 
@@ -336,7 +337,6 @@ graph TD
   WHERE errors != ''
   GROUP BY item_type, errors;
   ```
-- **Forced webroot:** If TYPO3 cannot auto-detect the web root (CLI context), configure "Forced webroot" in the scheduler task settings
 - **Memory:** Large content can exceed PHP `memory_limit`. Increase for the scheduler process.
 
 #### Items Indexed but Wrong/Missing Content

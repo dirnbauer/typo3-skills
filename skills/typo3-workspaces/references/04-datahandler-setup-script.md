@@ -82,8 +82,9 @@ final class SetupWorkspaceCommand extends Command
             // Stages: default stages (Editing, Ready to publish) are always available
             // Publish access: 0 = no restriction, 1 = only publish-stage content, 2 = only owners can publish
             'publish_access' => 0,
-            // Allow editing of non-versionable records (live edit)
-            // Field name matches Core TCA / DB column (historical spelling "notificaton")
+            // Allow editing of non-versionable records (live edit); 0 keeps every change staged
+            'live_edit' => 0,
+            // Let editors change their own notification settings; field name matches the Core TCA / DB column (historical spelling "notificaton")
             'edit_allow_notificaton_settings' => 0,
         ];
 
@@ -103,7 +104,7 @@ final class SetupWorkspaceCommand extends Command
         $io->listing([
             'Assign backend users to the "Workspace Editors" group',
             'Configure DB mounts and file mounts on the group',
-            'Set up Scheduler tasks: "Workspaces auto-publication" + "Workspaces cleanup preview links"',
+            'Set up two "Execute console command" Scheduler tasks: workspace:autopublish and cleanup:previewlinks',
             'Configure TSconfig: options.workspaces.previewLinkTTLHours = 48',
             'Test: switch to the workspace in the backend sidebar and edit a page',
         ]);
@@ -125,9 +126,9 @@ bin/typo3 workspace:setup
 
 ### SQL Setup (LOCAL DDEV ONLY)
 
-> **WARNING: These SQL queries are for LOCAL DDEV development environments ONLY.**
-> **NEVER run raw SQL on production.** Use the DataHandler CLI command above instead.
-> Raw SQL bypasses DataHandler, reference index, history, and cache clearing.
+> These SQL queries are for local DDEV development environments only. Do not run raw SQL on
+> production; use the DataHandler CLI command above instead. Raw SQL bypasses DataHandler, the
+> reference index, history and cache clearing.
 
 ```sql
 -- ============================================================

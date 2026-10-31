@@ -14,7 +14,7 @@ Continues `typo3-solr` from [full guide](full-guide.md).
 
 ### EXT:solr v14 Compatibility **[v14 only]**
 
-The published [Version Matrix](https://docs.typo3.org/p/apache-solr-for-typo3/solr/main/en-us/Appendix/VersionMatrix.html) lists **EXT:solr 14.0** for **TYPO3 14.3**. Stable **14.0.1** was published on 2026-09-03; prefer compatible stable constraints instead of `@beta` or `dev-main`. Re-check [Packagist](https://packagist.org/packages/apache-solr-for-typo3/solr) and [GitHub releases](https://github.com/TYPO3-Solr/ext-solr/releases) at execution time and verify server/configset compatibility separately.
+The published [Version Matrix](https://docs.typo3.org/p/apache-solr-for-typo3/solr/main/en-us/Appendix/VersionMatrix.html) lists **EXT:solr 14.0** for **TYPO3 14.3**. Stable **14.0.2** was published on 2026-09-16 (verified 2026-10-31); prefer compatible stable constraints instead of `@beta` or `dev-main`. Re-check [Packagist](https://packagist.org/packages/apache-solr-for-typo3/solr) and [GitHub releases](https://github.com/TYPO3-Solr/ext-solr/releases) at execution time and verify server/configset compatibility separately.
 
 ### Fluid 5.0 in Search Templates **[v14 only]**
 

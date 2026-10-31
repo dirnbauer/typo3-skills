@@ -46,7 +46,7 @@ UPDATE tx_solr_indexqueue_item SET errors = '' WHERE errors != '';
 | Queue items never indexed | Scheduler task not running | Create "Index Queue Worker" task |
 | Items in queue with errors | Indexing failure (memory, URL) | Check `errors` column in DB |
 | Facets not visible | `faceting = 0` or empty field | Enable faceting, check field has values |
-| Suggest not working | `suggest = 0` or jQuery missing | Enable suggest, check JS includes |
+| Suggest not working | `suggest = 0`, suggest static template not included, or `suggest_controller.js` not loaded | Enable suggest, check JS includes |
 | Wrong content in results | Field mapping incorrect | Fix TypoScript `fields` config |
 | Access-restricted pages missing | `linkAccessRestrictedPages` not set | Add `config.typolinkLinkAccessRestrictedPages = 1` |
 | URL generation fails for records | `detailPid` not configured | Set the correct detail page ID |

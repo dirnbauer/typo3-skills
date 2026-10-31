@@ -5,7 +5,7 @@ a11y_report:
     A11Y_REPORT_ONLY: "1"
   script:
     - npm ci
-    - npx playwright install chromium
+    - npx playwright install --with-deps chromium
     - cp .a11y/a11y.config.example.yml .a11y/a11y.config.yml
     - npm run a11y:all
   artifacts:
@@ -25,7 +25,7 @@ a11y_report:
 #   stage: test
 #   script:
 #     - npm ci
-#     - npx playwright install chromium
+#     - npx playwright install --with-deps chromium
 #     - npm run a11y:discover
 #     - npm run a11y:templates
 #     - npm run a11y:test

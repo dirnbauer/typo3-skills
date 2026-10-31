@@ -4,12 +4,12 @@
 
 > **Jurisdiction:** Worldwide (non-EU focus)
 > 
-> **Related Skills:**
+> **Sub-guides:**
 > - [SKILL.md](./SKILL.md) - Austrian requirements (main skill)
 > - [SKILL-GERMANY.md](./SKILL-GERMANY.md) - German requirements
 > - [SKILL-EU.md](./SKILL-EU.md) - EU-wide requirements
 
-This skill covers legal notice requirements for websites outside the EU, including UK (post-Brexit), Switzerland, USA, and international best practices.
+This sub-guide covers legal notice requirements for websites outside the EU, including UK (post-Brexit), Switzerland, USA, and international best practices.
 
 ---
 

@@ -9,7 +9,7 @@ license: "MIT / CC-BY-SA-4.0"
 ---
 # TYPO3 Records List Types
 
-> Source: https://github.com/dirnbauer/webconsulting-skills
+> Source: https://github.com/dirnbauer/typo3-skills
 
 Extension key `records_list_types`, Composer package `webconsulting/records-list-types`, source
 https://github.com/dirnbauer/typo3-records-list-types. The skill's `metadata.version` versions this
@@ -240,82 +240,12 @@ Use TYPO3 CSS variables for automatic dark mode:
 }
 ```
 
-> **Full documentation**: See [SKILL-CUSTOM-VIEWS.md](SKILL-CUSTOM-VIEWS.md) for complete reference including template variables, real-world examples, asset loading, PSR-14 registration, and page-scoped views.
+Read [SKILL-CUSTOM-VIEWS.md](SKILL-CUSTOM-VIEWS.md) for the rest: the full view-type option
+table, template variables, reusing the built-in `CompactView`/`TeaserView` templates with fixed
+columns, page-scoped views, column resolution (`columnsFromTCA` vs `displayColumns`, resolved by
+`RecordDisplayColumnResolver`), asset loading, worked examples and PSR-14 registration.
 
-### Reuse Built-in Templates
-
-No new template needed -- reuse existing ones with custom columns:
-
-```tsconfig
-# Address book using CompactView with fixed columns
-mod.web_list.viewMode.types.addressbook {
-    label = Address Book
-    icon = actions-user
-    template = CompactView
-    displayColumns = name,email,phone,company,city
-    columnsFromTCA = 0
-    itemsPerPage = 500
-}
-```
-
-### Page-Scoped Views
-
-Restrict views to specific pages:
-
-```tsconfig
-[traverse(page, "uid") == 42]
-    mod.web_list.viewMode {
-        allowed = list,timeline
-        default = timeline
-    }
-[END]
-```
-
-## 9. Column Display
-
-Two modes control which fields appear:
-
-| Mode | Setting | Behavior |
-|------|---------|----------|
-| **Editor-controlled** | `columnsFromTCA = 1` | Respects editor's "Show columns" selection |
-| **Fixed layout** | `columnsFromTCA = 0` | Uses `displayColumns` list exactly |
-
-### `columnsFromTCA = 1` Resolution Order
-
-1. **Editor's "Show columns" selection** (stored per-user per-table)
-2. **This extension’s own TSconfig / template resolution** — not Core `mod.web_list.table.<table>.showFields` (that path is not a documented Core column picker). See extension docs and `GridConfigurationService` behaviour for your release.
-3. **TCA `ctrl.label` and sensible text/date fallbacks** (see “Special Column Names” below) — TYPO3 v14 removed `ctrl.searchFields`; backend search now auto-includes suitable fields and can be tuned per-column via `searchable`, which is unrelated to this list display.
-4. **Label field only** (final fallback)
-
-### Special Column Names
-
-| Name | Resolves to |
-|------|-------------|
-| `label` | TCA `ctrl.label` field (record title) |
-| `datetime` | First date field (`datetime`, `date`, `starttime`, `crdate`) |
-| `teaser` | First description field (`teaser`, `abstract`, `description`, `bodytext`, `short`) |
-
-## 10. TSconfig Reference
-
-### View Type Options
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `label` | string | *required* | Display name (supports `LLL:`) |
-| `icon` | string | *required* | TYPO3 icon identifier |
-| `description` | string | | Tooltip |
-| `template` | string | `<Id>View` | Fluid template name |
-| `partial` | string | `Card` | Default partial |
-| `templateRootPath` | string | | Custom template path |
-| `partialRootPath` | string | | Custom partial path |
-| `layoutRootPath` | string | | Custom layout path |
-| `css` | string | | CSS file (`EXT:` syntax) |
-| `js` | string | | JS module (`@vendor/module.js`) |
-| `columnsFromTCA` | bool | `1` | Use editor column selection |
-| `displayColumns` | string | | Comma-separated field list |
-| `itemsPerPage` | int | `100` | Records per page (`0` = no pagination) |
-
-## 11. Workspace Support
+## 9. Workspace Support
 
 Records display color-coded indicators in workspaces:
 
@@ -333,4 +263,4 @@ Workspace overlays applied via `BackendUtility::workspaceOL()`.
 
 ## Detailed Reference
 
-Read [the full guide](references/full-guide.md) when the task needs detailed examples, long templates, troubleshooting matrices, appendices, or sections not included above. Keep this file unloaded for narrow tasks so the skill follows progressive disclosure.
+Read [the full guide](references/full-guide.md) index when the task needs one of sections 12–20: PSR-14 events and shipped Core listeners (12), extending with custom partials, assets and the page-tree refresh event (13), architecture and service classes (14), common TSconfig recipes (15), file structure of the v2.0.2 checkout (16), accessibility of the shipped listbox pattern (17), dark mode (18), security (19) and known limitations (20). Keep this file unloaded for narrow tasks so the skill follows progressive disclosure.

@@ -1,13 +1,11 @@
 # 6. TYPO3-Specific Configuration
 
-Continues `typo3-accessibility` from [full guide](full-guide.md).
-
 ## Contents
 
 - [6.1 TCA: Require Alt Text on Images](#61-tca-require-alt-text-on-images)
 - [6.2 TCA: Header Layout Options](#62-tca-header-layout-options)
 - [6.3 Form Framework: Accessible Forms (EXT:form)](#63-form-framework-accessible-forms-extform)
-- [6.4 Content Security Policy: Allow Inline Focus Styles](#64-content-security-policy-allow-inline-focus-styles)
+- [6.4 Content Security Policy and Focus Styles](#64-content-security-policy-and-focus-styles)
 
 ## 6. TYPO3-Specific Configuration
 
@@ -83,30 +81,6 @@ TYPO3:
                   inputmode: 'tel'
 ```
 
-### 6.4 Content Security Policy: Allow Inline Focus Styles
+### 6.4 Content Security Policy and Focus Styles
 
-If CSP is enabled, ensure focus styles via external CSS (not inline):
-
-```php
-<?php
-// No inline styles needed — use the external accessibility.css
-// If you must add inline styles, extend CSP via PSR-14:
-
-declare(strict_types=1);
-
-namespace Vendor\SitePackage\EventListener;
-
-use TYPO3\CMS\Core\Attribute\AsEventListener;
-use TYPO3\CMS\Core\Security\ContentSecurityPolicy\Event\PolicyMutatedEvent;
-
-#[AsEventListener(identifier: 'vendor/site-package/csp-accessibility')]
-final class CspAccessibilityListener
-{
-    public function __invoke(PolicyMutatedEvent $event): void
-    {
-        if ($event->scope->type->isFrontend()) {
-            // Prefer external CSS over extending CSP for inline styles
-        }
-    }
-}
-```
+Keep focus styles in the external stylesheet; then an enabled CSP needs no change for them.

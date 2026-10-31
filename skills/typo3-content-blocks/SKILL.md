@@ -11,7 +11,7 @@ license: "MIT / CC-BY-SA-4.0"
 ---
 # TYPO3 Content Blocks Development
 
-> Source: https://github.com/dirnbauer/webconsulting-skills
+> Source: https://github.com/dirnbauer/typo3-skills
 
 Target **TYPO3 v14.3+** with **Content Blocks 2.x**; the 1.x line is v13-only and does not resolve
 in a v14 project. Checked on Packagist 2026-10-31: the newest release, 2.4.10 (2026-09-22),
@@ -161,14 +161,6 @@ fields:
     enableRichtext: true
 ```
 
-Reusing `bodytext` alone does not enable rich text for a new CType. For migration or preset changes,
-read the [rich-text round-trip contract](references/rich-text-roundtrip.md): verify effective
-type-specific TCA, stored markup, actual preset and both editor and frontend behavior.
-
-For converted link columns, nested links or plugin type restrictions, read
-[typed links and no-change saves](references/typed-link-migration.md). Test actual transformed
-objects in both template contexts; a string fixture or unchanged public page can miss editor damage.
-
 ### Full Content Element Example
 
 ```yaml
@@ -238,7 +230,8 @@ fields:
 When a block should follow shadcn/ui styling, keep `config.yaml` as the content model and map
 `{data}` fields to shared Fluid components instead of per-block CSS. Preserve existing field
 identifiers, `fixture.json`, labels and editor workflows unless the content model itself changes.
-Tokens, atoms, icons, previews and seed data are covered by `typo3-shadcn-content-elements`.
+Tokens, atoms, icons and seed-data styling are covered by `typo3-shadcn-content-elements`; the
+backend preview itself stays here ([backend previews](references/19-backend-previews.md)).
 
 ### Backend Preview Template
 

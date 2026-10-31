@@ -90,7 +90,8 @@ optional pages without addressing and testing that limit. Also test changing a c
 its target page is active, previous/next direction, direct step controls and invalid input.
 Do not call the full wizard verified just because a source unit test passes.
 
-Run the source probe against the exact installed sources or reviewed clones:
+Run the source probe against Git clones of both packages; the Composer dist omits
+`Resources/Private/Build`, which the probe reads:
 
 ```bash
 node skills/typo3-powermail/scripts/check-multistep.mjs /path/to/powermail /path/to/powermail_cond
@@ -150,6 +151,9 @@ The [ConditionDataMap.php](examples/ConditionDataMap.php) example builds a **pur
 for one existing form/source/target field. Supply actual authorized UIDs and an existing
 storage PID, verify all three records belong to the same form, and reject an existing container
 before use. It does not perform database writes or disable access checks.
+Run `php skills/typo3-powermail/scripts/check-examples.php` after editing the example: it
+checks the relation ownership, action/operator direction, UID resolution and the two invalid
+fixtures without a TYPO3 database.
 
 Create a fresh DataHandler in a properly authenticated backend/CLI context:
 

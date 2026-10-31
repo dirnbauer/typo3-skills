@@ -10,7 +10,7 @@ license: "MIT / CC-BY-SA-4.0"
 ---
 # TYPO3 Security Hardening
 
-> Source: https://github.com/dirnbauer/webconsulting-skills
+> Source: https://github.com/dirnbauer/typo3-skills
 
 > **Compatibility:** TYPO3 v14.x. Configuration keys and defaults below were checked against the
 > installed TYPO3 14.3.9 source (`DefaultConfiguration.php`, `DefaultConfigurationDescription.yaml`)
@@ -24,7 +24,7 @@ return evidence; unrelated hardening belongs to separately authorized scope, not
 
 ## 1. Critical Configuration Settings
 
-### `config/system/settings.php` (TYPO3 v14)
+### `config/system/settings.php`
 
 ```php
 <?php
@@ -39,7 +39,7 @@ return [
         'sessionTimeout' => 3600,         // 1 hour session timeout
         'lockSSL' => true,                // Example: require HTTPS for backend requests
         
-        // Password policy (TYPO3 v14)
+        // Password hashing (the policy itself is configured in section 5)
         'passwordHashing' => [
             'className' => \TYPO3\CMS\Core\Crypto\PasswordHashing\Argon2idPasswordHash::class,
             'options' => [],
@@ -109,13 +109,13 @@ Always configure `trustedHostsPattern`: a permissive pattern lets a forged `Host
 generated links, password-reset mails and caches (host header injection).
 
 ```php
-// ❌ Unsafe: Allows any host
+// Unsafe: Allows any host
 'trustedHostsPattern' => '.*',
 
-// ✅ Safe: Explicit host list (Core adds `/^...$/` around the pattern)
+// Safe: Explicit host list (Core adds `/^...$/` around the pattern)
 'trustedHostsPattern' => '(?:example\\.com|www\\.example\\.com)',
 
-// ✅ Safe: Regex for subdomains (tie to your registrable domain)
+// Safe: Regex for subdomains (tie to your registrable domain)
 'trustedHostsPattern' => '(.*\\.)?example\\.com',
 
 // Development with DDEV
@@ -154,13 +154,13 @@ Verify as the actual runtime user and test upload, cache rebuild and deployment 
 Never expose these in `public/`:
 
 ```
-❌ var/log/
-❌ config/
-❌ .env
-❌ composer.json
-❌ composer.lock
-❌ .git/
-❌ vendor/ (should be outside public)
+- var/log/ (must not be reachable)
+- config/ (must not be reachable)
+- .env (must not be reachable)
+- composer.json (must not be reachable)
+- composer.lock (must not be reachable)
+- .git/ (must not be reachable)
+- vendor/ (belongs outside the web root)
 ```
 
 ### Web server rules and security headers
@@ -221,11 +221,14 @@ location = /typo3/install.php {
 
 ## 5. Backend User Security
 
-### Strong Password Policy (TYPO3 v14)
+### Strong Password Policy
+
+Password policies exist since v12.0 (#97388). Configure them in `config/system/additional.php`,
+like every other `TYPO3_CONF_VARS` override in this skill:
 
 ```php
 <?php
-// ext_localconf.php of site extension
+// config/system/additional.php
 $GLOBALS['TYPO3_CONF_VARS']['BE']['passwordPolicy'] = 'default'; // policy *name* only
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['passwordPolicies']['default'] = [
     'validators' => [
@@ -243,10 +246,11 @@ $GLOBALS['TYPO3_CONF_VARS']['SYS']['passwordPolicies']['default'] = [
 ];
 ```
 
-### Multi-Factor Authentication (TYPO3 v14)
+### Multi-Factor Authentication
 
-MFA is built into TYPO3 v14. Users can configure in:
-**User Settings > Account Security**
+MFA is part of Core since v11.1 (#93526); v14 adds notifications on failed verification attempts
+(see [v14 notes](references/v14-notes.md)). Users configure it in
+**User Settings > Account Security**.
 
 Supported providers:
 - TOTP (Time-based One-Time Password)
@@ -276,16 +280,15 @@ $GLOBALS['TYPO3_CONF_VARS']['LOG']['TYPO3']['CMS']['Backend']['Authentication'][
 
 ## 6. Content Security Policy (CSP)
 
-### Built-in CSP (TYPO3 v14)
+### Built-in CSP
 
-TYPO3 v14 has built-in CSP support. Enable it:
-
-Enable CSP through `config/system/settings.php` / Install Tool with the frontend feature toggles
+Core handles CSP since v12.3 (#99499); let it own the header rather than sending a second one
+from TypoScript or the web server. Enable CSP through `config/system/settings.php` / Install Tool with the frontend feature toggles
 `$GLOBALS['TYPO3_CONF_VARS']['SYS']['features']['security.frontend.enforceContentSecurityPolicy']`
 and `security.frontend.reportContentSecurityPolicy` (both `false` by default in 14.3.9). Backend CSP
 is enforced by default since v13; there is no equivalent toggle for the backend.
 
-### CSP Configuration via Events (TYPO3 v14)
+### CSP Configuration via Events
 
 ```php
 <?php
@@ -316,7 +319,11 @@ final class ContentSecurityPolicyListener
 }
 ```
 
-### TypoScript CSP Headers (Alternative)
+### Old pattern: TypoScript CSP header (sites older than v12.3 only)
+
+Do not combine this with the Core CSP above: two `Content-Security-Policy` headers are both
+enforced, and `'unsafe-inline'` undoes the nonce-based protection Core applies. Keep it only on
+installations that have no Core CSP handling yet.
 
 ```typoscript
 config.additionalHeaders {
@@ -332,12 +339,12 @@ config.additionalHeaders {
 <?php
 declare(strict_types=1);
 
-// ❌ Unsafe: user input concatenated into SQL
+// Unsafe: user input concatenated into SQL
 $result = $connection->executeQuery(
     "SELECT * FROM pages WHERE uid = " . $_GET['id']
 );
 
-// ✅ Safe: Use QueryBuilder with prepared statements
+// Safe: Use QueryBuilder with prepared statements
 $queryBuilder = $this->connectionPool->getQueryBuilderForTable('pages');
 $result = $queryBuilder
     ->select('*')
@@ -366,37 +373,15 @@ $query->matching(
 
 ## 8. XSS Prevention
 
-### Fluid Templates
-
-```html
-<!-- ✅ Safe: Auto-escaped -->
-{variable}
-
-<!-- ❌ Unsafe: Raw output -->
-{variable -> f:format.raw()}
-
-<!-- ✅ Safe: Explicit escaping -->
-{variable -> f:format.htmlspecialchars()}
-
-<!-- For HTML content, use with caution -->
-<f:format.html>{bodytext}</f:format.html>
-```
-
-### Backend Forms
-
-TCA automatically handles escaping. For custom fields:
-
-```php
-'config' => [
-    'type' => 'input',
-    'max' => 255,
-    // Input is automatically escaped
-],
-```
+Fluid escapes `{variable}` output by default. The rule for a review is therefore short: every
+`f:format.raw()` and every `escapeOutput = false` in a ViewHelper is a finding until the value is
+shown to be trusted, and editor HTML goes through `<f:format.html>` (RTE-configured sanitising),
+never through `raw`. TCA `max` on an `input` field is a length limit, not escaping: output of the
+stored value still relies on Fluid or `htmlspecialchars()` at render time.
 
 ## 9. CSRF Protection
 
-### Backend Requests (TYPO3 v14)
+### Backend Requests
 
 TYPO3 backend automatically includes CSRF tokens. For custom AJAX:
 
@@ -446,11 +431,11 @@ a forged cross-origin submission; do not present `dummyToken` as protection.
 
 ## Appendix
 
-For TYPO3 v14-specific hardening notes and related-skill links, see [references/v14-notes.md](references/v14-notes.md). For go-live checklists, rate limiting, and remaining v14 security notes, see [references/checklists.md](references/checklists.md).
+Everything that changed in v14 (MFA failure notifications, Install Tool password CLI, Redis Install Tool sessions, the stronger HMAC algorithm, `CipherService`, the `be_users` credential residue) and the related-skill links are in [references/v14-notes.md](references/v14-notes.md). The go-live and maintenance checklists and login rate limiting are in [references/checklists.md](references/checklists.md).
 
 ---
 
 ## Credits & Attribution
 
 
-Source: https://github.com/dirnbauer/webconsulting-skills
+Source: https://github.com/dirnbauer/typo3-skills

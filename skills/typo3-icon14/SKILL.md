@@ -10,11 +10,7 @@ license: "MIT / CC-BY-SA-4.0"
 ---
 # TYPO3 v14 Icon Modernizer
 
-> Source: https://github.com/dirnbauer/webconsulting-skills
-
-> Prefer live TYPO3 v14 references over bundled snapshots. Use the official Icon API
-> docs for registration rules and the TYPO3.Icons catalog for the current Core SVG
-> language. Use the local reference files only to keep this skill concise.
+> Source: https://github.com/dirnbauer/typo3-skills
 
 ## What this skill is for
 
@@ -140,9 +136,13 @@ an extension unless the user explicitly wants vendored assets or the environment
 |------|--------------|----------------|---------|-------------------------------|
 | Parent / submodule | `module-*.svg` | Backend navigation, module menu | `0 0 64 64` | `module` catalog |
 | Extension icon | `Extension.svg` | Extension Manager and related backend views | `0 0 64 64` | `module` catalog |
-| Plugin icon | `plugin-*.svg` | New content element wizard, list view, plugin selectors | usually `0 0 16 16` | `content`, `default`, `apps` |
-| Record icon | `record-*.svg` | TCA, page tree, list module | usually `0 0 16 16` | `default`, `apps`, `mimetypes`, `overlay`, `status` |
-| Action icon | `actions-*.svg` | Buttons, toolbars, controls | usually `0 0 16 16` | `actions` |
+| Plugin icon | `plugin-*.svg` | New content element wizard, list view, plugin selectors | `0 0 16 16` | `content`, `default`, `apps` |
+| Record icon | `record-*.svg` | TCA, page tree, list module | `0 0 16 16` | `default`, `apps`, `mimetypes`, `overlay`, `status` |
+| Action icon | `actions-*.svg` | Buttons, toolbars, controls | `0 0 16 16` | `actions` |
+
+Action, record and plugin icons must use `0 0 16 16`; `scripts/verify-icon.sh <file> small`
+fails on anything else. Content Blocks wizard thumbnails are the exception: pass `content`, and
+the script only asks for a square viewBox.
 
 Always match the render size and visual density of the icon type you are editing. Do not
 force a 64x64 module composition into a 16x16 record or action icon.
@@ -255,8 +255,9 @@ Use [references/migration-steps.md](references/migration-steps.md) for the check
 Before finishing:
 
 - run `scripts/verify-icon.sh <file> <type>` and confirm `RESULT: PASS` (it gates
-  viewBox, embedded raster, scheme-breaking fills, missing `currentColor`,
-  background rects, and `prefers-color-scheme`)
+  viewBox, embedded raster, scheme-breaking fills, missing `currentColor` and
+  `prefers-color-scheme`; it warns on a full-canvas background rect and a fixed accent
+  hex, so read the warnings too)
 - verify the file path matches the registered source
 - verify the icon type uses the correct viewBox
 - verify there is no solid background layer
@@ -280,4 +281,4 @@ Before finishing:
 - `scripts/generate-icon-reference.sh`: GPT Image 2.5 / Nano Banana reference generator with technical failover
 - `scripts/verify-icon.sh`: hard conformance gate for authored icons
 
-Source: https://github.com/dirnbauer/webconsulting-skills
+Source: https://github.com/dirnbauer/typo3-skills

@@ -16,8 +16,10 @@ namespace MyVendor\MyExt\Tests\Functional;
 use ApacheSolrForTypo3\Solr\Tests\Integration\IntegrationTestBase;
 
 /**
- * EXT:solr ships IntegrationTestBase (see vendor path Tests/Integration/). Method names
- * differ by version — copy patterns from EXT:solr's own Tests/Integration tree.
+ * IntegrationTestBase is not in the Composer dist (14.0.2 ships no Tests/ directory). Either
+ * require the Git checkout of ext-solr as a dev dependency with a path repository so
+ * Tests/Integration/ autoloads, or write your own base class on
+ * TYPO3\TestingFramework\Core\Functional\FunctionalTestCase that boots a Solr core.
  */
 final class CustomIndexingTest extends IntegrationTestBase
 {
@@ -69,7 +71,7 @@ final class EnrichSolrDocumentsTest extends TestCase
         $listener = new EnrichSolrDocuments();
         $listener($event);
 
-        self::assertNotNull($document->getField('custom_score_floatS'));
+        self::assertSame(1.0, $document['custom_score_floatS']);
     }
 }
 ```

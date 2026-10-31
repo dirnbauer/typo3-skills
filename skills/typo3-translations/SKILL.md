@@ -12,7 +12,7 @@ license: "MIT / CC-BY-SA-4.0"
 
 # TYPO3 13/14 Translations
 
-> Source: https://github.com/dirnbauer/webconsulting-skills
+> Source: https://github.com/dirnbauer/typo3-skills
 
 Use this skill for TYPO3 13 and TYPO3 14 translation files, XLIFF format
 decisions, localization keys, ICU strings, `LLL:` references, and v14
@@ -23,8 +23,10 @@ apply TYPO3 14 upgrades when the extension or project is v14-only.
 
 - For TYPO3 13+14 compatibility, keep XLIFF 1.2 and full `LLL:EXT:`
   references.
-- For TYPO3 14-only work, prefer XLIFF 2.0 and consider translation domains in
-  PHP where they improve readability.
+- For TYPO3 14-only work, use XLIFF 2.0 and translation domains by default:
+  `$languageService->translate($key, $domain)` in PHP and `domain=` in Fluid.
+  Full `LLL:EXT:` references stay the escape hatch where a file must also load
+  on TYPO3 13.
 - Keep one source language file in English, unprefixed, for example
   `Resources/Private/Language/locallang.xlf` or `labels.xlf`.
 - Store target languages beside the source with locale prefixes, for example
@@ -47,8 +49,8 @@ apply TYPO3 14 upgrades when the extension or project is v14-only.
    Content Blocks configuration.
 3. Decide the compatibility mode:
    - TYPO3 13+14: stay on XLIFF 1.2 and `LLL:EXT:`.
-   - TYPO3 14-only: migrate selected catalogs to XLIFF 2.0 and optionally use
-     domains/ICU.
+   - TYPO3 14-only: migrate the catalogs to XLIFF 2.0, reference them by
+     translation domain, and use ICU where a label has plural or select forms.
 4. Normalize paths, filenames, XML namespaces, and key namespaces.
 5. Add or migrate labels with natural target-language copy.
 6. Validate XML, duplicate IDs, source/target parity, and `LLL:` resolution.
@@ -359,3 +361,5 @@ Load only the file the current task needs:
 - [Quality bar](references/quality-bar.md): when judging whether translated copy is release-ready.
 - [FAQ](references/faq.md) and [official sources](references/official-sources.md): when a specific
   question or an upstream citation is needed.
+- [Full guide](references/full-guide.md): index of every reference; load when a topic is not listed
+  here.

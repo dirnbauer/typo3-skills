@@ -2,22 +2,22 @@
 
 ## Contents
 
-- [Required Files](#required-files) — line 5
-- [Schema And Template Checks](#schema-and-template-checks) — line 15
-- [Client-Side Behavior Pattern](#client-side-behavior-pattern) — line 49
-- [Link Field Pattern](#link-field-pattern) — line 71
-- [Nested Collection Pattern](#nested-collection-pattern) — line 120
-- [Collection Table Naming](#collection-table-naming) — line 167
-  - [Don't](#dont) — line 182
-  - [Do](#do) — line 191
-  - [Naming Pattern](#naming-pattern) — line 200
-  - [Audit Command](#audit-command) — line 231
-  - [Migration From An Existing Shared Table](#migration-from-an-existing-shared-table) — line 243
-- [Legacy Workaround Cleanup](#legacy-workaround-cleanup) — line 252
-- [Desiderio Fixture Source](#desiderio-fixture-source) — line 265
-- [Labels](#labels) — line 277
-- [Seed Data](#seed-data) — line 288
-- [Styling](#styling) — line 312
+- [Required Files](#required-files)
+- [Schema And Template Checks](#schema-and-template-checks)
+- [Client-Side Behavior Pattern](#client-side-behavior-pattern)
+- [Link Field Pattern](#link-field-pattern)
+- [Nested Collection Pattern](#nested-collection-pattern)
+- [Collection Table Naming](#collection-table-naming)
+  - [Don't](#dont)
+  - [Do](#do)
+  - [Naming Pattern](#naming-pattern)
+  - [Audit Command](#audit-command)
+  - [Migration From An Existing Shared Table](#migration-from-an-existing-shared-table)
+- [Legacy Workaround Cleanup](#legacy-workaround-cleanup)
+- [Desiderio Fixture Source](#desiderio-fixture-source)
+- [Labels](#labels)
+- [Seed Data](#seed-data)
+- [Styling](#styling)
 
 Use this checklist for every `ContentBlocks/ContentElements/<element>`.
 

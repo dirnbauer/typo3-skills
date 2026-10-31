@@ -42,7 +42,7 @@ export const NARRATION_SCRIPT: Record<string, string> = {
 };
 ```
 
-**Critical**: The generate script **imports** this constant — never duplicate the text:
+The generate script imports this constant; do not duplicate the text, or audio and subtitles drift apart:
 
 ```tsx
 // scripts/generate-narration.ts

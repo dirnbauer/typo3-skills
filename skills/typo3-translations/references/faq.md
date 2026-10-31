@@ -12,13 +12,7 @@ or branch is v14-only.
 
 **Should I use XLIFF 2.0 or 1.2?**
 
-Use XLIFF 1.2 for TYPO3 13+14 compatibility. Use XLIFF 2.0 for new v14-only
-work.
-
-**What is the latest XLIFF format to use here?**
-
-For TYPO3 13 compatibility, use XLIFF 1.2. For TYPO3 14-only catalogs, use the
-documented XLIFF 2.0 structure.
+See the Core Rules in `SKILL.md`; the format follows the compatibility range.
 
 **Should I create `en.locallang.xlf`?**
 

@@ -10,7 +10,7 @@ license: "MIT / CC-BY-SA-4.0"
 ---
 # TYPO3 SEO Configuration
 
-> Source: https://github.com/dirnbauer/webconsulting-skills
+> Source: https://github.com/dirnbauer/typo3-skills
 
 > **Compatibility:** TYPO3 v14.x
 > All SEO configurations in this skill work on TYPO3 v14.
@@ -100,8 +100,10 @@ languages:
     title: English
 ```
 
-EXT:seo adds `x-default` itself, pointing at the default language (`languageId: 0`), whenever a page
-has more than one hreflang link (`HrefLangGenerator`). There is no site-config key for it. It skips
+EXT:seo adds `x-default` itself whenever a page has more than one hreflang link, pointing at the
+first entry of the language menu (`HrefLangGenerator`, 14.3.7: `$languages['languagemenu'][0]`), which
+is the default language unless the site orders its languages differently. There is no site-config
+key for it. It skips
 untranslated pages and pages with an explicit canonical URL. To point `x-default` elsewhere, use a
 `ModifyHrefLangTagsEvent` listener; do not print a second set of tags in TypoScript.
 
@@ -228,11 +230,9 @@ Without route enhancers, the sitemap page type is requested via `?type=153390643
       page: 'tx_seo/page'
 ```
 
-See [references/v14-notes.md](references/v14-notes.md) for the same pattern in context.
-
-> This enhancer is **optional and custom** — Core maps `tx_seo/sitemap` but leaves pagination on query parameters by design. Test thoroughly after adding.
-
-> **Pagination & route enhancers:** Core maps `sitemap.xml` to the SEO page type; **sitemap index pagination stays on query parameters** by design (Core does not ship a ready-made pretty-URL enhancer for `tx_seo/page`). Any **custom** enhancer (e.g. `CustomSitemapPagination` above) is **optional** and must define proper **`aspects`** — do not treat examples as Core defaults.
+Test the child sitemap URLs after adding the enhancer; this is the only place in the skill that
+documents the `tx_seo` namespace and the enhancer, and [references/v14-notes.md](references/v14-notes.md)
+points back here.
 
 ## 4. Robots.txt Configuration
 
@@ -316,4 +316,4 @@ page make search engines ignore both.
 
 Read [the Lighthouse pass](references/11-lighthouse-pass.md) when Lighthouse scores of an existing site must rise: what to change on every site, what to check per site, and how to prove nothing else changed.
 
-Read [the full guide](references/full-guide.md) when the task needs detailed examples, long templates, troubleshooting matrices, appendices, or sections not included above. Keep this file unloaded for narrow tasks so the skill follows progressive disclosure.
+Read [the full guide](references/full-guide.md) index when the task needs one of these: routing to `typo3-structured-data` for JSON-LD (6), Core Web Vitals, lazy loading and image conversion TypoScript (7), the TYPO3-specific go-live checks (8), SEO extensions and their v14 versions (9), Search Console and sitemap monitoring (10), the Lighthouse pass (11), or the v14-only changes in [references/v14-notes.md](references/v14-notes.md): `f:page.title`, `f:page.meta`, `f:page.headerData`/`footerData`, `RecordTitleProvider`, regex slug replacements. Keep this file unloaded for narrow tasks so the skill follows progressive disclosure.

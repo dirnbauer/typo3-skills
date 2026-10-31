@@ -11,4 +11,4 @@ Continues `typo3-solr` from [full guide](full-guide.md).
 - **Mittwald** for managed Solr hosting documentation
 
 
-Source: https://github.com/dirnbauer/webconsulting-skills
+Source: https://github.com/dirnbauer/typo3-skills

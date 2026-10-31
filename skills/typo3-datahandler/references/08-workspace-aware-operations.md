@@ -1,7 +1,5 @@
 # 8. Workspace-Aware Operations
 
-Continues `typo3-datahandler` from [full guide](full-guide.md).
-
 ## 8. Workspace-Aware Operations
 
 When working with workspaces:

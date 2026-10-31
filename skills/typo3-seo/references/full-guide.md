@@ -10,4 +10,4 @@ Read only the section that matches the current task. These files continue the ma
 - [9. SEO Extensions (TYPO3 v14)](09-seo-extensions-typo3-v14.md)
 - [10. Monitoring & Analytics](10-monitoring-and-analytics.md)
 - [11. A Lighthouse pass on an existing site](11-lighthouse-pass.md)
-- [Appendix](appendix.md)
+- [v14-only changes](v14-notes.md)

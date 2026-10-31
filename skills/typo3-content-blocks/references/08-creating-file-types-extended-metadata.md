@@ -13,8 +13,6 @@ Continues `typo3-content-blocks` from [full guide](full-guide.md).
 
 ## 8. Creating File Types (Extended Metadata)
 
-> New in version 1.2
-
 File Types extend the `sys_file_reference` table with custom fields – perfect for photographer credits, copyright notices, or additional reference-level options.
 
 ### Available File Type Names

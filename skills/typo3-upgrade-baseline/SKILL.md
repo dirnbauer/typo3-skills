@@ -76,10 +76,12 @@ plus the open question ([lean profile](../typo3-upgrade-run/references/graph-run
 
 ## Failure routing
 
-- `invalid`: project/data/environment/manifest drift; return to the corresponding identity node.
+- `invalid`: the unchanged render is nondeterministic (non-zero self-test or double capture); the
+  graph routes to `determinism-recovery`, which repairs by failure shape, never with a site fix.
 - `harness-error`: crash, missing binary, bad artifact, wrong browser/session/worker setup; repair the
   harness, then repeat only the affected proof.
-- Non-zero unchanged render: determinism recovery by failure shape, never a site fix.
+- `blocked`: project/data/environment/manifest drift since intake, with the reason; the run stops
+  until the owner re-establishes identity. There is no separate drift outcome.
 - Missing component inventory or representative journey: baseline remains open.
 
 Never raise tolerance, shrink sample, quarantine a page, reuse the operator browser, or edit the

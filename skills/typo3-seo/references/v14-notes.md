@@ -1,65 +1,47 @@
-# TYPO3 SEO Appendix
+# TYPO3 SEO v14 Notes
 
-## v14-Only Changes
+Continues `typo3-seo` from [full guide](full-guide.md). Everything below was checked against the
+installed TYPO3 14.3.7 source (`vendor/typo3/cms-fluid`, `cms-core`, `cms-seo`) on 2026-10-31.
 
-> The following SEO changes apply **exclusively to TYPO3 v14**.
+## Sitemap GET Parameters Namespaced **[v14 only]**
 
-### Sitemap GET Parameters Namespaced **[v14 only]**
+Sitemap GET parameters use the `tx_seo[sitemap]` / `tx_seo[page]` namespace (Breaking #104422).
+The `PageTypeSuffix` enhancer and the optional custom pagination enhancer are documented once, in
+[SKILL.md section 3](../SKILL.md#3-xml-sitemap-configuration); this file does not repeat the YAML.
 
-Sitemap GET parameters use the **`tx_seo[...]`** namespace (see [Breaking: #104422](https://docs.typo3.org/c/typo3/cms-core/main/en-us/Changelog/14.0/Breaking-104422-SeoParameterNamespace.html)). Update route enhancers and templates that still expect flat `sitemap` / `page` arguments.
+## Fluid Page Title and Meta ViewHelpers **[v14 only]**
 
-Configure route enhancers for the sitemap page type plus an **optional custom** enhancer for paginated child sitemaps (Core still emits query parameters by default — treat pretty URLs as site-specific):
-
-```yaml
-# config/sites/<site>/config.yaml
-routeEnhancers:
-  PageTypeSuffix:
-    type: PageType
-    map:
-      sitemap.xml: 1533906435
-  # Optional custom — define aspects; adjust routePath and StaticRangeMapper bounds to your URLs.
-  CustomSitemapPagination:
-    type: Simple
-    routePath: 'sitemap/{sitemap}/{page}'
-    aspects:
-      sitemap:
-        type: StaticRangeMapper
-        start: '0'
-        end: '99'
-      page:
-        type: StaticRangeMapper
-        start: '0'
-        end: '999'
-    defaults:
-      page: '0'
-    _arguments:
-      sitemap: 'tx_seo/sitemap'
-      page: 'tx_seo/page'
-```
-
-### Fluid Page Meta & Title ViewHelpers **[v14 only]**
-
-New ViewHelpers for setting page meta tags and titles directly from Fluid templates:
+`f:page.title` (#107358) and `f:page.meta` (#107359) ship in `EXT:fluid`
+(`Classes/ViewHelpers/Page/TitleViewHelper.php`, `MetaViewHelper.php`). `f:page.meta` takes
+`property` (required), `type` (`name`, `property` or `http-equiv`; detected when omitted),
+`subProperties` and `replace`:
 
 ```html
-<!-- Set page title from Fluid -->
 <f:page.title>{article.title} - My Site</f:page.title>
-
-<!-- Set meta tags from Fluid -->
 <f:page.meta property="description">{article.teaser}</f:page.meta>
 <f:page.meta property="og:title">{article.title}</f:page.meta>
 ```
 
-These complement (and can replace) PHP-based `PageTitleProvider` and `MetaTagManager` approaches.
+They go through the same `PageTitleProviderManager` and `MetaTagManager` as the PHP APIs, so a
+provider or tag set in PHP and in Fluid for the same page still has to be resolved by the
+`pageTitleProviders` order or `replace="true"`.
 
-### RecordTitleProvider **[v14 only]**
+## RecordTitleProvider **[v14 only]**
 
-`RecordTitleProvider` (PageTitle API) ties the browser title to rendered records where configured. Useful for Extbase detail views — confirm the exact registration flags in Core docs for your minor version.
+`TYPO3\CMS\Core\PageTitle\RecordTitleProvider` (#106232) is a page title provider with the
+TypoScript identifier `recordTitle`, registered before the `seo` provider. Inject it into an
+Extbase controller and call `setTitle($item->getTitle())` in the detail action; no further
+registration is needed for the Core order.
 
-### Advanced slug configuration **[v14 only]**
+## headerData and footerData ViewHelpers **[v14 only]**
 
-Slug handling supports richer transformation rules than simple character replacement (see Core **SlugFieldWizard** / routing documentation for your minor version). Prefer official docs over ad-hoc Forge numbers — changelog IDs move when entries are renamed.
+`f:page.headerData` and `f:page.footerData` (#107056, `EXT:fluid`
+`Classes/ViewHelpers/Page/HeaderDataViewHelper.php`, `FooterDataViewHelper.php`) add their child
+content to the page head or footer. Use them for markup that has no dedicated ViewHelper; JSON-LD
+belongs to `typo3-structured-data`.
 
-### headerData / footerData ViewHelpers **[v14 only]**
+## Regex-based slug replacements **[v14 only]**
 
-Use `<f:page.headerData>` / `<f:page.footerData>` (Fluid / TYPO3 core ViewHelpers) to inject raw head markup such as JSON-LD — confirm availability in your Fluid / core combination.
+`generatorOptions.regexReplacements` in a slug field's TCA (#106072) applies regular expressions
+before sanitation, for case-insensitive or wildcard replacements that the plain `replacements`
+array cannot express.

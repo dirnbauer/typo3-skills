@@ -43,6 +43,6 @@ Full reference: [Dynamic Fields Appendix](https://docs.typo3.org/p/apache-solr-f
 
 ### Site hash / multi-site indexing
 
-**EXT:solr** builds a per-request **site hash** so separate TYPO3 sites do not leak each other’s Solr documents. The exact **setting names and storage** (global extension config vs site / **site-language** config) **changed across majors** — do **not** hard-code a fake `siteHashStrategy` key here. Use the [official EXT:solr documentation](https://docs.typo3.org/p/apache-solr-for-typo3/solr/main/en-us/) and your installed version’s `Configuration/SiteConfiguration` + Extension Settings UI.
+**EXT:solr** stores a **site hash** in every document so separate TYPO3 sites sharing a core do not see each other's results. In 14.0.2 `SiteHashService::getSiteHashForSiteIdentifier()` computes `sha1(applicationContext . siteIdentifier . encryptionKey . 'tx_solr')`; the domain is not part of it, and there is no `siteHashStrategy` setting. See [application context, site hash and shared cores](v14-only-solr-changes.md#application-context-sitehash-and-shared-cores).
 
-If searches return no hits after a migration, compare **domain**, **site identifier**, and **language-specific Solr connection** fields against the Solr core naming your indexer uses, then **re-index**.
+If searches return no hits after a migration, compare the **`TYPO3_CONTEXT`** of the indexer and the web request, the **site identifier** and the **`encryptionKey`** between the two installations, then **re-index**.

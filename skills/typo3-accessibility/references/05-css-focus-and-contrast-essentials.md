@@ -1,7 +1,5 @@
 # 5. CSS: Focus & Contrast Essentials
 
-Continues `typo3-accessibility` from [full guide](full-guide.md).
-
 ## 5. CSS: Focus & Contrast Essentials
 
 ```css

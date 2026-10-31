@@ -10,7 +10,7 @@ license: "MIT / CC-BY-SA-4.0"
 ---
 # TYPO3 v14 development
 
-> Source: https://github.com/dirnbauer/webconsulting-skills
+> Source: https://github.com/dirnbauer/typo3-skills
 
 This skill is the **v14 API reference**: how v14 code is written. It does not run upgrades.
 
@@ -65,12 +65,14 @@ This skill is the **v14 API reference**: how v14 code is written. It does not ru
 Since 14.2 (#108345) `composer.json` carries the metadata `ext_emconf.php` used to hold: the version
 in `extra.typo3/cms.version` (or the top-level `version`) and `Package.providesPackages`, empty when
 the extension bundles no Composer packages. Without them, classic mode cannot read the extension once
-`ext_emconf.php` is gone, and an extension that still ships the file logs a deprecation. The title
-comes from the `description` before the first ` - ` (#108304).
+`ext_emconf.php` is gone. The deprecation fires only when `ext_emconf.php` is present *and*
+`composer.json` lacks `version` or `providesPackages` (`PackageManager::getComposerManifest()`,
+14.3.7); shipping the file beside a complete `composer.json` is silent. The title comes from the
+`description` before the first ` - ` (#108304, 14.0).
 
 Target **`^14.3`, not `^14.0`**: 14.3 is the supported LTS line, and 14.0 through 14.2 no longer receive security updates. A reusable package that genuinely tests a broader range may widen the constraint, but then proves it in CI rather than asserting it.
 
-> **Content Blocks:** `friendsoftypo3/content-blocks` requires **`typo3/cms-core` ^14.3** or higher — match the [Packagist constraint](https://packagist.org/packages/friendsoftypo3/content-blocks) before pinning anything lower.
+> **Content Blocks:** `friendsoftypo3/content-blocks` requires `typo3/cms-core ^14.3.7` (Content Blocks 2.4.10, verified 2026-10-31) — match the [Packagist constraint](https://packagist.org/packages/friendsoftypo3/content-blocks) before pinning anything lower.
 
 ### `ext_emconf.php` — legacy, only where a tool still requires it
 
@@ -389,3 +391,5 @@ Load only the file the current task needs:
   `typo3-upgrade-run`.
 - [Resources](references/12-resources.md) and [credits](references/credits-and-attribution.md): when
   linking upstream documentation or citing sources.
+- [Full guide index](references/full-guide.md): load when a topic is not listed here; it lists every
+  reference section.

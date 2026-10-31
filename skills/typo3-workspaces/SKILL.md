@@ -10,7 +10,7 @@ license: "MIT / CC-BY-SA-4.0"
 ---
 # TYPO3 Workspaces
 
-> Source: https://github.com/dirnbauer/webconsulting-skills
+> Source: https://github.com/dirnbauer/typo3-skills
 
 Workspaces let editors prepare, review and publish content without touching the live site. Code
 examples target TYPO3 v14; workspace API facts were checked against `typo3/cms-workspaces` 14.3.10.
@@ -175,9 +175,9 @@ Upload the new file with a different name instead of overwriting the existing fi
 
 | `type` value | Resolution mechanism | Database relations involved |
 |---|---|---|
-| `static` (0) | `sys_file_reference` rows (`tablenames='sys_file_collection'`, `fieldname='files'`) | One `sys_file_reference` row per file |
-| `folder` (1) | `folder_identifier` string (e.g. `1:/user_upload/gallery/`) | None -- no join table, no reference rows |
-| `category` (2) | `category` uid resolved via `sys_category_record_mm` | MM table (handled via parent record overlay) |
+| `static` | `sys_file_reference` rows (`tablenames='sys_file_collection'`, `fieldname='files'`) | One `sys_file_reference` row per file |
+| `folder` | `folder_identifier` string (e.g. `1:/user_upload/gallery/`) | None -- no join table, no reference rows |
+| `category` | `category` uid resolved via `sys_category_record_mm` | MM table (handled via parent record overlay) |
 
 The TCA for `sys_file_collection` has `versioningWS => true`. This means the **collection record itself** gets workspace versions with `t3ver_*` fields. However, the record-level versioning only versions the fields stored in `sys_file_collection` -- it does **not** version the files that the collection resolves.
 
@@ -191,7 +191,7 @@ The TCA for `sys_file_collection` has `versioningWS => true`. This means the **c
 
 ### Why Folder-Based Collections Break Workspace Isolation
 
-For folder-based collections, the "relation" between the collection and its files is **not a database relation**. The collection record stores only a `folder_identifier` string. When `FolderBasedFileCollection::loadContents()` is called, TYPO3 calls `$storage->getFilesInFolder()` to list files directly from the live storage driver. There is no overlay-capable database row between the collection and its files.
+For folder-based collections, the "relation" between the collection and its files is **not a database relation**. The collection record stores only a `folder_identifier` string. When `FolderBasedFileCollection::loadContents()` is called, TYPO3 calls `$this->folder->getFiles()` (`Folder::getFiles()`, 14.3.7) to list files directly from the live storage driver. There is no overlay-capable database row between the collection and its files.
 
 **Consequences:**
 

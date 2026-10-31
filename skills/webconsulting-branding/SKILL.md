@@ -1,7 +1,7 @@
 ---
 name: "webconsulting-branding"
 description: "Applies the current webconsulting.at design system: borderless square surfaces, Hanken Grotesk typography, teal/ink color tokens, invoice-led information hierarchy, a header-only brand notice, logo-first project icons, MDX patterns, dark mode, accessibility, and shadcn/ui integration. Use when building or reviewing webconsulting.at pages, internal tools, tracker/GitLab themes, project catalogs, TYPO3 templates, brand assets, or visual consistency."
-compatibility: "TYPO3 14.x"
+compatibility: "Tailwind v4, shadcn/ui; TYPO3 14.3 templates where used"
 metadata:
   skill_type: preference
   version: "3.0.0"
@@ -11,7 +11,7 @@ license: "MIT / CC-BY-SA-4.0"
 
 # webconsulting Design System
 
-> Source: https://github.com/dirnbauer/webconsulting-skills
+> Source: https://github.com/dirnbauer/typo3-skills
 
 The current webconsulting language is flat, square, precise, and content-led. It
 uses typography, spacing, surface color, and filled emphasis to create hierarchy.
@@ -413,5 +413,3 @@ Before shipping, verify:
 - Project icons use real logos or favicon fallbacks with recorded sources.
 - Focus remains visible after border removal.
 - Light/dark contrast and 320px reflow pass.
-
-Source: https://github.com/dirnbauer/webconsulting-skills

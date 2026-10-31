@@ -10,7 +10,7 @@ license: "MIT / CC-BY-SA-4.0"
 
 # TYPO3 Initial Extension Release
 
-> Source: https://github.com/dirnbauer/webconsulting-skills
+> Source: https://github.com/dirnbauer/typo3-skills
 
 Prepares a TYPO3 14.3+ extension for its first official release, usually `1.0.0`. The release is
 ready only when code, Composer metadata, documentation, labels, CI, security posture and the final
@@ -71,12 +71,14 @@ review agree with the public promise; updating version strings is the smallest p
 3. **Tooling and CI.** Run the project's gates, adapted to its commands:
 
    ```bash
+   # Composer checks run inside the DDEV web container
    ddev composer validate --strict
    ddev composer normalize --dry-run
-   ddev Build/Scripts/runTests.sh -s unit
-   ddev Build/Scripts/runTests.sh -s functional
-   ddev Build/Scripts/runTests.sh -s phpstan
-   ddev Build/Scripts/runTests.sh -s cgl
+   # runTests.sh drives Docker itself, so run it on the host, not through ddev
+   Build/Scripts/runTests.sh -s unit
+   Build/Scripts/runTests.sh -s functional
+   Build/Scripts/runTests.sh -s phpstan
+   Build/Scripts/runTests.sh -s cgl
    ```
 
    The CI matrix and local runner cover every PHP version `composer.json` promises. For a PHP 8.5

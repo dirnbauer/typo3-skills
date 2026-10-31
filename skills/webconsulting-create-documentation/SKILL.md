@@ -8,7 +8,7 @@ license: "MIT / CC-BY-SA-4.0"
 ---
 # webconsulting — Create Documentation
 
-> Source: https://github.com/dirnbauer/webconsulting-skills
+> Source: https://github.com/dirnbauer/typo3-skills
 
 End-to-end workflow for building product documentation: help pages, AI-generated illustrations, narrated product tour videos (Remotion + ElevenLabs TTS + Suno AI music), and GitHub README visual documentation.
 
@@ -16,7 +16,7 @@ End-to-end workflow for building product documentation: help pages, AI-generated
 
 ```
 1. Create help page       → React component with collapsible sections
-2. Generate illustrations → AI image generation tool (GenerateImage)
+2. Generate illustrations → client-provided GenerateImage tool, or Playwright screenshots (Phase 7) when it is absent
 3. Build Remotion video   → Animated scenes with narration subtitles
 4. Generate TTS audio     → ElevenLabs API or macOS `say` fallback
 5. Generate music         → Suno AI background music (optional)
@@ -82,7 +82,7 @@ is a generated project output, not a bundled skill resource; use the implementat
 **Free tier limits**: 10,000 credits/month (verified 2026-10-31 on
 [elevenlabs.io/pricing](https://elevenlabs.io/pricing)); the commercial licence starts with the
 paid Starter plan. Credits per character differ by model and plans change, so check that page
-before promising a number of regenerations. The full narration script is ~600 characters.
+before promising a number of regenerations. The full narration script is ~750 characters.
 
 ## Phase 1: Help Page
 
@@ -132,9 +132,13 @@ function Screenshot({ src, alt, caption }) { /* Next/Image with caption */ }
 
 ## Phase 2: Screenshots / Illustrations
 
-Since browser automation for screenshots can be unreliable, use AI-generated illustrations.
+Since browser automation for screenshots can be unreliable, use AI-generated illustrations when
+the client offers an image tool.
 
 ### Using the GenerateImage tool
+
+`GenerateImage` is a client-provided tool (Claude.ai and some IDE clients offer one), not part of
+this skill. When the session has no such tool, Playwright screenshots (Phase 7) are the default.
 
 ```
 GenerateImage({
@@ -182,7 +186,7 @@ export const RemotionRoot = () => (
   <Composition
     id="ProductTour"
     component={ProductTour}
-    durationInFrames={30 * 45}  // 45 seconds at 30fps
+    durationInFrames={TOTAL_FRAMES}  // from narration-durations.ts; a fixed 30 * 45 truncates the ~75 s tour
     fps={30}
     width={1920}
     height={1080}

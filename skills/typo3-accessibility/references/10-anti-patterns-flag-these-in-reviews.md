@@ -1,7 +1,5 @@
 # 10. Anti-Patterns (Flag These in Reviews)
 
-Continues `typo3-accessibility` from [full guide](full-guide.md).
-
 ## 10. Anti-Patterns (Flag These in Reviews)
 
 | Anti-Pattern | Fix |

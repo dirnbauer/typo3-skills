@@ -37,14 +37,3 @@ ddev typo3 extension:setup --extension=my_sitepackage
 # `database:updateschema` exists only with helhum/typo3-console — do not assume it in plain Core projects
 ```
 
-### Integration with Extbase
-
-After creating Record Types with proper table names, generate Extbase models:
-
-```bash
-# If typo3:make:model is available
-ddev typo3 make:model --extension=my_sitepackage
-
-# Generate repository
-ddev typo3 make:repository --extension=my_sitepackage
-```

@@ -1,8 +1,8 @@
 # EXT:solr Frontend: Custom JavaScript Integration
 
-> Sub-guide of `typo3-solr`, loaded from its `SKILL.md` when needed: Custom JavaScript integration for EXT:solr search, suggest/autocomplete, and facet filtering without jQuery. Vanilla JS examples and AJAX endpoints for TYPO3 Fluid templates.
+> Sub-guide of `typo3-solr`, loaded from its `SKILL.md` when needed: Custom JavaScript integration for EXT:solr search, suggest/autocomplete, and facet filtering with your own markup. Vanilla JS examples and AJAX endpoints for TYPO3 Fluid templates.
 
-> **Why this supplement?** EXT:solr ships with jQuery-based suggest and AJAX. Modern TYPO3 projects often avoid jQuery. This guide shows how to use EXT:solr's AJAX endpoints with vanilla JavaScript or lightweight frameworks.
+> **Why this supplement?** EXT:solr 14 ships without jQuery: `Resources/Public/JavaScript/` holds vanilla controllers (`search_controller.js`, `suggest_controller.js`, `facet_*_controller.js`) and `autocomplete.min.js` (verified in 14.0.2). This guide is for projects that want their own markup and request handling instead of the shipped controllers; section 5 applies to EXT:solr 13 and older only.
 
 ## Contents
 
@@ -10,7 +10,7 @@
 - [2. Suggest / Autocomplete with Vanilla JS](#2-suggest--autocomplete-with-vanilla-js)
 - [3. Facet Filtering with Vanilla JS](#3-facet-filtering-with-vanilla-js)
 - [4. Search Results with Vanilla JS](#4-search-results-with-vanilla-js)
-- [5. Removing jQuery Dependency](#5-removing-jquery-dependency)
+- [5. Removing jQuery (EXT:solr 13 and older)](#5-removing-jquery-extsolr-13-and-older)
 
 ## 1. EXT:solr AJAX Endpoints
 
@@ -76,7 +76,7 @@ tx_solr_ajaxPage {
         extensionName = Solr
         pluginName = pi_results
         # v14: a single controller/action only. `switchableControllerActions` was
-        # removed in v12.4 (ignored on v14) and `vendorName` is a no-op — both dropped.
+        # deprecated in v10.3 (#89463) and is ignored on v14; `vendorName` is a no-op — both dropped.
         controller = Search
         action = results
         view < plugin.tx_solr.view
@@ -149,7 +149,7 @@ class SolrSuggest {
   async fetchSuggestions(query) {
     try {
       const url = new URL(this.options.suggestUrl, window.location.origin);
-      url.searchParams.set('tx_solr[q]', query);
+      url.searchParams.set('tx_solr[queryString]', query); // parameter name as in suggest_controller.js (14.0.2)
 
       const response = await fetch(url.toString(), {
         headers: { 'Accept': 'application/json' },
@@ -424,12 +424,12 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 ```
 
-## 5. Removing jQuery Dependency
+## 5. Removing jQuery (EXT:solr 13 and older)
 
-To use EXT:solr without jQuery:
+EXT:solr 14 has no jQuery to remove; skip this section there. On EXT:solr 13 and older:
 
-1. Do **NOT** include the TypoScript template "Search - Ajaxify the searchresults with jQuery"
-2. Do **NOT** include the TypoScript template "(Example) Suggest/autocomplete with jquery"
+1. Do not include the static template "Search - Ajaxify the search results" (titles as registered in `Configuration/TCA/Overrides/sys_template.php`)
+2. Do not include the static template "Search - (Example) Suggest/autocomplete"
 3. Configure the AJAX page type manually (see section 1)
 4. Replace `solr-ajaxified` CSS class with `data-solr-*` attributes in your Fluid templates
 5. Use the vanilla JS classes from this guide

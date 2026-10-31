@@ -2,6 +2,14 @@
 
 Read this reference before creating `design.md`, `tokens.json`, generated imagery, or the PDF.
 
+## Contents
+
+- [design.md](#designmd)
+- [tokens.json](#tokensjson)
+- [AI visual](#ai-visual)
+- [One-page PDF](#one-page-pdf)
+- [Synchronization](#synchronization)
+
 ## `design.md`
 
 Make `design.md` the human- and machine-readable policy source. Include:
@@ -43,7 +51,10 @@ Set `meta.color_ramp_status` to one of:
   not be consumed as an approved production token.
 
 Trace every ramp value to an approved source or mark the entire ramp `proposed`. Never fill missing
-50–950 steps by interpolation and silently present them as brand decisions.
+50–950 steps by interpolation and silently present them as brand decisions. `approved` and
+`proposed` ramps must carry all eleven steps and the audit script fails on a gap; an
+`audited_existing` ramp lists only the shades that exist, and the script downgrades the gap to a
+warning that the page documents.
 
 Each `contrast_evidence` item contains `foreground`, `background`, `minimum`, `purpose`, and
 `allowed`. The foreground/background may reference a key in `colors` or use a hex value. The audit
@@ -59,7 +70,9 @@ of inferring it from the file format.
 ## AI visual
 
 Generate one new supporting bitmap with the built-in image generator unless an approved project
-visual already serves the same purpose. Use this prompt frame:
+visual already serves the same purpose. When the client has no image-generation tool, fall back to
+an approved existing project visual or to deterministic vector artwork derived from the tokens,
+and record the route taken in the report. Use this prompt frame:
 
 ```text
 Use case: scientific-educational or ads-marketing

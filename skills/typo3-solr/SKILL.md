@@ -5,16 +5,16 @@ compatibility: "TYPO3 14.x"
 metadata:
   skill_type: preference
   version: "1.0.0"
-  related_skills: "typo3-content-blocks, typo3-datahandler, typo3-seo"
+  related_skills: "typo3-content-blocks, typo3-datahandler, typo3-scheduler-jobs, typo3-seo"
   origin: "webconsulting"
 license: "MIT / CC-BY-SA-4.0"
 ---
 # Apache Solr for TYPO3
 
-> Source: https://github.com/dirnbauer/webconsulting-skills
+> Source: https://github.com/dirnbauer/typo3-skills
 
 > **Compatibility:** Target **TYPO3 14.3** and match EXT:solr, server and configset using the [official Version Matrix](https://docs.typo3.org/p/apache-solr-for-typo3/solr/main/en-us/Appendix/VersionMatrix.html) and actual package metadata. Stable EXT:solr 14 is available; recheck compatible stable releases at execution time.
-> All custom PHP examples use TYPO3 v14 conventions (PHP 8.2+, constructor promotion, `#[AsEventListener]` where shown).
+> All custom PHP examples use TYPO3 14.3 conventions and run on PHP 8.4 (constructor promotion, `#[AsEventListener]` where shown). EXT:solr 14 declares `php ^8.2` and `typo3/cms-core ^v14.3.0`.
 
 > **TYPO3 API first:** use TYPO3's built-in APIs and EXT:solr's TypoScript and PSR-14 events before writing a custom implementation.
 
@@ -98,11 +98,11 @@ sequenceDiagram
 
 ## 2. Version compatibility matrix (upstream)
 
-**Target for this skill:** TYPO3 **v14.x** with the **EXT:solr** release row that matches your Core on the [official Version Matrix](https://docs.typo3.org/p/apache-solr-for-typo3/solr/main/en-us/Appendix/VersionMatrix.html). Older rows are **reference only** for legacy sites.
+**Target for this skill:** TYPO3 **14.3+** with the **EXT:solr** release row that matches your Core on the [official Version Matrix](https://docs.typo3.org/p/apache-solr-for-typo3/solr/main/en-us/Appendix/VersionMatrix.html). Older rows are **reference only** for legacy sites.
 
 | EXT:solr | TYPO3 | Apache Solr | Configset | PHP | EXT:tika | EXT:solrfal |
 |----------|-------|-------------|-----------|-----|----------|-------------|
-| **14.0.x** (see matrix / Packagist) | **14.x** | per matrix | `ext_solr_14_0_0` (when used) | **^8.2** | per matrix | per matrix |
+| **14.0.x** (see matrix / Packagist) | **14.3+** (`^v14.3.0`) | per matrix | `ext_solr_14_0_0` (when used) | `^8.2` declared; run 8.4 | per matrix | per matrix |
 | 13.1.x | *(not a target for this collection)* | 9.10.1 | `ext_solr_13_1_0` | ^8.2 | 13.1 | 13.0 |
 
 Latest stable **14.0.2** (2026-09-16) requires Core `^v14.3.0` and PHP `^8.2` (Packagist,
@@ -231,7 +231,7 @@ Deploy the matching configset and TYPO3 plugin using the installed EXT:solr rele
 instructions. Do not recursively copy the entire resource tree over an existing installation:
 Solr majors differ in plugin loading and directory layout. Back up configuration and indexes first.
 
-Create cores via `core.properties` files, `solrctl`, or the Solr Admin API. **Payload shape differs by Solr major** (v8 vs v9 “v2” APIs) — treat any one-liner `curl` as illustrative and follow the Solr version you run.
+Create cores via `core.properties` files, `solrctl`, or the Solr Admin API. **Payload shape differs by Solr major** (Solr 10.0.0, the matrix target, prefers the v2 API; the legacy `admin/cores` endpoint still answers) — treat any one-liner `curl` as illustrative and follow the Solr version you run.
 
 ```bash
 # Illustrative only — confirm against your Solr admin API docs / use bin/solr or ddev solrctl for local setups
@@ -314,7 +314,7 @@ graph TD
     Question{"Do you index files?<br/>(PDF, DOCX, XLSX)"}
     Question -->|Yes| NeedTika[Install EXT:tika + EXT:solrfal]
     Question -->|No| SkipTika[Skip -- EXT:solr handles<br/>pages and records natively]
-    NeedTika --> TikaServer["Run Tika Server 3.2.3+<br/>(Docker recommended)"]
+    NeedTika --> TikaServer["Run Tika Server 3.2.3 or newer<br/>(Docker recommended)"]
 ```
 
 **Three backends (choose one):**
@@ -325,20 +325,22 @@ graph TD
 | **Solr Cell** | Acceptable | Uses Tika built into Solr, no extra service needed |
 | **Tika App** | Deprecated | Requires Java on webserver, do not use |
 
-**When you NEED EXT:tika:**
+**When EXT:tika is needed:**
 - File indexing via EXT:solrfal (search inside PDFs, Word documents, etc.)
 - Automatic FAL metadata enrichment (EXIF, XMP, document properties)
 - Language detection on uploaded files
 
-**When you DON'T need it:**
+**When it is not needed:**
 - Only indexing pages and structured records (news, events, products) via Index Queue
 - EXT:solr handles page content and record fields natively without Tika
 
-**Version:** The official matrix checked on 2026-09-26 lists **EXT:tika 14.0** and
-**EXT:solrfal 14.0** for TYPO3 14.3 / EXT:solr 14.0. The previous “not yet available” statement
-is obsolete. Resolve the actual packages and Tika server requirements together; an old
-13.1 example is not a target pin. Check [Apache Solr security](https://solr.apache.org/security.html)
-and Apache Tika advisories before deploying the server images.
+**Version:** The official matrix lists **EXT:tika 14.0** and **EXT:solrfal 14.0** for TYPO3 14.3 /
+EXT:solr 14.0; EXT:tika 14.0.0 is on Packagist since 2026-08-21 (verified 2026-10-31). Tika Server:
+EXT:tika documents Tika 3.2 or newer, this skill pins `apache/tika:3.2.3` as the floor; the newest
+3.x image on Docker Hub is 3.3.3.0 (a 4.x line exists, verified 2026-10-31). Resolve the packages
+and the server image together; an old 13.1 example is not a target pin. Check
+[Apache Solr security](https://solr.apache.org/security.html) and Apache Tika advisories before
+deploying the server images.
 
 Read [SKILL-SOLRFAL.md](SKILL-SOLRFAL.md) when PDFs or other files must be indexed (EXT:solrfal and Tika).
 Read [SKILL-FRONTEND.md](SKILL-FRONTEND.md) when the results page, suggest/autocomplete or facets need
@@ -363,6 +365,25 @@ This skill is based on the following authoritative sources:
 12. [Mittwald Solr Docs](https://developer.mittwald.de/docs/v2/platform/databases/solr/)
 13. [helhum/dotenv-connector](https://github.com/helhum/dotenv-connector)
 
-## Detailed Reference
+## References: when to load
 
-Read [the full guide](references/full-guide.md) when the task needs detailed examples, long templates, troubleshooting matrices, appendices, or sections not included above. Keep this file unloaded for narrow tasks so the skill follows progressive disclosure.
+[full-guide.md](references/full-guide.md) is the index. Load one file for the situation at hand:
+
+- [05 Configset & schema](references/05-configset-and-schema.md): deploying `ext_solr_14_0_0`, dynamic field suffixes, site hash and shared cores.
+- [06 Index Queue configuration](references/06-index-queue-configuration.md): `plugin.tx_solr.index.queue.<table>` for a new record table, `additionalPageIds`, records outside the site root.
+- [07 Search configuration](references/07-search-configuration.md): facets, suggest TypoScript, sorting, highlighting, spellcheck and facet route enhancers.
+- [08 Fluid templates & frontend](references/08-fluid-templates-and-frontend.md): overriding the shipped result, facet and pagination partials.
+- [09 PSR-14 events](references/09-psr-14-events-reference.md): changing documents before indexing or the query before it is sent.
+- [10 Independent indexer](references/10-independent-indexer-custom-data.md): pushing documents from a source that is not a TYPO3 table.
+- [11 Vector search](references/11-llm-and-vector-search-solr-server-native.md): KNN/dense-vector fields on the Solr server.
+- [12 Debugging & troubleshooting](references/12-debugging-and-troubleshooting.md): the step-by-step walk from connection check to log file when results are empty.
+- [12.0 How to get debug data](references/12-0-how-to-get-debug-data.md): the exact backend tabs, SQL and log settings to collect before asking for help.
+- [12.7 Database-level debugging](references/12-7-database-level-debugging.md): symptom table and queries against `tx_solr_indexqueue_item`.
+- [13 Testing](references/13-testing.md): unit tests for listeners and functional tests against a Solr core.
+- [14 Best practices](references/14-best-practices.md): go-live checklist, security and performance.
+- [15 Database structure](references/15-database-structure.md): what each `tx_solr_*` table holds.
+- [FAQ / common recipes](references/faq-common-recipes.md): short answers to recurring questions.
+- [Related skills](references/related-skills.md) and [References](references/references.md): sibling skills and upstream links.
+- [v14-only Solr changes](references/v14-only-solr-changes.md): what changed between EXT:solr 12/13 and 14 (site hash, analysis, Fluid 5).
+
+Keep this file unloaded for narrow tasks so the skill follows progressive disclosure.

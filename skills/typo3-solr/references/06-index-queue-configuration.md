@@ -117,7 +117,7 @@ plugin.tx_solr.index.queue.news {
 }
 ```
 
-Enable monitoring in Extension Settings: "Enable tracking of records outside siteroot".
+Enable monitoring in Extension Settings: "Enable/Disable record tracking outside siteroot" (`useConfigurationTrackRecordsOutsideSiteroot`, label from `locallang_be.xlf` in 14.0.2).
 
 ### Monitoring
 

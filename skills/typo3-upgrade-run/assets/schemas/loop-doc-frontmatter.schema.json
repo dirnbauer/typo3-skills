@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/dirnbauer/webconsulting-skills/skills/typo3-upgrade-run/assets/schemas/loop-doc-frontmatter.schema.json",
+  "$id": "https://github.com/dirnbauer/typo3-skills/skills/typo3-upgrade-run/assets/schemas/loop-doc-frontmatter.schema.json",
   "title": "typo3-upgrade-run loop document front matter",
   "description": "Carried by all seven markdown documents in every loop directory, so a gate can be checked by reading one file instead of parsing prose.",
   "type": "object",

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/dirnbauer/webconsulting-skills/skills/typo3-upgrade-run/assets/schemas/finding.schema.json",
+  "$id": "https://github.com/dirnbauer/typo3-skills/skills/typo3-upgrade-run/assets/schemas/finding.schema.json",
   "title": "typo3-upgrade-run finding",
   "description": "One difference, failure or violation. Every finding carries exactly one class; unclassified blocks the gate. See rules/30-finding-classification.md.",
   "type": "object",

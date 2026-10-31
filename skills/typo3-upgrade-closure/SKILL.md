@@ -71,10 +71,13 @@ cannot hide an untested finisher, provider state, authenticated module or warmed
    that capture side by side and `axe-proof` follows; `component-sentinels` and `backend-operations`
    run alone, Lighthouse last ([final-proof order](../typo3-upgrade-run/references/parallel-execution.md#dispatch-what-the-graph-offers)).
 3. Compare HTTP/metadata for all URLs, normalized DOM for all HTML, and pixels for the sealed tiered
-   sample. Missing evidence is not zero.
-4. Run component sentinels before/after: cookie consent first/reject/accept/settings, sliders settled
-   and operated, navigation/focus, forms/Mailpit, search order/empty/pagination, media, login/reset/404,
-   language and project-critical flows.
+   sample. Missing evidence is not zero. When no `capture --label after` exists yet, `http-dom-proof`
+   has nothing to compare and closes `invalid` (the harness lists every URL as missing with zero
+   pairs checked), never `findings`.
+4. Require the `component-sentinels` evidence (owner `typo3-playwright`, runs alone) before/after:
+   cookie consent first/reject/accept/settings, sliders settled and operated, navigation/focus,
+   forms/Mailpit, search order/empty/pagination, media, login/reset/404, language and
+   project-critical flows.
 5. Verify backend login, expected module inventory, editor roles, cache/task/data write round-trip,
    runtime logs, scheduler/search as applicable, Composer audit, schema, and migration idempotence.
    Use `typo3-playwright`: non-admin save/reopen, RTE page/record/file link dialogs, actual plugin

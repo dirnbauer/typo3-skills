@@ -10,10 +10,10 @@ license: "MIT / CC-BY-SA-4.0"
 ---
 # TYPO3 Batch Operations
 
-> Source: https://github.com/dirnbauer/webconsulting-skills
+> Source: https://github.com/dirnbauer/typo3-skills
 
 > Adapted from Boris Cherny's (Anthropic) Claude Code `/batch` skill for TYPO3 contexts.
-> **Target:** TYPO3 v14.x only.
+> **Target:** TYPO3 14.3+ (`^14.3`).
 
 Orchestrate cross-package changes in reviewable, independently testable units. Split by root cause
 and write ownership, not a fixed unit count. Inside an upgrade graph, execute only the assigned
@@ -59,12 +59,12 @@ batch and return its evidence; the parent owns retries, snapshots, deadline and 
 
 **Hook → event mapping (verify in [Core event lists](https://docs.typo3.org/m/typo3/reference-coreapi/main/en-us/ApiOverview/Events/Events/Index.html)):**
 
-> **DataHandler (`t3lib/class.t3lib_tcemain.php`):** TYPO3 Core does **not** expose generic PSR-14 events named like `BeforeRecordOperationEvent` / `AfterRecordOperationEvent` under `TYPO3\CMS\Core\DataHandling\Event`. For datamap/cmdmap reactions, use **`SC_OPTIONS` hook classes** (see [typo3-datahandler](../typo3-datahandler/SKILL.md) §9). Do not “migrate” those hooks to non-existent events.
+> **DataHandler (`t3lib/class.t3lib_tcemain.php`):** TYPO3 Core does **not** expose generic PSR-14 events named like `BeforeRecordOperationEvent` / `AfterRecordOperationEvent` under `TYPO3\CMS\Core\DataHandling\Event`. For datamap/cmdmap reactions, use **`SC_OPTIONS` hook classes** (see [typo3-datahandler: hooks and real Core events](../typo3-datahandler/references/09-extending-datahandler-hooks-and-real-core-events.md)). Do not “migrate” those hooks to non-existent events.
 
 | Hook / legacy API | Typical direction |
 |---|---|
 | `processDatamap_afterDatabaseOperations` / related `SC_OPTIONS` | Keep **`processDatamapClass`** hook methods (no 1:1 Core event) |
-| `processDatamap_preProcessFieldArray` | Keep hook or narrow Core events for your table/field if documented |
+| `processDatamap_preProcessFieldArray` | Keep the hook; Core has no field-level event |
 | `processCmdmap_postProcess` | Keep **`processCmdmapClass`** hook methods |
 | `drawHeaderHook` | `ModifyPageLayoutContentEvent` (Breaking #96526) |
 | `drawFooterHook` | `ModifyPageLayoutContentEvent` (Breaking #96526) |
@@ -99,7 +99,7 @@ batch and return its evidence; the parent owns retries, snapshots, deadline and 
 7. Replace 'renderType' => 'colorPicker' → 'type' => 'color'
 8. Replace 'type' => 'input', 'eval' => 'email' → 'type' => 'email'
 9. Convert items arrays: [0] => label, [1] => value → ['label' => ..., 'value' => ...]
-10. Remove boilerplate columns auto-created from `ctrl` on TYPO3 v14: hidden, starttime, endtime, fe_group, language fields
+10. Remove boilerplate columns auto-created from `ctrl` (TYPO3 13.3+, #104311): hidden, starttime, endtime, fe_group, language fields
 11. Use palettes for enablecolumns: visibility → hidden, access → starttime, endtime
 12. Remove convention fields from ext_tables.sql (auto-added to database)
 13. Run php -l to verify syntax
@@ -190,7 +190,7 @@ User TSconfig:
 
 Icons:
   1. Extract icon registry calls
-  2. Move to Configuration/Icons.php (v14)
+  2. Move to Configuration/Icons.php (available since 11.4, #94692)
   3. Remove from ext_localconf.php
 
 Backend modules:
@@ -248,17 +248,10 @@ CI pipeline:
 
 **Decompose**: One unit per content element / record type.
 
-**Per unit:**
-
-```
-1. Create ContentBlocks/ContentElements/<name>/config.yaml
-2. Map TCA columns to YAML fields
-3. Move Fluid template to `ContentBlocks/ContentElements/<name>/templates/` (not `Source/`)
-4. Align field definitions in `config.yaml` with TCA columns (no separate `EditorInterface.yaml` in Content Blocks)
-5. Remove old TCA override file
-6. Remove SQL from ext_tables.sql (columns become automatic)
-7. Test rendering in frontend
-```
+**Per unit:** follow [typo3-content-blocks SKILL-MIGRATION.md](../typo3-content-blocks/SKILL-MIGRATION.md)
+for the element itself (config.yaml, field mapping, template move, TCA and SQL removal, existing
+records). This skill orders the units across packages and verifies each batch; it does not define
+the block.
 
 ### 10. Localization / XLIFF Batch
 
@@ -283,20 +276,16 @@ Present to user before executing:
 ```
 ## Batch Plan: [Description]
 
-Target: EXT:my_extension (TYPO3 v14)
+Target: packages/* (4 extensions, TYPO3 14.3)
 Files affected: 23
-Units: 8
+Units: 4 (one per package)
 
-| # | Unit | Files | Risk |
-|---|------|-------|------|
-| 1 | TCA/Overrides/tt_content.php | 1 | Low |
-| 2 | TCA/Overrides/pages.php | 1 | Low |
-| 3 | Classes/Controller/ListController.php | 1 | Medium |
-| 4 | Classes/Service/ImportService.php | 1 | Medium |
-| 5 | Resources/Private/Templates/ (6 files) | 6 | Low |
-| 6 | ext_localconf.php → Configuration/ | 4 | Medium |
-| 7 | Tests/Unit/ (new) | 5 | Low |
-| 8 | locallang.xlf updates | 3 | Low |
+| # | Unit (package) | Files | Risk |
+|---|----------------|-------|------|
+| 1 | packages/site_package — Configuration/TCA/Overrides/*.php, Templates/ | 9 | Low |
+| 2 | packages/news_extras — Classes/Controller/ListController.php, Configuration/ | 5 | Medium |
+| 3 | packages/importer — Classes/Service/ImportService.php, Tests/Unit/ | 6 | Medium |
+| 4 | packages/legacy_forms — ext_localconf.php → Configuration/, locallang.xlf | 3 | Medium |
 
 Estimated: ~15 minutes
 
@@ -338,7 +327,6 @@ Stop the batch and report if:
 | Fluid 5.0 types | All Fluid templates with incorrect ViewHelper argument types |
 | FlexForm pointer fields | All FlexForm XML with pointer configurations |
 | Asset `external` property | All TypoScript with `external = 1` |
-| Remove legacy `switchableControllerActions` | Removed in **v12** — not a v14-only migration |
 | Remove legacy plugin subtypes / `list_type` wiring | Removed in **v14** (Important [#105538](https://docs.typo3.org/c/typo3/cms-core/main/en-us/Changelog/14.0/Important-105538-ListTypeAndSubTypes.html)) |
 
 ---
@@ -350,4 +338,4 @@ Adapted from Boris Cherny's (Anthropic) Claude Code bundled `/batch` skill for T
 **Copyright (c) Anthropic** — Batch operation patterns (MIT License)
 
 
-Source: https://github.com/dirnbauer/webconsulting-skills
+Source: https://github.com/dirnbauer/typo3-skills

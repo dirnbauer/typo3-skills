@@ -36,10 +36,10 @@ existing repository entries and any approved project-specific package source:
 }
 ```
 
-Then a project-approved installation of the reviewed version line can use:
+Then a project-approved installation of the reviewed snapshot can use:
 
 ```bash
-composer require webconsulting/webcon-jev:^0.2.6
+composer require webconsulting/webcon-jev:0.2.6
 vendor/bin/typo3 extension:setup
 ```
 
@@ -47,11 +47,11 @@ Use the stable Git tag rather than globally lowering `minimum-stability`. Review
 source reference, dependency diff and schema changes. Follow the project's migration/backup workflow;
 do not run setup against production just to check a skill example.
 
-`^0.2.6` currently resolves to **v0.2.17** (`27824830`, checked 2026-10-31), not the reviewed
-snapshot. The newest tag, **v0.3.1** (`0395d720`, 2026-10-24), is outside `^0.2.6`; require
-`^0.3.1` only after reviewing it against this guide. Its manifest keeps the requirements in the
-table above, and the public Packagist endpoint still returned 404 on 2026-10-31. Pin `0.2.6` to
-reproduce the reviewed snapshot, or review v0.2.7+ first. v0.2.8 added a frontend debug
+The exact pin reproduces what this guide reviewed. The escape hatch is `^0.2.6`, which currently
+resolves to **v0.2.17** (`27824830`, checked 2026-10-31): use it only after reviewing the v0.2.7+
+tags against this guide. The newest tag, **v0.3.1** (`0395d720`, 2026-10-24), is outside `^0.2.6`;
+require `^0.3.1` only after the same review. Its manifest keeps the requirements in the table
+above, and the public Packagist endpoint still returned 404 on 2026-10-31. v0.2.8 added a frontend debug
 panel switched by `plugin.tx_webconjev.settings.debug` (site set `webconsulting/webcon-jev`). When
 on, it renders the state sent to Jev, the answers and the routing receiver addresses into the page,
 and visitors see it too. Keep it off in production, or set it only inside a

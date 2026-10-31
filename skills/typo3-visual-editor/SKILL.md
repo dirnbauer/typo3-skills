@@ -9,7 +9,7 @@ license: "MIT / CC-BY-SA-4.0"
 
 # TYPO3 Visual Editor
 
-> Source: https://github.com/dirnbauer/webconsulting-skills
+> Source: https://github.com/dirnbauer/typo3-skills
 
 Makes a TYPO3 project ready for `friendsoftypo3/visual-editor`, an in-backend frontend editing mode
 with inline text editing, drag-and-drop, adding and removing content elements, workspace support
@@ -374,7 +374,6 @@ No. It improves contextual editing, but complex fields, media replacement, permi
 
 ## Sources
 
-Source: https://github.com/dirnbauer/webconsulting-skills
 - FriendsOfTYPO3 `visual_editor`: https://github.com/FriendsOfTYPO3/visual_editor
 - TYPO3 Fluid `f:render.contentArea` ViewHelper: https://docs.typo3.org/other/typo3/view-helper-reference/main/en-us/Global/Render/ContentArea.html
 - TYPO3 Fluid `f:render.text` ViewHelper: https://docs.typo3.org/other/typo3/view-helper-reference/main/en-us/Global/Render/Text.html

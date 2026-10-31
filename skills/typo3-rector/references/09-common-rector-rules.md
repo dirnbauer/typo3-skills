@@ -12,10 +12,10 @@ Rector automatically handles namespace changes between versions.
 
 ```php
 <?php
-// ❌ Old (deprecated since v14.3)
+// before (deprecated since v14.3):
 GeneralUtility::getIndpEnv('TYPO3_REQUEST_HOST');
 
-// ✅ New (TYPO3 v14) — inject the PSR-7 request, don't read $GLOBALS
+// v14: inject the PSR-7 request, don't read $GLOBALS
 public function doSomething(ServerRequestInterface $request): void
 {
     $normalizedParams = $request->getAttribute('normalizedParams');
@@ -27,11 +27,11 @@ public function doSomething(ServerRequestInterface $request): void
 
 ```php
 <?php
-// ❌ Old (removed in TYPO3 v14 migration path)
+// before (ObjectManager, removed on the v14 migration path):
 $objectManager = GeneralUtility::makeInstance(ObjectManager::class);
 $service = $objectManager->get(MyService::class);
 
-// ✅ New (Dependency Injection)
+// v14: dependency injection
 public function __construct(
     private readonly MyService $myService,
 ) {}

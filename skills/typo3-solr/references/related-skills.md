@@ -6,6 +6,6 @@ Continues `typo3-solr` from [full guide](full-guide.md).
 
 - **typo3-datahandler**: Database operations that trigger Solr indexing
 - **typo3-seo**: SEO configuration that complements Solr search
-- **ai-search-optimization**: AEO/GEO for AI search visibility
+- **typo3-scheduler-jobs**: Index Queue worker tasks per Site root and their cadence
 - **typo3-content-blocks**: Content Elements that can be indexed
 - **typo3-testing**: Testing patterns for TYPO3 extensions

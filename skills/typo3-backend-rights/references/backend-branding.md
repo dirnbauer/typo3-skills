@@ -13,7 +13,7 @@ login. Keep the changes in the project sitepackage and instance configuration; n
 
 ## Three environment colours, each site's own design
 
-Owner preference of 2026-10-21, based on the Ombudsstelle login treatment: retain **three base
+Owner preference of 2026-10-21, based on the Site K login treatment: retain **three base
 colour families**, not the reference site's artwork. Use green for Live (`#0e714b` accent), orange
 for Staging (`#a14d00`), blue for DDEV (`#0a5f96`). Backgrounds use lighter/darker tints within the
 corresponding family. Logo colours stay intact; do not use the customer's palette to replace the
@@ -23,7 +23,7 @@ Inspect the target site's actual logo, hero shapes, illustrations and recurring 
 two or three recognizable motifs with source paths, then adapt them into three matching calm
 backgrounds. The reference uses layered curved forms, subtle texture/shadow and a quiet centre;
 a river site might supply flowing contours, a technical site its own geometric motif. Do not copy
-Ombudsstelle's logo, circles, images or content blindly, and do not invent motifs from the site name.
+Site K's logo, circles, images or content blindly, and do not invent motifs from the site name.
 
 Keep a generous clear area behind the login/reset/MFA card, readable edges under `cover` cropping,
 no embedded text, busy photo, network-line overlay or animation. Use a consistent composition
@@ -66,7 +66,9 @@ declare(strict_types=1);
 // $isVerifiedStaging comes from this project's inspected configuration/path identity, not its hostname.
 return static fn (string $context, bool $isVerifiedStaging): array => match (true) {
     $isVerifiedStaging || $context === 'Production/Staging' => ['label' => 'Staging', 'color' => '#a14d00', 'key' => 'staging'],
-    $context === 'Development/Docker' => ['label' => 'Entwicklung (DDEV)', 'color' => '#0a5f96', 'key' => 'ddev'],
+    // Core roots are Development, Testing and Production (ApplicationContext.php); the sub-context
+    // (e.g. Development/Docker) is the project's own value from .ddev/config.yaml, so match the root.
+    str_starts_with($context, 'Development') => ['label' => 'Entwicklung (DDEV)', 'color' => '#0a5f96', 'key' => 'ddev'],
     in_array($context, ['Production', 'Production/Live'], true) => ['label' => 'Live', 'color' => '#0e714b', 'key' => 'live'],
     default => ['label' => 'Kontext ' . str_replace('/', ' · ', $context), 'color' => '#0a5f96', 'key' => 'other'],
 };
@@ -114,7 +116,7 @@ The mapping rules:
 
 | Real context | Label | Highlight colour |
 |---|---|---|
-| `Development/Docker` outside verified staging | `Entwicklung (DDEV)` | blue `#0a5f96` |
+| any `Development*` context (e.g. `Development/Docker` from `.ddev/config.yaml`) outside verified staging | `Entwicklung (DDEV)` | blue `#0a5f96` |
 | `Production/Staging`, or any context on the verified staging release path | `Staging` | orange `#a14d00` |
 | `Production` or `Production/Live` outside verified staging | `Live` | green `#0e714b` |
 | anything else | `Kontext <readable context>` | reuse blue; never pretend it is DDEV or Live |

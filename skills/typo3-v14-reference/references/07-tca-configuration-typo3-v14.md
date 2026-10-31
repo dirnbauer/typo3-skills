@@ -105,11 +105,11 @@ Since **TYPO3 v13.3+**, column definitions for fields referenced in `ctrl` are *
 ```php
 <?php
 // Configuration/TCA/Overrides/pages.php
-// New pages are disabled by default
-$GLOBALS['TCA']['pages']['columns']['disabled']['config']['default'] = 1;
+// New pages are hidden by default; pages.php maps 'disabled' => 'hidden' (14.3.7)
+$GLOBALS['TCA']['pages']['columns']['hidden']['config']['default'] = 1;
 ```
 
-> **Important:** Auto-creation only works for `ctrl` properties in base `Configuration/TCA/` files, NOT in `Configuration/TCA/Overrides/`.
+> Auto-creation only works for `ctrl` properties in base `Configuration/TCA/` files, not in `Configuration/TCA/Overrides/`.
 >
 > See: [Common fields](https://docs.typo3.org/permalink/t3tca:fields-for-datahandler) | [Auto-created columns](https://docs.typo3.org/m/typo3/reference-tca/main/en-us/Ctrl/AutoCreatedColumns.html)
 

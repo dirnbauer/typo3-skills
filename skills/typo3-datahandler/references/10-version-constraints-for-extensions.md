@@ -1,7 +1,5 @@
 # 10. Version Constraints for Extensions
 
-Continues `typo3-datahandler` from [full guide](full-guide.md).
-
 ## 10. Version Constraints for Extensions
 
 Declare the range in `composer.json`; it is the source of truth in v14:

@@ -1,6 +1,4 @@
-# 7. Testing & Tools / WCAG 2.2 Audit Workflow
-
-Continues `typo3-accessibility` from [full guide](full-guide.md).
+# 7. Testing & Tools / Spot-checking the page you changed
 
 ## Contents
 
@@ -10,7 +8,7 @@ Continues `typo3-accessibility` from [full guide](full-guide.md).
 
 ## 7.1 Agent-First WCAG 2.2 Audit Protocol
 
-When a user asks for a WCAG 2.2 conformance audit, start the audit. Do not stop after saying that automation is incomplete.
+Use this protocol to spot-check the page whose markup you just fixed. When the user asks for a WCAG 2.2 conformance audit of a whole site, an inventory, a CI baseline or the accessibility statement, hand over to `typo3-wcag22-aa-agentic`; the steps below still describe what one run of the script covers. Do not stop after saying that automation is incomplete.
 
 ### What the agent must do first
 
@@ -74,6 +72,10 @@ node /path/to/skills/typo3-accessibility/scripts/wcag22_audit.cjs \
   --out var/transient/wcag22-audit.json \
   --markdown var/transient/wcag22-audit.md
 ```
+
+Options: `--viewport WIDTHxHEIGHT` sets the browser viewport (default `1280x900`; run a second
+pass with a narrow viewport such as `390x844` for user-facing pages). `--no-keyboard` skips the
+basic Tab-order probe, for pages where a consent dialog or redirect makes the probe meaningless.
 
 Interpretation:
 

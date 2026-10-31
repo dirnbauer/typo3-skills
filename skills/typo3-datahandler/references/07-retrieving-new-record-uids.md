@@ -1,7 +1,5 @@
 # 7. Retrieving New Record UIDs
 
-Continues `typo3-datahandler` from [full guide](full-guide.md).
-
 ## 7. Retrieving New Record UIDs
 
 After processing, get the real UIDs for NEW records:

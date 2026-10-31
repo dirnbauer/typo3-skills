@@ -37,6 +37,14 @@
       "note": "Readiness audit."
     },
     {
+      "id": "typo3-webmcp-trigger-neg-01",
+      "kind": "trigger-negative",
+      "status": "proposed",
+      "prompt": "Use Chrome's built-in Prompt API with Gemini Nano on our site to summarise articles for visitors.",
+      "expect_no_skill": true,
+      "note": "Built-in browser AI running a model in the page is not an agent tool surface; added 2026-10-31."
+    },
+    {
       "id": "typo3-webmcp-trigger-neg-02",
       "kind": "trigger-negative",
       "status": "proposed",
@@ -141,6 +149,7 @@
       "kind": "behaviour",
       "status": "proposed",
       "prompt": "Expose our appointment booking as a WebMCP tool. The agent already asks the user, so no extra confirmation in the page is needed.",
+      "expected_output": "Declines to drop the in-page confirmation, annotates the booking tool as consequential, and submits through the same validated server endpoint the human form uses.",
       "assertions": [
         "Sets consequentialHint on the booking tool and does not mark it readOnlyHint",
         "Keeps a visible human confirmation immediately before the booking is sent",

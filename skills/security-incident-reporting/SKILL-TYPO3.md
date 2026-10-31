@@ -2,11 +2,8 @@
 
 > Sub-guide of `security-incident-reporting`, loaded from its `SKILL.md` when needed: TYPO3-specific incident reporting. Forensic checklist, vulnerability classification, and Security Team communication with PGP templates.
 
-> **Compatibility:** TYPO3 v14.x
-> 
-> **Related Skills:**
-> - [security-incident-reporting](./SKILL.md) - General incident reporting framework
-> - [typo3-security](../typo3-security/SKILL.md) - TYPO3 hardening
+> Parent skill: [security-incident-reporting](./SKILL.md) (general incident reporting framework).
+> Compatibility: TYPO3 v14.x. Hardening after the incident: [typo3-security](../typo3-security/SKILL.md).
 
 ---
 
@@ -53,8 +50,8 @@ Before analyzing an incident, document the exact system state.
 ### Extensions
 | Extension | Version | Source | Status |
 |-----------|---------|--------|--------|
-| news | 11.4.0 | TER/Packagist | Active |
-| solr | 12.0.0 | Packagist | Active |
+| news | 14.x (illustration; current 14.1.2, verified 2026-10-31) | TER/Packagist | Active |
+| solr | 14.x (illustration; current 14.0.2, verified 2026-10-31) | Packagist | Active |
 | custom_ext | 1.2.3 | Private | Active |
 | [abandoned_ext] | 2.0.0 | TER | ⚠️ Abandoned |
 
@@ -116,8 +113,11 @@ composer install --dry-run 2>&1 | grep -i "warning\|error"
 # 2. Check for modified core files
 find vendor/typo3/cms-* -type f -name "*.php" -mtime -7
 
-# 3. Verify package checksums
+# 3. Check installed packages against published security advisories (not an integrity check)
 composer audit
+
+# 3b. Integrity: compare vendor/ with a fresh `composer install` in a clean checkout of the
+#     same commit and lock file; any difference in vendor/ is a finding.
 
 # 4. Check for unexpected PHP files in public directories
 find public/fileadmin public/typo3temp -name "*.php" -o -name "*.phtml"
@@ -225,7 +225,8 @@ WHERE name LIKE '%.php%'
 
 ### Policy of Least Disclosure
 
-> **CRITICAL**: Never discuss vulnerabilities publicly before the official advisory is released.
+> Do not discuss a vulnerability publicly before the official advisory is released; the embargo
+> protects sites that have not patched yet.
 > - No posts in Slack, StackOverflow, or forums
 > - Use PGP-encrypted email only
 > - Respect the embargo period
@@ -367,11 +368,12 @@ Best regards,
 
 ### Embargo Rules
 
-- **DO NOT** discuss the vulnerability publicly
-- **DO NOT** share PoC code outside the report
-- **DO NOT** exploit the vulnerability beyond PoC
-- **DO** respond to Security Team questions promptly
-- **DO** test patches if requested
+The embargo protects every site that has not patched yet, so until the advisory is out:
+
+- Do not discuss the vulnerability publicly.
+- Do not share PoC code outside the report.
+- Do not exploit the vulnerability beyond the PoC needed to demonstrate it.
+- Respond to Security Team questions promptly and test patches if requested.
 
 ### Core vs. Extension Responsibility
 

@@ -58,7 +58,7 @@ manualReviewExportDir: ".a11y/manual-review"
 
 ```bash
 npm install
-npx playwright install chromium
+npx playwright install --with-deps chromium
 npm run a11y:discover
 npm run a11y:test:report-only
 npm run a11y:templates
@@ -113,7 +113,7 @@ npm run a11y:manual:merge
 npm run a11y:statement
 ```
 
-Important rule: do not free-write the Erklärung zur Barrierefreiheit. The statement draft must be generated from `.a11y/open-issues.yml` and documented exceptions only. If an issue is not in `.a11y/open-issues.yml`, either add it structurally or do not mention it as a known non-conformity.
+Do not free-write the Erklärung zur Barrierefreiheit. The statement draft must be generated from `.a11y/open-issues.yml` and documented exceptions only. If an issue is not in `.a11y/open-issues.yml`, either add it structurally or do not mention it as a known non-conformity.
 
 ## Legal profile rules
 

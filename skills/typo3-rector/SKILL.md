@@ -10,7 +10,7 @@ license: "MIT / CC-BY-SA-4.0"
 ---
 # TYPO3 Rector Upgrade Patterns
 
-> Source: https://github.com/dirnbauer/webconsulting-skills
+> Source: https://github.com/dirnbauer/typo3-skills
 
 Rector rewrites TYPO3 **PHP code** toward v14. Non-PHP files (FlexForms, TypoScript, Fluid, YAML,
 XLIFF) belong to `typo3-fractor`; the same change across many extensions belongs to `typo3-batch`;
@@ -117,6 +117,9 @@ extension version and `extra.typo3/cms.Package.providesPackages` into `composer.
 
 ## 4. Key Migration Patterns (TYPO3 v14)
 
+The target APIs are documented in `typo3-v14-reference`; this section keeps only the patterns
+Rector cannot produce on its own and that the diff review has to check by hand.
+
 ### Fluid ViewFactory (Replaces StandaloneView)
 
 The ViewFactory approach works on TYPO3 v14:
@@ -171,7 +174,7 @@ use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
 
 final class ItemController extends ActionController
 {
-    // ✅ Correct: Return ResponseInterface (required in TYPO3 v14)
+    // v14: return ResponseInterface (required)
     public function listAction(): ResponseInterface
     {
         $items = $this->itemRepository->findAll();
@@ -179,14 +182,14 @@ final class ItemController extends ActionController
         return $this->htmlResponse();
     }
 
-    // ✅ Correct: JSON response
+    // v14: JSON response
     public function apiAction(): ResponseInterface
     {
         $data = ['success' => true];
         return $this->jsonResponse(json_encode($data));
     }
 
-    // ✅ Correct: Redirect
+    // v14: redirect
     public function createAction(Item $item): ResponseInterface
     {
         $this->itemRepository->add($item);
@@ -273,7 +276,7 @@ place for TCA changes:
 // Configuration/TCA/Overrides/tt_content.php
 defined('TYPO3') or die();
 
-// ✅ Correct: Static TCA configuration
+// v14: static TCA configuration
 \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addTcaSelectItem(
     'tt_content',
     'CType',
@@ -321,4 +324,3 @@ Load only the file the current task needs:
 - [TYPO3 v14 platform snapshot](references/06-typo3-v14-platform-snapshot.md): when a quick v14
   platform summary (PHP range, TCA, events) is needed.
 - [Resources](references/10-resources.md): when linking upstream documentation.
-- [Credits and attribution](references/credits-and-attribution.md): when citing sources.

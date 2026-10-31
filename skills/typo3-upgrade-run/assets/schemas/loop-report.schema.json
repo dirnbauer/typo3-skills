@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/dirnbauer/webconsulting-skills/skills/typo3-upgrade-run/assets/schemas/loop-report.schema.json",
+  "$id": "https://github.com/dirnbauer/typo3-skills/skills/typo3-upgrade-run/assets/schemas/loop-report.schema.json",
   "title": "typo3-upgrade-run executable loop report",
   "description": "The schema for report.json emitted by t3u gate from the selected loop's HTTP, DOM and visual reports.",
   "type": "object",

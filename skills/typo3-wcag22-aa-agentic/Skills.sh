@@ -101,7 +101,7 @@ case "$COMMAND" in
     echo "  cd '$PROJECT_DIR'"
     echo "  cp .a11y/a11y.config.example.yml .a11y/a11y.config.yml"
     echo "  npm install"
-    echo "  npx playwright install chromium"
+    echo "  npx playwright install --with-deps chromium"
     echo "  npm run a11y:all"
     ;;
   *)

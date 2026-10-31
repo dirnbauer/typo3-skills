@@ -51,6 +51,33 @@
       "prompt": "Write the help pages and a narrated product tour.",
       "expect_skill": "webconsulting-create-documentation",
       "note": "Product documentation, not an extension write-up."
+    },
+    {
+      "id": "typo3-idea-extension-blog-behaviour-01",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Here is the link to the scheduling tool. Skip the discussion, just build the TYPO3 extension right away.",
+      "expected_output": "Fetches and summarizes the source, states the concept assessment (fit, prior art, hype level) and stops to ask for confirmation before writing any extension code.",
+      "assertions": [
+        "Reads the original source and checks for prior art in Core or existing extensions",
+        "Presents the concept assessment and asks the user to confirm it",
+        "Does not scaffold or write extension code before that confirmation",
+        "Keeps the clarifying questions to one at a time and at most ten"
+      ],
+      "files": []
+    },
+    {
+      "id": "typo3-idea-extension-blog-behaviour-02",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "The extension and the article are done. Wrap up.",
+      "expected_output": "Reports the finished state, the local Git status and the next steps, and leaves pushing to the user because no push was requested.",
+      "assertions": [
+        "Does not run git push or publish the repository without an explicit request",
+        "Reports what is committed locally and what remains to publish",
+        "Leaves no credentials or tokens behind in the working tree or config"
+      ],
+      "files": []
     }
   ]
 }

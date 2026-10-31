@@ -109,5 +109,6 @@ and `typo3-backend-rights` for role changes. A screenshot alone is not interacti
 
 Apply Playwright's [best practices](https://playwright.dev/docs/best-practices) and
 [authentication isolation](https://playwright.dev/docs/auth). Recheck installed package APIs
-before using configuration options. Fleet-derived cases are recorded in the September and
+before using configuration options. Fleet-derived cases are recorded in the
+[September](../typo3-upgrade-run/references/run-retrospective-2026-09.md) and
 [October reviews](../typo3-upgrade-run/references/run-retrospective-2026-10-21.md).

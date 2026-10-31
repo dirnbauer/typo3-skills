@@ -13,13 +13,11 @@ Continues `typo3-records-list-types` from [full guide](full-guide.md).
 | `ThumbnailService` | Resolves FAL references, generates thumbnail URLs |
 | `ViewModeResolver` | Determines active view from request/preference/TSconfig |
 | `ViewTypeRegistry` | Registry for built-in + custom view types |
-| `MiddlewareDiagnosticService` | Detects middleware interference with view rendering |
 
 ### ViewHelpers
 
 | ViewHelper | Purpose |
 |------------|---------|
-| `RecordActionsViewHelper` | Renders cached record actions (`<gridview:recordActions>`). Register namespace in Fluid: `xmlns:gridview="http://typo3.org/ns/Webconsulting/RecordsListTypes/ViewHelpers"` (or rely on the extension’s shipped templates). |
 
 ### CSS Architecture
 

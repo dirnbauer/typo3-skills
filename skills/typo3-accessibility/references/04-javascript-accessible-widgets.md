@@ -1,7 +1,5 @@
 # 4. JavaScript: Accessible Widgets
 
-Continues `typo3-accessibility` from [full guide](full-guide.md).
-
 ## Contents
 
 - [4.1 Accordion](#41-accordion)

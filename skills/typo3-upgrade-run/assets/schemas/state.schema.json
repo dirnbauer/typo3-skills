@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/dirnbauer/webconsulting-skills/skills/typo3-upgrade-run/assets/schemas/state.schema.json",
+  "$id": "https://github.com/dirnbauer/typo3-skills/skills/typo3-upgrade-run/assets/schemas/state.schema.json",
   "$defs": {
     "harnessIdentity": {
       "type": "object",

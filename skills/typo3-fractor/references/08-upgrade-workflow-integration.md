@@ -2,8 +2,6 @@
 
 Continues `typo3-fractor` from [full guide](full-guide.md).
 
-## 8. Upgrade Workflow Integration
-
 ### Recommended Order
 
 ```

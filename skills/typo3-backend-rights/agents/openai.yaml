@@ -1,4 +1,4 @@
 interface:
   display_name: "TYPO3 Backend Rights"
   short_description: "Build simple extensible editor permissions"
-  default_prompt: "Use $typo3-backend-rights to configure one main TYPO3 editor role with four leaf groups and perform a lockout-safe user/page cutover."
+  default_prompt: "Use $typo3-backend-rights to audit and repair TYPO3 backend editor rights after deciding the group model, with a lockout-safe user/page cutover."

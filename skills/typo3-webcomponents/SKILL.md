@@ -7,7 +7,7 @@ description: "Builds, reviews, or migrates TYPO3 v14 backend Web Components with
 
 # TYPO3 Web Components
 
-> Source: https://github.com/dirnbauer/webconsulting-skills
+> Source: https://github.com/dirnbauer/typo3-skills
 
 Use this skill for TYPO3 v14 backend programming with standards-based Web Components and Lit.
 TYPO3 v14 is the only compatibility target: add TYPO3 12/13 fallbacks only when the user asks for a
@@ -75,7 +75,7 @@ In TYPO3 v14 frontend asset concatenation/compression was removed from Core, so 
 Use these sources when refreshing facts:
 
 - The installed `vendor/typo3/cms-*` source first, then the official TYPO3 docs: ES modules/import maps, backend modules, AssetCollector and `f:asset.module`, backend AJAX, Form Editor, and v14 changelogs.
-- Camino: Camp Vienna "Lit it Up!" by ochorocho: `https://dev.ochorocho.dev/camp-vienna#/`.
+- Talk: Camp Vienna "Lit it Up!" by ochorocho: `https://dev.ochorocho.dev/camp-vienna#/`.
 - Demo extension: `https://github.com/ochorocho/lit_demo`.
 - Lit docs: `https://lit.dev/`.
 - MDN Web Components reference: `https://developer.mozilla.org/en-US/docs/Web/API/Web_components`.

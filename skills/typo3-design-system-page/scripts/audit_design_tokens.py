@@ -60,6 +60,7 @@ def main() -> int:
         return 2
 
     errors: list[str] = []
+    warnings: list[str] = []
     meta = require_mapping(document, "meta", errors)
     colors = require_mapping(document, "colors", errors)
     ramp = require_mapping(document, "color_ramp", errors)
@@ -77,9 +78,16 @@ def main() -> int:
         )
     for name, value in colors.items():
         resolve_color(value, {}, f"colors.{name}", errors)
-    missing_ramp = sorted(REQUIRED_RAMP - set(ramp))
+    missing_ramp = sorted(REQUIRED_RAMP - set(ramp), key=int)
     if missing_ramp:
-        errors.append("color_ramp is missing: " + ", ".join(missing_ramp))
+        # An audited ramp may only list shades that exist in the project, so gaps are
+        # expected there and must not be closed by interpolation. Approved and proposed
+        # ramps are complete by definition.
+        message = "color_ramp is missing: " + ", ".join(missing_ramp)
+        if ramp_status == "audited_existing":
+            warnings.append(message + " (allowed for audited_existing; do not interpolate)")
+        else:
+            errors.append(message)
     for name, value in ramp.items():
         resolve_color(value, {}, f"color_ramp.{name}", errors)
     for role in ("display", "body"):
@@ -131,6 +139,8 @@ def main() -> int:
         print(result)
     if ramp_status in allowed_ramp_statuses:
         print(f"color_ramp status: {ramp_status}")
+    for warning in warnings:
+        print(f"WARNING: {warning}", file=sys.stderr)
     if errors:
         for error in errors:
             print(f"ERROR: {error}", file=sys.stderr)

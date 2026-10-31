@@ -25,6 +25,9 @@ Treat this as a **2026-09-26 source snapshot**, not an eternal compatibility gua
 | dirnbauer powermail_cond fork | `typo3-v14` at `fc5324f9` | tag 14.0.0 (`004f0bfe`) | PHP `^8.4`; Core `^14.3`; Powermail `^14.0` |
 
 The conditions fork now has a stable tag: require `^14.0` instead of `dev-typo3-v14`.
+The fork repositories are private; the source links in [conditions](SKILL-CONDITIONS.md) and
+`references/` need repository access. Without it, read the same paths in the installed
+`vendor/in2code/powermail` and `vendor/in2code/powermail-cond` copies.
 
 Read [version evidence and installation](references/v14-only-changes.md) before modifying
 Composer. Public upstream advertises a vendor Early Access Programme for v14; do not confuse
@@ -92,6 +95,10 @@ Use an authorized local mail sink. Verify recipient/sender, content, storage and
 test confirmation and opt-in only if enabled. Check keyboard operation, focus and errors when a
 field disappears. For uploads verify both condition-request exclusion and final submission.
 Never send real customer data to a test service.
+
+Run `php skills/typo3-powermail/scripts/check-comparison.php /clone/powermail_cond` against a
+Git clone of the conditions fork: it loads the real `Rule` and `Comparison` classes and checks
+eleven operator cases with model doubles. It proves the comparator source, not TYPO3 integration.
 
 Report source inspection, syntax/unit checks and actual TYPO3/browser/mail tests separately.
 Stop with an explicit gap if no runnable project fixture exists. Do not call unexecuted examples

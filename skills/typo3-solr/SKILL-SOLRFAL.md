@@ -47,9 +47,9 @@ When files are indexed, search results display differently from page results:
 | Component | Version | Required? |
 |-----------|---------|-----------|
 | EXT:solr | Match your TYPO3 Core (see [Version Matrix](https://docs.typo3.org/p/apache-solr-for-typo3/solr/main/en-us/Appendix/VersionMatrix.html)) | Yes |
-| EXT:solrfal | Match EXT:solr major (v14 not yet released — check Version Matrix) | Yes |
-| EXT:tika | Match EXT:solr major (v14 not yet released — check Version Matrix) | Yes |
-| Apache Tika Server | 3.2.3+ (align with main Solr skill / vendor advisories) | Yes |
+| EXT:solrfal | 14.0 for EXT:solr 14.0 per the Version Matrix (EB partner package, not on Packagist) | Yes |
+| EXT:tika | 14.0.0 (Packagist 2026-08-21, requires `typo3/cms-core ^v14.3.0`; verified 2026-10-31) | Yes |
+| Apache Tika Server | 3.2.3 or newer (EXT:tika documents 3.2+; newest 3.x image 3.3.3.0, a 4.x line exists, verified 2026-10-31) | Yes |
 | EB Partner access | -- | Yes (funding extension) |
 
 ## 3. Installation
@@ -63,7 +63,9 @@ composer require apache-solr-for-typo3/tika
 
 ## 4. Tika Server Setup
 
-The recommended approach is running Tika Server as a Docker container:
+The recommended approach is running Tika Server as a Docker container. `3.2.3` is the floor this
+skill uses (EXT:tika requires 3.2 or newer); Docker Hub's newest 3.x tag is `3.3.3.0` and a 4.x
+line exists (verified 2026-10-31), so pick the newest tag your advisories allow:
 
 ```yaml
 services:

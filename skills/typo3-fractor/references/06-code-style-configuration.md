@@ -2,8 +2,6 @@
 
 Continues `typo3-fractor` from [full guide](full-guide.md).
 
-## 6. Code Style Configuration
-
 ### TypoScript Formatting
 
 ```php

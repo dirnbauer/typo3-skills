@@ -197,8 +197,9 @@ Font Awesome icons in TYPO3 come from
 [`friendsoftypo3/fontawesome-provider`](https://packagist.org/packages/friendsoftypo3/fontawesome-provider)
 (source: `github.com/FriendsOfTYPO3/fontawesome-provider`). Treat it as a kept runtime dependency:
 
-- **Keep and upgrade it** to the latest stable release that declares TYPO3 14 support (v1.0.6 at the
-  time of writing allows `typo3/cms-core` and `typo3/cms-backend` `^14.0`); verify current Packagist
+- **Keep and upgrade it** to the latest stable release that declares TYPO3 14 support (v1.0.6,
+  2026-07-29, allows `typo3/cms-core` and `typo3/cms-backend` `^14.0`; Packagist, verified
+  2026-10-31); verify current Packagist
   metadata at execution time like any other branch-1 package.
 - **Do not remove it as a Mask dependency.** Mask's icon picker pulls it in, but the stored icon
   identifiers outlive Mask: elements migrated to Content Blocks keep resolving their Font Awesome

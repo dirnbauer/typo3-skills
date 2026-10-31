@@ -31,7 +31,7 @@ Continues `typo3-content-blocks` from [full guide](full-guide.md).
 | `Slug` | URL slug | `type: Slug` |
 | `Password` | Password field | `type: Password` |
 | `Basic` | Shared “basic” field helper | `type: Basic` |
-| `Country` | Country selection (aligns with TCA `country` where supported) | `type: Country` |
+| `Country` | Country selection (TCA `country`, Content Blocks 2.4.9, verified 2026-10-31) | `type: Country` |
 | `Pass` | Virtual field, not visible in the backend; used for storing data handled by extension logic | `type: Pass` |
 | `SelectNumber` | Select with numeric values | `type: SelectNumber` |
 | `Uuid` | UUID string | `type: Uuid` |

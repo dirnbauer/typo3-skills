@@ -77,18 +77,21 @@ run once emptied another project's `core_de` through a generic endpoint.
    Solr version, with the matching configset.
 3. Update EXT:solr, search templates and configuration following the `typo3-solr` skill.
 
-Require the 14 line with a **per-package stability flag**:
+Require the stable 14 line:
 
 ```bash
-ddev composer require apache-solr-for-typo3/solr:"^14.0@RC"
+ddev composer require apache-solr-for-typo3/solr:"^14.0"
 ```
 
-That line is currently a release candidate. The flag loosens stability for this one package while
-leaving the project's global `minimum-stability: stable` and `prefer-stable: true` intact, and it
-needs no later edit — Composer prefers the stable 14.0.0 automatically once it ships.
+EXT:solr 14.0.0 was released 2026-09-01 and 14.0.2 on 2026-09-16; the line requires
+`typo3/cms-core ^14.3` (Packagist, verified 2026-10-31). Verify the resolved version and its TYPO3
+requirement before continuing.
 
-**Never loosen global stability to install a single package.** Verify the resolved version and its
-TYPO3 requirement before continuing.
+Old pattern, kept for runs that predate the stable release: while the 14 line was still a release
+candidate, the constraint was `"^14.0@RC"`. The per-package flag loosens stability for that one
+package and leaves the project's global `minimum-stability: stable` and `prefer-stable: true`
+intact; Composer prefers the stable release as soon as it exists. Do not loosen global stability to
+install a single package.
 
 Exit: index queue rebuilt and fully reindexed; the backend Info module shows the site as active;
 frontend search verified including empty and paginated results.

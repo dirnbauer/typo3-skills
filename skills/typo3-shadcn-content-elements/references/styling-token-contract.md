@@ -49,16 +49,18 @@ Keep those mappings isolated and do not copy the legacy literals into live templ
 
 ## Verification
 
-Run a literal scan after styling changes:
+Run a literal scan after styling changes, from the sitepackage root (`EXT:<sitepackage>`). List the
+CSS, JS and build-script paths the project actually ships; the Desiderio set is the worked example in
+[desiderio-project-contract.md](desiderio-project-contract.md):
 
 ```bash
 rg -n "#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(|hsl\(|oklch\(" \
   ContentBlocks/ContentElements \
   Resources/Public/Css/content-preview.css \
   Resources/Public/Css/components.css \
-  Resources/Public/Css/desiderio.css \
-  Resources/Public/Js/charts.js \
-  Build/Scripts/normalize-content-elements.php \
+  Resources/Public/Css/<sitepackage>.css \
+  Resources/Public/Js/ \
+  Build/Scripts/ \
   -g '*.css' -g '*.html' -g '*.js' -g '*.svg' -g '*.php'
 ```
 

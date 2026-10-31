@@ -107,7 +107,7 @@ Use Lit when:
 - TYPO3 Explained documents ES module import maps, `Configuration/JavaScriptModules.php`, backend module configuration, backend routes, AJAX requests, AssetCollector, and `f:asset.module`.
 - TYPO3 v14 module configuration exposes `component` and `navigationComponent`; v14 uses `@typo3/backend/tree/page-tree-element` for the page tree navigation component.
 - TYPO3 v14.2 Form Framework introduced Web Component-based simplification for custom form elements and modernized the Form Editor tree with Lit.
-- Camino: Camp Vienna "Lit it Up!" by ochorocho is a practical TYPO3 backend Lit presentation and demo source.
+- Talk: Camp Vienna "Lit it Up!" by ochorocho is a practical TYPO3 backend Lit presentation and demo source.
 - Lit positions itself as a small Web Components helper with reactive properties, declarative templates, scoped styles through Shadow DOM, and efficient dynamic updates.
 
 ## Similar Local Skill Comparison

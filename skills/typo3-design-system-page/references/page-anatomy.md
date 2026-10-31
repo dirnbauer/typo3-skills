@@ -62,9 +62,10 @@ Move from foundations to representative components: spacing/grid, surfaces, bord
 targets; then links, buttons, fields, selects, navigation, tables, alerts, cards/containers, and
 project-specific Content Blocks. Use rendered examples where they teach more than prose.
 
-## “Das System im Überblick” facts
+## System facts
 
-Publish eight compact, evidence-backed facts in this order:
+Give the section a heading in the site language, e.g. “Das System im Überblick” /
+“The system at a glance”. Publish eight compact, evidence-backed facts in this order:
 
 1. **Brand attitude:** voice, evidence standard, and claims to avoid.
 2. **Logo:** master asset, protected invariants, clear space, minimum size, and backgrounds.

@@ -32,8 +32,10 @@ copied backend record.
 - **Never grant** `HIDE_FOR_NON_ADMINS` fields, `ctrl.editlock`, read-only/passthrough/generated
   fields, admin-only tables, page deletion for the group, administration modules, or identifiers
   of modules that are not installed. Do not present a read-only form as successful editing.
-- **Write through the bundled scripts or DataHandler**, dry run first. Never hand-written SQL for
-  groups, users, pages or Workspaces: it skips validation, history and the reference index.
+- **Write through the bundled scripts or DataHandler**, dry run first. Hand-written SQL for pages,
+  users or Workspaces is forbidden: it skips validation, history and the reference index. The
+  bundled group script writes `be_groups` through the Connection API by design (the CLI has no
+  DataHandler backend-user context), so the workflow runs `referenceindex:update` afterwards.
 
 ## Decide the group model first
 
@@ -100,7 +102,9 @@ in this mode. Page ownership still needs one explicit owner group per Site tree,
 
    `--group-title='Editorial Main'` checks a target group, `--owner-username='default-owner'` the
    resolved page owner, `--exceptions-plan=/container/path/permission-plan.json` loads the
-   documented exceptions, and `--strict` returns non-zero for blocking findings.
+   documented exceptions (or `--exceptions-json='{"<CType>": "<reason>"}'` inline; the two are
+   mutually exclusive and the script exits 64 if both are given), and `--strict` returns non-zero
+   for blocking findings.
 2. Inventory enabled backend users, their groups and administrators; name the working
    administrator and the separate one that remains.
 3. Inventory distinct non-deleted `tt_content.CType` values, hidden records included. Classify each
@@ -145,7 +149,7 @@ create a temporary editor or guess membership to make the audit green.
 - **Workspaces:** only when `typo3/cms-workspaces` and `workspaces_publish` are registered; otherwise
   `workspace_perms = 0`, no module, no Workspace record. Read [typo3-workspaces](../typo3-workspaces/SKILL.md)
   and the [Workspaces baseline](references/permission-model.md#workspaces-baseline): Live bit and
-  module in the Extensions leaf, main group as member not owner, `publish_access = 2`, default
+  module in the Extensions leaf, main group as member not owner, `publish_access` bit 2 set (owners only), default
   stages, `options.workspaces.previewLinkTTLHours = 48`, no `sys_workspace` table access. Ask who
   owns and publishes before creating a missing Workspace. Physical FAL files are not versioned:
   replacements need new unique filenames.
@@ -170,7 +174,9 @@ customer's site. Configure Core logo/alt/highlight, three calm login backgrounds
 favicon, and the footnote `<customer> · <label> · Website von webconsulting.at`, through supported
 Core configuration and a small sitepackage stylesheet in `$GLOBALS['TYPO3_CONF_VARS']['BE']['stylesheets']`.
 
-Map the real `Environment::getContext()` once: `Development/Docker` → `Entwicklung (DDEV)`,
+Map the real `Environment::getContext()` once: any context whose top level is `Development` →
+`Entwicklung (DDEV)` (Core knows only the roots `Development`, `Testing` and `Production`; the
+sub-context such as `Development/Docker` is the project's own value from `.ddev/config.yaml`),
 `Production/Staging` → `Staging`, `Production` or `Production/Live` → `Live`, anything else → a
 readable context name. Show the label in the footnote and sitename; never print the raw context
 string. Fail closed: a release on the staging deploy path is labelled Staging even when its context

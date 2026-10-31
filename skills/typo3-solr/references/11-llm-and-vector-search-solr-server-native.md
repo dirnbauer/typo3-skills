@@ -15,7 +15,7 @@ Continues `typo3-solr` from [full guide](full-guide.md).
 
 ## 11. LLM & Vector Search (Solr Server Native)
 
-**KNN / dense vectors** exist from **Solr 9.0+**; **text-to-vector** / LLM integrations use the **`language-models`** (or successor) module on **newer 9.x** releases — confirm module names for your Solr version. This runs on the **Solr server** — EXT:solr only issues queries.
+**KNN / dense vectors** exist since **Solr 9.0**; **text-to-vector** / LLM integrations use the **`language-models`** (or successor) module in Solr 9.x and **Solr 10.0.0**, the server the EXT:solr 14 matrix targets — confirm module names for your Solr version. This runs on the **Solr server** — EXT:solr only issues queries.
 
 ```mermaid
 graph LR
@@ -41,7 +41,7 @@ graph LR
 
 ### Prerequisites
 
-- Apache Solr **9.x** (matrix per EXT:solr version guide) with the appropriate **vector / language-model** modules enabled (see [Solr modules](https://solr.apache.org/guide/solr/latest/configuration-guide/solr-modules.html))
+- Apache Solr **10.0.0** (the EXT:solr 14 matrix target; 9.x for older rows) with the appropriate **vector / language-model** modules enabled (see [Solr modules](https://solr.apache.org/guide/solr/latest/configuration-guide/solr-modules.html))
 - An external embedding API / model registered in Solr's text-to-vector model store (LangChain4j-backed in current Solr docs)
 
 ### Schema: DenseVectorField

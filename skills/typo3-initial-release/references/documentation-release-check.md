@@ -82,11 +82,13 @@ rg -n 'v?0\.|dev-main|master|TODO|coming soon|planned' README.md Documentation C
 rg -n 'composer require|typo3/cms-core|extension-key|Package|providesPackages' README.md Documentation composer.json
 ```
 
-If docs tooling exists, run it:
+Run the docs tooling from the `typo3-docs` skill (both scripts live in
+`skills/typo3-docs/scripts/`; the installers link the whole directory):
 
 ```bash
-scripts/validate_docs.sh .
-scripts/render_docs.sh .
+/path/to/skills/typo3-docs/scripts/validate_docs.sh .
+/path/to/skills/typo3-docs/scripts/render_docs.sh .
 ```
 
-If those scripts do not exist, document the fallback checks that were actually run.
+If the skill directory is not available in the client, document the fallback checks that were
+actually run.
