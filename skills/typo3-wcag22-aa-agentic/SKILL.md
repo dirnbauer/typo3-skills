@@ -255,7 +255,7 @@ Important jurisdiction rules:
 - Austria private sector: the Barrierefreiheitsgesetz (BaFG, BGBl. I Nr. 76/2023) applies since 2025-06-28, with market surveillance at the Sozialministeriumservice. Use BaFG/EAA only when the offered product/service is in scope; otherwise keep it as voluntary WCAG evidence. (Verified 2026-10-31 against RIS, sozialministerium.gv.at and ffg.at.)
 - Germany public sector: use BGG + BITV 2.0 on federal projects; for state/municipal projects verify the applicable Landesrecht and monitoring/enforcement body.
 - Germany private sector: use BFSG/EAA only for covered products/services; do not automatically classify every brochure website as BFSG-relevant.
-- Switzerland: eCH-0059 v3 is currently WCAG 2.1 AA based; the skill may still test WCAG 2.2 AA as an internal higher target, but the statement should not misrepresent the legal baseline.
+- Switzerland: eCH-0059 v3.0 (approved 2020, still the current version on ech.ch, verified 2026-10-31) is WCAG 2.1 AA based; the skill may still test WCAG 2.2 AA as an internal higher target, but the statement should not misrepresent the legal baseline.
 
 Load the matching reference file when legal wording matters:
 

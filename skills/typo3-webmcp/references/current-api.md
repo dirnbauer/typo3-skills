@@ -10,8 +10,9 @@ registration option (no public `unregisterTool()`, `provideContext()` or `clearC
 annotations `readOnlyHint`, `untrustedContentHint` and `consequentialHint` (default false; marks
 significant or non-reversible actions so a client can require confirmation); `exposedTo` origin
 lists, which also need iframe `allow="tools"` delegation and the caller's `fromOrigins`; and the
-`tools` Permissions Policy feature. The declarative form attributes below are documented by Chrome,
-not in the draft text read on that date.
+`tools` Permissions Policy feature. The declarative form attributes below are not in the normative
+draft text; they are defined by the repository's `declarative-api-explainer.md` (last changed
+2026-10-16) and Chrome's Declarative API page (updated 2026-09-25), both verified 2026-10-31.
 
 ## Current surface
 
@@ -52,6 +53,11 @@ compose them, but identities, authorization, data flow, threat model, and tests 
 - W3C Community Group draft: https://webmachinelearning.github.io/webmcp/
 - Specification repository: https://github.com/webmachinelearning/webmcp — W3C Software and
   Document License.
+- Declarative API explainer:
+  https://github.com/webmachinelearning/webmcp/blob/main/declarative-api-explainer.md — W3C
+  Software and Document License.
 - Chrome overview, imperative/declarative APIs, best practices, and tool security:
-  https://developer.chrome.com/docs/ai/webmcp — documentation CC-BY-4.0, samples Apache-2.0.
+  https://developer.chrome.com/docs/ai/webmcp and
+  https://developer.chrome.com/docs/ai/webmcp/declarative-api — documentation CC-BY-4.0, samples
+  Apache-2.0.
 This reference paraphrases the sources and includes no copied implementation.

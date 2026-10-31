@@ -14,7 +14,8 @@ news after the update.
 
 From **14.3.6**, also reached by a patch update from 14.3.0–14.3.5, Extbase and with it EXT:news
 follow each site language's `fallbackType`. A language that sets no `fallbackType` is `strict`.
-`fallback` and `free` languages behave as before. On a `strict` language:
+`fallback` and `free` languages behave as before. (Verified 2026-10-31: Important-88886 and the
+Extbase change ship in 14.3.6 and are absent from 14.3.5.) On a `strict` language:
 
 - a detail URL of an untranslated news item answers **404** (news's default `detail.errorHandling`)
   where 13.4 rendered the default-language text;

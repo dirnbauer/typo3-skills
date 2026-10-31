@@ -55,13 +55,16 @@ What it does not do, and what the nodes therefore add:
 ## Versions and pins
 
 No release supports both 12.4 and 14.3. Pin an exact version and record it in the evidence: the release
-cadence is high (2.1.0 and 2.2.0 came out on the same day, and the next 2.x adds five checks, some of them
-destructive).
+cadence is high (2.1.0 and 2.2.0 came out on the same day, 2.3.0 two days later adds five checks, some of them
+destructive, and 2.4.0 and 2.5.0 add and rename more). Packagist, verified 2026-10-31: 1.0.6 is the last
+1.x (`typo3/cms-core ^12.4 || ^13.4`, PHP ^8.1); every 2.x requires `^13.4 || ^14.3` and PHP ^8.2;
+2.2.0 is the only 2.2.x release; the newest is 2.5.0 (2026-10-15), not pinned because the harness
+does not know its check order.
 
 | Source core | Intake version | Target version | Note |
 |---|---|---|---|
-| 12.4 | `lolli/dbdoctor:1.0.6` (TYPO3 12.4/13.4, PHP ^8.1) | `2.2.x` exact (13.4/14.3, PHP ^8.2) | The dependency plan bumps it at the 13.4 rung, the only core both run on |
-| 13.4 | `2.2.x` exact | the same version | Same check list at both ends |
+| 12.4 | `lolli/dbdoctor:1.0.6` (TYPO3 12.4/13.4, PHP ^8.1) | `2.2.0` exact (13.4/14.3, PHP ^8.2) | The dependency plan bumps it at the 13.4 rung, the only core both run on |
+| 13.4 | `2.2.0` exact | the same version | Same check list at both ends |
 
 The harness knows the check order of 1.0.6 and 2.2.x (`CHECK_ORDER` in `scripts/db-health.mjs`). Any other
 version runs, but the checks an abort skipped cannot be listed.
@@ -69,7 +72,7 @@ version runs, but the checks an abort skipped cannot be listed.
 ### Install as a dev dependency, in its own commit
 
 ```bash
-ddev composer require --dev lolli/dbdoctor:1.0.6   # 13.4 source: the exact 2.2.x version
+ddev composer require --dev lolli/dbdoctor:1.0.6   # 13.4 source: lolli/dbdoctor:2.2.0
 git add composer.json composer.lock && git commit -m "build: add lolli/dbdoctor for the database health check"
 ```
 

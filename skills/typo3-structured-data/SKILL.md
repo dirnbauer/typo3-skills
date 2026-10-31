@@ -76,11 +76,12 @@ Search gallery as a consumer-specific subset of the broader schema.org vocabular
 | active vacancy | `JobPosting` | real visible job; expiry and `validThrough` stay synchronized |
 | recipe detail | `Recipe` | actual ingredients/instructions and truthful times/nutrition |
 
-`FAQPage` can still describe genuine visible FAQ content. Google has, however, limited regular FAQ
-rich-result display to well-known authoritative government and health sites. Record this limitation;
-do not sell FAQ markup as an expandable Google result for an ordinary commercial site. Google also
-removed How-To rich-result support; valid `HowTo` vocabulary may still describe content for other
-consumers, but it is not a current Google rich-result target.
+`FAQPage` can still describe genuine visible FAQ content. Google, however, no longer shows FAQ rich
+results for any site: limited to authoritative government and health sites since 2023, the feature
+was deprecated on 7 May 2026 and its documentation removed in June 2026 (Search Central changelog,
+verified 2026-10-31). Record this; do not sell FAQ markup as an expandable Google result for any
+site. Google also removed How-To rich-result support; valid `HowTo` vocabulary may still describe
+content for other consumers, but neither is a current Google rich-result target.
 
 ## Implement in TYPO3
 

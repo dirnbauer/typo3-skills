@@ -66,7 +66,7 @@ execution tool so a long request does not prevent progress updates.
 | `OPENAI_API_KEY` | OpenAI authentication |
 | `OPENAI_IMAGE_MODEL` | `gpt-image-2.5-flare`; `gpt-image-2.5-sunburst` is an explicit alternative |
 | `GEMINI_API_KEY` or `GOOGLE_API_KEY` | Google authentication |
-| `GEMINI_IMAGE_MODEL` | `gemini-3.1-flash-image` (Nano Banana 2) |
+| `GEMINI_IMAGE_MODEL` | `gemini-3.1-flash-image` (Nano Banana 2); see the note on Nano Banana 2.1 below |
 | `--provider auto` | OpenAI first, Google as fallback |
 | `--provider openai` / `gemini` | Preferred provider, then the other provider |
 | `--no-fallback` | Only the selected provider, then native SVG fallback status |
@@ -84,7 +84,7 @@ visual quality. Inspect successful output before redrawing.
 
 ## Verified API references
 
-Model IDs checked on 2026-09-16; consult official docs before changing them.
+Model IDs checked on 2026-10-31; consult official docs before changing them.
 
 - [GPT Image 2.5 Flare](https://developers.openai.com/api/docs/models/gpt-image-2.5-flare):
   `POST https://api.openai.com/v1/images/generations`, Bearer authentication,
@@ -96,6 +96,12 @@ Model IDs checked on 2026-09-16; consult official docs before changing them.
   `contents[].parts[].text`, `responseModalities:["IMAGE"]`, and PNG
   `candidates[].content.parts[].inlineData.data`. Google also documents its newer
   Interactions API. Generated images carry SynthID; do not remove it.
+- As of 2026-10-31 Google lists `gemini-3.1-flash-image` as stable but
+  previous-generation and recommends Nano Banana 2.1 (`gemini-nano-banana-2.1`) for
+  new projects; its examples use the Interactions API, and Google now labels
+  generateContent "Legacy". Google does not document 2.1 on generateContent, so the
+  helper keeps Nano Banana 2 as its default. Set `GEMINI_IMAGE_MODEL` to 2.1 only
+  after a successful test call, and report the model actually used.
 
 ## Inspect, redraw and verify
 

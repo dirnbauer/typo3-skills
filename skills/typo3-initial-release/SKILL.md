@@ -29,8 +29,11 @@ review agree with the public promise; updating version strings is the smallest p
   updates. Dual-version (v12/v13/v14) releases and upgrade work belong to `typo3-extension-upgrade`,
   `typo3-rector` or `typo3-conformance`.
 - **No `ext_emconf.php`.** Since 14.2 (#108345) `composer.json` carries the release metadata and
-  classic mode works without the file; v15 ignores it. Migrate what an existing file holds, then
-  remove it unless the project names a tool that still needs it.
+  classic mode works without the file; v15 ignores it. TER no longer needs it either: `typo3/tailor`
+  2.1.0 (2026-10-02) publishes `composer.json`-only extensions and TER reads the file only for
+  what `composer.json` cannot express, such as category and state (Tailor README, verified
+  2026-10-31); publish with Tailor `^2.1`. Migrate what an existing file holds, then remove it
+  unless the project wants those TER fields set or names another tool that still needs it.
 - **`require.php` states tested support.** A reusable extension may declare `^8.2`, the v14 Core floor,
   when CI proves it. Project work targets PHP 8.4 instead (`typo3-upgrade-run` owns that); do not copy
   either floor into the other context.

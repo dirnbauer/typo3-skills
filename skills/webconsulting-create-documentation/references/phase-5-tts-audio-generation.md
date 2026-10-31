@@ -45,6 +45,8 @@ The script automatically:
 }
 ```
 
+`eleven_multilingual_v2` is current and the API default; `eleven_v4` is newer ([models](https://elevenlabs.io/docs/models), verified 2026-10-31).
+
 ### Audio file location
 
 ```

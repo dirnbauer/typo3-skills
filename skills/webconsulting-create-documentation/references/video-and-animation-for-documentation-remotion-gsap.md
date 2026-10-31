@@ -15,7 +15,10 @@ When generating visual documentation, integrating **Remotion** with **GSAP** all
 
 ### Prerequisites
 
-GSAP must be installed alongside your existing Remotion setup. Since GSAP 3.13 (April 2025, after the Webflow acquisition) the entire library -- including all formerly-premium Club plugins like `SplitText` and `MorphSVGPlugin` -- is 100% free, commercial use included; the paid Club GSAP tiers were discontinued ([announcement](https://gsap.com/blog/3-13/)).
+GSAP must be installed alongside your existing Remotion setup. Since GSAP 3.13 (April 2025, after the Webflow acquisition) the entire library -- including all formerly-premium Club plugins like `SplitText` and `MorphSVGPlugin` -- is 100% free, commercial use included; the paid Club GSAP tiers were discontinued ([announcement](https://gsap.com/blog/3-13/)). The [Standard "No Charge" License](https://gsap.com/community/standard-license/) excludes only visual no-code animation builders that compete with Webflow (verified 2026-10-31).
+Remotion is not free for every company: its [licence](https://github.com/remotion-dev/remotion/blob/main/LICENSE.md)
+requires a paid company licence for for-profit organisations above a small team size (more than 3
+employees, verified 2026-10-31). Ask the user which licence applies before adding Remotion to a client project.
 
 **Install GSAP** (all plugins ship in the public `gsap` npm package):
 

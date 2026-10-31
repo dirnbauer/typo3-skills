@@ -135,8 +135,9 @@ plus the open question ([lean profile](../typo3-upgrade-run/references/graph-run
     equally wrong. Exit 3 means no pair was measured; pick another page. Settle a difference now like
     the dev-server render, as a DDEV-only environment decision recorded in the intake evidence: the
     processor of live, ImageMagick only with `sRGB` ([image processing like production](../typo3-ddev/references/webconsulting-additions.md#image-processing-like-production)),
-    then `ddev typo3 cleanup:localprocessedfiles --all --force` (12.4 lacks `--all`: Maintenance >
-    Remove Temporary Assets), `ddev typo3 cache:flush` and the check again until it exits 0.
+    then `ddev typo3 cleanup:localprocessedfiles --all --force` (12.4 lacks `--all`, which 13.4 and
+    14.3 have, verified 2026-10-31 on 12.4.51, 13.4.26 and 14.3.9: Maintenance > Remove Temporary
+    Assets), `ddev typo3 cache:flush` and the check again until it exits 0.
     Baseline A already sealed: never re-baseline. Fix DDEV in the next code node, regenerate the
     processed files, and declare the image difference to Baseline A as one owner-approved class with
     a before/after pair ([rule 30.8](../typo3-upgrade-run/rules/30-finding-classification.md#308-declared-changes-are-rules-not-edits)).
@@ -152,7 +153,7 @@ plus the open question ([lean profile](../typo3-upgrade-run/references/graph-run
     write the selected-route runtime plan and run `t3u graph-forecast` before the baseline. A missing
     or non-fitting estimate blocks admission. The size-dependent 8/24/48h caps are not completion guarantees.
 14. Database health (`db-health-intake`): install the pinned `lolli/dbdoctor` (1.0.6 on a 12.4 source,
-    the exact 2.2.x on 13.4) with `--dev` in its own commit, run `../typo3-upgrade-run/scripts/db-health.mjs check`, then
+    exactly 2.2.0 on 13.4; Packagist, verified 2026-10-31) with `--dev` in its own commit, run `../typo3-upgrade-run/scripts/db-health.mjs check`, then
     `probe` for the full `(check, table, uid)` inventory, and record version and runtime. Classify every
     group as `pre-existing` or owner-approved for a fix, following the round-1 policy (record only, or
     fix approved groups before Baseline A). Never approve the 1.0.6 `…ParentLanguageDifferent` groups,

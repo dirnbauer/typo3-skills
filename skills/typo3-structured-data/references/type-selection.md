@@ -41,9 +41,11 @@ valid schema.org type is not automatically a Google rich-result feature.
   separate navigation, but the rendered DOM must contain the answer.
 - Use `FAQPage` for publisher-authored answers. Use `QAPage` only for one-question pages where users
   can submit answers; Google explicitly rejects QAPage on editorial FAQs.
-- Google announced that regular FAQ rich results are limited to well-known authoritative government
-  and health sites. Other sites may keep accurate FAQPage markup for semantic consumers, but the
-  implementation must not promise expandable Google results.
+- Google no longer shows FAQ rich results for any site. The 2023 restriction to well-known
+  authoritative government and health sites was followed by a deprecation on 7 May 2026 and the
+  removal of the FAQ guide in June 2026 (Search Central changelog, verified 2026-10-31). Sites may
+  keep accurate FAQPage markup for semantic consumers, but the implementation must not promise
+  expandable Google results.
 - Google removed How-To rich-result display and Rich Results Test support. Treat `HowTo` as a
   schema.org semantic choice, not a Google enhancement target.
 
@@ -77,6 +79,9 @@ page.
   CC-BY-4.0, code samples Apache-2.0.
 - Google FAQ/How-To change:
   https://developers.google.com/search/blog/2023/08/howto-faq-changes — CC-BY-4.0.
+- Google Search documentation changelog (FAQ deprecation 2026-05-08, guide removal 2026-06-15;
+  the former FAQPage guide URL now redirects here): https://developers.google.com/search/updates —
+  CC-BY-4.0.
 - Google QAPage guide:
   https://developers.google.com/search/docs/appearance/structured-data/qapage — CC-BY-4.0.
 - Schema.org vocabulary: https://schema.org/ — CC-BY-SA-3.0.
