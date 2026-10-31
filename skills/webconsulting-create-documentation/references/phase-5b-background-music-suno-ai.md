@@ -6,8 +6,21 @@ Continues `webconsulting-create-documentation` from [full guide](full-guide.md).
 
 ### Setup
 
-1. Get a Suno API key at [api.box](https://www.api.box) (Suno API provider)
+1. Get an API key from a third-party Suno music API such as [api.box](https://www.api.box)
 2. Add to `.env`: `SUNO_API_KEY=your-key`
+
+**Provider and licence status (verified 2026-10-31):**
+- Suno publishes no self-serve REST API. Its only official programmatic route is the
+  [Suno MCP beta](https://suno.com/release-notes/suno-mcp-beta) (early access, sign-in with a
+  Suno account, uses that account's credits), which is not a key-based API for scripts.
+- api.box is a third-party service, not Suno; its site points to suno.com for official access.
+  Its [docs](https://docs.api.box/suno-api/generate-music) list the accepted models.
+- Suno's [Terms of Service](https://suno.com/terms) restrict outputs from Free/Basic plans to
+  personal, non-commercial use; Pro/Premier subscribers receive Suno's rights for commercial
+  use, and Suno gives no assurance that copyright vests in any output. The same terms forbid
+  reaching the service by means it does not make available. Before using third-party output in
+  client or commercial videos, get the user's decision and check the provider's own terms; when
+  in doubt, use licensed stock music (see "Without Suno API key" below).
 
 ### Generate music
 
@@ -18,7 +31,9 @@ npm run music:generate
 ```
 
 The script:
-1. Sends a prompt to Suno's API (model V4_5ALL, instrumental only)
+1. Sends a prompt to the provider's generate endpoint (instrumental only), with a current model
+   from the provider's docs: api.box lists the V6 series as current and V4_5ALL as deprecated
+   (verified 2026-10-31)
 2. Polls for completion (typically 30-60 seconds)
 3. Downloads the MP3 to `public/music/background.mp3`
 4. Writes `remotion/music-config.ts` so the video knows music exists

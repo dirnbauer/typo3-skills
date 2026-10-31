@@ -67,7 +67,7 @@
       "prompt": "Every commercial FAQ page should get FAQPage because Google will then show expandable answers directly in search.",
       "assertions": [
         "Uses FAQPage only for genuine visible publisher-authored questions and full answers.",
-        "States that Google regularly limits FAQ rich results to well-known authoritative government and health sites.",
+        "States that Google deprecated FAQ rich results on 7 May 2026 and no longer shows them for any site.",
         "Does not substitute QAPage unless one question accepts user-submitted alternative answers.",
         "Does not promise a rich result or ranking benefit."
       ],

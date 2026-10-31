@@ -18,7 +18,7 @@ The examples are intentionally conservative. They help classify a project, but t
 | `at-private-bafg` | Austrian private-sector product/service in BaFG/EAA scope | Verify scope before publishing statutory claims. |
 | `de-public-bgg-bitv` | German federal public-sector website/app | For states/municipalities, verify Landesrecht. |
 | `de-private-bfsg` | German private-sector product/service in BFSG/EAA scope | Verify covered product/service, exemptions and market surveillance body. |
-| `ch-public-behig-ech0059` | Swiss public-sector/federal or eCH-0059 project | eCH-0059 v3 references WCAG 2.1 AA; WCAG 2.2 AA can be a stricter internal target. |
+| `ch-public-behig-ech0059` | Swiss public-sector/federal or eCH-0059 project | eCH-0059 v3.0 references WCAG 2.1 AA (current version, verified 2026-10-31); WCAG 2.2 AA can be a stricter internal target. |
 | `voluntary-wcag22aa` | Internal, contractual or best-practice WCAG 2.2 AA | Avoid statutory claims unless reviewed. |
 
 ## Copy/paste config snippets

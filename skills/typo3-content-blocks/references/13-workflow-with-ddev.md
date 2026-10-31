@@ -22,7 +22,10 @@ ddev typo3 extension:setup --extension=my_sitepackage
 
 ### Using webprofil/make Extension
 
-If `webprofil/make` is installed:
+If `webprofil/make` is installed. It does not install on TYPO3 v14 without a fork: 1.1.4 and its
+dependency `b13/make` 0.1.8 require `typo3/cms-core ^13.0` (Packagist, verified 2026-10-31). On v14
+use `make:content-block` above unless the project carries forks of both
+([package management](18-package-management-for-v14-compatibility.md)).
 
 ```bash
 # Create Content Block with webprofil/make

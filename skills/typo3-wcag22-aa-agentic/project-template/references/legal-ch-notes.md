@@ -4,7 +4,7 @@ This is project guidance, not legal advice. Switzerland is not an EU member stat
 
 ## Public-sector / federal administration: BehiG, BehiV, eCH-0059
 
-The Swiss federal administration references BehiG/BehiV and the eCH-0059 Accessibility Standard. eCH-0059 version 3 is based on WCAG 2.1 AA. The skill may still test WCAG 2.2 AA as a stricter internal target, but the statement should accurately name the legal/profile baseline.
+The Swiss federal administration references BehiG/BehiV and the eCH-0059 Accessibility Standard. eCH-0059 version 3.0 (approved June 2020) is based on WCAG 2.1 AA and is still the current version on ech.ch; federal accessibility statements state that it requires WCAG 2.1 criteria at conformance level AA (verified 2026-10-31). BehiG and BehiV remain in force; a BehiG partial revision (Federal Council message of 20 December 2024) and an inclusion framework law (indirect counter-proposal, message of 25 February 2026) are before Parliament, so recheck the baseline before a statement is finalised. The skill may still test WCAG 2.2 AA as a stricter internal target, but the statement should accurately name the legal/profile baseline.
 
 Typical statement sections:
 

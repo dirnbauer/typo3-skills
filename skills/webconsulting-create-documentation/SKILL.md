@@ -54,7 +54,7 @@ Phases 1-3 are below. Load a reference only when you reach its phase:
 | ElevenLabs API key | [elevenlabs.io](https://elevenlabs.io) | Premium TTS narration (Jony Ive voice) |
 | ffmpeg | `brew install ffmpeg` | Convert audio to MP3 (smaller files) |
 | macOS `say` + `afconvert` | Built-in on macOS | Fallback TTS (Daniel voice, outputs WAV) |
-| Suno API key | [api.box](https://www.api.box) | AI-generated background music |
+| Music API key (third-party, unofficial Suno access) | e.g. [api.box](https://www.api.box) | AI-generated background music; see [Phase 5b](references/phase-5b-background-music-suno-ai.md) for terms |
 
 ### ElevenLabs Setup
 
@@ -79,8 +79,10 @@ the voice setting in the project-owned narration script if a better match is fou
 is a generated project output, not a bundled skill resource; use the implementation guidance in
 [Phase 5: TTS audio generation](references/phase-5-tts-audio-generation.md).
 
-**Free tier limits**: ~10,000 characters/month. The full narration script is ~600 characters,
-so you can regenerate ~16 times per month on the free tier.
+**Free tier limits**: 10,000 credits/month (verified 2026-10-31 on
+[elevenlabs.io/pricing](https://elevenlabs.io/pricing)); the commercial licence starts with the
+paid Starter plan. Credits per character differ by model and plans change, so check that page
+before promising a number of regenerations. The full narration script is ~600 characters.
 
 ## Phase 1: Help Page
 

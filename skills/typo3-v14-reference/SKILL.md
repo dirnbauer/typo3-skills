@@ -74,11 +74,11 @@ Target **`^14.3`, not `^14.0`**: 14.3 is the supported LTS line, and 14.0 throug
 
 ### `ext_emconf.php` — legacy, only where a tool still requires it
 
-[Deprecation #108345](https://docs.typo3.org/c/typo3/cms-core/main/en-us/Changelog/14.2/Deprecation-108345-Deprecation-of-ext-emconf-php.html) deprecates `ext_emconf.php` in 14.2; v15 no longer evaluates it, and since 14.2 classic mode works without it ([Feature #108345](https://docs.typo3.org/c/typo3/cms-core/main/en-us/Changelog/14.2/Feature-108345-No-ext-em-conf-in-classic-mode.html)). Do not add one to a new v14 extension. Keep an existing one only while a publishing tool you have checked still requires it, and then keep it exactly in sync with `composer.json`:
+[Deprecation #108345](https://docs.typo3.org/c/typo3/cms-core/main/en-us/Changelog/14.2/Deprecation-108345-Deprecation-of-ext-emconf-php.html) deprecates `ext_emconf.php` in 14.2; v15 no longer evaluates it, and since 14.2 classic mode works without it ([Feature #108345](https://docs.typo3.org/c/typo3/cms-core/main/en-us/Changelog/14.2/Feature-108345-No-ext-em-conf-in-classic-mode.html)). Do not add one to a new v14 extension. The deprecation note still says TER or Tailor may need the file "for the time being", but `typo3/tailor` 2.1.0 (2026-10-02) publishes extensions that carry only a `composer.json`: the file is optional, and TER reads it only for what `composer.json` cannot express, such as category and state (Tailor README, verified 2026-10-31). Publish with Tailor `^2.1`; keep an existing file only to set those TER fields or for another tool you have checked, and then keep it exactly in sync with `composer.json`:
 
 ```php
 <?php
-// ext_emconf.php — only for Classic mode or TER publishing
+// ext_emconf.php — optional; only to set TER fields composer.json cannot express (category, state)
 $EM_CONF[$_EXTKEY] = [
     'title' => 'My Extension',
     'version' => '2.0.0',
