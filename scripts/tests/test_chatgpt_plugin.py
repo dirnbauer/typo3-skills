@@ -76,6 +76,17 @@ class ChatGPTPluginTests(unittest.TestCase):
             self.assertEqual(len(backups), 1)
             self.assertEqual((backups[0] / "AGENTS.md").read_bytes(), payload["AGENTS.md"][0])
 
+    def test_finder_metadata_is_not_a_local_edit(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = self.fixture(temp); payload, names = plugin.source_bundle(root)
+            target = root.parent / "plugins" / plugin.NAME
+            plugin.write_bundle(payload, names, target)
+            (target / ".DS_Store").write_bytes(b"\0Bud1")
+            (target / "skills" / ".DS_Store").write_bytes(b"\0Bud1")
+            plugin.verify_bundle(target)
+            changed = dict(payload); changed["AGENTS.md"] = (b"New context\n", 0o644)
+            self.assertTrue(plugin.write_bundle(changed, names, target))
+
     def test_local_edits_unknown_directories_and_links_are_preserved(self):
         with tempfile.TemporaryDirectory() as temp:
             root = self.fixture(temp); payload, names = plugin.source_bundle(root)
