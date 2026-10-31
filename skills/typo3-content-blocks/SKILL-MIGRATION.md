@@ -1,26 +1,6 @@
----
-name: typo3-content-blocks-migration
-description: Bidirectional migration between classic TYPO3 TCA/SQL extensions and Content Blocks. Includes step-by-step guides, field mappings, data migration scripts, and checklists for both directions.
-version: 1.0.0
-typo3_compatibility: "14.x"
-related_skills:
-  - typo3-content-blocks
-triggers:
-  - migrate to content blocks
-  - convert tca
-  - modernize extension
-  - tca to yaml
-  - classic to content blocks
-  - revert content blocks
-  - content blocks to tca
-  - yaml to tca
-  - remove content blocks
-  - classic extension
-  - tca migration
-  - content blocks migration
----
-
 # Content Blocks Migration Guide
+
+> Sub-guide of `typo3-content-blocks`, loaded from its `SKILL.md` when needed: Bidirectional migration between classic TYPO3 TCA/SQL extensions and Content Blocks. Includes step-by-step guides, field mappings, data migration scripts, and checklists for both directions.
 
 > **Compatibility:** TYPO3 v14.x
 > 
@@ -29,6 +9,13 @@ triggers:
 This skill covers bidirectional migration between classic TYPO3 extensions (TCA/SQL/TypoScript) and the modern Content Blocks approach.
 
 ---
+
+## Contents
+
+- [1. Migrating Classic Extensions to Content Blocks](#1-migrating-classic-extensions-to-content-blocks)
+- [2. Reverting Content Blocks to Classic Extension Format](#2-reverting-content-blocks-to-classic-extension-format)
+- [References](#references)
+- [Credits & Attribution](#credits--attribution)
 
 ## 1. Migrating Classic Extensions to Content Blocks
 

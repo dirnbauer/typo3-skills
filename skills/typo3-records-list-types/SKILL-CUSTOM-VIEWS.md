@@ -7,6 +7,18 @@ Adding a new view type requires **zero PHP**. You provide TSconfig + a Fluid tem
 
 > **Want working examples?** Install the companion extension [Records List Examples](https://github.com/dirnbauer/typo3-records-list-examples) to get 6 ready-to-use view types (Timeline, Catalog, Address Book, Event List, Gallery, Dashboard) with full templates and CSS.
 
+## Contents
+
+- [Quick Start: 3 Steps](#quick-start-3-steps)
+- [Page-Scoped Views](#page-scoped-views)
+- [Real-World Examples](#real-world-examples)
+- [Reusing Built-in Templates](#reusing-built-in-templates)
+- [Configuration Reference](#configuration-reference)
+- [Column Display: columnsFromTCA vs displayColumns](#column-display-columnsfromtca-vs-displaycolumns)
+- [Template Variables](#template-variables)
+- [Assets: CSS, JavaScript, Images](#assets-css-javascript-images)
+- [Method 2: PSR-14 Event (for extensions)](#method-2-psr-14-event-for-extensions)
+
 ## Quick Start: 3 Steps
 
 ### Step 1: Register via TSconfig

@@ -5,7 +5,7 @@ compatibility: "TYPO3 v14.3+ — `friendsoftypo3/content-blocks` 2.x (verify on 
 metadata:
   skill_type: preference
   version: "1.5.0"
-  related_skills: "typo3-content-blocks-migration, shadcn-ui, typo3-vite"
+  related_skills: "typo3-shadcn-content-elements, typo3-vite"
   origin: "webconsulting"
 license: "MIT / CC-BY-SA-4.0"
 ---

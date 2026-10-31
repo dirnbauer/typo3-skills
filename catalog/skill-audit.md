@@ -632,7 +632,7 @@ This is a three-pass audit inspired by Anthropic's `skill-creator` skill:
 - Source owner: webconsulting
 - Source URL: https://github.com/dirnbauer/webconsulting-skills
 - Frontmatter name: typo3-solr
-- SKILL.md lines: 367
+- SKILL.md lines: 369
 
 **Pass 1: Structure**
 - No pass 1 issues found.

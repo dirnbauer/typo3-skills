@@ -2,6 +2,16 @@
 
 No loop. Everything measured later is measured against what this phase seals.
 
+## Contents
+
+- [Preconditions](#preconditions)
+- [Allowed](#allowed)
+- [Steps](#steps)
+- [Evidence](#evidence)
+- [Exit](#exit)
+- [Blocking](#blocking)
+- [Image processor capabilities](#image-processor-capabilities)
+
 ## Preconditions
 P00 complete.
 

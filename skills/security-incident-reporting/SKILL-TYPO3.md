@@ -1,21 +1,6 @@
----
-name: security-incident-reporting-typo3
-description: TYPO3-specific incident reporting. Forensic checklist, vulnerability classification, and Security Team communication with PGP templates.
-version: 1.0.0
-typo3_compatibility: "14.x"
-related_skills:
-  - security-incident-reporting
-  - typo3-security
-triggers:
-  - typo3 incident
-  - typo3 security report
-  - typo3 hack
-  - typo3 vulnerability report
-  - typo3 forensics
-  - security@typo3.org
----
-
 # TYPO3 Security Incident Reporting
+
+> Sub-guide of `security-incident-reporting`, loaded from its `SKILL.md` when needed: TYPO3-specific incident reporting. Forensic checklist, vulnerability classification, and Security Team communication with PGP templates.
 
 > **Compatibility:** TYPO3 v14.x
 > 
@@ -24,6 +9,19 @@ triggers:
 > - [typo3-security](../typo3-security/SKILL.md) - TYPO3 hardening
 
 ---
+
+## Contents
+
+- [1. TYPO3 System Inventory](#1-typo3-system-inventory)
+- [2. TYPO3 Vulnerability Classification](#2-typo3-vulnerability-classification)
+- [3. Forensic Checklist](#3-forensic-checklist)
+- [4. TYPO3 Security Team Communication](#4-typo3-security-team-communication)
+- [5. Vulnerability Report Template](#5-vulnerability-report-template)
+- [6. Disclosure Process](#6-disclosure-process)
+- [7. TYPO3 Security Advisory Format](#7-typo3-security-advisory-format)
+- [8. Incident Response Checklist (TYPO3)](#8-incident-response-checklist-typo3)
+- [9. Resources](#9-resources)
+- [Credits & Attribution](#credits--attribution)
 
 ## 1. TYPO3 System Inventory
 

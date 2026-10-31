@@ -1,15 +1,6 @@
----
-name: legal-impressum-eu
-description: EU-wide Impressum requirements under eCommerce Directive 2000/31/EC. Country-by-country compliance matrix.
-version: 1.0.0
-triggers:
-  - impressum eu
-  - ecommerce directive
-  - eu legal notice
-  - european union imprint
----
-
 # EU Impressum Requirements
+
+> Sub-guide of `legal-impressum`, loaded from its `SKILL.md` when needed: EU-wide Impressum requirements under eCommerce Directive 2000/31/EC. Country-by-country compliance matrix.
 
 > **Jurisdiction:** European Union (27 Member States)
 > 
@@ -21,6 +12,20 @@ triggers:
 This skill covers EU-wide legal notice requirements based on the eCommerce Directive.
 
 ---
+
+## Contents
+
+- [1. Legal Framework](#1-legal-framework)
+- [2. Country-by-Country Requirements](#2-country-by-country-requirements)
+- [3. VAT Requirements](#3-vat-requirements)
+- [4. ODR (Online Dispute Resolution) — Discontinued](#4-odr-online-dispute-resolution--discontinued)
+- [5. Cross-Border Compliance](#5-cross-border-compliance)
+- [6. Sector-Specific Requirements](#6-sector-specific-requirements)
+- [7. EU Template (Comprehensive)](#7-eu-template-comprehensive)
+- [8. Brexit Impact (UK)](#8-brexit-impact-uk)
+- [9. Compliance Checklist (EU-Wide)](#9-compliance-checklist-eu-wide)
+- [10. Resources](#10-resources)
+- [Credits & Attribution](#credits--attribution)
 
 ## 1. Legal Framework
 

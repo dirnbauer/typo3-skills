@@ -1,14 +1,19 @@
----
-name: typo3-solr/SOLRFAL
-description: >-
-  File indexing with EXT:solrfal and Apache Tika for TYPO3. Index PDFs, DOCX,
-  XLSX and other file formats into Solr for full-text file search. Setup,
-  configuration, Tika Server, troubleshooting.
----
-
 # EXT:solrfal -- File Indexing for Solr
 
+> Sub-guide of `typo3-solr`, loaded from its `SKILL.md` when needed: File indexing with EXT:solrfal and Apache Tika for TYPO3. Index PDFs, DOCX, XLSX and other file formats into Solr for full-text file search. Setup, configuration, Tika Server, troubleshooting.
+
 > **Funding Extension:** EXT:solrfal is a funding contribution extension, not open source. It is available to [EB partners](https://www.typo3-solr.com/solr-for-typo3/open-source-version/) and via the [dkd shop](https://shop.dkd.de/).
+
+## Contents
+
+- [1. What is solrfal?](#1-what-is-solrfal)
+- [2. Prerequisites](#2-prerequisites)
+- [3. Installation](#3-installation)
+- [4. Tika Server Setup](#4-tika-server-setup)
+- [5. Configuration](#5-configuration)
+- [6. Index Queue for Files](#6-index-queue-for-files)
+- [7. Troubleshooting](#7-troubleshooting)
+- [8. Testing](#8-testing)
 
 ## 1. What is solrfal?
 

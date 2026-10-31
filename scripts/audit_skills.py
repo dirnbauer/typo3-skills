@@ -723,6 +723,12 @@ def audit_skill(skill_dir: Path, duplicate_names: dict[str, list[str]]) -> Skill
         pass_1.append("name uses a reserved word (anthropic, claude)")
     if description and re.search(r"[<>]", description):
         pass_1.append("description contains < or >, which upload validators reject as XML")
+    related = metadata.get("related_skills") if isinstance((metadata := frontmatter.get("metadata")), dict) else None
+    if isinstance(related, str):
+        known = {path.name for path in SKILLS_DIR.iterdir() if (path / "SKILL.md").is_file()}
+        missing = [name.strip() for name in related.split(",") if name.strip() and name.strip() not in known]
+        if missing:
+            pass_1.append("metadata.related_skills names skills not in this collection: " + ", ".join(missing))
     compatibility = frontmatter.get("compatibility")
     if isinstance(compatibility, str) and len(compatibility) > 500:
         pass_1.append("compatibility exceeds the 500 character limit")

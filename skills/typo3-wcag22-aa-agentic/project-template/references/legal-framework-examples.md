@@ -4,6 +4,12 @@ Use this file to select project wording before generating `.a11y/accessibility-s
 
 The examples are intentionally conservative. They help classify a project, but they are not legal advice.
 
+## Contents
+
+- [Profile overview](#profile-overview)
+- [Copy/paste config snippets](#copypaste-config-snippets)
+- [Statement wording guardrails](#statement-wording-guardrails)
+
 ## Profile overview
 
 | Profile | Typical use | Notes |

@@ -6,6 +6,16 @@ Scoping **several** projects rather than starting one? Use
 [`references/fleet-survey.md`](../fleet-survey.md) first — it is read-only, answers which project
 to start with and what each will cost, and leaves this phase to the one you choose.
 
+## Contents
+
+- [Preconditions](#preconditions)
+- [Allowed](#allowed)
+- [Run clock](#run-clock)
+- [Steps](#steps)
+- [Evidence](#evidence)
+- [Exit](#exit)
+- [Blocking](#blocking)
+
 ## Preconditions
 - The repository is present and readable.
 - No run directory yet, or one whose `run_id` the user confirms resuming.

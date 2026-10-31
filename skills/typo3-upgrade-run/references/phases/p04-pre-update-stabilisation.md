@@ -12,6 +12,16 @@ candidate and continue.
 | Bootstrap | the installed version blocks the resolved v14 dependency set or changed code needs migration |
 | Accessibility | the upgrade caused an accessibility regression; broad remediation is Contract B |
 
+## Contents
+
+- [First: does the loop have a subject?](#first-does-the-loop-have-a-subject)
+- [Expectation when a recipe runs](#expectation-when-a-recipe-runs)
+- [Loop 010 — Sitemap and routing](#loop-010--sitemap-and-routing)
+- [Loop 030 — Bootstrap, in order](#loop-030--bootstrap-in-order)
+- [Loop 040 — Accessibility](#loop-040--accessibility)
+- [Exit](#exit)
+- [Blocking](#blocking)
+
 ## First: does the loop have a subject?
 
 Running an inapplicable recipe is not neutral: it changes a site that did not need changing and

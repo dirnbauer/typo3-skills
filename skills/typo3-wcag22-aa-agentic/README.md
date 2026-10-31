@@ -14,6 +14,18 @@ It contains:
 - legal reference examples for Austria, Germany and Switzerland.
 - `prompts/local-codex-app-prompt.md` — ready-to-use prompt for the local Codex app.
 
+## Contents
+
+- [Add to webconsulting-skills repo](#add-to-webconsulting-skills-repo)
+- [Fast use inside a TYPO3 project](#fast-use-inside-a-typo3-project)
+- [Manual Chrome review helper](#manual-chrome-review-helper)
+- [Legal profiles](#legal-profiles)
+- [Local Codex app prompt](#local-codex-app-prompt)
+- [Install as a local skill bundle](#install-as-a-local-skill-bundle)
+- [Optional Deque axe MCP](#optional-deque-axe-mcp)
+- [Main commands after scaffold](#main-commands-after-scaffold)
+- [What this does not replace](#what-this-does-not-replace)
+
 ## Add to webconsulting-skills repo
 
 This bundle is prepared for `https://github.com/dirnbauer/webconsulting-skills`.

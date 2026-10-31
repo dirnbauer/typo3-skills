@@ -10,6 +10,12 @@ conformance, simplification, editor-permission, search, CI, and documentation pr
 Contract B work unless a concrete blocker or touched boundary makes it necessary for v14 parity.
 Write journey and sweep scripts by the [proof-script rules](../measurement-recipes.md#proof-scripts-journeys-sweeps-and-row-diffs).
 
+## Contents
+
+- [Backend and operations recipes](#backend-and-operations-recipes)
+- [Static analysis and tests](#static-analysis-and-tests)
+- [Exit](#exit)
+
 ## Backend and operations recipes
 
 ### A disposable backend user
