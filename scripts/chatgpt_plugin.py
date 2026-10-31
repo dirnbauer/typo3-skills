@@ -28,6 +28,8 @@ ROOT = Path(__file__).resolve().parents[1]
 NAME = "typo3-skills"
 MANIFEST = ".codex-plugin/plugin.json"
 RECEIPT = ".typo3-skills-bundle.json"
+# Finder writes .DS_Store whenever a folder is opened; it is not a local edit of the bundle.
+OS_METADATA = {".DS_Store"}
 PREFIXES = ("skills/", "rules/", "references/", "catalog/", "scripts/")
 ROOT_FILES = {MANIFEST, "AGENTS.md", "README.md", "SKILL-SPEC.md", "VENDORED.md",
               "LICENSE", "LICENSE-MIT", "LICENSE-CC-BY-SA-4.0", "vendor-lock.json",
@@ -119,7 +121,7 @@ def verify_bundle(directory, allow_mode_drift=False):
     actual = {}
     for file in directory.rglob("*"):
         plain_path(file)
-        if file.is_file() and file != receipt_path:
+        if file.is_file() and file != receipt_path and file.name not in OS_METADATA:
             actual[file.relative_to(directory).as_posix()] = {
                 "sha256": digest(file.read_bytes()),
                 "mode": 0o755 if file.stat().st_mode & 0o111 else 0o644,
