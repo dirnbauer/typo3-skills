@@ -12,14 +12,15 @@ license: "MIT / CC-BY-SA-4.0"
 
 > Source: https://github.com/dirnbauer/webconsulting-skills
 
-> **Compatibility:** TYPO3 v14.x
-> Configuration examples require verification against the installed v14 source and the deployment's trust/proxy model; they are not a universal drop-in preset.
+> **Compatibility:** TYPO3 v14.x. Configuration keys and defaults below were checked against the
+> installed TYPO3 14.3.9 source (`DefaultConfiguration.php`, `DefaultConfigurationDescription.yaml`)
+> on 2026-10-31. Values remain examples: adapt them to the deployment's trust and proxy model.
 
 For an assessment, inspect and report without changing configuration, accounts or permissions.
 Implement hardening only when requested. Inside an upgrade graph, address the assigned finding and
 return evidence; unrelated hardening belongs to separately authorized scope, not an automatic loop.
 
-> **TYPO3 API First:** Always use TYPO3's built-in APIs, core features, and established conventions before creating custom implementations. Do not reinvent what TYPO3 already provides. Always verify that the APIs and methods you use exist and are not deprecated in TYPO3 v14 by checking the official TYPO3 documentation.
+> **TYPO3 API first:** use TYPO3's built-in APIs, Core features and conventions before writing a custom implementation. Verify every class, method and configuration key you use against the installed v14 source; v14 removed and renamed enough that memory is often wrong.
 
 ## 1. Critical Configuration Settings
 
@@ -57,7 +58,7 @@ return [
     ],
     
     'SYS' => [
-        // NEVER display errors in production
+        // No error output in production: stack traces leak paths and configuration
         'displayErrors' => 0,
         'devIPmask' => '',                // No dev IPs in production
         'errorHandlerErrors' => E_ALL & ~E_NOTICE & ~E_DEPRECATED,
@@ -66,17 +67,19 @@ return [
         // Encryption key (generate unique per installation)
         'encryptionKey' => 'generate-unique-key-per-installation',
         
-        // Trusted hosts pattern (CRITICAL) — Core wraps the pattern in `/^...$/`; omit `^` and `$`. Avoid `.*example\\.com` (without `\\.` before `example` — matches `evil-example.com`). Note: `.*\\.example\\.com` requires a subdomain and won't match bare `example.com`.
+        // Trusted hosts pattern (required; Core default 'SERVER_NAME') — Core wraps the pattern in `/^...$/`; omit `^` and `$`. Avoid `.*example\\.com` (without `\\.` before `example` — matches `evil-example.com`). Note: `.*\\.example\\.com` requires a subdomain and won't match bare `example.com`.
         'trustedHostsPattern' => '(www\\.)?example\\.com',
         
-        // File handling security
-        'textfile_ext' => 'txt,html,htm,css,js,tmpl,ts,typoscript,xml,svg',
-        'mediafile_ext' => 'gif,jpg,jpeg,png,webp,svg,pdf,mp3,mp4,webm',
-        
-        // Security feature toggles — names and availability differ by minor release; confirm in Core docs for your exact version
+        // File handling: 'textfile_ext', 'mediafile_ext' and 'miscfile_ext' replace Core's lists
+        // when set. Start from the 14.3 defaults and remove only what the project must refuse;
+        // they become an upload allow-list once 'security.system.enforceAllowedFileExtensions'
+        // is enabled (Core default false).
+
+        // Security feature toggles (names as in 14.3.9 DefaultConfiguration.php)
         'features' => [
+            'security.system.enforceAllowedFileExtensions' => true,
             'security.backend.enforceReferrer' => true,
-            // Frontend CSP toggles (names stable from v12+; confirm in reference for your minor)
+            // Frontend CSP toggles
             'security.frontend.enforceContentSecurityPolicy' => false,
             'security.frontend.reportContentSecurityPolicy' => false,
         ],
@@ -102,16 +105,17 @@ return [
 
 ## 2. Trusted Hosts Pattern
 
-**CRITICAL**: Always configure `trustedHostsPattern` to prevent host header injection.
+Always configure `trustedHostsPattern`: a permissive pattern lets a forged `Host` header reach
+generated links, password-reset mails and caches (host header injection).
 
 ```php
-// ❌ DANGEROUS - Allows any host
+// ❌ Unsafe: Allows any host
 'trustedHostsPattern' => '.*',
 
-// ✅ SECURE - Explicit host list (Core adds `/^...$/` around the pattern)
+// ✅ Safe: Explicit host list (Core adds `/^...$/` around the pattern)
 'trustedHostsPattern' => '(?:example\\.com|www\\.example\\.com)',
 
-// ✅ SECURE - Regex for subdomains (tie to your registrable domain)
+// ✅ Safe: Regex for subdomains (tie to your registrable domain)
 'trustedHostsPattern' => '(.*\\.)?example\\.com',
 
 // Development with DDEV
@@ -193,7 +197,7 @@ Set the hashed password via the Install Tool or an environment-specific `config/
 Restrict the Install Tool entry point (`/typo3/install.php` on Composer-based v14) to trusted IPs at the web-server level:
 
 ```apacheconf
-# Apache: server / virtual-host configuration ONLY, not .htaccess
+# Apache: server / virtual-host configuration only, not .htaccess
 <LocationMatch "^/typo3/install\.php">
     Require ip 203.0.113.0/24
     Require ip 198.51.100.42
@@ -248,7 +252,7 @@ Supported providers:
 - TOTP (Time-based One-Time Password)
 - Recovery Codes
 
-Configure MFA enforcement in **`config/system/settings.php`** via [`$GLOBALS['TYPO3_CONF_VARS']['BE']['requireMfa']`](https://docs.typo3.org/m/typo3/reference-coreapi/main/en-us/Configuration/Typo3ConfVars/BE.html#typo3confvars-be-requiremfa): `0` disabled, `1` all users, `2` non-admins, `3` admins only, **`4` system maintainers only** — confirm exact semantics in Core docs for your minor), or per user/group with **user TSconfig** [`auth.mfa.required`](https://docs.typo3.org/m/typo3/reference-typoscript/main/en-us/UserTsconfig/Auth.html):
+Configure MFA enforcement in **`config/system/settings.php`** via [`$GLOBALS['TYPO3_CONF_VARS']['BE']['requireMfa']`](https://docs.typo3.org/m/typo3/reference-coreapi/main/en-us/Configuration/Typo3ConfVars/BE.html#typo3confvars-be-requiremfa): `0` disabled (Core default), `1` all users, `2` non-admins, `3` admins only, `4` system maintainers only (allowed values in 14.3.9 `DefaultConfigurationDescription.yaml`). `recommendedMfaProvider` defaults to `totp`. Or require it per user/group with **user TSconfig** [`auth.mfa.required`](https://docs.typo3.org/m/typo3/reference-typoscript/main/en-us/UserTsconfig/Auth.html):
 
 ```typoscript
 # User or group TSconfig — require MFA for those accounts (overrides global when set)
@@ -276,8 +280,10 @@ $GLOBALS['TYPO3_CONF_VARS']['LOG']['TYPO3']['CMS']['Backend']['Authentication'][
 
 TYPO3 v14 has built-in CSP support. Enable it:
 
-Enable CSP through `config/system/settings.php` / Install Tool. Frontend toggles (names may evolve — verify in Core for your minor) commonly include:
-`$GLOBALS['TYPO3_CONF_VARS']['SYS']['features']['security.frontend.enforceContentSecurityPolicy']` and `security.frontend.reportContentSecurityPolicy`. **Backend CSP is enforced by default since v13** — there is no equivalent FE-style toggle for BE.
+Enable CSP through `config/system/settings.php` / Install Tool with the frontend feature toggles
+`$GLOBALS['TYPO3_CONF_VARS']['SYS']['features']['security.frontend.enforceContentSecurityPolicy']`
+and `security.frontend.reportContentSecurityPolicy` (both `false` by default in 14.3.9). Backend CSP
+is enforced by default since v13; there is no equivalent toggle for the backend.
 
 ### CSP Configuration via Events (TYPO3 v14)
 
@@ -320,18 +326,18 @@ config.additionalHeaders {
 
 ## 7. SQL Injection Prevention
 
-### ALWAYS Use QueryBuilder
+### Use QueryBuilder with bound parameters
 
 ```php
 <?php
 declare(strict_types=1);
 
-// ❌ VULNERABLE - Never do this
+// ❌ Unsafe: user input concatenated into SQL
 $result = $connection->executeQuery(
     "SELECT * FROM pages WHERE uid = " . $_GET['id']
 );
 
-// ✅ SECURE - Use QueryBuilder with prepared statements
+// ✅ Safe: Use QueryBuilder with prepared statements
 $queryBuilder = $this->connectionPool->getQueryBuilderForTable('pages');
 $result = $queryBuilder
     ->select('*')
@@ -363,13 +369,13 @@ $query->matching(
 ### Fluid Templates
 
 ```html
-<!-- ✅ SAFE - Auto-escaped -->
+<!-- ✅ Safe: Auto-escaped -->
 {variable}
 
-<!-- ❌ DANGEROUS - Raw output -->
+<!-- ❌ Unsafe: Raw output -->
 {variable -> f:format.raw()}
 
-<!-- ✅ SAFE - Explicit escaping -->
+<!-- ✅ Safe: Explicit escaping -->
 {variable -> f:format.htmlspecialchars()}
 
 <!-- For HTML content, use with caution -->

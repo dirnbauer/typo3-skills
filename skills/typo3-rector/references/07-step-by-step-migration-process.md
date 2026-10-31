@@ -64,7 +64,11 @@ ddev exec vendor/bin/phpunit
 
 ### 6. Commit
 
+Only when the user asked for a commit. Stage the reviewed Rector changes by path, never the whole
+working tree, so unrelated local edits stay out:
+
 ```bash
-git add -A
+git status --short
+git add composer.json composer.lock rector.php Classes/ Configuration/
 git commit -m "feat: Apply Rector migrations for TYPO3 v14"
 ```

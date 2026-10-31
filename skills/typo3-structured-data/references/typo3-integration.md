@@ -19,10 +19,10 @@ when it is compatible, testable, and has a single clear ownership boundary.
 ## `brotkrueml/schema`
 
 The maintained extension provides schema.org type models, a manager API, and generated Fluid
-ViewHelpers. At the 2026-08-27 source snapshot, stable `4.2.3` declares PHP `>=8.2` and TYPO3 Core,
-Fluid, and Frontend `^13.4 || ^14.3`. These facts are discovery hints, not permission to install that
-version blindly: verify current Composer metadata, the selected project's lockfile, and installed
-source before choosing a constraint or API.
+ViewHelpers. Latest stable `v4.4.0` (2026-09-28; Packagist, verified 2026-10-31) declares PHP
+`>=8.2` and TYPO3 Core, Fluid and Frontend `^13.4 || ^14.3`. These facts are discovery hints, not
+permission to install that version blindly: verify current Composer metadata, the selected
+project's lockfile, and installed source before choosing a constraint or API.
 
 For an approved new installation:
 

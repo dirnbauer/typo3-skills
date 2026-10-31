@@ -23,7 +23,9 @@ Read this reference before creating or changing a TYPO3 backend group or user.
 
 - Identify the user-selected TYPO3 installation first and apply the approved group, User TSconfig,
   and user setting only there; do not stop at a generic permission plan.
-- Use one user-facing main editor group with four flat leaf groups: Base, Content, Site, Extensions.
+- After the user approved the single-main-group model, use one user-facing main editor group with
+  four flat leaf groups: Base, Content, Site, Extensions. Otherwise preserve the distinct roles and
+  apply these rules per role.
 - Keep permission fields empty on the main group and `subgroup` empty on every leaf.
 - Assign users only to the main group; preserve later site/extension leaf packs attached to it.
 - Keep at least one separate enabled administrator that can log in.
@@ -240,11 +242,32 @@ though the new group passes a static permission audit.
 
 ## Module baseline
 
-Resolve module identifiers from the runtime registry. Include Layout, Records, Preview, Status,
-Recycler, Media, and User Settings when installed. Add Visual Editor and Core Form only when
-installed. For Solr, expose the `searchbackend` parent and read-only `searchbackend_info`, not core
-optimization, index queue, or index administration. Do not expose any Powermail backend module;
-editors build form-definition records through the normal record workflow.
+Resolve module identifiers from the runtime `ModuleRegistry`; never write identifiers for absent
+modules. Identifiers below were checked against TYPO3 14.3.9/14.3.10 and EXT:solr 14.0.2
+`Configuration/Backend/Modules.php` on 2026-10-31.
+
+- Always when installed: `web_layout`, `records`, `page_preview`, `content_status`,
+  `web_info_overview`, `web_info_translations`, `recycler`, `media_management`, and `user_setup`.
+- Visual Editor: `web_edit`.
+- Core Form: `web_FormFormbuilder`, `form_manager`, and `form_editor`.
+- Core Redirects: `redirects`. Grant only to named trusted editor groups; it manages redirects
+  across the entire installation. Do not grant `qrcodes` or `short_urls` unless separately
+  requested, and do not persist an alias such as `site_redirects`.
+- Solr: the `searchbackend` parent and the read-only `searchbackend_info`. Keep
+  `searchbackend_coreoptimization`, `searchbackend_indexqueue`, and
+  `searchbackend_indexadministration` admin-only.
+- Workspaces: `workspaces_publish` (aliases `workspaces_admin`, `web_WorkspacesWorkspaces` are not
+  stored) and Live access bit `workspace_perms = 1`, both in the **Extensions** leaf.
+- Delegated Benutzerverwaltung: only the approved manager role receives the installed scoped user
+  module and action options; ordinary editors do not inherit it. Follow
+  [delegated-user-management.md](delegated-user-management.md).
+- Never: administration, system configuration, Powermail reporting/marketing (`web_powermail`,
+  `powermail_*`), Solr index mutation, or infrastructure modules.
+
+When `typo3/cms-redirects` is installed, grant the intended trusted editor group or groups
+read/write access to `sys_redirect` and its runtime editor-editable exclude fields. Keep read-only
+and system-managed fields excluded. Users inherit this through groups; never write direct per-user
+rights.
 
 ## Workspaces baseline
 
@@ -274,6 +297,10 @@ a primary provider. Provider availability is distinct from enforcing MFA: recomm
 TSconfig, but require MFA only after explicit policy approval.
 
 ## User TSconfig profiles
+
+Copy one bundled profile into the sitepackage and import it from the **Base** leaf:
+[basic.tsconfig](../assets/tsconfig/basic.tsconfig) or
+[optimized.tsconfig](../assets/tsconfig/optimized.tsconfig).
 
 Use the basic template for narrowly scoped editors. Use optimized for trusted editors who manage
 the whole content tree. Both profiles recommend TOTP, inherit the parent owner user/group, and set

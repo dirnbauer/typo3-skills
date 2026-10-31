@@ -13,411 +13,100 @@ license: "MIT / CC-BY-SA-4.0"
 
 > Source: https://github.com/dirnbauer/webconsulting-skills
 
-> **Compatibility:** TYPO3 v14.x with `georgringer/news` ^14.
-> All code examples target TYPO3 v14 APIs only. Do not use this skill for v12 / v13 sites.
-
-> **Scope.** Designing, generating and assigning **thematic news tags** (`tx_news_domain_model_tag`)
-> in georgringer/news at scale (hundreds to tens of thousands of news), and optionally installing
-> the orthogonal generic tag system from `b13/tag` (`sys_tag`).
->
-> **Not in scope.** Frontend rendering of tags in Fluid templates, tag translations, or tag merging.
->
-> **Also here.** What TYPO3 14.3.6 changed for news in translated languages, and the frontend count
-> check that proves it before and after an update (§11).
-
-## When to use this skill
-
-Trigger this skill when the user asks to:
-- "Tag all news / tag the latest N news"
-- "Define a tag catalogue / generic tags / thematic tags"
-- "Assign categories or tags in bulk to existing news"
-- "Install a generic tagging extension" (b13/tag)
-- "Build a Symfony command that tags news" / "automate tagging in TYPO3"
-- "Why are large UIDs missing from my QueryBuilder result" (DBAL gotcha, §8)
-
-## Mental model
-
-EXT:news ships **two relations** for news classification:
-
-| Relation | Table | Purpose | Routing |
-|---|---|---|---|
-| Categories | `sys_category` ← `sys_category_record_mm` | Primary hierarchical taxonomy | Optional |
-| Tags | `tx_news_domain_model_tag` ← `tx_news_domain_model_news_tag_mm` | Flat, slug-routable thematic crosscuts | `NewsTag` aspect in site config |
-
-**Categories** answer "what bucket is this in?" — typically a few per news, hierarchical, often
-locale-aware. **Tags** answer "what themes does this touch?" — typically 5–10 per news, flat,
-URL-friendly via `/{tag-slug}/`.
-
-If the site already has narrow business categories ("Betrügerische Shops", "Phishing", …),
-tags should be **orthogonal and thematic** (e.g. "Künstliche Intelligenz", "Banking", "Senioren")
-— not redundant copies of categories.
-
-`b13/tag` is a **different system**: `sys_tag` + `sys_tag_mm` with a `keywords` int column on
-the target table. It is generic across all record types but **not** integrated with EXT:news.
-Use it for tagging *other* tables; keep EXT:news's native tags for news.
-
-## Default workflow
-
-### 1. Verify the corpus (always)
-
-```bash
-ddev mysql -e "SELECT COUNT(*) FROM tx_news_domain_model_news WHERE pid=<PID> AND deleted=0 AND hidden=0;"
-ddev mysql -e "SELECT COUNT(*) FROM tx_news_domain_model_tag WHERE deleted=0;"
-ddev mysql -e "SELECT COUNT(*) FROM tx_news_domain_model_news_tag_mm;"
-```
-
-Identify where the readable text actually lives. With EXT:news's built-in `contentElementRelation`
-extension configuration or `mask` based content, **`tx_news_domain_model_news.bodytext` is often
-empty** — the real content sits in `tt_content` rows linked via `tx_news_related_news`. Verify:
-
-```sql
-SELECT AVG(LENGTH(bodytext)) FROM tx_news_domain_model_news WHERE pid=<PID> AND deleted=0;
-SELECT CType, COUNT(*) FROM tt_content
-  WHERE tx_news_related_news > 0 AND deleted=0 AND hidden=0
-  GROUP BY CType ORDER BY 2 DESC;
-```
-
-If average bodytext is ~0, you **must** harvest `tt_content` to get meaningful scoring.
-
-### 2. Derive tag candidates from corpus frequency
-
-Don't guess the catalogue — let the corpus pick it. Read 50–100 titles + teasers first to
-get a feel:
-
-```sql
-SELECT uid, title, LEFT(teaser, 200) FROM tx_news_domain_model_news
-  WHERE pid=<PID> AND deleted=0 AND hidden=0
-  ORDER BY datetime DESC LIMIT 100;
-```
-
-Then run a **frequency analysis** on the full target corpus (latest N news + their linked
-`tt_content`). Brainstorm ~100 candidate concepts with 1–3 keywords each, count how many
-news mention each, and pick the top ~65 (or whatever count you need). This is much more
-defensible than a guessed catalogue and surfaces non-obvious recurring themes
-(e.g. *Unternehmen* and *Polizei* ranked top-5 in the example corpus — neither was on
-the original guess list).
-
-**Single-concept rule.** Each tag should be ONE concept — never a `X & Y` combination.
-Compose multiple tags per news instead. So:
-
-| Avoid                          | Prefer                                         |
-|--------------------------------|------------------------------------------------|
-| `Banking & Konto`              | `Banking` + `Konto` (two tags)                 |
-| `Künstliche Intelligenz & Deepfake` | `Künstliche Intelligenz` + `Deepfake`     |
-| `Paket & Lieferung`            | `Paket` + `Lieferung` (+ `DHL` if relevant)    |
-| `Reise & Urlaub`               | `Reise` + `Hotel` + `Flug`                     |
-
-Hyphenated compounds (`Fake-Shop`, `Online-Shopping`, `Login-Daten`) and standard German
-two-word concepts (`Künstliche Intelligenz`) are fine — they are one concept.
-
-Each tag needs a *name*, a *slug* (lowercase, ASCII-only, hyphenated), and a curated list
-of *keywords*. See `references/NewsThematicTags.example.php` for a worked German example
-covering 65 single-concept fraud-prevention themes derived from a real ~1500-news corpus.
-
-**Keyword design rules:**
-
-- Lowercase. Both singular and plural where common (`fake-shop`, `fake-shops`).
-- Both hyphenated and spaced spellings (`fake-shop`, `fake shop`, `fakeshop`).
-- Compound nouns over generic single words (`kostenpflichtiges abo` over `kosten`).
-- **Beware short prefixes**: `auto` matches `autor`, `automatisch`, `autorin` under the
-  left-only word boundary. Use compound forms instead (`autokauf`, `autoverkauf`, `kfz`).
-  Same trap with `apple` (`applied`), `bank` (`bankrott`), `post` (`posten`).
-- 1–3 char ambiguous tokens are OK with strict both-sides boundaries (`tan`, `ki`, `sms`)
-  — the example command auto-applies stricter boundaries for short keywords.
-- 5–15 keywords per tag is a good target for single-concept tags; broaden if a tag is
-  legitimately under-firing in the dry-run.
-- Multi-word keywords are matched verbatim after whitespace collapse — be specific.
-
-### 3. Decide on tag storage
-
-For EXT:news, tags live on a **storage PID**. Use the same PID as the news (most common) — the
-route enhancer in `config/sites/<id>/config.yaml` uses the tag's `slug`, not its PID. Verify your
-site has the tag route wired:
-
-```yaml
-routeEnhancers:
-  News:
-    type: Extbase
-    extension: News
-    plugin: Pi1
-    routes:
-      - routePath: '/{tag-name}'
-        _controller: 'News::list'
-        _arguments:
-          tag-name: overwriteDemand/tags
-    aspects:
-      tag-name:
-        type: NewsTag
-```
-
-If not present, add it before publishing tag URLs. The `NewsTag` aspect type ships with
-EXT:news and is the documented best practice; a plain `PersistedAliasMapper` with
-`tableName: tx_news_domain_model_tag` and `routeFieldName: slug` is a legacy alternative.
-
-### 4. Build a Symfony Console command
-
-Create one command per extension/package in `Classes/Command/AssignNewsTagsCommand.php` and
-register it in `Configuration/Services.yaml` with the `console.command` tag. See
-`references/AssignNewsTagsCommand.example.php` for a complete, idempotent implementation that:
-
-- loads the tag catalogue from a PHP config file
-- upserts tags via **DataHandler** (slug auto-generates, refindex updated)
-- harvests content from `tt_content` linked via `tx_news_related_news`
-- normalizes HTML → lowercase → collapsed whitespace
-- scores each tag by **distinct keyword matches** (not total occurrences — avoids spam from
-  one repeated word dominating)
-- selects the top N tags per news (5–10 typical, threshold ≥ 1)
-- bulk-inserts MM rows via raw SQL multi-row `INSERT` (batch of 500)
-- updates `tx_news_domain_model_news.tags` counter for backend list display
-- supports `--dry-run`, `--reset`, `--limit`, `--storage-pid`, `--force`, `--debug-uid`
-
-### 5. Iterate with `--dry-run`
-
-```bash
-ddev exec vendor/bin/typo3 cache:flush
-ddev exec vendor/bin/typo3 <vendor>:news:assign-tags --dry-run --limit=300
-```
-
-The dry-run prints the **tags-per-news distribution** and **per-tag popularity**. Healthy
-targets for fraud/news corpora:
-
-- median 5+, p25 ≥ 3, p75 ≤ 8
-- unmatched (0 tags) < 1% of corpus
-- per-tag count: most-popular tag covers ≤ 60% of news; least-popular ≥ 1%
-
-If many news fall to 1–2 tags, **broaden keywords** on common tags (E-Mail-Betrug, Banking,
-Werbung — these typically anchor most scam stories). If a tag has 0 matches, either keywords
-are wrong or the tag is not actually represented in the corpus — adjust or replace.
-
-### 6. Run for real
-
-```bash
-ddev exec vendor/bin/typo3 <vendor>:news:assign-tags --reset --force
-ddev exec vendor/bin/typo3 cache:flush
-```
-
-`--reset` truncates `tx_news_domain_model_news_tag_mm` and deletes tags on the storage PID
-before recreating — safest for re-runs while iterating on keywords. Drop `--reset` for additive
-runs once the catalogue is stable.
-
-Expected throughput: **~150 news/sec** on a typical DDEV setup (1500 news ≈ 10 seconds).
-
-### 7. Verify
-
-```sql
--- 1. All tags present
-SELECT COUNT(*) FROM tx_news_domain_model_tag WHERE pid=<PID> AND deleted=0;
-
--- 2. MM rows = sum(tags-per-news)
-SELECT COUNT(*) FROM tx_news_domain_model_news_tag_mm;
-
--- 3. Distribution
-SELECT tags_per_news, COUNT(*) AS news FROM (
-  SELECT uid_local, COUNT(*) AS tags_per_news
-  FROM tx_news_domain_model_news_tag_mm GROUP BY uid_local
-) t GROUP BY tags_per_news ORDER BY tags_per_news;
-
--- 4. Counter consistency (must return 0 rows)
-SELECT n.uid, n.tags, COUNT(mm.uid_foreign) AS actual
-FROM tx_news_domain_model_news n
-LEFT JOIN tx_news_domain_model_news_tag_mm mm ON mm.uid_local = n.uid
-WHERE n.pid=<PID> AND n.deleted=0
-GROUP BY n.uid, n.tags HAVING n.tags <> actual LIMIT 20;
-
--- 5. Per-tag popularity
-SELECT t.title, COUNT(mm.uid_local) AS n
-FROM tx_news_domain_model_tag t
-LEFT JOIN tx_news_domain_model_news_tag_mm mm ON mm.uid_foreign = t.uid
-WHERE t.pid=<PID> AND t.deleted=0
-GROUP BY t.uid, t.title ORDER BY n DESC;
-
--- 6. Backend spot-check
-SELECT n.uid, LEFT(n.title, 60), GROUP_CONCAT(t.title ORDER BY mm.sorting)
-FROM tx_news_domain_model_news n
-JOIN tx_news_domain_model_news_tag_mm mm ON mm.uid_local = n.uid
-JOIN tx_news_domain_model_tag t ON t.uid = mm.uid_foreign
-WHERE n.pid=<PID> AND n.deleted=0
-GROUP BY n.uid ORDER BY n.datetime DESC LIMIT 10;
-```
-
-Backend visual check: open News module → pick a recent news → the "Relations" tab shows the
-assigned tags (categories sit in the separate "Categories" tab). Frontend route check: visit
-`https://<site>/<tag-slug>/`.
-
-## Adding b13/tag (optional generic capability)
-
-`b13/tag` provides a generic `sys_tag` table that can tag *any* record via an int `keywords`
-column. It does **not** integrate with EXT:news tags and should not replace them.
-
-```bash
-ddev composer require b13/tag
-ddev exec vendor/bin/typo3 extension:setup
-ddev mysql -e "SHOW TABLES LIKE 'sys_tag%';"   # sys_tag + sys_tag_mm
-```
-
-To use it on a custom table:
-
-1. Add `keywords int(11) unsigned DEFAULT '0' NOT NULL` to the table's SQL.
-2. Configure TCA via `B13\Tag\TcaHelper`.
-3. Register the field via `ExtensionManagementUtility::addToAllTCAtypes()`.
-
-See the [b13/tag README](https://github.com/b13/tag) for current TCA wiring.
-
-## 8. DBAL `createNamedParameter(PARAM_INT)` gotcha
-
-In some DBAL stacks, `$qb->createNamedParameter($uid, Connection::PARAM_INT)`
-**silently drops rows** when the integer is large (observed for UIDs in the tens of millions).
-The query returns 0 rows even though the row exists. Reproduce in your environment before
-adopting the workaround; on a clean TYPO3 v14 install with current Doctrine DBAL this may no
-longer fire.
-
-**Symptom.** `--debug-uid=29386376` returns "not found", but `SELECT … WHERE uid = 29386376`
-in MySQL returns the row. The full `fetchNews()` query returns rows but the loop processes
-*different* news than expected — the result set is silently truncated.
-
-**Workaround.** Use raw SQL with `?` placeholders for queries that touch large integer columns
-(news UIDs, tt_content UIDs, content element relations):
-
-```php
-// AVOID for large ints:
-$qb->expr()->eq('uid', $qb->createNamedParameter($uid, Connection::PARAM_INT));
-
-// PREFER:
-$conn->executeQuery(
-    'SELECT … FROM tx_news_domain_model_news WHERE uid = ?',
-    [$uid]
-)->fetchAssociative();
-
-// For IN clauses with int arrays, inline the cast values:
-$ids = implode(',', array_map(static fn($v) => (int)$v, $chunk));
-$conn->executeQuery("SELECT … WHERE tx_news_related_news IN ($ids) AND …");
-```
-
-Small ints (PID, hidden, deleted) work fine with `createNamedParameter` — only large UIDs
-exhibit the issue. The reference command applies this workaround throughout.
-
-## 9. Performance notes
-
-- **Tag upsert via DataHandler** for the ~65 tag rows (slug eval, refindex) — negligible cost.
-- **MM inserts via direct multi-row SQL** (batch 500). DataHandler MM writes are O(n²) per
-  record and unnecessary for MM tables that have no TCA semantics.
-- **Sort by `datetime DESC`** with `LIMIT N` to get the latest N news — index it if cold.
-- **Chunk tt_content fetches** in groups of 200 news per IN-query to keep `max_allowed_packet`
-  and prepared-statement parameter caps safe.
-- Disable any caches that observe `tx_news_domain_model_news` during the run, then `cache:flush`
-  afterwards. The reference command does **not** call DataHandler per news (only for tag
-  upsert), so caches are minimally affected during the bulk pass.
-
-## 10. Keyword matching — Unicode-safe word boundaries
-
-PHP's `\b` is ASCII-only and breaks on `ä/ö/ü/ß`. Use `\p{L}\p{N}` lookarounds and the `/u`
-modifier:
-
-```php
-private function buildKeywordPattern(string $keyword): string
-{
-    $quoted = preg_quote($keyword, '/');
-    // Short tokens (<=3 chars): require both word boundaries to avoid false positives.
-    // Longer tokens: require left boundary only — covers German plural/genitive and compound
-    // suffixes (e.g. "phishing" matches "phishing-welle", "phishings", "phishingsoftware").
-    if (mb_strlen($keyword, 'UTF-8') <= 3) {
-        return '/(?<![\p{L}\p{N}])' . $quoted . '(?![\p{L}\p{N}])/u';
-    }
-    return '/(?<![\p{L}\p{N}])' . $quoted . '/u';
-}
-```
-
-Score by **count of distinct matched keywords** — not total occurrences. A single keyword
-repeated 50 times should not outweigh four different keywords matching once each.
-
-## 11. News in translated languages from TYPO3 14.3.6 (fallbackType)
-
-From **14.3.6**, also reached by a patch update from 14.3.0–14.3.5, Extbase and with it EXT:news
-follow each site language's `fallbackType`. A language that sets **no** `fallbackType` is `strict`.
-`fallback` and `free` languages behave as before. On a `strict` language:
-
-- a detail URL of an untranslated news item answers **404** (news's default `detail.errorHandling`)
-  where 13.4 rendered the default-language text;
-- translated news lose untranslated categories, tags and related news;
-- the selected-list plugin without `orderBy`, and the tags of a tag-filtered list, lose untranslated
-  records;
-- lists keep their items: on a `strict` language they never showed untranslated news.
-
-The owner decides: translate the news with their categories, tags and related news; a listener that
-keeps the 13.4 overlay for EXT:news only; or `fallbackType: fallback`, which lets untranslated page
-content fall back as well. Mechanism, the tested listener and the sources:
-[typo3-v14-reference](../typo3-v14-reference/references/13-v14-only-changes-manual-not-handled-by-rector.md#extbase-follows-fallbacktype-v1436).
-
-**Count the news in the frontend, before and after the update.**
-
-1. Per site language, collect every news list page with its pagination pages, and a sample of detail
-   URLs: translated news and untranslated ones. The language menu of a default-language detail page
-   names the untranslated ones. One URL per line in `news-urls.txt`.
-2. Count the rendered items with a stable selector from the site's **own** list template, the item
-   wrapper (news default: `class="article articletype-`), and the category labels per page
-   (default: `news-list-category`). Keep the HTTP status: a detail URL may turn into a 404.
-
-   ```bash
-   RUN=before   # after the update: RUN=after
-   ITEM='class="article articletype-'; LABEL='news-list-category'
-   while read -r url; do
-     page=$(mktemp); code=$(curl -sk -o "$page" -w '%{http_code}' "$url")
-     printf '%s\t%s\t%s\t%s\n' "$url" "$code" "$(grep -o "$ITEM" "$page" | wc -l | tr -d ' ')" \
-       "$(grep -o "$LABEL" "$page" | wc -l | tr -d ' ')"
-     rm -f "$page"
-   done < news-urls.txt > "news-count-$RUN.tsv"
-   # once both runs exist: URL, HTTP status, items, category labels
-   diff news-count-before.tsv news-count-after.tsv
-   ```
-
-3. Explain every difference from the database, visible news per language:
-
-   ```sql
-   SELECT sys_language_uid, COUNT(*) AS visible, SUM(l10n_parent > 0) AS translations,
-          SUM(l10n_parent = 0) AS own_records
-     FROM tx_news_domain_model_news
-    WHERE deleted = 0 AND hidden = 0 AND t3ver_wsid = 0
-      AND (starttime = 0 OR starttime <= UNIX_TIMESTAMP())
-      AND (endtime = 0 OR endtime > UNIX_TIMESTAMP())
-    GROUP BY sys_language_uid;
-   ```
-
-   Default-language news without a visible translation are what a `strict` language hides. A list
-   also filters by storage folder, categories and archive settings: compare per plugin, not per site.
-4. An unexplained difference or a new 404 goes to the owner before the update goes live. In a
-   `typo3-upgrade-run` the "before" comes from the sealed Baseline A, not from a new request
-   ([fix pack item 15](../typo3-upgrade-run/references/typo3-14-fix-pack.md#15-extbase-follows-fallbacktype-1436)).
-
-## Files in this skill
-
-- `references/AssignNewsTagsCommand.example.php` — complete, idempotent Symfony console
-  command (~370 LOC) with all options, scoring logic, DataHandler upsert, bulk MM insert,
-  DBAL workaround, `--debug-uid` per-news inspector, summary report.
-- `references/NewsThematicTags.example.php` — 65 single-concept German fraud-prevention
-  tags (no `X & Y` combinations), derived from a ~1500-news corpus frequency analysis,
-  with ~5–15 curated keywords each.
-- `references/Services.example.yaml` — minimal command registration snippet.
+Targets TYPO3 14.3 with `georgringer/news` 14 (14.1.2 requires `^13.4.29 || ^14.3`, Packagist,
+verified 2026-10-31). Do not use this skill for v12/v13 sites.
+
+**Scope:** designing, generating and assigning thematic news tags (`tx_news_domain_model_tag`) at
+scale, from hundreds to tens of thousands of news; optionally installing the separate generic tag
+system `b13/tag` (`sys_tag`); and the per-language news count around a TYPO3 14.3 update.
+**Not in scope:** rendering tags in Fluid, tag translations, tag merging.
+
+## Rules
+
+- **Verify the corpus first.** Count news, tags and MM rows on the storage PID, and find where the
+  text lives: with `contentElementRelation` (EXT:news default) `bodytext` is often empty and the
+  content sits in `tt_content` rows linked by `tx_news_related_news`. Scoring empty bodytext
+  produces 0–1 tags per news.
+- **Let the corpus pick the catalogue.** Run a frequency analysis over the target news before
+  fixing tags; guessed catalogues miss the real recurring themes.
+- **One concept per tag**, never `X & Y`. Compose several tags per news instead.
+- **Tags orthogonal to categories.** Categories are the hierarchical bucket; tags are flat thematic
+  crosscuts (5–10 per news), not copies of the categories.
+- **Tags through DataHandler, MM rows through bulk SQL.** DataHandler generates the slug and the
+  reference index for the ~65 tag rows; multi-row `INSERT` writes the MM rows, then update the
+  `tx_news_domain_model_news.tags` counter. Look a tag up by slug before creating it.
+- **Dry run before the real run.** Review the distribution; run `--reset --force` only after it
+  meets the targets, then flush caches.
+- **Wire the `NewsTag` route aspect before publishing tag URLs.**
+- **Keep EXT:news tags for news.** `b13/tag` tags other tables and does not integrate with EXT:news.
+
+## Workflow
+
+Read [tag-workflow.md](references/tag-workflow.md) for the queries, keyword rules, route YAML,
+dry-run targets and verification SQL of each step.
+
+1. **Verify the corpus** (always): counts, text location, average bodytext length.
+2. **Derive ~100 candidate concepts** from titles, teasers and linked content; keep the top ~65 by
+   news coverage. Each tag gets a name, an ASCII slug and 5–15 lowercase keywords covering
+   plural, hyphenated and joined spellings; avoid short prefixes such as `auto` or `bank`.
+3. **Decide tag storage** (normally the news PID) and check the `NewsTag` route enhancer.
+4. **Build the console command** from
+   [AssignNewsTagsCommand.example.php](references/AssignNewsTagsCommand.example.php) and register
+   it ([Services.example.yaml](references/Services.example.yaml)). Adapt the catalogue from
+   [NewsThematicTags.example.php](references/NewsThematicTags.example.php).
+5. **Iterate with `--dry-run --limit=300`** until median ≥ 5, p25 ≥ 3, unmatched under 1 %, the top
+   tag covers at most 60 % and every tag at least 1 %.
+6. **Run for real** with `--reset --force`, then `cache:flush`. Drop `--reset` once the catalogue is
+   stable.
+7. **Verify** in SQL (counts, distribution, counter consistency), in the News module ("Relations"
+   tab) and at `https://<site>/<tag-slug>/`.
+
+Read [matching-and-performance.md](references/matching-and-performance.md) when writing the scoring
+code (Unicode-safe boundaries, distinct-keyword scoring), when news with large UIDs get no tags,
+or when a run is slow.
+
+## Translated news after a TYPO3 14.3 update
+
+From 14.3.6 (also by patch update from 14.3.0–14.3.5) Extbase, and with it EXT:news, follows each
+site language's `fallbackType`; a language without the key is `strict`. There, untranslated news
+detail URLs answer 404, and translated news lose untranslated categories, tags and related news.
+Count the rendered news per language before and after the update, explain every difference from
+the database, and let the owner choose translation, an EXT:news-only overlay listener, or
+`fallbackType: fallback`. Procedure and script:
+[translated-news-count.md](references/translated-news-count.md).
 
 ## Common pitfalls
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| Median tags-per-news is 1–2 | Keywords too narrow; or `bodytext` empty without harvesting `tt_content` | Broaden top tags' keywords; verify `fetchContentByNews` is wired |
-| Newest news (large UID) have 0 tags despite obvious keywords | DBAL `createNamedParameter(PARAM_INT)` truncation | Switch the affected query to raw SQL, see §8 |
-| Tags exist but slugs are NULL | Created via direct INSERT instead of DataHandler | Use DataHandler with `process_datamap` so TCA slug eval fires |
-| `tx_news_domain_model_news.tags` counter is wrong | Counter not updated after MM writes | Run an `UPDATE news SET tags = (SELECT COUNT(*) FROM mm WHERE mm.uid_local = news.uid)` once, then ensure command writes it |
-| Frontend `/<tag-slug>/` 404s | Route enhancer missing in site config | Add the `News` route with the `NewsTag` aspect (§3) and flush caches |
-| Identical tag created twice on re-run | Lookup-before-insert missing | `SELECT uid FROM tag WHERE slug = ?` before each DataHandler `NEW_x`; reuse UID if found |
-| After a TYPO3 14.3 update, translated news detail pages answer 404 or lose their tags | Extbase follows `fallbackType` from 14.3.6; the language is `strict` or sets none | Count per language and let the owner decide (§11) |
+| Median tags-per-news is 1–2 | Keywords too narrow, or empty `bodytext` without harvesting `tt_content` | Broaden the anchor tags' keywords; verify the content fetch is wired |
+| Newest news (large UID) have 0 tags despite obvious keywords | `createNamedParameter(PARAM_INT)` dropped rows in that DBAL stack | Reproduce, then use positional parameters ([details](references/matching-and-performance.md#large-integer-parameters-dropping-rows)) |
+| Tags exist but slugs are NULL | Created via direct `INSERT` instead of DataHandler | Upsert tags with DataHandler `process_datamap` so the slug eval runs |
+| `tx_news_domain_model_news.tags` counter is wrong | Counter not updated after MM writes | Recount once from the MM table, then make the command write it |
+| Frontend `/<tag-slug>/` answers 404 | Route enhancer missing | Add the `News` route with the `NewsTag` aspect and flush caches |
+| Identical tag created twice on re-run | No lookup before insert | Select by slug before each DataHandler `NEW…`; reuse the UID |
+| Translated news detail pages answer 404 or lose tags after a 14.3 update | Extbase follows `fallbackType` from 14.3.6 | Count per language and let the owner decide |
 
 ## Acceptance checklist
 
 Before reporting "done":
 
 - [ ] Storage PID confirmed and tags created there
-- [ ] `--dry-run` distribution reviewed (median ≥ 4, unmatched < 2%)
+- [ ] `--dry-run` distribution reviewed against the targets in step 5
 - [ ] Counter consistency query returns 0 rows
 - [ ] Backend News module shows tags on a recent record
 - [ ] `https://<site>/<tag-slug>/` resolves to the filtered news list
-- [ ] Command is re-runnable (`--reset` works; second run is idempotent)
-- [ ] If `b13/tag` was installed, `sys_tag` + `sys_tag_mm` exist and the extension is active
+- [ ] Command is re-runnable (`--reset` works; a second run is idempotent)
+- [ ] If `b13/tag` was installed, `sys_tag` and `sys_tag_mm` exist and the extension is active
+
+## Files in this skill
+
+- [tag-workflow.md](references/tag-workflow.md): the seven workflow steps in detail and `b13/tag`
+  setup. Load when running the workflow.
+- [matching-and-performance.md](references/matching-and-performance.md): keyword regex, the
+  large-UID parameter defect, batch sizes. Load when writing or debugging the command.
+- [translated-news-count.md](references/translated-news-count.md): the 14.3.6 `fallbackType`
+  change and the before/after count. Load for multilingual news around an update.
+- `references/AssignNewsTagsCommand.example.php` (read and adapt): the complete idempotent command.
+- `references/NewsThematicTags.example.php` (read and adapt): 65 single-concept German tags.
+- `references/Services.example.yaml` (copy): command registration.

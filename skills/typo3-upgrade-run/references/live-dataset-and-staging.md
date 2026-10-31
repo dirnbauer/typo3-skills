@@ -3,6 +3,12 @@
 Two operations sit at the edges of an upgrade run. Both are authorized per project by the user;
 neither ever writes to a live server.
 
+## Contents
+
+- [Pulling the dataset from live](#pulling-the-dataset-from-live)
+- [Publishing to staging](#publishing-to-staging)
+- [One hosting account for staging and live](#one-hosting-account-for-staging-and-live)
+
 ## Pulling the dataset from live
 
 Use the script, not ad-hoc commands:

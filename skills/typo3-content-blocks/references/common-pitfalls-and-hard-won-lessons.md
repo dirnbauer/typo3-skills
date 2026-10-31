@@ -2,6 +2,17 @@
 
 Continues `typo3-content-blocks` from [full guide](full-guide.md).
 
+## Contents
+
+- [1. Multilevel Collections Need Explicit Tables](#1-multilevel-collections-need-explicit-tables)
+- [2. Dashes in typeName Values](#2-dashes-in-typename-values)
+- [3. Reserved Field Identifier: description](#3-reserved-field-identifier-description)
+- [4. Template Field References Must Match config.yaml Identifiers](#4-template-field-references-must-match-configyaml-identifiers)
+- [5. Collection Identifier Naming — Avoid Table Name Collisions](#5-collection-identifier-naming--avoid-table-name-collisions)
+- [6. Preserve the Existing Data Contract During Migration](#6-preserve-the-existing-data-contract-during-migration)
+- [7. Rendering HTML Does Not Prove the Editor Preserves It](#7-rendering-html-does-not-prove-the-editor-preserves-it)
+- [8. Typed Link Values and No-Change Saves](#8-typed-link-values-and-no-change-saves)
+
 ## Common Pitfalls & Hard-Won Lessons
 
 These rules come from real debugging sessions. Violating them causes errors that are difficult to trace.

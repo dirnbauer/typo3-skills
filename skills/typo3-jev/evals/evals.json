@@ -161,6 +161,17 @@
         "Explains stable option IDs versus configured outcome values"
       ],
       "files": []
+    },
+    {
+      "id": "typo3-jev-behaviour-newer-minor",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "composer.lock now has webcon-jev v0.3.1 although the docs we follow were written for 0.2.6. Can we keep using the same operator thresholds and routing defaults?",
+      "assertions": [
+        "Reads the installed lock reference and compares it with the reviewed snapshot before reusing guidance.",
+        "Re-checks the operator enum, DecisionOutcome methods and routing listener in the installed source instead of assuming they are unchanged.",
+        "Notes that ^0.2.6 does not resolve to 0.3.x, so the constraint itself was changed and needs review."
+      ]
     }
   ]
 }

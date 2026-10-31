@@ -2,6 +2,12 @@
 
 Continues `typo3-accessibility` from [full guide](full-guide.md).
 
+## Contents
+
+- [3.1 Language Attribute Middleware (PSR-15)](#31-language-attribute-middleware-psr-15)
+- [3.2 Image Alt Text Validation (DataHandler hook)](#32-image-alt-text-validation-datahandler-hook)
+- [3.3 Accessible Fluid ViewHelper: SrOnly](#33-accessible-fluid-viewhelper-sronly)
+
 ## 3. PHP: Accessibility Middleware & Helpers
 
 ### 3.1 Language Attribute Middleware (PSR-15)

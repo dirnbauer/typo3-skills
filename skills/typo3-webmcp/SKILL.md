@@ -80,7 +80,8 @@ administrative trust boundary.
    existing form. Keep consequential
    forms human-submitted by default; do not add `toolautosubmit` merely for convenience.
 3. For stateful search, navigation, filtering, or JavaScript application logic, use the imperative
-   `document.modelContext.registerTool()` surface and unregister through its supported lifecycle.
+   `document.modelContext.registerTool()` surface; unregister by aborting the `AbortSignal` passed
+   as the registration `signal` option.
 4. Implement the registration adapter in the project's sitepackage/Vite source and call the same
    services/endpoints as the human UI. Add no TYPO3 WebMCP extension, backend MCP, remote relay,
    polyfill, or runtime package by default.
@@ -100,7 +101,10 @@ accepts input, returns editor/user/third-party content, or can change state.
   opts out through `Origin-Agent-Cluster: ?0`/`document.domain` behavior.
 - Keep `Permissions-Policy: tools=(self)` unless named cross-origin use has been approved and tested.
 - Set `readOnlyHint` only for genuinely non-mutating behavior. Set `untrustedContentHint` whenever
-  output can contain editor, visitor, indexed, imported, or third-party text.
+  output can contain editor, visitor, indexed, imported, or third-party text. Set
+  `consequentialHint` on every tool with real-world or irreversible effects (sends, bookings,
+  payments); it lets the client ask for confirmation but does not replace the visible confirmation
+  above.
 - Validate arguments in executable code even when a JSON Schema exists. Bound strings, arrays,
   result counts, output size, execution time, and retries.
 - Treat tool names, descriptions, schemas, page content, outputs, and agent-supplied arguments as

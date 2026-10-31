@@ -2,6 +2,13 @@
 
 Continues `webconsulting-create-documentation` from [full guide](full-guide.md).
 
+## Contents
+
+- [Prerequisites](#prerequisites)
+- [Core Concept: Deterministic Syncing](#core-concept-deterministic-syncing)
+- [Creative Directives for AI Agents](#creative-directives-for-ai-agents)
+- [Concrete Code Examples (Remotion + GSAP Patterns)](#concrete-code-examples-remotion--gsap-patterns)
+
 ## Video & Animation for Documentation (Remotion + GSAP)
 
 When generating visual documentation, integrating **Remotion** with **GSAP** allows for complex, sequenced, and dynamic visual storytelling.

@@ -2,6 +2,17 @@
 
 Continues `typo3-solr` from [full guide](full-guide.md).
 
+## Contents
+
+- [Prerequisites](#prerequisites)
+- [Schema: DenseVectorField](#schema-densevectorfield)
+- [Model Configuration](#model-configuration)
+- [Indexing with Vectors](#indexing-with-vectors)
+- [Querying](#querying)
+- [Pre-Filtering](#pre-filtering)
+- [EXT:solr Integration](#extsolr-integration)
+- [Use Cases](#use-cases)
+
 ## 11. LLM & Vector Search (Solr Server Native)
 
 **KNN / dense vectors** exist from **Solr 9.0+**; **text-to-vector** / LLM integrations use the **`language-models`** (or successor) module on **newer 9.x** releases — confirm module names for your Solr version. This runs on the **Solr server** — EXT:solr only issues queries.

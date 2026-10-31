@@ -18,6 +18,19 @@ In-container browsers come from the public `codingsasi/ddev-playwright` add-on:
 ddev add-on get codingsasi/ddev-playwright && ddev restart && ddev install-playwright
 ```
 
+## Contents
+
+- [The order that matters](#the-order-that-matters)
+- [Exit codes](#exit-codes)
+- [Commands](#commands)
+- [Coverage](#coverage)
+- [Determinism](#determinism)
+- [Security](#security)
+- [Reports](#reports)
+- [Tuning](#tuning)
+- [Tests](#tests)
+- [Fallback](#fallback)
+
 ## The order that matters
 
 ```bash

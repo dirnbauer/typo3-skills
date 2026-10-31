@@ -41,47 +41,6 @@ Prefer this order:
 
 When the local Codex app is used, start with `prompts/local-codex-app-prompt.md` and fill in project URL, profile, and sitepackage path.
 
-## Manual review Chrome helper
-
-This skill includes a no-build Chrome extension for manual WCAG review:
-
-```text
-project-template/manual-review/chrome-extension/
-```
-
-Use it when a criterion cannot be safely decided by automation alone. The helper loads the full active WCAG 2.2 Level A + Level AA checkpoint list from:
-
-```text
-project-template/.a11y/checkpoints/wcag22-aa-checkpoints.yml
-project-template/manual-review/chrome-extension/data/wcag22-aa-checkpoints.json
-```
-
-WCAG 2.2 AA means all active Level A and Level AA success criteria. In this list that is 55 active checkpoints: 31 Level A and 24 Level AA. WCAG 2.2 removed 4.1.1 Parsing; keep it only as a legacy check when a contract or policy still references WCAG 2.0 or 2.1.
-
-Manual helper capabilities:
-
-- side-panel checklist for every active WCAG 2.2 A/AA criterion;
-- page helper scan for headings, landmarks, images, forms, links, focusable elements, small targets, duplicate IDs, iframes and videos;
-- visual highlights for headings, landmarks, images, forms, links, focusable elements and small targets;
-- keyboard focus recorder for focus order, visible focus and focus-obscured checks;
-- structured export as manual review JSON;
-- structured export as an `open-issues.yml` fragment;
-- local Codex prompt for remediation from the exported evidence.
-
-Load it in Chrome via `chrome://extensions` → Developer mode → Load unpacked → select `manual-review/chrome-extension`.
-
-After export, merge manual findings into the project source of truth:
-
-```bash
-npm run a11y:manual:merge
-# or for one file:
-npm run a11y:manual:merge:file -- .a11y/manual-review/2026-07-05-page-open-issues.yml
-```
-
-Important: the Erklärung zur Barrierefreiheit must be generated from `.a11y/open-issues.yml` and documented exceptions. Do not free-write it from memory or from a chat summary.
-
-When Deque axe MCP is available, use it as acceleration, not as the single source of truth. The local Playwright/axe suite remains the repeatable project baseline.
-
 ## Project bootstrap
 
 If the project has no accessibility setup, scaffold from the bundled `project-template` folder:
@@ -101,49 +60,6 @@ For DDEV, use the local HTTPS/HTTP URL from `ddev describe`, for example:
 site:
   baseUrl: "https://my-project.ddev.site"
   sitemapUrl: "https://my-project.ddev.site/sitemap.xml"
-```
-
-
-## Legal framework profiles
-
-Use `legal.profile` in `.a11y/a11y.config.yml` to choose the statement context. Keep the technical test target as WCAG 2.2 AA unless the client explicitly asks for a lower legal baseline; a stricter internal target is acceptable, but the statement must accurately name the applicable legal reference.
-
-Supported example profiles:
-
-```yaml
-legal:
-  # Austria
-  # profile: "at-public-wzg"        # public-sector WZG / EN 301 549 context
-  # profile: "at-private-bafg"      # Austrian BaFG / EAA context, if the service is in scope
-
-  # Germany
-  # profile: "de-public-bgg-bitv"   # German public-sector BGG + BITV 2.0 context
-  # profile: "de-private-bfsg"      # German BFSG / EAA context, if the product/service is in scope
-
-  # Switzerland
-  # profile: "ch-public-behig-ech0059" # Swiss federal/public-sector BehiG/BehiV + eCH-0059 context
-
-  # Voluntary / contractual
-  # profile: "voluntary-wcag22aa"   # internal or contractual WCAG 2.2 AA target
-  targetStandard: "WCAG 2.2 AA"
-  enStandard: "EN 301 549"
-```
-
-Important jurisdiction rules:
-
-- Austria public sector: use WZG or relevant state/municipal rules and the österreichische Erklärung-zur-Barrierefreiheit structure.
-- Austria private sector: use BaFG/EAA only when the offered product/service is in scope; otherwise keep it as voluntary WCAG evidence.
-- Germany public sector: use BGG + BITV 2.0 on federal projects; for state/municipal projects verify the applicable Landesrecht and monitoring/enforcement body.
-- Germany private sector: use BFSG/EAA only for covered products/services; do not automatically classify every brochure website as BFSG-relevant.
-- Switzerland: eCH-0059 v3 is currently WCAG 2.1 AA based; the skill may still test WCAG 2.2 AA as an internal higher target, but the statement should not misrepresent the legal baseline.
-
-Load the matching reference file when legal wording matters:
-
-```text
-project-template/references/legal-at-notes.md
-project-template/references/legal-de-notes.md
-project-template/references/legal-ch-notes.md
-project-template/references/legal-framework-examples.md
 ```
 
 ## Standard workflow
@@ -234,13 +150,13 @@ Do not suppress a rule unless there is a documented reason, owner, expiry date, 
 
 ### 5. Manual/HITL gate
 
-Use the Chrome helper and the base checkpoint list for page samples and human-only criteria. Export findings and merge them into `.a11y/open-issues.yml` before generating the statement.
+Use the [Chrome helper](#manual-review-chrome-helper) and the base checkpoint list for page samples and human-only criteria. Export findings and merge them into `.a11y/open-issues.yml` before generating the statement.
 
 Keep human review small, but mandatory for:
 
 - meaningful image alternative text;
 - keyboard interaction and logical tab/focus order;
-- Screenreader smoke test with VoiceOver/NVDA;
+- screen-reader smoke test with VoiceOver/NVDA;
 - PDF, video, map, social embed and third-party content exceptions;
 - legal status wording: fully/partially/not compliant;
 - publication of the Erklärung zur Barrierefreiheit.
@@ -265,6 +181,89 @@ Statement categories:
 ```text
 non_conformance, disproportionate_burden, outside_scope, third_party_content,
 archived_content, accessible_alternative_available, legacy_non_conformance
+```
+
+## Manual review Chrome helper
+
+This skill includes a no-build Chrome extension for manual WCAG review:
+
+```text
+project-template/manual-review/chrome-extension/
+```
+
+Use it when a criterion cannot be safely decided by automation alone. The helper loads the full active WCAG 2.2 Level A + Level AA checkpoint list from:
+
+```text
+project-template/.a11y/checkpoints/wcag22-aa-checkpoints.yml
+project-template/manual-review/chrome-extension/data/wcag22-aa-checkpoints.json
+```
+
+WCAG 2.2 AA means all active Level A and Level AA success criteria. In this list that is 55 active checkpoints: 31 Level A and 24 Level AA. WCAG 2.2 removed 4.1.1 Parsing; keep it only as a legacy check when a contract or policy still references WCAG 2.0 or 2.1.
+
+Manual helper capabilities:
+
+- side-panel checklist for every active WCAG 2.2 A/AA criterion;
+- page helper scan for headings, landmarks, images, forms, links, focusable elements, small targets, duplicate IDs, iframes and videos;
+- visual highlights for headings, landmarks, images, forms, links, focusable elements and small targets;
+- keyboard focus recorder for focus order, visible focus and focus-obscured checks;
+- structured export as manual review JSON;
+- structured export as an `open-issues.yml` fragment;
+- local Codex prompt for remediation from the exported evidence.
+
+Load it in Chrome via `chrome://extensions` → Developer mode → Load unpacked → select `manual-review/chrome-extension`.
+
+After export, merge manual findings into the project source of truth:
+
+```bash
+npm run a11y:manual:merge
+# or for one file:
+npm run a11y:manual:merge:file -- .a11y/manual-review/2026-07-05-page-open-issues.yml
+```
+
+Important: the Erklärung zur Barrierefreiheit must be generated from `.a11y/open-issues.yml` and documented exceptions. Do not free-write it from memory or from a chat summary.
+
+When Deque axe MCP is available, use it as acceleration, not as the single source of truth. The local Playwright/axe suite remains the repeatable project baseline.
+
+## Legal framework profiles
+
+Use `legal.profile` in `.a11y/a11y.config.yml` to choose the statement context. Keep the technical test target as WCAG 2.2 AA unless the client explicitly asks for a lower legal baseline; a stricter internal target is acceptable, but the statement must accurately name the applicable legal reference.
+
+Supported example profiles:
+
+```yaml
+legal:
+  # Austria
+  # profile: "at-public-wzg"        # public-sector WZG / EN 301 549 context
+  # profile: "at-private-bafg"      # Austrian BaFG / EAA context, if the service is in scope
+
+  # Germany
+  # profile: "de-public-bgg-bitv"   # German public-sector BGG + BITV 2.0 context
+  # profile: "de-private-bfsg"      # German BFSG / EAA context, if the product/service is in scope
+
+  # Switzerland
+  # profile: "ch-public-behig-ech0059" # Swiss federal/public-sector BehiG/BehiV + eCH-0059 context
+
+  # Voluntary / contractual
+  # profile: "voluntary-wcag22aa"   # internal or contractual WCAG 2.2 AA target
+  targetStandard: "WCAG 2.2 AA"
+  enStandard: "EN 301 549"
+```
+
+Important jurisdiction rules:
+
+- Austria public sector: use the Web-Zugänglichkeits-Gesetz (WZG, BGBl. I Nr. 59/2019) for federal bodies, with the FFG as monitoring and complaints body, or the applicable Land/municipal law, and the österreichische Erklärung-zur-Barrierefreiheit structure.
+- Austria private sector: the Barrierefreiheitsgesetz (BaFG, BGBl. I Nr. 76/2023) applies since 2025-06-28, with market surveillance at the Sozialministeriumservice. Use BaFG/EAA only when the offered product/service is in scope; otherwise keep it as voluntary WCAG evidence. (Verified 2026-10-31 against RIS, sozialministerium.gv.at and ffg.at.)
+- Germany public sector: use BGG + BITV 2.0 on federal projects; for state/municipal projects verify the applicable Landesrecht and monitoring/enforcement body.
+- Germany private sector: use BFSG/EAA only for covered products/services; do not automatically classify every brochure website as BFSG-relevant.
+- Switzerland: eCH-0059 v3 is currently WCAG 2.1 AA based; the skill may still test WCAG 2.2 AA as an internal higher target, but the statement should not misrepresent the legal baseline.
+
+Load the matching reference file when legal wording matters:
+
+```text
+project-template/references/legal-at-notes.md
+project-template/references/legal-de-notes.md
+project-template/references/legal-ch-notes.md
+project-template/references/legal-framework-examples.md
 ```
 
 ## TYPO3 fix rules

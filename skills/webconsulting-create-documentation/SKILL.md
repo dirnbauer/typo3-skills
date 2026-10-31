@@ -12,6 +12,30 @@ license: "MIT / CC-BY-SA-4.0"
 
 End-to-end workflow for building product documentation: help pages, AI-generated illustrations, narrated product tour videos (Remotion + ElevenLabs TTS + Suno AI music), and GitHub README visual documentation.
 
+## Workflow Overview
+
+```
+1. Create help page       → React component with collapsible sections
+2. Generate illustrations → AI image generation tool (GenerateImage)
+3. Build Remotion video   → Animated scenes with narration subtitles
+4. Generate TTS audio     → ElevenLabs API or macOS `say` fallback
+5. Generate music         → Suno AI background music (optional)
+6. Render final video     → npm run remotion:render
+7. GitHub README          → Embed screenshots + video in README.md
+```
+
+## References: when to load
+
+Phases 1-3 are below. Load a reference only when you reach its phase:
+
+- [Phase 4: Narration](references/phase-4-narration-jony-ive-style.md): before writing the narration script and subtitle component; [narration-examples.md](narration-examples.md) has a full script.
+- [Phase 5: TTS audio](references/phase-5-tts-audio-generation.md): before generating voice files or sizing scene durations from audio length.
+- [Phase 5b: Background music](references/phase-5b-background-music-suno-ai.md): only when the user wants music.
+- [Phase 6: Render and deploy](references/phase-6-render-and-deploy.md): before `npm run remotion:render` and embedding the MP4.
+- [Phase 7: GitHub README](references/phase-7-github-readme-documentation.md): for README screenshots, `<picture>` dark/light variants and release-hosted video.
+- [Remotion and GSAP animation](references/video-and-animation-for-documentation-remotion-gsap.md): for animation patterns beyond the toolkit below.
+- [Checklist](references/checklist.md): before handing the documentation over.
+
 ## Prerequisites
 
 ### Required
@@ -57,18 +81,6 @@ is a generated project output, not a bundled skill resource; use the implementat
 
 **Free tier limits**: ~10,000 characters/month. The full narration script is ~600 characters,
 so you can regenerate ~16 times per month on the free tier.
-
-## Workflow Overview
-
-```
-1. Create help page       → React component with collapsible sections
-2. Generate illustrations → AI image generation tool (GenerateImage)
-3. Build Remotion video   → Animated scenes with narration subtitles
-4. Generate TTS audio     → ElevenLabs API or macOS `say` fallback
-5. Generate music         → Suno AI background music (optional)
-6. Render final video     → npm run remotion:render
-7. GitHub README          → Embed screenshots + video in README.md
-```
 
 ## Phase 1: Help Page
 
@@ -200,7 +212,7 @@ function SceneComponent() {
 
 Durations are **dynamic** — driven by narration audio length (see Phase 5).
 The video includes a **1.5s lead-in** (dark + exponential volume ramp) and
-a **4s end card** with social links that fades to black.
+a **7s end card** with social links that stays visible to the last frame.
 
 | # | Scene | ~Duration | Content |
 |---|-------|-----------|---------|

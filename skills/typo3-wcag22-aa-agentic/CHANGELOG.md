@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased (2026-10-31)
+
+- Raises the project-template floors to the current npm releases, verified 2026-10-31 against the
+  npm registry: `axe-core` and `@axe-core/playwright` `^4.14.0` (the latter pins `axe-core ~4.14.0`),
+  `@playwright/test` `^1.64.1` (requires Node.js 20+, unchanged).
+- Names the Austrian legal bases with citations: WZG (BGBl. I Nr. 59/2019, FFG as monitoring and
+  complaints body) and BaFG (BGBl. I Nr. 76/2023, in force since 2025-06-28, market surveillance at
+  the Sozialministeriumservice).
+- Reorders `SKILL.md` so the workflow precedes the Chrome helper and legal profile detail.
+
 ## 1.0.0
 
 - Final clean repo-ready package for `github.com/dirnbauer/webconsulting-skills`.

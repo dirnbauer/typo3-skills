@@ -202,7 +202,7 @@
       "assertions": [
         "Derive the brand from design tokens, project CSS or logo and require accessible action-color contrast.",
         "Use supported Core login/backend options and a small sitepackage backend stylesheet.",
-        "Show the exact Environment::getContext value before and after login without changing it at runtime.",
+        "Show a readable environment label mapped from the real Environment::getContext before and after login, never the raw context string, without changing the context at runtime.",
         "Keep status colors, focus indicators and structural backend layout intact."
       ],
       "note": "Protects accessible, upgrade-safe branding and truthful context display."

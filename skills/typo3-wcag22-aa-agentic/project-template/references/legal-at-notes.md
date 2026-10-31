@@ -2,6 +2,16 @@
 
 This is project guidance, not legal advice. Always verify the exact legal basis, competent body and wording before publishing a statement.
 
+## Legal bases (verified 2026-10-31)
+
+- Web-Zugänglichkeits-Gesetz (WZG), BGBl. I Nr. 59/2019: websites and apps of federal public bodies
+  (implements Directive (EU) 2016/2102). The FFG is the monitoring and complaints body. Länder and
+  municipalities follow their own laws.
+- Barrierefreiheitsgesetz (BaFG), BGBl. I Nr. 76/2023: in force since 2025-06-28 for products and
+  services in scope of the European Accessibility Act. Market surveillance: Sozialministeriumservice.
+
+Sources: RIS (ris.bka.gv.at), sozialministerium.gv.at, ffg.at.
+
 ## Public-sector websites/apps
 
 For Austrian federal public-sector websites/apps, use a WZG-oriented accessibility statement structure. For state, municipality or public-law bodies, verify the applicable state-level procedure and enforcement body.

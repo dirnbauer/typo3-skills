@@ -6,6 +6,15 @@ The addon is **`in2code/powermail_cond` / `powermail_cond`**, sometimes called
 Use [the existing Powermail guide](../../typo3-powermail/SKILL-CONDITIONS.md) for condition
 containers, shipped site sets, the `3132` JSON endpoint, mandatory fields and multistep limits.
 
+## Contents
+
+- [Wire an existing form](#wire-an-existing-form)
+- [1. Show bug-report details from a free-text message](#1-show-bug-report-details-from-a-free-text-message)
+- [2. Offer an optional callback block](#2-offer-an-optional-callback-block)
+- [3. Display an advisory completeness hint](#3-display-an-advisory-completeness-hint)
+- [4. Route a submitted enquiry to approved receivers](#4-route-a-submitted-enquiry-to-approved-receivers)
+- [Request cost, loops and acceptance checks](#request-cost-loops-and-acceptance-checks)
+
 ## Wire an existing form
 
 Create a persisted Jev decision, then one condition container for the existing form. Add a

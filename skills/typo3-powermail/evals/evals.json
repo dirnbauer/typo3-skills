@@ -122,10 +122,10 @@
       "assertions": [
         "Checks official public upstream separately from dirnbauer forks",
         "Configures both VCS repositories at root because dependency repository entries are ignored",
-        "Uses a compatible released Powermail tag and locks the condition development branch",
+        "Uses compatible released tags for both forks (conditions 14.0.0 or newer) rather than a moving development branch",
         "Reports source checks separately from runtime compatibility"
       ],
-      "expected_output": "Checks official public upstream separately from dirnbauer forks; Configures both VCS repositories at root because dependency repository entries are ignored; Uses a compatible released Powermail tag and locks the condition development branch; Reports source checks separately from runtime compatibility",
+      "expected_output": "Checks official public upstream separately from dirnbauer forks; Configures both VCS repositories at root because dependency repository entries are ignored; Uses compatible released tags for both forks (conditions 14.0.0 or newer) rather than a moving development branch; Reports source checks separately from runtime compatibility",
       "files": []
     },
     {

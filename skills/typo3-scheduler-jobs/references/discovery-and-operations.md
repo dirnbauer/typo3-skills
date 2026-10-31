@@ -1,5 +1,15 @@
 # Discovery and operations
 
+## Contents
+
+- [Discover from the selected runtime](#discover-from-the-selected-runtime)
+- [Build an installation plan](#build-an-installation-plan)
+- [Configure through TYPO3](#configure-through-typo3)
+- [Control tasks](#control-tasks)
+- [Verify the selected execution mode](#verify-the-selected-execution-mode)
+- [Migrate into v14 safely](#migrate-into-v14-safely)
+- [Completion gate](#completion-gate)
+
 ## Discover from the selected runtime
 
 Collect all of these before proposing tasks:

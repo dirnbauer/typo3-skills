@@ -4,6 +4,15 @@ Every update run writes into one project-local directory: `.typo3-update/`. It i
 
 Nothing in this skill is "remembered". It is written down, and the gates read what was written.
 
+## Contents
+
+- [Layout](#layout)
+- [Graph nodes and bounded evidence loops](#graph-nodes-and-bounded-evidence-loops)
+- [Front matter](#front-matter)
+- [Naming](#naming)
+- [What goes in git](#what-goes-in-git)
+- [Resuming](#resuming)
+
 ## Layout
 
 ```

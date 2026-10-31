@@ -6,39 +6,40 @@ metadata:
   origin: "webconsulting"
 license: "MIT / CC-BY-SA-4.0"
 ---
+
 # TYPO3 Visual Editor
 
 > Source: https://github.com/dirnbauer/webconsulting-skills
 
-Use this skill to make a TYPO3 project ready for `friendsoftypo3/visual-editor`, especially when upgrading Fluid templates so editors can edit fields and content areas in context.
+Makes a TYPO3 project ready for `friendsoftypo3/visual-editor`, an in-backend frontend editing mode
+with inline text editing, drag-and-drop, adding and removing content elements, workspace support
+and Context Panel integration. Installing the extension is the small part: the frontend output must
+be traceable back to records, fields and content areas. Migrate page columns to
+`f:render.contentArea` and editable text fields to `f:render.text`.
 
-The critical work is not only installing the extension. The Visual Editor needs frontend output that is traceable back to records, fields, and content areas. Migrate page columns to `f:render.contentArea` where possible and migrate editable text fields to `f:render.text`.
+- `f:render.text` (Core) marks TCA-backed text fields as editable and renders them according to field configuration.
+- `f:render.contentArea` (Core) renders TYPO3 v14.2+ page content areas and lets extensions modify content-area output.
+- `f:mark.contentArea` (Visual Editor) is the fallback for TYPO3 v13 or legacy renderers that cannot use `f:render.contentArea` yet.
 
-## What it does
+## Rules
 
-The Visual Editor adds an in-backend frontend editing mode for TYPO3 content. Editors can work close to the rendered page, with inline text editing, drag-and-drop repositioning, adding/removing content elements, real-time preview behavior, workspace support, optional autosaving, container support, and Context Panel integration.
-
-For custom sitepackages, the extension depends on Fluid hooks:
-
-- `f:render.text` marks TCA-backed text fields as editable and renders them according to field configuration.
-- `f:render.contentArea` renders TYPO3 v14.2+ page content areas and lets extensions modify content-area output.
-- `f:mark.contentArea` is the Visual Editor fallback for TYPO3 v13 or legacy renderers that cannot yet use `f:render.contentArea`.
-
-## When to use
-
-Use this skill when the user asks for:
-
-- installing or removing `friendsoftypo3/visual-editor`
-- making a sitepackage compatible with visual editing
-- replacing `f:cObject typoscriptObjectPath="lib.dynamicContent"` column rendering
-- updating Fluid templates for fields shown in the backend
-- using `f:render.text`, `f:render.contentArea`, or `f:mark.contentArea`
-- diagnosing why inline editing, drag-and-drop, add, delete, or content-area highlighting does not work
-- upgrading TYPO3 v13/v14 templates toward v14.2+ PAGEVIEW rendering
+- Prefer TYPO3 v14.2+ `f:render.contentArea` over custom `lib.dynamicContent` rendering.
+- Convert text/richtext output to `f:render.text` field by field.
+- Keep backend layout column identifiers explicit and stable.
+- Verify templates with real content, translations, workspaces, and restricted editor permissions.
+- Keep frontend CSS as the source of truth for visual editing styles.
+- Leave Core ViewHelpers in place after removing the extension on TYPO3 v14; they are useful beyond Visual Editor.
+- Do not assume `colPos: 3` always maps to `{content.main}`; inspect the backend layout.
+- Do not wrap everything in `f:mark.contentArea` on TYPO3 v14.2+ if `f:render.contentArea` is available.
+- Do not use `f:render.text` for non-TCA or computed values.
+- Do not pass Extbase property names when the database field name differs.
+- Do not remove escaping or replace text rendering with `f:format.raw` to make editing work.
+- Do not judge readiness from admin-only testing.
+- Place `record-transformation` before the priority-10 Content Blocks processor; later, inline editing silently fails (see [Backend fields](#backend-fields)).
 
 ## Version strategy
 
-Prefer TYPO3 v14.2+ and Core ViewHelpers:
+Target TYPO3 14.3 (`^14.3`) and the Core ViewHelpers, which exist since v14.2:
 
 ```html
 <f:render.contentArea contentArea="{content.main}" />
@@ -47,61 +48,7 @@ Prefer TYPO3 v14.2+ and Core ViewHelpers:
 
 Use `f:mark.contentArea` only when the project cannot use the v14.2+ content-area pipeline yet, for example TYPO3 v13 compatibility or legacy content rendering with VHS/Flux/container loops.
 
-**Always install the newest release**, and resolve which one that is at execution time rather than from any number written here — `ddev composer require friendsoftypo3/visual-editor` without a constraint takes the latest that fits the project, and [Packagist](https://packagist.org/packages/friendsoftypo3/visual-editor) shows what it requires. Verify the resolved package's own constraints before changing `composer.json`: the 1.x line requires PHP 8.2+ and supports TYPO3 13.4.22+ or 14.3+ (`typo3/cms-core ^13.4.22 || ^14.3.0`), and only the earliest 1.0.x releases supported 14.2. A version number pinned in documentation is stale the week after it is written; the constraint the installed package declares is not.
-
-## How to install
-
-Composer installation:
-
-```bash
-ddev composer require friendsoftypo3/visual-editor
-ddev typo3 cache:flush
-```
-
-Without DDEV:
-
-```bash
-composer require friendsoftypo3/visual-editor
-vendor/bin/typo3 cache:flush
-```
-
-Non-Composer installation:
-
-1. Install the extension through the TYPO3 Extension Manager.
-2. Activate `visual_editor`.
-3. Flush TYPO3 caches.
-4. Run database updates if the Install Tool requests them.
-
-Optional helpers:
-
-- Install `andersundsehr/visual-editor-fluid-styled-content-addon` (extension key: `visual_editor_fluid_styled_content_addon`) if the project relies heavily on `fluid_styled_content` templates and wants automatic text-editing integration there.
-- Consider `wapplersystems/multisite-belogin` for multi-domain projects where backend users need to be logged in across several frontend domains.
-
-## How to configure
-
-1. Confirm backend users can access the Visual Editor module and page tree.
-2. Make frontend rendering use templates that expose editable records and fields.
-3. Add `record-transformation` where templates currently receive raw arrays but need Record objects.
-4. Render page columns through `f:render.contentArea` on TYPO3 v14.2+.
-5. Wrap unavoidable legacy column renderers with `f:mark.contentArea`.
-6. Ensure rich-text styles used by CKEditor are also available in frontend CSS, because Visual Editor uses the rendered frontend context.
-7. Test in the backend Visual Editor module with a real editor user, not only an admin account.
-
-### Record transformation
-
-If a content element template has raw `{data}` but no `{record}` object, add the data processor before using `f:render.text`:
-
-```typoscript
-lib.contentElement.dataProcessing.1768551979 = record-transformation
-```
-
-Then render TCA-backed text fields from the Record object:
-
-```html
-<h1>{record -> f:render.text(field: 'header')}</h1>
-```
-
-Use the database/TCA field name in `field`, not an Extbase property alias.
+Install the newest release, and resolve which one that is at execution time rather than from any number written here — `ddev composer require friendsoftypo3/visual-editor` without a constraint takes the latest that fits the project, and [Packagist](https://packagist.org/packages/friendsoftypo3/visual-editor) shows what it requires. Verify the resolved package's own constraints before changing `composer.json`: the 1.x line requires PHP 8.2+ and supports TYPO3 13.4.22+ or 14.3+ (`typo3/cms-core ^13.4.22 || ^14.3.0`), and only the earliest 1.0.x releases supported 14.2. Checked on Packagist 2026-10-31: the newest release is 1.10.4 (2026-10-14) with exactly that constraint and PHP `~8.2.0 || ~8.3.0 || ~8.4.0 || ~8.5.0`. Trust the constraint the installed package declares over any number written here.
 
 ## Template migration workflow
 
@@ -244,6 +191,84 @@ areas normally share one parent, add separate wrappers only for edit mode; share
 and drag/drop boundaries are ambiguous. Keep normal-mode markup untouched and prove that with a DOM
 and pixel comparison.
 
+## Editable images
+
+Check the installed Visual Editor's `ImageViewHelper` before changing image markup.
+In 1.10.4 (checked 2026-10-31) it is registered in the `f` namespace, shadows Core's `f:image`,
+delegates rendering to it and adds `data-veedit` in edit mode when it receives a FAL
+**FileReference**. Its URLs open the owning record's image field
+in TYPO3's Context Panel or record form, where editors can replace images, crop,
+and change alternative text.
+
+`f:media` uses a resource renderer and can bypass this ViewHelper. For image-only
+partials such as fluid_styled_content's `Media/Rendering/Image.fluid.html`, override
+that partial in the sitepackage and use `f:image image="{file}"`. Preserve dimensions,
+crop, CSS classes, alternative text, title, loading and decoding. Keep video/audio
+rendering on their own paths. Do not edit vendor files or rebuild a reference from
+its public URL: the owning table, record UID and field name would be lost. A plain
+File or static logo has no editable owning relation and should not gain a fake one.
+
+Prove the failure against real rendered image markup before changing the partial.
+Then verify `data-veedit` points to the actual relation owner, click an image as a
+non-admin, save and reopen a changed alternative text or crop, and restore test
+values. Cover image, textmedia and any custom image component used by the site.
+Check anonymous output and permissions as well; text-editing markers alone do not
+prove image editing works.
+
+## How to install
+
+Composer installation:
+
+```bash
+ddev composer require friendsoftypo3/visual-editor
+ddev typo3 cache:flush
+```
+
+Without DDEV:
+
+```bash
+composer require friendsoftypo3/visual-editor
+vendor/bin/typo3 cache:flush
+```
+
+Non-Composer installation:
+
+1. Install the extension through the TYPO3 Extension Manager.
+2. Activate `visual_editor`.
+3. Flush TYPO3 caches.
+4. Run database updates if the Install Tool requests them.
+
+Optional helpers:
+
+- Install `andersundsehr/visual-editor-fluid-styled-content-addon` (extension key: `visual_editor_fluid_styled_content_addon`) if the project relies heavily on `fluid_styled_content` templates and wants automatic text-editing integration there.
+- Consider `wapplersystems/multisite-belogin` for multi-domain projects where backend users need to be logged in across several frontend domains.
+
+## How to configure
+
+1. Confirm backend users can access the Visual Editor module and page tree.
+2. Make frontend rendering use templates that expose editable records and fields.
+3. Add `record-transformation` where templates currently receive raw arrays but need Record objects.
+4. Render page columns through `f:render.contentArea` on TYPO3 v14.2+.
+5. Wrap unavoidable legacy column renderers with `f:mark.contentArea`.
+6. Ensure rich-text styles used by CKEditor are also available in frontend CSS, because Visual Editor uses the rendered frontend context.
+7. Test in the backend Visual Editor module with a real editor user, not only an admin account.
+
+### Record transformation
+
+If a content element template has raw `{data}` but no `{record}` object, add the data processor before using `f:render.text`:
+
+```typoscript
+lib.contentElement.dataProcessing.1768551979 = record-transformation
+```
+
+Then render TCA-backed text fields from the Record object:
+
+```html
+<h1>{record -> f:render.text(field: 'header')}</h1>
+```
+
+Use the database/TCA field name in `field`, not an Extbase property alias.
+
 ## Problems to check
 
 Inline text is not editable:
@@ -273,24 +298,6 @@ Multi-domain editing fails:
 Workspace behavior differs:
 
 - Test with a workspace user and confirm overlays, permissions, language overlays, and publish flow before rollout.
-
-## Do
-
-- Prefer TYPO3 v14.2+ `f:render.contentArea` over custom `lib.dynamicContent` rendering.
-- Convert text/richtext output to `f:render.text` field by field.
-- Keep backend layout column identifiers explicit and stable.
-- Verify templates with real content, translations, workspaces, and restricted editor permissions.
-- Keep frontend CSS as the source of truth for visual editing styles.
-- Leave Core ViewHelpers in place after removing the extension on TYPO3 v14; they are useful beyond Visual Editor.
-
-## Don't
-
-- Do not assume `colPos: 3` always maps to `{content.main}`; inspect the backend layout.
-- Do not wrap everything in `f:mark.contentArea` on TYPO3 v14.2+ if `f:render.contentArea` is available.
-- Do not use `f:render.text` for non-TCA or computed values.
-- Do not pass Extbase property names when the database field name differs.
-- Do not remove escaping or replace text rendering with `f:format.raw` to make editing work.
-- Do not judge readiness from admin-only testing.
 
 ## How to remove
 

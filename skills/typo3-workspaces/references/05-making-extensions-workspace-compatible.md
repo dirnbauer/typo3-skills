@@ -2,6 +2,15 @@
 
 Continues `typo3-workspaces` from [full guide](full-guide.md).
 
+## Contents
+
+- [Step 1: Enable versioningWS in TCA](#step-1-enable-versioningws-in-tca)
+- [Step 2: Disable Versioning for Specific Tables](#step-2-disable-versioning-for-specific-tables)
+- [Step 3: Allow Live Editing in Workspaces](#step-3-allow-live-editing-in-workspaces)
+- [Step 4: Backend Overlay (REQUIRED for Backend Modules)](#step-4-backend-overlay-required-for-backend-modules)
+- [Step 5: Frontend Overlay (REQUIRED for Frontend Plugins)](#step-5-frontend-overlay-required-for-frontend-plugins)
+- [Step 6: Backend Module Workspace Restriction](#step-6-backend-module-workspace-restriction)
+
 ## 5. Making Extensions Workspace-Compatible
 
 ### Step 1: Enable versioningWS in TCA
@@ -57,7 +66,7 @@ $GLOBALS['TCA']['tx_myextension_log']['ctrl']['versioningWS'] = false;
 
 ### Step 3: Allow Live Editing in Workspaces
 
-For tables that should always be edited live (e.g., user settings, configuration):
+For tables without workspace support that editors still change while working in a workspace (e.g., user settings, configuration). The flag only works without `versioningWS`: since a 14.3 patch after 14.3.7 (Important #106077, present in 14.3.9) TCA migration removes it from workspace-aware tables with a deprecation entry, and their records are always versioned.
 
 ```php
 <?php

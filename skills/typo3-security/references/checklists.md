@@ -6,10 +6,11 @@ TYPO3 v14 includes built-in rate limiting:
 
 ```php
 // config/system/additional.php
-// Rate limiting: check current Core / feature documentation — do not assume a stable `security.backend.rateLimiter` toggle name
+// Login rate limits exist for BE (default 5) and FE (default 10) per `loginRateLimitInterval`,
+// with `loginRateLimitIpExcludeList`; there is no `security.backend.rateLimiter` feature toggle (14.3.9)
 
 // Configure rate limits
-$GLOBALS['TYPO3_CONF_VARS']['BE']['loginRateLimit'] = 5;  // max attempts per default interval (see `loginRateLimitInterval`, often ~15 minutes — not “per minute”)
+$GLOBALS['TYPO3_CONF_VARS']['BE']['loginRateLimit'] = 5;  // max attempts per `loginRateLimitInterval` (Core default '15 minutes' in 14.3.9), not per minute
 ```
 
 ## Security Audit Checklist

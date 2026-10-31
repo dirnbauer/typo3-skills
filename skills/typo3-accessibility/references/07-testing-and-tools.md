@@ -2,6 +2,12 @@
 
 Continues `typo3-accessibility` from [full guide](full-guide.md).
 
+## Contents
+
+- [7.1 Agent-First WCAG 2.2 Audit Protocol](#71-agent-first-wcag-22-audit-protocol)
+- [7.2 Reusable Audit Script](#72-reusable-audit-script)
+- [7.3 Tools](#73-tools)
+
 ## 7.1 Agent-First WCAG 2.2 Audit Protocol
 
 When a user asks for a WCAG 2.2 conformance audit, start the audit. Do not stop after saying that automation is incomplete.

@@ -3,6 +3,14 @@
 Use this reference when the selected TYPO3 installation needs customer branding before and after
 login. Keep the changes in the project sitepackage and instance configuration; never patch Core.
 
+## Contents
+
+- [Three environment colours, each site's own design](#three-environment-colours-each-sites-own-design)
+- [Find the brand source](#find-the-brand-source)
+- [Supported Core configuration](#supported-core-configuration)
+- [Optional stylesheet](#optional-stylesheet)
+- [Verification](#verification)
+
 ## Three environment colours, each site's own design
 
 Owner preference of 2026-10-21, based on the Ombudsstelle login treatment: retain **three base

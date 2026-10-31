@@ -16,25 +16,24 @@ license: "MIT / CC-BY-SA-4.0"
 > **Compatibility:** Target **TYPO3 14.3** and match EXT:solr, server and configset using the [official Version Matrix](https://docs.typo3.org/p/apache-solr-for-typo3/solr/main/en-us/Appendix/VersionMatrix.html) and actual package metadata. Stable EXT:solr 14 is available; recheck compatible stable releases at execution time.
 > All custom PHP examples use TYPO3 v14 conventions (PHP 8.2+, constructor promotion, `#[AsEventListener]` where shown).
 
-> **TYPO3 API First:** Always use TYPO3's built-in APIs and EXT:solr's TypoScript/PSR-14 events before creating custom implementations. Do not reinvent what EXT:solr already provides.
+> **TYPO3 API first:** use TYPO3's built-in APIs and EXT:solr's TypoScript and PSR-14 events before writing a custom implementation.
 
-## Sources
+## Rules that matter most
 
-This skill is based on the following authoritative sources:
-
-1. [EXT:solr Documentation](https://docs.typo3.org/p/apache-solr-for-typo3/solr/main/en-us/)
-2. [EXT:tika Documentation](https://docs.typo3.org/p/apache-solr-for-typo3/tika/main/en-us/)
-3. [Version Matrix](https://docs.typo3.org/p/apache-solr-for-typo3/solr/main/en-us/Appendix/VersionMatrix.html)
-4. [GitHub: TYPO3-Solr/ext-solr](https://github.com/TYPO3-Solr/ext-solr)
-5. [GitHub: main branch (14.0.x-dev)](https://github.com/TYPO3-Solr/ext-solr/tree/main)
-6. [Apache Solr Reference Guide](https://solr.apache.org/guide/solr/latest/)
-7. [Solr Dense Vector Search](https://solr.apache.org/guide/solr/latest/query-guide/dense-vector-search.html)
-8. [Solr Text to Vector (LLM)](https://solr.apache.org/guide/solr/latest/query-guide/text-to-vector.html)
-9. [typo3-solr.com](https://www.typo3-solr.com/)
-10. [hosted-solr.com](https://hosted-solr.com/en/)
-11. [ddev-typo3-solr](https://github.com/ddev/ddev-typo3-solr)
-12. [Mittwald Solr Docs](https://developer.mittwald.de/docs/v2/platform/databases/solr/)
-13. [helhum/dotenv-connector](https://github.com/helhum/dotenv-connector)
+- Match EXT:solr, Apache Solr server, configset and Tika as one stack from the Version Matrix and
+  the installed package; for TYPO3 14.3 that is EXT:solr 14.0.x, `ext_solr_14_0_0` and Solr 10.0.0
+  (the `version-matrix` in the installed 14.0.2 `composer.json`). An older server that accepts
+  documents still drops unknown fields: accepting writes is not compatibility.
+- Never publish the Solr administrative API to the internet; reach it over a private network.
+- Before a staging copy indexes into a shared core, compare siteHashes: EXT:solr 14 derives them
+  from context, site identifier and `encryptionKey` ([details](references/v14-only-solr-changes.md#application-context-sitehash-and-shared-cores)).
+- After an EXT:solr 12 to 14 upgrade, check German analysis, SEO-title page titles and
+  `lastSearches` for silent result changes ([search parity](references/v14-only-solr-changes.md#search-parity-across-the-solr-upgrade)).
+- Install EXT:tika and EXT:solrfal only when files (PDF, DOCX) must be searchable.
+- Empty or missing results: debug the Index Queue, indexing configuration and Solr response before
+  touching templates ([how to get debug data](references/12-0-how-to-get-debug-data.md)).
+- Scheduler workers per Site root and their cadence belong to `typo3-scheduler-jobs`; sitemaps and
+  external search visibility to `typo3-seo`.
 
 ## 1. Architecture Overview
 
@@ -106,8 +105,10 @@ sequenceDiagram
 | **14.0.x** (see matrix / Packagist) | **14.x** | per matrix | `ext_solr_14_0_0` (when used) | **^8.2** | per matrix | per matrix |
 | 13.1.x | *(not a target for this collection)* | 9.10.1 | `ext_solr_13_1_0` | ^8.2 | 13.1 | 13.0 |
 
-Stable **14.0.1** was published on 2026-09-03 and requires Core `^v14.3.0` and PHP `^8.2`.
-Use compatible stable constraints; the old beta-only guidance is retired.
+Latest stable **14.0.2** (2026-09-16) requires Core `^v14.3.0` and PHP `^8.2` (Packagist,
+verified 2026-10-31; the installed 14.0.2 ships only the `ext_solr_14_0_0` configset and lists
+Apache Solr 10.0.0 in its `info:solr-versions` script). Use compatible stable constraints; the old
+beta-only guidance is retired.
 
 ### TYPO3 v14 Readiness
 
@@ -116,7 +117,7 @@ The [Version Matrix](https://docs.typo3.org/p/apache-solr-for-typo3/solr/main/en
 - `main` requires `typo3/cms-core: ^v14.3.0` (see `composer.json` on `main`)
 - branch alias **`dev-main` -> `14.0.x-dev`**
 - **Composer reality check:** [Packagist](https://packagist.org/packages/apache-solr-for-typo3/solr)
-  lists stable `14.0.0` and `14.0.1`. Prefer stable; a development fork/branch needs a specific reason
+  lists stable `14.0.0` to `14.0.2` (verified 2026-10-31). Prefer stable; a development fork/branch needs a specific reason
   and explicit approval, not a stale assumption that v14 is unreleased.
 
 **Resolve against the selected local project's lock:**
@@ -341,6 +342,24 @@ and Apache Tika advisories before deploying the server images.
 
 See [SKILL-SOLRFAL.md](SKILL-SOLRFAL.md) for complete file indexing setup.
 
+
+## Sources
+
+This skill is based on the following authoritative sources:
+
+1. [EXT:solr Documentation](https://docs.typo3.org/p/apache-solr-for-typo3/solr/main/en-us/)
+2. [EXT:tika Documentation](https://docs.typo3.org/p/apache-solr-for-typo3/tika/main/en-us/)
+3. [Version Matrix](https://docs.typo3.org/p/apache-solr-for-typo3/solr/main/en-us/Appendix/VersionMatrix.html)
+4. [GitHub: TYPO3-Solr/ext-solr](https://github.com/TYPO3-Solr/ext-solr)
+5. [GitHub: main branch (14.0.x-dev)](https://github.com/TYPO3-Solr/ext-solr/tree/main)
+6. [Apache Solr Reference Guide](https://solr.apache.org/guide/solr/latest/)
+7. [Solr Dense Vector Search](https://solr.apache.org/guide/solr/latest/query-guide/dense-vector-search.html)
+8. [Solr Text to Vector (LLM)](https://solr.apache.org/guide/solr/latest/query-guide/text-to-vector.html)
+9. [typo3-solr.com](https://www.typo3-solr.com/)
+10. [hosted-solr.com](https://hosted-solr.com/en/)
+11. [ddev-typo3-solr](https://github.com/ddev/ddev-typo3-solr)
+12. [Mittwald Solr Docs](https://developer.mittwald.de/docs/v2/platform/databases/solr/)
+13. [helhum/dotenv-connector](https://github.com/helhum/dotenv-connector)
 
 ## Detailed Reference
 

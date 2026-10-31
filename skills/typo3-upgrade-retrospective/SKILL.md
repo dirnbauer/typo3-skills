@@ -1,7 +1,7 @@
 ---
 name: typo3-upgrade-retrospective
 description: >-
-  Audit one or more past or incomplete TYPO3 upgrade runs, project repositories, Codex
+  Audits one or more past or incomplete TYPO3 upgrade runs, project repositories, Codex
   tasks/threads, and evidence directories to determine what was requested, asked, changed,
   solved, left open, slow, good, bad, risky, or unverifiable. Use when reviewing several projects,
   when Git claims completion but run status is stale or the update folder is missing, when
@@ -81,7 +81,8 @@ does not prove visual invariance, permissions, security, or closure. Stale statu
 4. Public-safe article notes if requested.
 
 Remain read-only unless the user explicitly asks to update skills. When edits are authorized, use
-`skill-creator`, preserve trigger boundaries, add/adjust evals, run the repository checks, and report
+`skill-creator`, preserve trigger boundaries, add/adjust evals as `proposed`, run `./scripts/check.sh`
+in the skill collection, and report
 which conclusions changed the skill.
 
 ## Boundaries

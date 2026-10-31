@@ -11,6 +11,15 @@ that had already passed. One source of truth, edited in place, cannot drift from
 
 Markdown also diffs, reviews and greps. A `.docx` does none of those.
 
+## Contents
+
+- [When a Word document is genuinely wanted](#when-a-word-document-is-genuinely-wanted)
+- [The single rule](#the-single-rule)
+- [Structure](#structure)
+- [Local measurement caveats are mandatory](#local-measurement-caveats-are-mandatory)
+- [What the report must not do](#what-the-report-must-not-do)
+- [Run statistics — what it actually took](#run-statistics--what-it-actually-took)
+
 ## When a Word document is genuinely wanted
 
 Only on explicit request, and **only once the content is final** — after Contract A closure, with

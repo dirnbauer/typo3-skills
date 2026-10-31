@@ -2,6 +2,18 @@
 
 Continues `typo3-content-blocks` from [full guide](full-guide.md).
 
+## Contents
+
+- [When to Use Page Types](#when-to-use-page-types)
+- [Minimal Page Type](#minimal-page-type)
+- [Full Page Type Example](#full-page-type-example)
+- [Page Type Options](#page-type-options)
+- [Icons for Page States](#icons-for-page-states)
+- [Backend Preview](#backend-preview)
+- [Frontend Integration](#frontend-integration)
+- [PAGEVIEW Content Areas and Columns [v14.2+ only]](#pageview-content-areas-and-columns-v142-only)
+- [Remove from Page Tree Drag Area](#remove-from-page-tree-drag-area)
+
 ## 7. Creating Page Types (Custom doktypes)
 
 Page Types extend the `pages` table with custom page types – ideal for blog articles, landing pages, news pages, or other page variants with special properties.

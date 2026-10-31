@@ -1,5 +1,14 @@
 # Upgrade graph architecture — September 2026
 
+## Contents
+
+- [Decision and limits](#decision-and-limits)
+- [Sources actually consulted](#sources-actually-consulted)
+- [Rechecked against current theory (27 September 2026)](#rechecked-against-current-theory-27-september-2026)
+- [How this differs from nested loops](#how-this-differs-from-nested-loops)
+- [Patch path for a project already on 14.3](#patch-path-for-a-project-already-on-143)
+- [Remaining validation work](#remaining-validation-work)
+
 ## Decision and limits
 
 Keep the existing renderer and local JSON/YAML controller. Use a directed acyclic success graph

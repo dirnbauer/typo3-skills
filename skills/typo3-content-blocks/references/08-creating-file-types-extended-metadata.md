@@ -2,6 +2,15 @@
 
 Continues `typo3-content-blocks` from [full guide](full-guide.md).
 
+## Contents
+
+- [Available File Type Names](#available-file-type-names)
+- [Minimal File Type](#minimal-file-type)
+- [Full File Type Example](#full-file-type-example)
+- [File Type Options](#file-type-options)
+- [Use Cases for File Types](#use-cases-for-file-types)
+- [Accessing File Type Fields](#accessing-file-type-fields)
+
 ## 8. Creating File Types (Extended Metadata)
 
 > New in version 1.2

@@ -14,6 +14,7 @@ The standing rules derived from it are in [skill-update-rules.md](skill-update-r
 - [Eval tooling](#eval-tooling)
 - [What this collection changed](#what-this-collection-changed)
 - [Deliberately not adopted](#deliberately-not-adopted)
+- [Review pass over the 40 owned skills](#review-pass-over-the-40-owned-skills)
 
 ## Method and limits
 
@@ -121,3 +122,39 @@ From the platform best-practices page, agentskills.io and the Claude Code docs:
   Windsurf and the ChatGPT plugin, and uploads to claude.ai would reject them.
 - **Converting `evals.json` to `plugin eval` case folders.** Our gate, ratchets and signatures live
   in the current format. A conversion is a separate owner decision; the lexical gate stays either way.
+
+## Review pass over the 40 owned skills
+
+All 40 webconsulting-owned skills were walked against [the checklist](skill-update-rules.md#checklist)
+on 2026-10-31. Every description now opens in the third person. TYPO3 claims were checked against
+an installed 14.3.9 (`typo3/cms-workspaces` against 14.3.10); package versions against Packagist or
+npm on the same day. Vendored skills and their overlays were not changed. New eval cases are
+`proposed`; no signature was added.
+
+| Skill | Main change |
+|---|---|
+| `typo3-upgrade-run` | Done condition and stop rules moved into the first ~7k characters; `ext_emconf.php` policy stated in the body; "Classic mode needs ext_emconf" corrected (#108345, 14.2) |
+| `typo3-upgrade-intake`, `-baseline`, `-migration`, `-closure`, `-retrospective` | Third-person openers; harness script paths made explicit; proposed cases for dbdoctor, dev-server assets, strict-mode integers, preview probes |
+| `typo3-rector`, `typo3-fractor` | Rules first, shouting removed, ssch/typo3-rector 3.16.0 and a9f/typo3-fractor 1.1.0 dated; Rector commit step stages by path |
+| `typo3-v14-reference`, `typo3-batch`, `typo3-translations` | Scope rules first, #108345 dated correctly, module parent mapping (#107628), direct reference links |
+| `typo3-datahandler` | `start()` signature matches 14.3.9; `@internal` properties flagged; `^14.3` |
+| `typo3-workspaces` | Rules first; `versioningWS_alwaysAllowLiveEdit` limitation (#106077); Scheduler commands named |
+| `typo3-initial-release` | 23k → 9k characters; explicit no-publish-without-request rule; detail in five references |
+| `typo3-backend-rights` | 460 → 202 lines; always-hold rules first; gotchas; apply/verify reference |
+| `typo3-news-tags` | 423 → 113 lines; detail in three references |
+| `typo3-shadcn-content-elements` | 27k → 10k characters; rules, workflow and done condition first |
+| `typo3-content-blocks`, `typo3-visual-editor`, `typo3-records-list-types`, `typo3-icon14` | Rules first; Content Blocks 2.4.10, Visual Editor 1.10.4 dated; records-list-types VCS install corrected |
+| `typo3-powermail`, `typo3-jev` | Version table dated; powermail_cond stable 14.0.0; jev range resolution corrected |
+| `typo3-webcomponents`, `typo3-design-system-page` | Third-person openers; tutorial filler removed |
+| `typo3-security` | Shouting removed; file-extension example starts from Core defaults; dated MFA/CSP values |
+| `typo3-seo` | `x-default` comes from `HrefLangGenerator`; duplicate canonical via `headerData` warned |
+| `typo3-solr`, `typo3-structured-data`, `typo3-webmcp` | EXT:solr 14.0.2, brotkrueml/schema 4.4.0 dated; WebMCP checked against the 2026-10-27 draft |
+| `typo3-playwright`, `typo3-scheduler-jobs`, `webconsulting-branding` | Opener only, or no change needed after checking |
+| `typo3-accessibility`, `typo3-wcag22-aa-agentic` | Rules and reference index first; WZG and BaFG cited and dated; axe-core 4.14, Playwright 1.64 floors |
+| `legal-impressum` | § 22 DLG (was § 4); Handelsgericht Wien as Firmenbuch court |
+| `security-incident-reporting` | Rules first; NIST SP 800-61 Rev. 3 mapping; CISA NCISS levels without invented score bands |
+| `architecture-decision-records`, `typo3-idea-extension-blog`, `webconsulting-create-documentation` | When-to-load reference lists; `^14.3`; end-card timing contradiction fixed |
+
+Left open for a person: the draft case `legal-impressum-neg-02` still ranks `legal-impressum` for a
+Content Blocks prompt (drafts do not gate); Google's FAQ rich-result eligibility, a few media-tool
+limits and image-model names were not re-verified.

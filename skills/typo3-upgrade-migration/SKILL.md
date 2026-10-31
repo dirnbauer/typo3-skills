@@ -1,7 +1,7 @@
 ---
 name: typo3-upgrade-migration
 description: >-
-  Execute one graph-authorized dependency, code, schema, or data migration node within a
+  Executes one graph-authorized dependency, code, schema, or data migration node within a
   whole-site TYPO3 v12/v13 to 14.3 upgrade. Use when Baseline A is sealed for the 13.4
   rung, Composer blocker resolution, Rector/Fractor pass, manual API/data migration,
   stored `list_type` to `CType` ordering, 14.3 rung, schema quarantine, or fixed-point reconciliation. Enforces rollback anchors,

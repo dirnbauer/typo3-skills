@@ -8,6 +8,13 @@ Most specialist branches are conditional: Solr, Content Blocks or an RTE branch 
 they are a standard part of every run. The P14 Visual Editor branch is the opposite: it runs only
 on the owner's explicit yes.
 
+## Contents
+
+- [Standard Contract B branches](#standard-contract-b-branches)
+- [Redirect module and backend rights](#redirect-module-and-backend-rights)
+- [Structured-data branch](#structured-data-branch)
+- [Native WebMCP branch](#native-webmcp-branch)
+
 ## Standard Contract B branches
 
 After the countersigned Contract A gate the graph always runs `structured-data-enrichment` and

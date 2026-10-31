@@ -1,5 +1,14 @@
 # Current-code closure, not a historical success label
 
+## Contents
+
+- [Workflow](#workflow)
+- [Target content epoch: one cumulative ledger](#target-content-epoch-one-cumulative-ledger)
+- [Residual findings do not block closure](#residual-findings-do-not-block-closure)
+- [Epoch order: what makes a new epoch stale](#epoch-order-what-makes-a-new-epoch-stale)
+- [Invalidation and recovery](#invalidation-and-recovery)
+- [Coverage that must not disappear](#coverage-that-must-not-disappear)
+
 ## Workflow
 
 Distinguish these outcomes in every status and handover:

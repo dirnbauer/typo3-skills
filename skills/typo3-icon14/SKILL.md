@@ -1,7 +1,7 @@
 ---
 name: "typo3-icon14"
 description: "Designs and migrates TYPO3 extension icons to the v14 line-art style, including source SVG cleanup, light/dark behavior, IconRegistry naming, backend module icons, and verification. Use when the user asks for TYPO3 v14 icons, backend module icon migration, extension icon modernization, SVG icon rules, or icon registration."
-compatibility: "TYPO3 14.x"
+compatibility: "TYPO3 14.3+"
 metadata:
   skill_type: capability
   version: "1.5.0"
@@ -121,7 +121,9 @@ for current API model IDs, provider selection, prompt guidance, and exit statuse
 
 Use sources in this order:
 
-1. Official TYPO3 Icon API docs for registration, providers, and migration:
+1. The installed `vendor/typo3/cms-core` (`Classes/Imaging/IconRegistry.php` and the
+   `Documentation/Changelog` entries) for what the running version accepts, then the official
+   TYPO3 Icon API docs for registration, providers, and migration:
    [Icon API](https://docs.typo3.org/m/typo3/reference-coreapi/main/en-us/ApiOverview/Icon/Index.html)
 2. Live TYPO3.Icons catalog for current Core SVG references:
    [TYPO3.Icons](https://typo3.github.io/TYPO3.Icons/)
@@ -160,14 +162,14 @@ force a 64x64 module composition into a 16x16 record or action icon.
 See [references/design-notes.md](references/design-notes.md) for the visual rules and
 anti-patterns.
 
-## Light And Dark Mode Are Non-Negotiable
+## Light And Dark Mode
 
 TYPO3 v14 ships auto / light / dark color scheme switching in the backend (introduced
 as a Core feature in v13.3, carried into v14). Every custom icon must render correctly
 in **both** schemes. There is no separate "dark icon" file — the same SVG is used.
 
-The two CSS tokens that the Core ships on `:root` (from `TYPO3.Icons/assets/scss/icons.scss`)
-are:
+The two CSS tokens that the Core ships on `:root` (from `TYPO3.Icons/assets/scss/icons.scss`;
+present in the 14.3.9 backend CSS) are:
 
 ```css
 :root {
@@ -181,8 +183,9 @@ How to stay compatible with both schemes:
 - Use `currentColor` (or `var(--icon-color-primary, currentColor)`) for the primary
   silhouette. It inherits the surrounding text color, which flips automatically when
   the user switches color scheme.
-- Use `var(--icon-color-accent, #ff8700)` for the accent. TYPO3 orange `#ff8700` is the
-  same fallback in both schemes because orange has sufficient contrast on both light
+- Use `var(--icon-color-accent, #ff8700)` for the accent. In 14.3 the backend maps
+  `--icon-color-accent` to `--typo3-icons-accent`, derived from the active theme's primary
+  token. TYPO3 orange `#ff8700` is the same fallback in both schemes because orange has sufficient contrast on both light
   and dark backend surfaces. Do **not** replace it with a scheme-specific hex — themes
   that want a different accent override the CSS variable, not the fallback.
 - Never hardcode `fill="#000"`, `fill="#333"`, `fill="#fff"`, `fill="white"`, or
@@ -227,9 +230,8 @@ Update every consumer after the SVG is in place:
 - `Configuration/TCA/*.php` -> `typeicon_classes`, `iconIdentifier`
 - `Configuration/TCA/Overrides/*.php` -> `pluginIcon`, page-type or folder icons
 
-The official docs state that icons must be registered in the icon registry through
-`Configuration/Icons.php`, and that registration in `ext_localconf.php` is no longer
-possible in TYPO3 v14.
+TYPO3 v14.0 removed IconRegistry instantiation in `ext_localconf.php` (deprecation #104778,
+removed in Breaking #105377; checked against the 14.3.9 changelog on 2026-10-31).
 
 Font Awesome icons are the exception to drawing your own SVGs: take them from
 [`friendsoftypo3/fontawesome-provider`](https://packagist.org/packages/friendsoftypo3/fontawesome-provider)

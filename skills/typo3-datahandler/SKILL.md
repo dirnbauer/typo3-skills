@@ -4,7 +4,7 @@ description: "Creates, updates, moves, localizes and deletes TYPO3 records progr
 compatibility: "TYPO3 14.x"
 metadata:
   skill_type: preference
-  version: "2.1.0"
+  version: "2.2.0"
   origin: "webconsulting"
 license: "MIT / CC-BY-SA-4.0"
 ---
@@ -12,30 +12,25 @@ license: "MIT / CC-BY-SA-4.0"
 
 > Source: https://github.com/dirnbauer/webconsulting-skills
 
-> **Compatibility:** TYPO3 v14.x
-> All code examples in this skill are designed to work on TYPO3 v14.
+## 1. Rules
 
-> **TYPO3 API First:** Always use TYPO3's built-in APIs, core features, and established conventions before creating custom implementations. Do not reinvent what TYPO3 already provides. Always verify that the APIs and methods you use exist and are not deprecated in TYPO3 v14 by checking the official TYPO3 documentation.
+- **Write TCA-configured tables only through DataHandler**, never with raw `INSERT`, `UPDATE` or
+  `DELETE` on `pages`, `tt_content` or any other TCA table. Raw SQL skips everything DataHandler
+  maintains: the reference index (`sys_refindex`), cache clearing, history (`sys_history`), workspace
+  versions, Core hooks and events (see the hooks reference below), FlexForm handling and MM relations.
+- **Create one instance per operation** with `GeneralUtility::makeInstance(DataHandler::class)`.
+  DataHandler is stateful, so do not inject it through a constructor; avoid `new DataHandler()` so
+  Core wiring stays intact.
+- **Run it with a real backend user.** In CLI and Scheduler context call
+  `Bootstrap::initializeBackendAuthentication()` (the `_cli_` user) or pass a
+  `BackendUserAuthentication` as the third `start()` argument. Never fake admin rights by mutating
+  `$GLOBALS['BE_USER']->user`; records then end up owned by the wrong user or by nobody.
+- **Check the result every time**: read `errorLog`, and map new records through `substNEWwithIDs`.
+- **Verify DataHandler APIs against the installed 14.3 source**; several properties were removed in
+  v14 (see [v14-only changes](references/v14-only-changes.md)).
 
-## 1. The Prime Directive
-
-**NEVER** use raw SQL (`INSERT`, `UPDATE`, `DELETE`) for `pages`, `tt_content`, or any TCA-configured table.
-
-You **MUST** use the `DataHandler` to ensure:
-
-- Reference Index updates (`sys_refindex`)
-- Cache clearing
-- Version history (`sys_history`)
-- Workspace compatibility
-- Correct hook/event integration where Core defines it (see §9)
-- FlexForm handling
-- MM relation management
-
-### Exceptions (Raw SQL Allowed)
-
-- Custom logging tables without TCA
-- Bulk analytics/reporting queries (read-only)
-- Migration scripts with explicit reference index rebuild
+Raw SQL stays acceptable for custom tables without TCA, read-only reporting queries, and migration
+scripts that rebuild the reference index explicitly afterwards.
 
 ## 2. Structure of Arrays
 
@@ -169,12 +164,17 @@ $cmd = [
 
 ## 3. Execution Pattern
 
-TYPO3's public DataHandler API for TYPO3 v14 is simply:
+The DataHandler API in TYPO3 14.3 (checked against 14.3.9):
 
-1. Obtain a `DataHandler` via **`GeneralUtility::makeInstance(DataHandler::class)`** per use — DataHandler holds state and must **not** be injected via dependency injection constructors; also avoid `new DataHandler()` so Core wiring (hooks, collaborators) stays consistent.
-2. Call `start($dataMap, $commandMap[, $backendUser[, $referenceIndexUpdater]])` **before** any `process_*` call. The 4th parameter exists but is `@internal`; extension code should normally use only the first 2-3 arguments.
-3. Call `process_datamap()` and / or `process_cmdmap()`
-4. Inspect **`$dataHandler->errorLog`**, verify expected keys in **`$dataHandler->substNEWwithIDs`** for new records, and (in workspaces) review **`$dataHandler->autoVersionIdMap`** when you expect version rows.
+1. Obtain a `DataHandler` with `GeneralUtility::makeInstance(DataHandler::class)` per use.
+2. Call `start($dataMap, $commandMap, $backendUser = null)` before any `process_*` call. `start()`
+   also accepts a `ReferenceIndexUpdater` and a `CorrelationId` as fourth and fifth arguments; Core
+   passes them to DataHandler sub-instances, so extension code uses only the first three.
+3. Call `process_datamap()` and / or `process_cmdmap()`.
+4. Inspect `$dataHandler->errorLog`, verify the expected keys in `$dataHandler->substNEWwithIDs` for
+   new records, and in workspaces review `$dataHandler->autoVersionIdMap` when you expect version
+   rows. `substNEWwithIDs` is public API; `errorLog` and `autoVersionIdMap` are annotated `@internal`
+   in 14.3.9 but have no public replacement, so read them and never write them.
 
 **Cache:** Prefer `CacheManager` / cache groups or PSR-14 cache events instead of legacy DataHandler cache helpers.
 
@@ -219,7 +219,7 @@ final class ContentService
 
 ## 4. Backend Context
 
-DataHandler requires a valid **backend user context**. It does **not** require you to manually fake admin mode by mutating `$GLOBALS['BE_USER']->user`.
+DataHandler needs a valid backend user context. Provide a real backend user object instead of faking admin mode by mutating `$GLOBALS['BE_USER']->user`.
 
 - In **CLI / scheduler** contexts, initialize backend authentication before using DataHandler
 - TYPO3 commands use the `_cli_` backend user
@@ -324,6 +324,20 @@ $referenceIndex->updateRefIndexTable('tt_content', 123);
 ```
 
 
-## Detailed Reference
+## References
 
-Read [the full guide](references/full-guide.md) when the task needs detailed examples, long templates, troubleshooting matrices, appendices, or sections not included above. Keep this file unloaded for narrow tasks so the skill follows progressive disclosure.
+Load only the file the current task needs:
+
+- [Common pitfalls](references/06-common-pitfalls.md): when a write silently does nothing, lands on
+  the wrong page or language, or loses relations.
+- [Retrieving new record UIDs](references/07-retrieving-new-record-uids.md): when later steps need
+  the uids of records created with `NEW…` placeholders.
+- [Workspace-aware operations](references/08-workspace-aware-operations.md): when writing, publishing
+  or discarding records inside a workspace.
+- [Extending DataHandler: hooks and real Core events](references/09-extending-datahandler-hooks-and-real-core-events.md):
+  when reacting to record operations; Core has no generic before/after record operation event.
+- [Version constraints for extensions](references/10-version-constraints-for-extensions.md): when
+  declaring the TYPO3 and PHP range of an extension that uses DataHandler.
+- [v14-only changes](references/v14-only-changes.md): when code written for v12 or v13 uses removed
+  DataHandler properties or commands.
+- [Credits and attribution](references/credits-and-attribution.md): when citing sources.

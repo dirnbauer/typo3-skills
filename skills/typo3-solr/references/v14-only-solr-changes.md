@@ -2,6 +2,12 @@
 
 Continues `typo3-solr` from [full guide](full-guide.md).
 
+## Contents
+
+- [v14-Only Solr Changes](#v14-only-solr-changes)
+- [Search parity across the Solr upgrade](#search-parity-across-the-solr-upgrade)
+- [Application context, siteHash and shared cores](#application-context-sitehash-and-shared-cores)
+
 ## v14-Only Solr Changes
 
 > The following Solr-related changes are relevant when running EXT:solr on **TYPO3 v14**.

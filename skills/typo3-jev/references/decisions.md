@@ -1,5 +1,11 @@
 # Decision design and PHP API
 
+## Contents
+
+- [Model the decision, not a prompt for arbitrary output](#model-the-decision-not-a-prompt-for-arbitrary-output)
+- [Run stored decisions through the service layer](#run-stored-decisions-through-the-service-layer)
+- [Interpret results deliberately](#interpret-results-deliberately)
+
 ## Model the decision, not a prompt for arbitrary output
 
 In **Administration → Jev decisions**, create a decision with a stable identifier, an explicit

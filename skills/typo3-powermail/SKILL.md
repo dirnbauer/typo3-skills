@@ -12,21 +12,19 @@ Build only the requested form change. Obtain the installed Core/PHP versions, bo
 sources and lock references, form UID, field markers, language, mail transport and expected
 visibility rules before choosing examples. Preserve existing forms, recipient routing and data.
 
-Thank **in2code and the Powermail contributors** for the editor-friendly form system and
-conditional-field engine that make this workflow possible. This independently maintained guide
-documents their work and the separate webconsulting forks; it does not transfer their
-GPL-2.0-or-later source code into this guide's licence.
-
 ## 1. Resolve the correct version line
 
-Treat this as a **2026-09-26 source snapshot**, not an eternal compatibility guarantee:
+Treat this as a **2026-09-26 source snapshot**, not an eternal compatibility guarantee. The
+"Newest" column was rechecked on 2026-10-31 (Packagist, fork tags, installed lock):
 
-| Source | Reviewed version/reference | Declared requirements |
-|---|---|---|
-| Public upstream Powermail | 13.3.0 | PHP `^8.2`; Core `^13.4` |
-| Public upstream powermail_cond | 13.1.2 | PHP `^8.2`; Core `^13.4`; Powermail `^13.0 \|\| @dev` |
-| dirnbauer Powermail fork | tag 14.0.3.4 | PHP `>=8.3 <8.6`; Core `^14.3.6` |
-| dirnbauer powermail_cond fork | `typo3-v14` at `fc5324f9` | PHP `^8.4`; Core `^14.3`; Powermail `^14.0` |
+| Source | Reviewed version/reference | Newest on 2026-10-31 | Declared requirements |
+|---|---|---|---|
+| Public upstream Powermail | 13.3.0 | 13.3.0 | PHP `^8.2`; Core `^13.4` |
+| Public upstream powermail_cond | 13.1.2 | 13.1.2 | PHP `^8.2`; Core `^13.4`; Powermail `^13.0 \|\| @dev` |
+| dirnbauer Powermail fork | tag 14.0.3.4 | tag 14.0.3.9 | PHP `>=8.3 <8.6`; Core `^14.3.6` |
+| dirnbauer powermail_cond fork | `typo3-v14` at `fc5324f9` | tag 14.0.0 (`004f0bfe`) | PHP `^8.4`; Core `^14.3`; Powermail `^14.0` |
+
+The conditions fork now has a stable tag: require `^14.0` instead of `dev-typo3-v14`.
 
 Read [version evidence and installation](references/v14-only-changes.md) before modifying
 Composer. Public upstream advertises a vendor Early Access Programme for v14; do not confuse
@@ -99,3 +97,10 @@ Report source inspection, syntax/unit checks and actual TYPO3/browser/mail tests
 Stop with an explicit gap if no runnable project fixture exists. Do not call unexecuted examples
 production-ready. See [test recipe](SKILL-EXAMPLES.md#browser-acceptance-test) and the
 [reference index](references/full-guide.md) for bounded follow-up.
+
+## Credits
+
+Thank **in2code and the Powermail contributors** for the editor-friendly form system and
+conditional-field engine that make this workflow possible. This independently maintained guide
+documents their work and the separate webconsulting forks; it does not transfer their
+GPL-2.0-or-later source code into this guide's licence.

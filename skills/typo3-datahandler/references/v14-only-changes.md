@@ -8,7 +8,7 @@ Continues `typo3-datahandler` from [full guide](full-guide.md).
 
 ### Removed Properties **[v14 only]**
 
-- **`DataHandler->userid`** and **`DataHandler->admin`** properties removed (#107848). The DataHandler now uses the backend user from `$GLOBALS['BE_USER']` directly. Do not set these properties.
+- **`DataHandler->userid`** and **`DataHandler->admin`** properties removed (#107848). Read the same information from the `BE_USER` property instead (`$dataHandler->BE_USER->user['uid']`, `$dataHandler->BE_USER->isAdmin()`); accessing the removed properties is a fatal error.
 - **`DataHandler->storeLogMessages`** removed (#106118). Logging behavior is no longer configurable via this property.
 - **`DataHandler->copyWhichTables`**, **`DataHandler->neverHideAtCopy`**, **`DataHandler->copyTree`** removed (#107856). These internal properties are no longer accessible.
 

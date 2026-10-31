@@ -59,6 +59,18 @@
       "prompt": "Map TYPO3 FAQ, news and product records to one validated schema.org JSON-LD graph.",
       "expect_skill": "typo3-structured-data",
       "note": "Entity mapping and JSON-LD now have a dedicated TYPO3 skill."
+    },
+    {
+      "id": "typo3-seo-behaviour-01",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Add an x-default entry to the site config and print our own canonical link through page.headerData on every page.",
+      "assertions": [
+        "States that EXT:seo already emits x-default for the default language when a page has more than one hreflang link",
+        "Uses ModifyHrefLangTagsEvent only when x-default must point elsewhere",
+        "Refuses a second canonical via page.headerData because EXT:seo prints one; uses the page field or ModifyUrlForCanonicalTagEvent"
+      ],
+      "note": "Regression for advice that produced duplicate canonical and hreflang output; added 2026-10-31."
     }
   ]
 }

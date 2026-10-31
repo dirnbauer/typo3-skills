@@ -3,6 +3,16 @@
 This skill never deploys. It audits deployment code locally, proves what can be proved without a
 remote environment, and writes exact operator instructions into `report/handover-deployment.md`.
 
+## Contents
+
+- [Audit Deployer when its major changes](#audit-deployer-when-its-major-changes)
+- [Install EXT:deployer_information on the target rung](#install-extdeployerinformation-on-the-target-rung)
+- [Configuration modes](#configuration-modes)
+- [Local verification](#local-verification)
+- [Fleet-derived release contract](#fleet-derived-release-contract)
+- [Environment context per host](#environment-context-per-host)
+- [Database-only changes and test accounts](#database-only-changes-and-test-accounts)
+
 ## Audit Deployer when its major changes
 
 A Deployer 7-to-8 update is a recipe migration, not only a Composer constraint. Review the complete

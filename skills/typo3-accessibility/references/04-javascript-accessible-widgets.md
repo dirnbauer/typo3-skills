@@ -2,6 +2,14 @@
 
 Continues `typo3-accessibility` from [full guide](full-guide.md).
 
+## Contents
+
+- [4.1 Accordion](#41-accordion)
+- [4.2 Tabs](#42-tabs)
+- [4.3 Modal / Dialog](#43-modal--dialog)
+- [4.4 Reduced Motion Check](#44-reduced-motion-check)
+- [4.5 Live Region Announcer](#45-live-region-announcer)
+
 ## 4. JavaScript: Accessible Widgets
 
 ### 4.1 Accordion

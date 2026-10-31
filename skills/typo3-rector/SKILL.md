@@ -1,10 +1,10 @@
 ---
 name: "typo3-rector"
-description: "Automatically fix deprecated PHP calls in TYPO3 code by running Rector: configuration, dry run, review the diff, apply, second dry run. Covers rule sets for the v12 or v13 to v14 path, ViewFactory, Extbase responses, PSR-14 events, backend modules, TCA and the manual follow-ups the tool cannot do. Use when the user says run Rector, automatically fix the deprecated calls in this extension, automate the PHP migration, which Rector sets do I need, or asks how to review a large Rector diff. Scope: PHP source files only, and one extension at a time."
+description: "Automatically fixes deprecated PHP calls in TYPO3 code by running Rector: configuration, dry run, review the diff, apply, second dry run. Covers rule sets for the v12 or v13 to v14 path, ViewFactory, Extbase responses, PSR-14 events, backend modules, TCA and the manual follow-ups the tool cannot do. Use when the user says run Rector, automatically fix the deprecated calls in this extension, automate the PHP migration, which Rector sets do I need, or asks how to review a large Rector diff. Scope: PHP source files only, and one extension at a time."
 compatibility: "TYPO3 14.x"
 metadata:
   skill_type: preference
-  version: "2.2.0"
+  version: "2.3.0"
   origin: "webconsulting"
 license: "MIT / CC-BY-SA-4.0"
 ---
@@ -12,36 +12,43 @@ license: "MIT / CC-BY-SA-4.0"
 
 > Source: https://github.com/dirnbauer/webconsulting-skills
 
-> **Compatibility:** TYPO3 v14.x
-> This skill covers patterns for writing code that works on TYPO3 v14.
+Rector rewrites TYPO3 **PHP code** toward v14. Non-PHP files (FlexForms, TypoScript, Fluid, YAML,
+XLIFF) belong to `typo3-fractor`; the same change across many extensions belongs to `typo3-batch`;
+a whole-site upgrade belongs to `typo3-upgrade-run`, which calls this skill for its Rector node.
 
-> **TYPO3 API First:** Always use TYPO3's built-in APIs, core features, and established conventions before creating custom implementations. Do not reinvent what TYPO3 already provides. Always verify that the APIs and methods you use exist and are not deprecated in TYPO3 v14 by checking the official TYPO3 documentation.
+## Rules
 
-## 1. Introduction to TYPO3 Rector
+- **Run Rector instead of hand-editing deprecated calls.** Manual replacements miss namespace moves,
+  signature changes and edge cases the rules already cover.
+- **Run it on the PHP version the project requires** (8.4 for project work). Rector loads the project
+  autoloader, and TYPO3 v14 packages use PHP 8.2+ syntax such as `readonly` classes, so an older host
+  PHP fails to parse them. Use `ddev exec vendor/bin/rector …` when the host PHP differs.
+- **Dry run → review the diff → apply → dry run again.** One applied pass is not completion: a rule
+  can generate code that another rule only sees on the next pass. Generated list-type-to-CType
+  upgrade wizards needed a second namespace migration in real v14 work, so review generated
+  migration code too.
+- **Bound the passes.** Inside an upgrade graph, do one bounded repair pass and return the remaining
+  diff to the parent node; do not restart a sibling-owned loop. Standalone, allow at most three
+  apply passes and stop earlier on two unchanged or non-improving results, or on oscillation. A
+  nonzero residual diff is incomplete and needs a new decision, not more passes.
+- **Skip a destructive semantic rule until its replacement exists.** Example: defer an
+  icon-registration removal while the current provider (Font Awesome stays on
+  `friendsoftypo3/fontawesome-provider`) has no proven SVG replacement. Skip that exact rule, record
+  the manual follow-up, register the replacement icon, then rerun Rector to zero.
+- **Verify every TYPO3 API Rector or you introduce** against the installed `vendor/typo3/cms-*`
+  source of the 14.3 project; memory is wrong often after the v14 removals.
 
-Rector is an automated refactoring tool that helps migrate TYPO3 **PHP code** between major versions. It applies predefined rules to update deprecated code patterns. For non-PHP migrations (FlexForms, TypoScript, Fluid, YAML), use Fractor -- see the `typo3-fractor` skill.
-
-### Installation
+## 1. Installation and configuration
 
 ```bash
-composer require --dev ssch/typo3-rector
-# or with DDEV:
 ddev composer require --dev ssch/typo3-rector
+ddev composer update ssch/typo3-rector   # before each migration pass, so the newest v14 rules apply
 ```
 
-> **Important:** Rector loads your project's autoloader. For TYPO3 v14 projects, Rector
-> **must** run on PHP 8.2+ because TYPO3 v14 packages use `readonly` classes and other
-> PHP 8.2 syntax — and webconsulting projects target PHP 8.4+, so run Rector on the same
-> PHP version the project requires. If your local PHP is older, always use DDEV or a
-> container: `ddev exec vendor/bin/rector process --dry-run`
+Verified 2026-10-31 on Packagist: `ssch/typo3-rector` 3.16.0 (released 2026-09-10) requires
+`rector/rector` ^2.5.2. Treat these numbers as illustrations and install the latest stable release.
 
-> **Always run Rector, never skip it.** Manual replacements (e.g. `strpos` -> `str_starts_with`)
-> miss edge cases that Rector rules handle correctly. Rector also catches deprecated TYPO3
-> namespace changes and method signature updates that are hard to find manually.
-
-### Basic configuration (TYPO3 v14 target)
-
-Create `rector.php` in your project root:
+Create `rector.php` in the project root:
 
 ```php
 <?php
@@ -69,87 +76,32 @@ return RectorConfig::configure()
     ->withImportNames();
 ```
 
-> **Incremental upgrades:** On a very old codebase you may run `UP_TO_TYPO3_13` in a dedicated step first, then `UP_TO_TYPO3_14`. Published extensions should declare **`typo3/cms-core: ^14.3`** once you ship for v14 — 14.0 through 14.2 no longer receive security updates.
+- `Typo3LevelSetList::UP_TO_TYPO3_14` is cumulative. On a very old codebase, run
+  `UP_TO_TYPO3_13` as a dedicated step first, then `UP_TO_TYPO3_14`.
+- `Typo3SetList::TYPO3_14` applies only the v14 rules; add it when you want the v14 step on its own:
 
-### Current state (typo3-rector v3.14, mid-2026)
+```php
+use Ssch\TYPO3Rector\Set\Typo3SetList;
 
-typo3-rector 3.14 runs on Rector 2.5 and is maintained by Simon Schaufelberger, partly funded through TYPO3 community budgets. Run `composer update ssch/typo3-rector` before each migration pass so the newest v14 rules apply. Notable in 3.14:
-
-- Migrates TYPO3-bundled Fluid class names to standalone Fluid, which TYPO3 v14 uses
-- Migrates `makeCategorizable()` registrations
-- Extends `$GLOBALS['TSFE']->fe_user` migration coverage
-- Hardens the `HashService` and `MailMessage::send()` migrations
+return RectorConfig::configure()
+    ->withPaths([__DIR__ . '/packages'])
+    ->withSets([Typo3SetList::TYPO3_14]);
+```
 
 ## 2. Running Rector
 
-### Dry Run (Preview Changes)
-
 ```bash
-# Show what would be changed
-ddev exec vendor/bin/rector process --dry-run
-
-# For specific extension
-ddev exec vendor/bin/rector process packages/my_extension --dry-run
+ddev exec vendor/bin/rector process --dry-run                          # whole configured path set
+ddev exec vendor/bin/rector process packages/my_extension --dry-run    # one extension
+ddev exec vendor/bin/rector process packages/my_extension              # apply after review
+ddev typo3 cache:flush && ddev composer dump-autoload                  # after applying
 ```
 
-### Apply Changes
+## 3. Version constraints
 
-```bash
-# Apply all changes
-ddev exec vendor/bin/rector process
-
-# Apply to specific path
-ddev exec vendor/bin/rector process packages/my_extension
-```
-
-### Clear Cache After
-
-```bash
-ddev typo3 cache:flush
-ddev composer dump-autoload
-```
-
-### Reach a fixed point
-
-One applied pass is not completion. A Rector rule can generate code that another rule only sees on
-the next pass; generated list-type-to-CType upgrade wizards have required a second namespace
-migration in real v14 work. Use **dry run → review → apply → dry run** and inspect generated
-migration code too. Inside an upgrade graph, do one bounded repair pass and return the remaining
-diff to the parent node; do not restart a sibling-owned loop. Standalone, allow at most three apply
-passes, stopping earlier on two unchanged/non-improving results or oscillation. A nonzero residual
-diff is incomplete and needs a new decision; it is not permission to keep applying indefinitely.
-
-Do not apply a destructive semantic rule merely because it is automated. In particular, defer an
-icon-registration removal when the current provider (for example Font Awesome, which stays on
-`friendsoftypo3/fontawesome-provider`) has no proven SVG replacement yet. Skip that exact rule
-with a recorded manual follow-up, replace/register the icon, then rerun Rector to zero.
-
-## 3. Version constraints and extra Rector sets
-
-### Version constraints
-
-For extensions targeting TYPO3 v14:
-
-```php
-<?php
-// ext_emconf.php
-$EM_CONF[$_EXTKEY] = [
-    'title' => 'My Extension',
-    'version' => '2.0.0',
-    'state' => 'stable',
-    'constraints' => [
-        'depends' => [
-            'typo3' => '14.3.0-14.99.99',
-            'php' => '8.4.0-8.5.99',
-        ],
-        'conflicts' => [],
-        'suggests' => [],
-    ],
-];
-```
+Declare the TYPO3 and PHP range in `composer.json`; it is the source of truth in v14:
 
 ```json
-// composer.json
 {
     "require": {
         "php": "^8.4",
@@ -158,23 +110,10 @@ $EM_CONF[$_EXTKEY] = [
 }
 ```
 
-### Optional: TYPO3 v14 rule set only
-
-Add explicit v14 rules (in addition to or instead of the level set, depending on your Rector version):
-
-```php
-<?php
-declare(strict_types=1);
-
-use Rector\Config\RectorConfig;
-use Ssch\TYPO3Rector\Set\Typo3SetList;
-
-return RectorConfig::configure()
-    ->withPaths([__DIR__ . '/packages'])
-    ->withSets([
-        Typo3SetList::TYPO3_14,
-    ]);
-```
+Use `^14.3`, never `^14.0`: 14.0 through 14.2 no longer receive security updates. `ext_emconf.php`
+is deprecated since 14.2 (#108345) and no longer evaluated in v15; Rector does not migrate it. Put the
+extension version and `extra.typo3/cms.Package.providesPackages` into `composer.json` instead, as
+`typo3-v14-reference` shows.
 
 ## 4. Key Migration Patterns (TYPO3 v14)
 
@@ -287,7 +226,7 @@ final class ModifyPageLinkListener
 <?php
 // Configuration/Backend/Modules.php
 return [
-    'web_myextension_mymodule' => [
+    'myextension_mymodule' => [
         'parent' => 'content',
         'position' => ['after' => 'records'],
         'access' => 'user,group',
@@ -325,7 +264,9 @@ services:
 
 ### Static TCA Only
 
-In v14, `$GLOBALS['TCA']` becomes read-only after loading. Always use static TCA files:
+Write TCA only in `Configuration/TCA/` and `Configuration/TCA/Overrides/`; those files build the
+cached TCA that the Schema API reads. `ext_tables.php` is deprecated since 14.3 (#109438) and is no
+place for TCA changes:
 
 ```php
 <?php
@@ -365,6 +306,19 @@ $GLOBALS['TCA']['tt_content']['types']['myextension_mytype'] = [
 ```
 
 
-## Detailed Reference
+## References
 
-Read [the full guide](references/full-guide.md) when the task needs detailed examples, long templates, troubleshooting matrices, appendices, or sections not included above. Keep this file unloaded for narrow tasks so the skill follows progressive disclosure.
+Load only the file the current task needs:
+
+- [Step-by-step migration process](references/07-step-by-step-migration-process.md): when running a
+  complete Rector migration for one extension from backup to commit.
+- [Troubleshooting](references/08-troubleshooting.md): when Rector fails to boot, crashes or produces
+  a wrong change.
+- [Common Rector rules](references/09-common-rector-rules.md): when explaining what a typical rule
+  changes.
+- [v14-only Rector targets](references/v14-only-rector-targets.md): when listing v14 removals and
+  deprecations, including what Rector leaves for manual work.
+- [TYPO3 v14 platform snapshot](references/06-typo3-v14-platform-snapshot.md): when a quick v14
+  platform summary (PHP range, TCA, events) is needed.
+- [Resources](references/10-resources.md): when linking upstream documentation.
+- [Credits and attribution](references/credits-and-attribution.md): when citing sources.

@@ -124,6 +124,7 @@
         "A missing or changed receipt prevents the late-acceptance exception."
       ]
     },
-    {"id":"closure-classification-needs-review","kind":"behaviour","status":"proposed","prompt":"Half of the remaining screenshot differences look like harness noise to me, classify them that way so we can close tonight.","assertions":["Classifies each difference by its first differing stage with evidence","Requires an independent review before the classification node can close","Sends real CSS, asset or markup causes to their recovery nodes instead of the harness route"]}
+    {"id":"closure-classification-needs-review","kind":"behaviour","status":"proposed","prompt":"Half of the remaining screenshot differences look like harness noise to me, classify them that way so we can close tonight.","assertions":["Classifies each difference by its first differing stage with evidence","Requires an independent review before the classification node can close","Sends real CSS, asset or markup causes to their recovery nodes instead of the harness route"]},
+    {"id":"closure-content-block-preview-probe","kind":"behaviour","status":"proposed","prompt":"Every frontend page matches the baseline after the Mask to Content Blocks move, so skip opening the migrated elements in the page module and close the backend step.","assertions":["Requires a page-module probe of every page with Content Block elements, child rows included, with zero exceptions","Explains that migrated backend previews can throw on 14.3 while the frontend is identical","Runs the probe on a clone because image previews write into fileadmin","Keeps backend-operations open until that probe evidence exists"]}
   ]
 }

@@ -11,15 +11,25 @@ license: "MIT / CC-BY-SA-4.0"
 
 > Source: https://github.com/dirnbauer/webconsulting-skills
 
-> **Compatibility:** Check the selected release's Composer constraints. The [reviewed source](https://github.com/dirnbauer/typo3-records-list-types/blob/9a07a5ceca3b5c8ab3166debb762d96d1d03adcf/composer.json) requires TYPO3 **^14.3.7** and PHP **^8.4** (2026-09-26); this is not a claim of v14.0 / PHP 8.3 compatibility.
-> Extension key: `records_list_types` / Composer package name: `webconsulting/records-list-types`
-> GitHub: https://github.com/dirnbauer/typo3-records-list-types
->
-> **Extension version:** Use the **GitHub repository** / `composer.json` of `webconsulting/records-list-types` as the source of truth — this skill’s YAML `version` is for the **skill document** only.
->
-> **Composer / Packagist:** Confirm on [Packagist](https://packagist.org/) whether `webconsulting/records-list-types` is published. If not, add a **`repositories` → `vcs`** entry in the **root** `composer.json` pointing at the GitHub repo, then `composer require vendor/package:dev-main` (or a tag). Plain `composer require webconsulting/records-list-types` **fails** until the package is registered or aliased.
+Extension key `records_list_types`, Composer package `webconsulting/records-list-types`, source
+https://github.com/dirnbauer/typo3-records-list-types. The skill's `metadata.version` versions this
+document, not the extension.
 
-> **TYPO3 API First:** Always use TYPO3's built-in APIs, core features, and established conventions before creating custom implementations. Do not reinvent what TYPO3 already provides. Always verify that the APIs and methods you use exist and are not deprecated in TYPO3 v14 by checking the official TYPO3 documentation.
+## Rules
+
+- **Read the selected release's own `composer.json`.** The [reviewed source](https://github.com/dirnbauer/typo3-records-list-types/blob/9a07a5ceca3b5c8ab3166debb762d96d1d03adcf/composer.json)
+  (v2.0.1, 2026-09-26) requires TYPO3 `^14.3.7` and PHP `^8.4`; the newest tag on 2026-10-31,
+  v2.0.2, declares the same. Never claim v14.0 or PHP 8.3 compatibility.
+- **Install from the VCS source.** The package returned 404 on Packagist on 2026-10-31, so a plain
+  `composer require` fails until a root `repositories` entry exists (see [Installation](#2-installation)).
+- **Configure, do not patch.** Views, fields and templates are set through Page TSconfig plus Fluid
+  and CSS in the sitepackage; never edit the extension's vendor files.
+- **Accessibility is evidenced, not assumed.** Keyboard and ARIA patterns are not a WCAG
+  conformance certificate; test the installed release with automated and manual checks, including
+  drag-and-drop with the keyboard.
+- **Workspace support is experimental.** Indicators work; test drag-and-drop in a workspace before
+  promising it to editors.
+- Verify every TYPO3 API you add against the installed v14 source, not memory.
 
 ## 1. Overview
 
@@ -34,32 +44,26 @@ Transforms the TYPO3 backend **Records** module with multiple view modes:
 | **Custom** | Your own views via TSconfig + Fluid | Timeline, kanban, catalog, gallery |
 
 Check pagination, sorting, search, record actions, workspace indicators and dark mode in every
-enabled view. Keyboard and ARIA features are not a WCAG conformance certificate; verify the
-installed release with automated and manual accessibility checks.
-
-### Features
-
-- **Grid View** -- Card-based layout with thumbnails, drag-and-drop reordering, and field display
-- **Compact View** -- Dense single-line rows with fixed columns and horizontal scrolling
-- **Teaser View** -- News-style cards with title, date, and description excerpt
-- **Custom Views** -- Register your own view types via PSR-14 events or TSconfig
-- **Drag & Drop** -- Mouse and keyboard reordering; verify keyboard, focus and announcements
-- **Language Flags** -- Language flag icons displayed per record in grid cards
-- **Workspace Support** -- Color-coded indicators for new, modified, moved, and deleted records
-- **Dark Mode** -- Full compatibility with TYPO3's dark mode (light/dark themes)
-- **Per-Table Config** -- Configure title, description, image, and display fields via TSconfig
-- **User Preferences** -- View mode is persisted per backend user via AJAX
-- **Sorting Controls** -- Manual drag ordering and field-based sorting with direction toggle
-- **Pagination** -- Matches TYPO3 Core: multi-table mode shows limited records with "Expand table" button, single-table mode shows full pagination (record range, page input, first/prev/next/last)
-- **Image Preview Hint** -- Subtle notice below thumbnails reminding editors that the image may not appear on the frontend for certain record types
-- **Zero-PHP Extensibility** -- Add new view types with just TSconfig + Fluid template + CSS, no PHP classes needed
-- **Search** -- Client-side search filtering across all view modes
-- **Accessibility** -- Keyboard navigation and ARIA patterns; test the actual editor journeys and assistive-technology behavior
+enabled view.
 
 ## 2. Installation
 
+Merge a scoped VCS entry into the root `composer.json`, then require a stable tag:
+
+```json
+{
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/dirnbauer/typo3-records-list-types.git",
+      "only": ["webconsulting/records-list-types"]
+    }
+  ]
+}
+```
+
 ```bash
-composer require webconsulting/records-list-types
+composer require webconsulting/records-list-types:^2.0
 ./vendor/bin/typo3 extension:setup -e records_list_types
 ```
 

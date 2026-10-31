@@ -13,6 +13,22 @@ license: "MIT / CC-BY-SA-4.0"
 
 Comprehensive framework for documenting and analyzing security incidents, drawing from NIST SP 800-61 and SANS methodologies.
 
+## Rules
+
+- **A live incident is a containment problem first.** Do not start the report. Preserve evidence
+  that rotates away (web, access and auth logs, file timestamps, process and network state, a disk
+  image before a rebuild), then contain. Offer a running timeline (Logbuch) as the interim
+  deliverable, and warn that cleaning or rebuilding the host destroys the forensics the report needs.
+- **Write from evidence, not memory.** Every timeline entry cites its source (log, alert, ticket);
+  mark reconstructed or inferred entries as such.
+- **Blameless is not causeless.** Name the technical root cause and the process gap behind it;
+  remove individual blame, never the facts. Decline to obscure how the attacker got in: a hidden
+  cause cannot prevent recurrence, and the customer's own notification duties (for example under
+  GDPR Art. 33/34 or NIS2) depend on accurate facts.
+- **Audience changes detail, not truth.** The [distribution levels](#8-report-distribution) decide
+  how much technical detail each reader gets; no version contradicts the full report.
+- Figures, names, IPs and costs in the templates below are illustrations. Replace or delete them.
+
 ## When to Use
 
 - After a security incident (DDoS, breach, vulnerability exploitation)
@@ -33,14 +49,20 @@ Comprehensive framework for documenting and analyzing security incidents, drawin
 
 ### NIST SP 800-61 / SANS Harmonization
 
-| Phase | NIST | SANS | Documentation Focus |
-|-------|------|------|---------------------|
-| 1 | Preparation | Preparation | Runbooks, contacts, tools |
-| 2 | Detection & Analysis | Identification | Initial detection, triage |
-| 3 | Containment | Containment | Isolation actions, timeline |
-| 4 | Eradication | Eradication | Root cause removal |
-| 5 | Recovery | Recovery | Service restoration |
-| 6 | Post-Incident | Lessons Learned | Post-mortem, improvements |
+The phase columns use the SANS six-step model and the NIST Rev. 2 life cycle. NIST SP 800-61
+Rev. 3 (April 2025) replaced that life cycle with the CSF 2.0 Functions. Its Table 1 maps the old
+phases to the Functions in the last column; Rev. 2's single "Containment, Eradication & Recovery"
+phase maps to Respond and Recover (verified 2026-10-31 against the published PDF). Cite Rev. 3 in
+new reports and use the phases only to structure the document.
+
+| Phase | NIST Rev. 2 | SANS | Documentation Focus | CSF 2.0 Function (Rev. 3) |
+|-------|------|------|---------------------|------|
+| 1 | Preparation | Preparation | Runbooks, contacts, tools | Govern, Identify, Protect |
+| 2 | Detection & Analysis | Identification | Initial detection, triage | Detect |
+| 3 | Containment | Containment | Isolation actions, timeline | Respond |
+| 4 | Eradication | Eradication | Root cause removal | Respond |
+| 5 | Recovery | Recovery | Service restoration | Recover |
+| 6 | Post-Incident | Lessons Learned | Post-mortem, improvements | Identify (Improvement) |
 
 ### Documentation Principle
 
@@ -52,14 +74,22 @@ Comprehensive framework for documenting and analyzing security incidents, drawin
 
 ### NCISS (National Cyber Incident Scoring System)
 
-| Level | Score | Description |
-|-------|-------|-------------|
-| Emergency (1) | 100 | Nation-state attack, critical infrastructure |
-| Severe (2) | 80-99 | Significant impact, data exfiltration |
-| High (3) | 60-79 | Service disruption, potential data loss |
-| Medium (4) | 40-59 | Limited impact, contained breach |
-| Low (5) | 20-39 | Minor incident, no data loss |
-| Baseline (6) | 0-19 | Informational, false positive |
+CISA's NCISS computes a weighted score from 0 to 100 and assigns one of six priority levels. The
+weights and the score-to-level mapping are specific to the scoring organisation, so state the level
+and say which weighting produced the score; do not quote fixed score bands as if CISA defined them
+(checked 2026-10-31 against the CISA NCISS document).
+
+| Priority level | Meaning (CISA) |
+|----------------|----------------|
+| Emergency (Black) | Imminent threat to wide-scale critical infrastructure, government stability or lives |
+| Severe (Red) | Likely significant impact on public health or safety, national or economic security |
+| High (Orange) | Likely demonstrable impact on the same areas or public confidence |
+| Medium (Yellow) | May affect those areas |
+| Low (Green) | Unlikely to affect those areas |
+| Baseline (Blue: Minor / White: Negligible) | Highly unlikely to affect them; Minor still warrants scrutiny |
+
+NCISS is a US national scale. For a single website incident the level is usually Baseline or Low;
+say so rather than inflating it.
 
 ### DDoS Resiliency Score (DRS)
 
@@ -92,7 +122,7 @@ For vulnerability-based incidents, include CVSS 4.0 base score (v3.1 accepted fo
 | Detection Time | 2026-01-21 14:32 UTC |
 | Resolution Time | 2026-01-21 15:17 UTC |
 | MTTR | 45 minutes |
-| Severity | High (NCISS: 65) |
+| Severity | Low (NCISS priority; score 38 from own weighting) |
 | Lead Analyst | Jane Doe |
 | Affected Systems | web-cluster-01, cdn-edge-eu |
 

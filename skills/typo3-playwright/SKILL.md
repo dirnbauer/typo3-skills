@@ -1,12 +1,12 @@
 ---
 name: typo3-playwright
 description: >-
-  Use when building or repairing Playwright browser tests for TYPO3 visitor journeys,
-  AJAX widgets, CKEditor dialogs, backend previews, editor save/reopen flows, and
-  consent or local form submissions. Turns a component inventory into executable
-  assertions with isolated fixtures, coverage accounting and failure traces.
-  Does not orchestrate a CMS upgrade, implement application fixes, choose a pixel
-  tolerance, run a WCAG programme, or deploy.
+  Builds and repairs Playwright browser tests for TYPO3, turning a component inventory
+  into executable assertions with isolated fixtures, coverage accounting and failure
+  traces. Use when building or repairing tests for TYPO3 visitor journeys, AJAX widgets,
+  CKEditor dialogs, backend previews, editor save/reopen flows, and consent or local
+  form submissions. Does not orchestrate a CMS upgrade, implement application fixes,
+  choose a pixel tolerance, run a WCAG programme, or deploy.
 metadata:
   skill_type: capability
 ---

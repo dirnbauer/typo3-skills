@@ -3,6 +3,15 @@
 Canonical source for this skill. Where `typo3-v14-reference` or any routed skill says something different,
 this file wins.
 
+## Contents
+
+- [Core constraint: ^14.3, never ^14.0](#core-constraint-143-never-140)
+- [PHP: 8.4 standard, 8.5 preferred where it resolves](#php-84-standard-85-preferred-where-it-resolves)
+- [Feature #108345 — extension metadata in composer.json](#feature-108345--extension-metadata-in-composerjson)
+- [The upgrade ladder](#the-upgrade-ladder)
+- [Asset pipeline](#asset-pipeline)
+- [Commands that are Core, and one that is not](#commands-that-are-core-and-one-that-is-not)
+
 ## Core constraint: `^14.3`, never `^14.0`
 
 14.3 is the supported LTS line. **14.0 through 14.2 no longer receive security updates**, so a
@@ -48,8 +57,10 @@ resulting failure looks like a code problem and is not.
 `ext_emconf.php` is **deprecated in v14 and no longer evaluated in v15**.
 
 - **Remove it** for project-local extensions in `packages/`.
-- **Keep it** — exactly in sync with `composer.json` — only where a tool still requires it:
-  TER/Tailor publishing, or a Classic-mode installation.
+- **Keep it** — exactly in sync with `composer.json` — only where something still requires it:
+  TER/Tailor publishing, or a reusable extension that also installs on v13 or older. Classic mode
+  alone is no reason: since 14.2 it reads the same metadata from `composer.json`
+  (Feature-108345, checked against the 14.3.9 changelog on 2026-10-31).
 
 Required metadata, mandatory from v15 and already raising a cache-warmup deprecation in v14:
 

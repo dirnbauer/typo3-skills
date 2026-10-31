@@ -5,6 +5,16 @@ preconditions from. `journal.jsonl` is the append-only history behind it.
 
 Schema: `assets/schemas/state.schema.json`.
 
+## Contents
+
+- [Why the state file exists](#why-the-state-file-exists)
+- [The shape](#the-shape)
+- [Load-bearing fields](#load-bearing-fields)
+- [Writing](#writing)
+- [journal.jsonl](#journaljsonl)
+- [STATUS.md](#statusmd)
+- [Legal transitions](#legal-transitions)
+
 ## Why the state file exists
 
 A TYPO3 update runs over hours or days and across more than one agent session. Without persisted state, six things go wrong, and every one of them has a familiar shape:

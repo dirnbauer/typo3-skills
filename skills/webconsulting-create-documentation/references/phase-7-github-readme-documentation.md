@@ -2,6 +2,18 @@
 
 Continues `webconsulting-create-documentation` from [full guide](full-guide.md).
 
+## Contents
+
+- [Strategy](#strategy)
+- [Embedding screenshots in README](#embedding-screenshots-in-readme)
+- [Dark/light theme images](#darklight-theme-images)
+- [Generating screenshots for README](#generating-screenshots-for-readme)
+- [Animated GIFs for README](#animated-gifs-for-readme)
+- [Embedding the product tour video](#embedding-the-product-tour-video)
+- [Full README template with documentation](#full-readme-template-with-documentation)
+- [Updating documentation on changes](#updating-documentation-on-changes)
+- [Directory structure for README documentation](#directory-structure-for-readme-documentation)
+
 ## Phase 7: GitHub README Documentation
 
 Use the same assets (illustrations, video) to enrich your GitHub `README.md` with

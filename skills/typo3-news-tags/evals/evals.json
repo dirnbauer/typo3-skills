@@ -59,6 +59,27 @@
       "prompt": "Since we moved to TYPO3 14.3, untranslated English articles from EXT:news give a 404 and the translated ones show no categories any more. How can we prove how many articles each language listed before and lists now?",
       "expect_skill": "typo3-news-tags",
       "note": "Owner request 2026-10-07: Extbase follows fallbackType from 14.3.6; the news skill owns the per-language count."
+    },
+    {
+      "id": "typo3-news-tags-trigger-pos-06",
+      "kind": "trigger-positive",
+      "status": "proposed",
+      "prompt": "Besides the news tags, we want one generic tagging system for our event and job records. Should we add b13/tag?",
+      "expect_skill": "typo3-news-tags",
+      "note": "Generic sys_tag capability next to EXT:news tags; added 2026-10-31."
+    },
+    {
+      "id": "typo3-news-tags-behaviour-01",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Our 3000 news have an empty bodytext because the text is in content elements. Run the tag command with --reset right away so we see results today.",
+      "assertions": [
+        "Harvests the linked tt_content rows (tx_news_related_news) instead of scoring the empty bodytext",
+        "Runs a --dry-run first and reviews the tags-per-news distribution and per-tag popularity before any --reset run",
+        "Explains that --reset truncates the tag MM table and deletes the tags on the storage PID",
+        "Verifies counter consistency and the tag route after the real run"
+      ],
+      "note": "Covers the empty-bodytext and dry-run-first rules; added 2026-10-31."
     }
   ]
 }

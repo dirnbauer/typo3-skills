@@ -2,6 +2,14 @@
 
 Use these live sources first when you need the current TYPO3 v14 icon language.
 
+## Contents
+
+- [1. Official Icon API docs](#1-official-icon-api-docs)
+- [2. TYPO3.Icons live catalog](#2-typo3icons-live-catalog)
+- [3. Individual icon URL patterns](#3-individual-icon-url-patterns)
+- [4. EXT:styleguide as runtime validation](#4-extstyleguide-as-runtime-validation)
+- [5. Local fallback](#5-local-fallback)
+
 ## 1. Official Icon API docs
 
 Source:

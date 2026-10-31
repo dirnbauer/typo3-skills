@@ -1,7 +1,7 @@
 ---
 name: "typo3-idea-extension-blog"
 description: "Evaluates whether an outside idea is worth building as a TYPO3 extension, checks whether someone has already done it, builds the extension, and writes it up as the companion German webconsulting.at MDX article for our site. Use when the user shares a link, product, article, paper or concept and asks whether it could become a TYPO3 extension, whether it is worth doing at all, or whether prior art exists - and when they want a GitHub-ready implementation plus a publication-ready blog post."
-compatibility: "TYPO3 14.x preferred with TYPO3 13.4 fallback; PHP 8.2+; Git; network access for verification and push"
+compatibility: "TYPO3 14.3 LTS (^14.3), optional 13.4 fallback; PHP 8.2 floor, 8.4 standard; Git; network access for verification and push"
 metadata:
   skill_type: preference
   version: "1.0.0"
@@ -23,7 +23,7 @@ Turn an external idea into a complete TYPO3 outcome: research, honest assessment
 - Do not rebuild TYPO3 features that already exist in Core or a mature extension ecosystem.
 - Do not ask endless questions. Ask at most 10 focused questions, then move.
 - Do not build before the user confirms the concept assessment.
-- Do not leave credentials behind after a Git push.
+- Do not push until the user asks for it, and do not leave credentials behind after a push.
 
 ## Recommended Skill Stack
 
@@ -117,9 +117,10 @@ extension-name/
 
 #### Implementation Rules
 
-- Target TYPO3 v14 first, with TYPO3 13.4 fallback where reasonable.
+- Constrain `typo3/cms-core` to `^14.3`, never `^14.0`: 14.0-14.2 receive no security updates.
+  Widen to `^13.4 || ^14.3` only when the user wants the 13.4 fallback and CI tests both.
 - Use `declare(strict_types=1);` everywhere.
-- Require PHP 8.2+.
+- Set the PHP floor to 8.2 for this reusable package; run the tests on 8.4 and try 8.5.
 - Use Composer type `typo3-cms-extension`.
 - Use PSR-4 autoloading under `Webconsulting\{ExtensionName}\`.
 - Prefer Symfony DI in `Configuration/Services.yaml`.

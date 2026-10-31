@@ -81,8 +81,10 @@ decision log only when it outlives the process that produced it.
 
 ## Resources
 
-- Read [references/best-practices.md](references/best-practices.md) for the
-  standards landscape, lifecycle, evidence method, and review rubric.
+- Read [references/best-practices.md](references/best-practices.md) before
+  choosing between Nygard and MADR, writing a retrospective ADR, or auditing an
+  existing log: it holds the standards landscape, lifecycle, evidence method,
+  and review rubric.
 - Copy [assets/adr-template.md](assets/adr-template.md) for Markdown projects.
 - Copy [assets/AdrTemplate.rst](assets/AdrTemplate.rst) for TYPO3 or other ReST
   documentation projects.

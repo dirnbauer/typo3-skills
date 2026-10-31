@@ -6,7 +6,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/architecture-decision-records/SKILL.md",
-    "line_count": 89,
+    "line_count": 91,
     "frontmatter_keys": [
       "name",
       "metadata",
@@ -43,7 +43,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/legal-impressum/SKILL.md",
-    "line_count": 395,
+    "line_count": 418,
     "frontmatter_keys": [
       "name",
       "description",
@@ -117,7 +117,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/security-incident-reporting/SKILL.md",
-    "line_count": 377,
+    "line_count": 407,
     "frontmatter_keys": [
       "name",
       "description",
@@ -165,11 +165,11 @@
   {
     "directory": "typo3-accessibility",
     "skill_name": "typo3-accessibility",
-    "description": "Accessible markup patterns for TYPO3 v14: skip links, landmark regions, heading structure, keyboard and tab order, visible focus rings and outlines, ARIA for accordions, dropdowns and modals, accessible form labels and error messages, alt text and colour contrast, in Fluid templates, PHP helpers and vanilla JavaScript widgets - plus a manual go-live checklist to verify by hand before launch. Use when a screen reader such as NVDA or VoiceOver does not announce something as expandable, checked or invalid, when a keyboard or focus problem needs the correct markup, or when reviewing template and element code against WCAG 2.2 AA. Companion skill for automated scanning: typo3-wcag22-aa-agentic.",
+    "description": "Writes and fixes accessible markup patterns for TYPO3 v14: skip links, landmark regions, heading structure, keyboard and tab order, visible focus rings and outlines, ARIA for accordions, dropdowns and modals, accessible form labels and error messages, alt text and colour contrast, in Fluid templates, PHP helpers and vanilla JavaScript widgets - plus a manual go-live checklist to verify by hand before launch. Use when a screen reader such as NVDA or VoiceOver does not announce something as expandable, checked or invalid, when a keyboard or focus problem needs the correct markup, or when reviewing template and element code against WCAG 2.2 AA. Companion skill for automated scanning: typo3-wcag22-aa-agentic.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-accessibility/SKILL.md",
-    "line_count": 307,
+    "line_count": 324,
     "frontmatter_keys": [
       "name",
       "description",
@@ -183,11 +183,11 @@
   {
     "directory": "typo3-backend-rights",
     "skill_name": "typo3-backend-rights",
-    "description": "Build and audit TYPO3 backend editor rights after an explicit choice between one user-facing main group with simple internal leaves or preserving distinct existing roles. Covers CTypes, fields, page ACLs, languages, modules, mounts, MFA, Forms/Powermail, Workspaces, User TSconfig, Visual Editor, Redirects, safe membership cutover, and customer login/backend branding with the Application Context. Use when permissions are missing/read-only, be_groups is incomplete, or legacy roles may be consolidated. Always preserve a separate working administrator.",
+    "description": "Builds and audits TYPO3 backend editor rights after an explicit choice between one user-facing main group with simple internal leaves or preserving distinct existing roles. Covers CTypes, fields, page ACLs, languages, modules, mounts, MFA, Forms/Powermail, Workspaces, User TSconfig, Visual Editor, Redirects, safe membership cutover, and customer login/backend branding with the Application Context. Use when permissions are missing/read-only, be_groups is incomplete, or legacy roles may be consolidated. Always preserve a separate working administrator.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-backend-rights/SKILL.md",
-    "line_count": 461,
+    "line_count": 202,
     "frontmatter_keys": [
       "name",
       "metadata",
@@ -200,7 +200,7 @@
   {
     "directory": "typo3-batch",
     "skill_name": "typo3-batch",
-    "description": "Roll out one repeated change over multiple TYPO3 extensions in a monorepo or packages/ directory. Use when inventorying which packages still call a removed API such as HashService and fixing them together, applying a shared codemod, or splitting a mass refactor into reviewable batches. Owns cross-package inventory, ordering and per-batch verification, not explaining individual Core APIs. Requires more than one extension; a single-package mechanical PHP rewrite belongs to typo3-rector.",
+    "description": "Rolls out one repeated change over multiple TYPO3 extensions in a monorepo or packages/ directory. Use when inventorying which packages still call a removed API such as HashService and fixing them together, applying a shared codemod, or splitting a mass refactor into reviewable batches. Owns cross-package inventory, ordering and per-batch verification, not explaining individual Core APIs. Requires more than one extension; a single-package mechanical PHP rewrite belongs to typo3-rector.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-batch/SKILL.md",
@@ -252,11 +252,11 @@
   {
     "directory": "typo3-content-blocks",
     "skill_name": "typo3-content-blocks",
-    "description": "Defines what a TYPO3 block IS: its field definitions in config.yaml, and how fields nest into collections or repeatable children. Covers Content Blocks for elements, records, page types and file types as the single source of truth. Use when creating a new block, writing or debugging config.yaml and make:content-block output, migrating Mask or legacy fluid_styled_content while preserving existing records, fixing a block preview that renders blank in the backend, or working with IRRE, labels and friendsoftypo3/content-blocks behaviour. For visual design of blocks: typo3-shadcn-content-elements.",
+    "description": "Defines what a TYPO3 block is: its field definitions in config.yaml, and how fields nest into collections or repeatable children. Covers Content Blocks for elements, records, page types and file types as the single source of truth. Use when creating a new block, writing or debugging config.yaml and make:content-block output, migrating Mask or legacy fluid_styled_content while preserving existing records, fixing a block preview that renders blank in the backend, or working with IRRE, labels and friendsoftypo3/content-blocks behaviour. For visual design of blocks: typo3-shadcn-content-elements.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-content-blocks/SKILL.md",
-    "line_count": 298,
+    "line_count": 277,
     "frontmatter_keys": [
       "name",
       "description",
@@ -291,7 +291,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-datahandler/SKILL.md",
-    "line_count": 330,
+    "line_count": 344,
     "frontmatter_keys": [
       "name",
       "description",
@@ -322,7 +322,7 @@
   {
     "directory": "typo3-design-system-page",
     "skill_name": "typo3-design-system-page",
-    "description": "Build and maintain an accessible design-system overview inside a chosen TYPO3 installation: audit the rendered site and brand assets, document message, conditional contrast evidence, semantic colors and ramps, typography, foundations, components, imagery, and facts, then generate design.md, tokens.json, and a downloadable one-page PDF with a text-free AI visual. Use for living style guides, brand portals, design token documentation, corporate design pages, or design-system downloads. Insert content only after the user creates the target TYPO3 page and supplies its UID. Content Block schemas belong to typo3-content-blocks; product help centers belong to webconsulting-create-documentation.",
+    "description": "Builds and maintains an accessible design-system overview inside a chosen TYPO3 installation: audit the rendered site and brand assets, document message, conditional contrast evidence, semantic colors and ramps, typography, foundations, components, imagery, and facts, then generate design.md, tokens.json, and a downloadable one-page PDF with a text-free AI visual. Use for living style guides, brand portals, design token documentation, corporate design pages, or design-system downloads. Insert content only after the user creates the target TYPO3 page and supplies its UID. Content Block schemas belong to typo3-content-blocks; product help centers belong to webconsulting-create-documentation.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-design-system-page/SKILL.md",
@@ -377,11 +377,11 @@
   {
     "directory": "typo3-fractor",
     "skill_name": "typo3-fractor",
-    "description": "Automatically rewrite TYPO3 non-PHP files with Fractor: outdated TypoScript condition syntax, FlexForm XML migrations to v14, deprecated ViewHelper syntax in Fluid .html templates, YAML, XLIFF and Htaccess. Use when a tool should fix configuration or template files, or Rector left the .typoscript, .yaml and .html upgrade work untouched. Owns mechanical transformations of these formats, not general TypoScript authoring or PHP changes.",
+    "description": "Automatically rewrites TYPO3 non-PHP files with Fractor: outdated TypoScript condition syntax, FlexForm XML migrations to v14, deprecated ViewHelper syntax in Fluid .html templates, YAML, XLIFF and Htaccess. Use when a tool should fix configuration or template files, or Rector left the .typoscript, .yaml and .html upgrade work untouched. Owns mechanical transformations of these formats, not general TypoScript authoring or PHP changes.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-fractor/SKILL.md",
-    "line_count": 312,
+    "line_count": 325,
     "frontmatter_keys": [
       "name",
       "description",
@@ -400,7 +400,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-icon14/SKILL.md",
-    "line_count": 282,
+    "line_count": 284,
     "frontmatter_keys": [
       "name",
       "description",
@@ -419,7 +419,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-idea-extension-blog/SKILL.md",
-    "line_count": 243,
+    "line_count": 244,
     "frontmatter_keys": [
       "name",
       "description",
@@ -434,11 +434,11 @@
   {
     "directory": "typo3-initial-release",
     "skill_name": "typo3-initial-release",
-    "description": "Prepare the first public 1.0.0 release of a TYPO3 14.3+ extension. Use for initial TER upload or Packagist publication readiness, composer.json release metadata, PHP/TYPO3 CI matrix verification, changelog, release notes and tagging an unreleased package. Coordinates the final release review and publication checklist; an ordinary conformance audit or whole-site migration is outside this workflow. Publishing requires explicit authorization.",
+    "description": "Prepares the first public 1.0.0 release of a TYPO3 14.3+ extension. Use for initial TER upload or Packagist publication readiness, composer.json release metadata, PHP/TYPO3 CI matrix verification, changelog, release notes and tagging an unreleased package. Coordinates the final release review and publication checklist; an ordinary conformance audit or whole-site migration is outside this workflow. Publishing requires explicit authorization.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-initial-release/SKILL.md",
-    "line_count": 432,
+    "line_count": 181,
     "frontmatter_keys": [
       "name",
       "description",
@@ -452,11 +452,11 @@
   {
     "directory": "typo3-jev",
     "skill_name": "typo3-jev",
-    "description": "Configure and integrate TypeSafe Jev decisions through EXT:webcon_jev (webconsulting/webcon-jev, also called typo3_jev). Use for Jev installation, vault token setup, choice/score/noul questions, state templates, probability thresholds, Jev-powered Powermail Conditions operators, semantic recipient routing, or DecisionRunner PHP integrations. Requires a Jev-specific task; ordinary deterministic form rules belong to typo3-powermail.",
+    "description": "Configures and integrates TypeSafe Jev decisions through EXT:webcon_jev (webconsulting/webcon-jev, also called typo3_jev). Use for Jev installation, vault token setup, choice/score/noul questions, state templates, probability thresholds, Jev-powered Powermail Conditions operators, semantic recipient routing, or DecisionRunner PHP integrations. Requires a Jev-specific task; ordinary deterministic form rules belong to typo3-powermail.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-jev/SKILL.md",
-    "line_count": 92,
+    "line_count": 97,
     "frontmatter_keys": [
       "name",
       "description",
@@ -474,7 +474,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-news-tags/SKILL.md",
-    "line_count": 424,
+    "line_count": 113,
     "frontmatter_keys": [
       "name",
       "description",
@@ -489,7 +489,7 @@
   {
     "directory": "typo3-playwright",
     "skill_name": "typo3-playwright",
-    "description": "Use when building or repairing Playwright browser tests for TYPO3 visitor journeys, AJAX widgets, CKEditor dialogs, backend previews, editor save/reopen flows, and consent or local form submissions. Turns a component inventory into executable assertions with isolated fixtures, coverage accounting and failure traces. Does not orchestrate a CMS upgrade, implement application fixes, choose a pixel tolerance, run a WCAG programme, or deploy.",
+    "description": "Builds and repairs Playwright browser tests for TYPO3, turning a component inventory into executable assertions with isolated fixtures, coverage accounting and failure traces. Use when building or repairing tests for TYPO3 visitor journeys, AJAX widgets, CKEditor dialogs, backend previews, editor save/reopen flows, and consent or local form submissions. Does not orchestrate a CMS upgrade, implement application fixes, choose a pixel tolerance, run a WCAG programme, or deploy.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-playwright/SKILL.md",
@@ -510,7 +510,7 @@
     "source_owner": "webconsulting",
     "source_url": null,
     "file_path": "skills/typo3-powermail/SKILL.md",
-    "line_count": 102,
+    "line_count": 107,
     "frontmatter_keys": [
       "name",
       "description",
@@ -546,7 +546,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-records-list-types/SKILL.md",
-    "line_count": 333,
+    "line_count": 337,
     "frontmatter_keys": [
       "name",
       "description",
@@ -560,11 +560,11 @@
   {
     "directory": "typo3-rector",
     "skill_name": "typo3-rector",
-    "description": "Automatically fix deprecated PHP calls in TYPO3 code by running Rector: configuration, dry run, review the diff, apply, second dry run. Covers rule sets for the v12 or v13 to v14 path, ViewFactory, Extbase responses, PSR-14 events, backend modules, TCA and the manual follow-ups the tool cannot do. Use when the user says run Rector, automatically fix the deprecated calls in this extension, automate the PHP migration, which Rector sets do I need, or asks how to review a large Rector diff. Scope: PHP source files only, and one extension at a time.",
+    "description": "Automatically fixes deprecated PHP calls in TYPO3 code by running Rector: configuration, dry run, review the diff, apply, second dry run. Covers rule sets for the v12 or v13 to v14 path, ViewFactory, Extbase responses, PSR-14 events, backend modules, TCA and the manual follow-ups the tool cannot do. Use when the user says run Rector, automatically fix the deprecated calls in this extension, automate the PHP migration, which Rector sets do I need, or asks how to review a large Rector diff. Scope: PHP source files only, and one extension at a time.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-rector/SKILL.md",
-    "line_count": 371,
+    "line_count": 325,
     "frontmatter_keys": [
       "name",
       "description",
@@ -600,7 +600,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-security/SKILL.md",
-    "line_count": 451,
+    "line_count": 457,
     "frontmatter_keys": [
       "name",
       "description",
@@ -619,7 +619,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-seo/SKILL.md",
-    "line_count": 323,
+    "line_count": 320,
     "frontmatter_keys": [
       "name",
       "description",
@@ -638,7 +638,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-shadcn-content-elements/SKILL.md",
-    "line_count": 345,
+    "line_count": 153,
     "frontmatter_keys": [
       "name",
       "description",
@@ -693,7 +693,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-solr/SKILL.md",
-    "line_count": 348,
+    "line_count": 367,
     "frontmatter_keys": [
       "name",
       "description",
@@ -746,7 +746,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-translations/SKILL.md",
-    "line_count": 351,
+    "line_count": 362,
     "frontmatter_keys": [
       "name",
       "description",
@@ -779,7 +779,7 @@
   {
     "directory": "typo3-upgrade-baseline",
     "skill_name": "typo3-upgrade-baseline",
-    "description": "Build and seal the deterministic pre-change Baseline A for a whole-site TYPO3 14.3 upgrade graph. Use when preflight passed and source evidence is ready, or when repeated screenshots of an untouched render disagree because of nondeterministic GIF/carousel, lazy media, consent state, sitemap, browser session, font, image, or harness input. Owns URL manifest, fingerprints, component journey inventory, strict-zero self-test, HTTP/DOM/pixel capture, and the immutable seal. Never upgrades code, fixes site regressions, weakens thresholds, or replaces the baseline.",
+    "description": "Builds and seals the deterministic pre-change Baseline A for a whole-site TYPO3 14.3 upgrade graph. Use when preflight passed and source evidence is ready, or when repeated screenshots of an untouched render disagree because of nondeterministic GIF/carousel, lazy media, consent state, sitemap, browser session, font, image, or harness input. Owns URL manifest, fingerprints, component journey inventory, strict-zero self-test, HTTP/DOM/pixel capture, and the immutable seal. Never upgrades code, fixes site regressions, weakens thresholds, or replaces the baseline.",
     "source_owner": "webconsulting",
     "source_url": null,
     "file_path": "skills/typo3-upgrade-baseline/SKILL.md",
@@ -798,7 +798,7 @@
   {
     "directory": "typo3-upgrade-closure",
     "skill_name": "typo3-upgrade-closure",
-    "description": "Prove and close Contract A after a whole-site TYPO3 14.3 upgrade. Use when the target is stable for target-content-epoch reconciliation, exhaustive HTTP/DOM comparison, tiered pixel proof, consent/slider/search/form sentinels, backend login/module/write checks, Redirects rights, runtime/Composer/schema checks, Lighthouse/axe evidence, regression classification, idempotence, or deciding whether the final upgrade may close when cookie dialogs/carousels were not operated. Produces the certificate and local handover. Never performs the main migration, rebaselines, accepts unexplained differences, or deploys.",
+    "description": "Proves and closes Contract A after a whole-site TYPO3 14.3 upgrade. Use when the target is stable for target-content-epoch reconciliation, exhaustive HTTP/DOM comparison, tiered pixel proof, consent/slider/search/form sentinels, backend login/module/write checks, Redirects rights, runtime/Composer/schema checks, Lighthouse/axe evidence, regression classification, idempotence, or deciding whether the final upgrade may close when cookie dialogs/carousels were not operated. Produces the certificate and local handover. Never performs the main migration, rebaselines, accepts unexplained differences, or deploys.",
     "source_owner": "webconsulting",
     "source_url": null,
     "file_path": "skills/typo3-upgrade-closure/SKILL.md",
@@ -834,7 +834,7 @@
   {
     "directory": "typo3-upgrade-intake",
     "skill_name": "typo3-upgrade-intake",
-    "description": "Perform the read-only preflight for an orchestrated CMS transition: prove the selected repository, local application runtime, database, fileadmin, site configuration and dated-dataset identity; inspect URL discovery, installed-extension compatibility, credential boundaries, backup readiness, risks and conditional routes. Use when preparing any mutation or when the selected dataset/runtime may be wrong. Produces evidence and routing decisions; never changes the site, resolves Composer constraints, captures Baseline A, or performs migration work.",
+    "description": "Performs the read-only preflight for an orchestrated CMS transition: proves the selected repository, local application runtime, database, fileadmin, site configuration and dated-dataset identity; inspects URL discovery, installed-extension compatibility, credential boundaries, backup readiness, risks and conditional routes. Use when preparing any mutation or when the selected dataset/runtime may be wrong. Produces evidence and routing decisions; never changes the site, resolves Composer constraints, captures Baseline A, or performs migration work.",
     "source_owner": "webconsulting",
     "source_url": null,
     "file_path": "skills/typo3-upgrade-intake/SKILL.md",
@@ -853,7 +853,7 @@
   {
     "directory": "typo3-upgrade-migration",
     "skill_name": "typo3-upgrade-migration",
-    "description": "Execute one graph-authorized dependency, code, schema, or data migration node within a whole-site TYPO3 v12/v13 to 14.3 upgrade. Use when Baseline A is sealed for the 13.4 rung, Composer blocker resolution, Rector/Fractor pass, manual API/data migration, stored `list_type` to `CType` ordering, 14.3 rung, schema quarantine, or fixed-point reconciliation. Enforces rollback anchors, snapshots, v14-only constraints, one-cause budgets, and specialist routing. Never owns intake, baseline, final parity, deployment, or an unbounded repeat-until-green cycle.",
+    "description": "Executes one graph-authorized dependency, code, schema, or data migration node within a whole-site TYPO3 v12/v13 to 14.3 upgrade. Use when Baseline A is sealed for the 13.4 rung, Composer blocker resolution, Rector/Fractor pass, manual API/data migration, stored `list_type` to `CType` ordering, 14.3 rung, schema quarantine, or fixed-point reconciliation. Enforces rollback anchors, snapshots, v14-only constraints, one-cause budgets, and specialist routing. Never owns intake, baseline, final parity, deployment, or an unbounded repeat-until-green cycle.",
     "source_owner": "webconsulting",
     "source_url": null,
     "file_path": "skills/typo3-upgrade-migration/SKILL.md",
@@ -872,11 +872,11 @@
   {
     "directory": "typo3-upgrade-retrospective",
     "skill_name": "typo3-upgrade-retrospective",
-    "description": "Audit one or more past or incomplete TYPO3 upgrade runs, project repositories, Codex tasks/threads, and evidence directories to determine what was requested, asked, changed, solved, left open, slow, good, bad, risky, or unverifiable. Use when reviewing several projects, when Git claims completion but run status is stale or the update folder is missing, when improving typo3-upgrade-run from real failures, or before claiming an old upgrade complete. Produces a problem\u2192cause\u2192solution\u2192control matrix and proposed skill/eval changes. Read-only by default; never reconstructs a pass from Git history or edits skills unless explicitly requested.",
+    "description": "Audits one or more past or incomplete TYPO3 upgrade runs, project repositories, Codex tasks/threads, and evidence directories to determine what was requested, asked, changed, solved, left open, slow, good, bad, risky, or unverifiable. Use when reviewing several projects, when Git claims completion but run status is stale or the update folder is missing, when improving typo3-upgrade-run from real failures, or before claiming an old upgrade complete. Produces a problem\u2192cause\u2192solution\u2192control matrix and proposed skill/eval changes. Read-only by default; never reconstructs a pass from Git history or edits skills unless explicitly requested.",
     "source_owner": "webconsulting",
     "source_url": null,
     "file_path": "skills/typo3-upgrade-retrospective/SKILL.md",
-    "line_count": 91,
+    "line_count": 92,
     "frontmatter_keys": [
       "name",
       "description",
@@ -891,11 +891,11 @@
   {
     "directory": "typo3-upgrade-run",
     "skill_name": "typo3-upgrade-run",
-    "description": "Plan and execute the entire DDEV-based TYPO3 project/site update from 12 or 13 to supported 14.3 LTS and prove nothing broke, with exact visitor-facing visual and behavioral parity. Use for the end-to-end core migration, visual-regression proof that nothing changed after v13/v14 work, resuming or diagnosing the evidence graph, judging whether a few shifted pixels after an upgrade are acceptable, or determining the project PHP target and ext_emconf.php removal policy. Orchestrates preflight, immutable baseline, migration, specialists, closure, and retrospective through outcome edges, resource locks, and bounded retries. Never deploys to staging or live.",
+    "description": "Plans and executes the entire DDEV-based TYPO3 project/site update from 12 or 13 to supported 14.3 LTS and proves nothing broke, with exact visitor-facing visual and behavioral parity. Use for the end-to-end core migration, visual-regression proof that nothing changed after v13/v14 work, resuming or diagnosing the evidence graph, judging whether a few shifted pixels after an upgrade are acceptable, or determining the project PHP target and ext_emconf.php removal policy. Orchestrates preflight, immutable baseline, migration, specialists, closure, and retrospective through outcome edges, resource locks, and bounded retries. Never deploys to staging or live.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-upgrade-run/SKILL.md",
-    "line_count": 345,
+    "line_count": 348,
     "frontmatter_keys": [
       "name",
       "description",
@@ -908,11 +908,11 @@
   {
     "directory": "typo3-v14-reference",
     "skill_name": "typo3-v14-reference",
-    "description": "TYPO3 v14 API reference: how to write v14 code. Covers controllers, building a view with ViewFactory, Fluid templates, PSR-14 events that replaced old hooks, backend modules, TCA, QueryBuilder queries without SQL injection, CLI commands and tests. Use when the user asks what a v14 API looks like, which event replaced a hook, how to build or write a specific piece of v14 code, or which class, interface or namespace to use. Does NOT run upgrades or migrations: for a whole project or site upgrade use typo3-upgrade-run, which owns the version constraint, the PHP target and the process.",
+    "description": "Shows how to write TYPO3 v14 code as a v14 API reference. Covers controllers, building a view with ViewFactory, Fluid templates, PSR-14 events that replaced old hooks, backend modules, TCA, QueryBuilder queries without SQL injection, CLI commands and tests. Use when the user asks what a v14 API looks like, which event replaced a hook, how to build or write a specific piece of v14 code, or which class, interface or namespace to use. It does not run upgrades or migrations: for a whole project or site upgrade use typo3-upgrade-run, which owns the version constraint, the PHP target and the process.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-v14-reference/SKILL.md",
-    "line_count": 359,
+    "line_count": 392,
     "frontmatter_keys": [
       "name",
       "description",
@@ -931,7 +931,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-visual-editor/SKILL.md",
-    "line_count": 375,
+    "line_count": 382,
     "frontmatter_keys": [
       "name",
       "description",
@@ -965,7 +965,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-wcag22-aa-agentic/SKILL.md",
-    "line_count": 383,
+    "line_count": 382,
     "frontmatter_keys": [
       "name",
       "description",
@@ -980,11 +980,11 @@
   {
     "directory": "typo3-webcomponents",
     "skill_name": "typo3-webcomponents",
-    "description": "Build, review, or migrate TYPO3 v14 backend Web Components with Lit, ES module import maps, AssetCollector/f:asset.module, backend modules, FormEngine/Form Editor integrations, AJAX routes, and reusable TYPO3 backend components. Use whenever the user mentions TYPO3 backend JavaScript, Web Components, Lit, LitElement, custom elements, @typo3/* modules, JavaScriptModules.php, backend module UI, Form Editor stage components, Camp Vienna Lit examples, component performance, or whether TYPO3 backend Web Components should be used in the frontend.",
+    "description": "Builds, reviews, or migrates TYPO3 v14 backend Web Components with Lit, ES module import maps, AssetCollector/f:asset.module, backend modules, FormEngine/Form Editor integrations, AJAX routes, and reusable TYPO3 backend components. Use whenever the user mentions TYPO3 backend JavaScript, Web Components, Lit, LitElement, custom elements, @typo3/* modules, JavaScriptModules.php, backend module UI, Form Editor stage components, Camp Vienna Lit examples, component performance, or whether TYPO3 backend Web Components should be used in the frontend.",
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-webcomponents/SKILL.md",
-    "line_count": 83,
+    "line_count": 84,
     "frontmatter_keys": [
       "name",
       "metadata",
@@ -1001,7 +1001,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-webmcp/SKILL.md",
-    "line_count": 164,
+    "line_count": 168,
     "frontmatter_keys": [
       "name",
       "description",
@@ -1019,7 +1019,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-workspaces/SKILL.md",
-    "line_count": 344,
+    "line_count": 364,
     "frontmatter_keys": [
       "name",
       "description",
@@ -1089,7 +1089,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/webconsulting-create-documentation/SKILL.md",
-    "line_count": 284,
+    "line_count": 296,
     "frontmatter_keys": [
       "name",
       "description",

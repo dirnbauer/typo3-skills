@@ -1,10 +1,10 @@
 ---
 name: "typo3-batch"
-description: "Roll out one repeated change over multiple TYPO3 extensions in a monorepo or packages/ directory. Use when inventorying which packages still call a removed API such as HashService and fixing them together, applying a shared codemod, or splitting a mass refactor into reviewable batches. Owns cross-package inventory, ordering and per-batch verification, not explaining individual Core APIs. Requires more than one extension; a single-package mechanical PHP rewrite belongs to typo3-rector."
+description: "Rolls out one repeated change over multiple TYPO3 extensions in a monorepo or packages/ directory. Use when inventorying which packages still call a removed API such as HashService and fixing them together, applying a shared codemod, or splitting a mass refactor into reviewable batches. Owns cross-package inventory, ordering and per-batch verification, not explaining individual Core APIs. Requires more than one extension; a single-package mechanical PHP rewrite belongs to typo3-rector."
 compatibility: "TYPO3 14.x"
 metadata:
   skill_type: preference
-  version: "1.0.0"
+  version: "1.1.0"
   origin: "webconsulting"
 license: "MIT / CC-BY-SA-4.0"
 ---
@@ -30,7 +30,7 @@ batch and return its evidence; the parent owns retries, snapshots, deadline and 
 ## Execution Rules
 
 - Each unit must be independently verifiable
-- Never modify the same file in two different units
+- Modify each file in exactly one unit, so units can be reviewed and reverted independently
 - Lint changed PHP and run the relevant tests per unit; run full PHPStan/tests after the batch.
 - Normalize Composer metadata when it changed, not after every unrelated PHP edit.
 - Commit reviewable batches only with user authority; pushing is a separate action.
@@ -91,7 +91,7 @@ batch and return its evidence; the parent owns retries, snapshots, deadline and 
 
 ```
 1. Replace 'eval' => 'required' → 'required' => true
-2. Replace 'eval' => 'trim' → keep where trimming is desired (trim is NOT applied by default)
+2. Keep 'eval' => 'trim' where trimming is wanted; TYPO3 does not trim input by default
 3. Replace 'eval' => 'null' → 'nullable' => true
 4. Replace 'eval' => 'int' → 'type' => 'number'
 5. Replace 'renderType' => 'inputDateTime' → 'type' => 'datetime'
@@ -334,7 +334,7 @@ Stop the batch and report if:
 | `MailMessage->send()` removed (#108097) → inject `TYPO3\CMS\Core\Mail\MailerInterface` and call `$this->mailer->send($email)` | All email-sending code ([Breaking #108097](https://docs.typo3.org/c/typo3/cms-core/main/en-us/Changelog/14.0/Breaking-108097-MailMessage-sendRemoved.html)) |
 | `ctrl.searchFields` removed (v14) → per-field `searchable` in field `config` | See [Breaking: #106972](https://docs.typo3.org/c/typo3/cms-core/main/en-us/Changelog/14.0/Breaking-106972-TCAControlOptionSearchFieldsRemoved.html) |
 | TCA `interface` removal | All TCA files with `interface` key |
-| Backend module parent IDs | All `Modules.php` with `web`, `file`, `tools` parents |
+| Backend module parent IDs (#107628) | All `Modules.php` parents: `web` → `content`, `file` → `media`, `tools` → `system`, admin-facing `system` → `admin`, `web_info` → `content_status`; `web_list` is now `records` |
 | Fluid 5.0 types | All Fluid templates with incorrect ViewHelper argument types |
 | FlexForm pointer fields | All FlexForm XML with pointer configurations |
 | Asset `external` property | All TypoScript with `external = 1` |

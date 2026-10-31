@@ -44,9 +44,14 @@ export function renderGraphReference(definition) {
     `Nodes: ${Object.keys(definition.nodes).length}; edges: ${definition.edges.length}; bounded retry edges: ${definition.edges.filter((e) => e.retry === true).length}.`,
   ];
   const phaseNumber = (node) => Number(String(node.phase ?? '').slice(1));
+  const stageRows = (from, to) => Object.entries(definition.nodes)
+    .filter(([, node]) => phaseNumber(node) >= Number(from.slice(1)) && phaseNumber(node) <= Number(to.slice(1)));
+  // Contents list: the reference exceeds 100 lines, and scripts/validate_structure.py requires one.
+  const anchor = (title) => title.toLowerCase().replace(/[^\w\- ]/g, '').replace(/ /g, '-');
+  const titled = STAGES.filter(([from, to]) => stageRows(from, to).length);
+  lines.push('', '## Contents', '', ...titled.map(([, , title]) => `- [${title}](#${anchor(title)})`));
   for (const [from, to, title] of STAGES) {
-    const low = Number(from.slice(1)), high = Number(to.slice(1));
-    const rows = Object.entries(definition.nodes).filter(([, node]) => phaseNumber(node) >= low && phaseNumber(node) <= high);
+    const rows = stageRows(from, to);
     if (!rows.length) continue;
     lines.push('', `## ${title}`, '', '| Node | Phase | Owner | Mutation | Flags | Objective | Done when | Evidence |', '|---|---|---|---|---|---|---|---|');
     for (const [id, node] of rows) {

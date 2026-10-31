@@ -2,6 +2,14 @@
 
 Continues `typo3-workspaces` from [full guide](full-guide.md).
 
+## Contents
+
+- [Pattern A: Backend QueryBuilder (Before/After)](#pattern-a-backend-querybuilder-beforeafter)
+- [Pattern B: Frontend with WorkspaceRestriction](#pattern-b-frontend-with-workspacerestriction)
+- [Pattern C: Adding WorkspaceRestriction Manually](#pattern-c-adding-workspacerestriction-manually)
+- [Pattern D: Extbase Repository (Mostly Transparent)](#pattern-d-extbase-repository-mostly-transparent)
+- [Pattern E: Migrating legacy queries (TYPO3 v10/v11 style to TYPO3 v14)](#pattern-e-migrating-legacy-queries-typo3-v10v11-style-to-typo3-v14)
+
 ## 6. Migrating Queries: WITHOUT Workspaces to WITH Workspaces
 
 ### Pattern A: Backend QueryBuilder (Before/After)

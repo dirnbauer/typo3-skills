@@ -66,6 +66,21 @@
         "Verifies inline editing and normal-mode visual parity"
       ],
       "files": []
+    },
+    {
+      "id": "typo3-visual-editor-images-01",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Blog images from fluid_styled_content cannot be edited in Visual Editor, while custom image components work. Fix this without editing vendor files.",
+      "expected_output": "Reproduces missing image markers, checks the installed f:image wrapper and FAL reference, overrides the image-only partial in the sitepackage and proves the native image-field edit/save/reopen flow.",
+      "assertions": [
+        "Checks the installed ImageViewHelper rather than assuming f:media is editable",
+        "Preserves the FAL FileReference and existing image rendering attributes",
+        "Keeps audio/video rendering separate and does not edit vendor files",
+        "Verifies real rendered data-veedit ownership and a non-admin image edit/save/reopen",
+        "Checks anonymous output and restores test values"
+      ],
+      "files": []
     }
   ]
 }

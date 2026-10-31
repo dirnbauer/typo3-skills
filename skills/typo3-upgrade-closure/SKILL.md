@@ -1,7 +1,7 @@
 ---
 name: typo3-upgrade-closure
 description: >-
-  Prove and close Contract A after a whole-site TYPO3 14.3 upgrade. Use when the target is
+  Proves and closes Contract A after a whole-site TYPO3 14.3 upgrade. Use when the target is
   stable for target-content-epoch reconciliation, exhaustive HTTP/DOM comparison, tiered
   pixel proof, consent/slider/search/form sentinels, backend login/module/write checks,
   Redirects rights, runtime/Composer/schema checks, Lighthouse/axe evidence, regression

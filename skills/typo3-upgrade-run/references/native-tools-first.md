@@ -4,6 +4,14 @@ User preference, 2026-09-17. Apply when choosing an implementation at intake, de
 migration/recovery node. Do not create a new checklist document per command: record the choice and
 any gap in the existing node evidence. Reuse results until their code/config/data inputs change.
 
+## Contents
+
+- [Selection order](#selection-order)
+- [Existing Core capabilities to reuse](#existing-core-capabilities-to-reuse)
+- [Traps verified in installed Core 14.3.7](#traps-verified-in-installed-core-1437)
+- [Widely used candidates, not an installation list](#widely-used-candidates-not-an-installation-list)
+- [Before retaining custom sync or migration code](#before-retaining-custom-sync-or-migration-code)
+
 ## Selection order
 
 1. **Installed TYPO3 Core command, upgrade wizard or backend tool.** Verify its registered command,
