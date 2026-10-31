@@ -2,56 +2,32 @@
 
 ## Contents
 
-- [7.1 Agent-First WCAG 2.2 Audit Protocol](#71-agent-first-wcag-22-audit-protocol)
+- [7.1 Spot check of the page you changed](#71-spot-check-of-the-page-you-changed)
 - [7.2 Reusable Audit Script](#72-reusable-audit-script)
 - [7.3 Tools](#73-tools)
 
-## 7.1 Agent-First WCAG 2.2 Audit Protocol
+## 7.1 Spot check of the page you changed
 
-Use this protocol to spot-check the page whose markup you just fixed. When the user asks for a WCAG 2.2 conformance audit of a whole site, an inventory, a CI baseline or the accessibility statement, hand over to `typo3-wcag22-aa-agentic`; the steps below still describe what one run of the script covers. Do not stop after saying that automation is incomplete.
+Run this after fixing markup on a page: one URL (plus its other language variants when the fix
+touched a shared template), the default viewport and one narrow viewport, WCAG 2.2 A/AA tags.
+It proves the fix on that page; it is not a site audit. When the user asks for a WCAG 2.2
+conformance audit of a site, a URL inventory, a CI baseline, a report or the accessibility
+statement, hand over to `typo3-wcag22-aa-agentic`.
 
-### What the agent must do first
+1. Run `scripts/wcag22_audit.cjs` (section 7.2) against the changed URL, then once more with
+   `--viewport 390x844`. The script runs axe-core, the structural checks (`lang`, one `h1`, no
+   skipped heading levels, landmarks, skip link, `alt`, `user-scalable`) and a Tab-order probe.
+2. Fix every `violation` in the template, CSS, JavaScript, TCA or content, and rerun.
+3. Review `incomplete` items: resolve `color-contrast` with the computed values the script
+   prints, and check `target-size` candidates against the 24x24 CSS px minimum and its spacing
+   exception. An `incomplete` item is evidence to review, not a pass.
+4. Report the command, the script's version line, the URLs and viewports, each finding with its
+   state (fixed, documented, left to a person), and the files changed.
 
-1. Scope the audit:
-   - URLs, language variants, templates, forms, menus, dialogs, media, downloads, and third-party embeds.
-   - Viewports to test. Use at least desktop and one narrow/mobile viewport for user-facing pages.
-   - Target standard: WCAG 2.2 A/AA unless the user specifies another level.
-2. Run automated browser checks with `axe-core` and WCAG tags.
-3. Run deterministic DOM checks:
-   - `<html lang>` matches the rendered language.
-   - Exactly one main `<h1>`.
-   - Heading levels do not skip.
-   - `<main>`, `<header>`, and `<footer>` exist.
-   - Skip link exists and points to the main content.
-   - Images have `alt`; informative images have meaningful alt; decorative images have empty alt.
-   - Images have width/height or otherwise avoid CLS.
-   - `user-scalable=no` is absent.
-   - Footer/header navigation links are present and localized.
-4. Review all automated `violations` and `incomplete` results:
-   - Fix clear defects in templates, CSS, JS, TCA, or content.
-   - For color-contrast `incomplete`, use the script's computed foreground/background review where available, then manually inspect only unresolved cases. Do not count it as passed without evidence.
-   - For target-size findings, check the 24x24 CSS px minimum and spacing exceptions.
-5. Run a real browser keyboard probe:
-   - Tab through the page.
-   - Record focus order, missing focus indicators, trapped focus, and hidden/offscreen focused elements.
-   - Fix obvious component issues immediately.
-6. Produce a report:
-   - Commands run, tool versions, URLs, viewport, and timestamp.
-   - Pass/fail/incomplete findings per URL.
-   - Code/content changes made.
-   - Residual risks.
-   - A short "Human/user follow-up only" list.
-
-### What must remain human/user follow-up
-
-Keep this list short and specific. Only include items the agent cannot honestly complete:
-
-- Screen reader confirmation with the user's supported assistive technology and browser combinations, e.g. VoiceOver/Safari, NVDA/Firefox, JAWS/Chrome.
-- Real-device touch testing where target-size exceptions depend on actual device input, spacing, or user behavior.
-- Legal approval of the accessibility statement, organization identity, enforcement body, dates, and jurisdiction-specific wording.
-- Captions/transcripts quality review for audio/video content.
-- Accessibility review of PDFs, office documents, downloads, third-party widgets, maps, iframes, and embedded services the agent cannot inspect or control.
-- User testing with disabled users when the requested conformance claim requires it.
+Leave to the user only what a spot check cannot settle: screen-reader confirmation with their
+browser and assistive technology (VoiceOver/Safari, NVDA/Firefox, JAWS/Chrome), touch testing on
+a real device where a target-size exception depends on it, and the content of PDFs, videos and
+third-party embeds on the page.
 
 ## 7.2 Reusable Audit Script
 

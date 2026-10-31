@@ -149,3 +149,6 @@ Load each file at the step named above:
 ## Scripts
 
 - Run `scripts/audit-content-elements.php <repo-root>` for a JSON audit of `ContentBlocks/ContentElements`.
+- Run `node scripts/extract-shadcn-preset.mjs --scratch <dir> --preset <id> --out <css> --meta <json>` to turn a
+  generated shadcn scratch app into the scoped token CSS a preset needs (workflow step 1; details in
+  [shadcn-preset-workflow.md](references/shadcn-preset-workflow.md#switching-presets)).

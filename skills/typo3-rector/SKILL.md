@@ -115,199 +115,33 @@ is deprecated since 14.2 (#108345) and no longer evaluated in v15; Rector does n
 extension version and `extra.typo3/cms.Package.providesPackages` into `composer.json` instead, as
 `typo3-v14-reference` shows.
 
-## 4. Key Migration Patterns (TYPO3 v14)
+## 4. What the diff review checks by hand
 
-The target APIs are documented in `typo3-v14-reference`; this section keeps only the patterns
-Rector cannot produce on its own and that the diff review has to check by hand.
+The v14 rule set (`ssch/typo3-rector` `config/v14/`, verified 2026-10-31 in a 14.3 project)
+renames classes, adds strict types to cache calls, turns constants into backed enums, rewrites
+label references to the domain syntax, removes `MailMessage->send()`, moves Scheduler task
+options into TCA and replaces the `ButtonBar`/`Menu` `make*` methods with `ComponentFactory`.
+The full target list is in [v14-only Rector targets](references/v14-only-rector-targets.md);
+the target code is in `typo3-v14-reference`. After the apply pass, check the diff and the
+remaining deprecation log for the work no rule performs:
 
-### Fluid ViewFactory (Replaces StandaloneView)
-
-The ViewFactory approach works on TYPO3 v14:
-
-```php
-<?php
-declare(strict_types=1);
-
-namespace Vendor\Extension\Service;
-
-use Psr\Http\Message\ServerRequestInterface;
-use TYPO3\CMS\Core\View\ViewFactoryData;
-use TYPO3\CMS\Core\View\ViewFactoryInterface;
-
-final class RenderingService
-{
-    public function __construct(
-        private readonly ViewFactoryInterface $viewFactory,
-    ) {}
-
-    public function render(ServerRequestInterface $request): string
-    {
-        $viewFactoryData = new ViewFactoryData(
-            templateRootPaths: ['EXT:my_extension/Resources/Private/Templates'],
-            partialRootPaths: ['EXT:my_extension/Resources/Private/Partials'],
-            layoutRootPaths: ['EXT:my_extension/Resources/Private/Layouts'],
-            request: $request,
-        );
-        
-        $view = $this->viewFactory->create($viewFactoryData);
-        $view->assign('data', ['key' => 'value']);
-        $view->assignMultiple([
-            'items' => [],
-            'settings' => [],
-        ]);
-        
-        return $view->render('MyTemplate');
-    }
-}
-```
-
-### Extbase controller response (TYPO3 v14)
-
-```php
-<?php
-declare(strict_types=1);
-
-namespace Vendor\Extension\Controller;
-
-use Psr\Http\Message\ResponseInterface;
-use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
-
-final class ItemController extends ActionController
-{
-    // v14: return ResponseInterface (required)
-    public function listAction(): ResponseInterface
-    {
-        $items = $this->itemRepository->findAll();
-        $this->view->assign('items', $items);
-        return $this->htmlResponse();
-    }
-
-    // v14: JSON response
-    public function apiAction(): ResponseInterface
-    {
-        $data = ['success' => true];
-        return $this->jsonResponse(json_encode($data));
-    }
-
-    // v14: redirect
-    public function createAction(Item $item): ResponseInterface
-    {
-        $this->itemRepository->add($item);
-        return $this->redirect('list');
-    }
-}
-```
-
-### PSR-14 Events (Preferred over Hooks)
-
-PSR-14 events work on TYPO3 v14. Use them instead of legacy hooks:
-
-```php
-<?php
-declare(strict_types=1);
-
-namespace Vendor\Extension\EventListener;
-
-use TYPO3\CMS\Core\Attribute\AsEventListener;
-use TYPO3\CMS\Frontend\Event\ModifyPageLinkConfigurationEvent;
-
-#[AsEventListener(identifier: 'vendor-extension/modify-pagelink')]
-final class ModifyPageLinkListener
-{
-    public function __invoke(ModifyPageLinkConfigurationEvent $event): void
-    {
-        $configuration = $event->getConfiguration();
-        // Modify link configuration
-        $event->setConfiguration($configuration);
-    }
-}
-```
-
-### Backend Module Registration (TYPO3 v14)
-
-```php
-<?php
-// Configuration/Backend/Modules.php
-return [
-    'myextension_mymodule' => [
-        'parent' => 'content',
-        'position' => ['after' => 'records'],
-        'access' => 'user,group',
-        'iconIdentifier' => 'myextension-module',
-        'path' => '/module/content/myextension',
-        'labels' => 'LLL:EXT:my_extension/Resources/Private/Language/locallang_mod.xlf',
-        'extensionName' => 'MyExtension',
-        'controllerActions' => [
-            \Vendor\MyExtension\Controller\ModuleController::class => [
-                'index',
-                'edit',
-            ],
-        ],
-    ],
-];
-```
-
-### Service Configuration (Services.yaml)
-
-```yaml
-# Configuration/Services.yaml
-services:
-  _defaults:
-    autowire: true
-    autoconfigure: true
-    public: false
-
-  Vendor\MyExtension\:
-    resource: '../Classes/*'
-    exclude:
-      - '../Classes/Domain/Model/*'
-```
-
-## 5. TCA Best Practices (TYPO3 v14)
-
-### Static TCA Only
-
-Write TCA only in `Configuration/TCA/` and `Configuration/TCA/Overrides/`; those files build the
-cached TCA that the Schema API reads. `ext_tables.php` is deprecated since 14.3 (#109438) and is no
-place for TCA changes:
-
-```php
-<?php
-// Configuration/TCA/Overrides/tt_content.php
-defined('TYPO3') or die();
-
-// v14: static TCA configuration
-\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addTcaSelectItem(
-    'tt_content',
-    'CType',
-    [
-        'label' => 'LLL:EXT:my_extension/Resources/Private/Language/locallang.xlf:mytype.title',
-        'value' => 'myextension_mytype',
-        'icon' => 'content-text',
-        'group' => 'default',
-    ]
-);
-
-$GLOBALS['TCA']['tt_content']['types']['myextension_mytype'] = [
-    'showitem' => '
-        --div--;LLL:EXT:core/Resources/Private/Language/Form/locallang_tabs.xlf:general,
-            --palette--;;general,
-            header;LLL:EXT:frontend/Resources/Private/Language/locallang_ttc.xlf:header_formlabel,
-            bodytext,
-        --div--;LLL:EXT:core/Resources/Private/Language/Form/locallang_tabs.xlf:access,
-            --palette--;;hidden,
-            --palette--;;access,
-    ',
-    'columnsOverrides' => [
-        'bodytext' => [
-            'config' => [
-                'enableRichtext' => true,
-            ],
-        ],
-    ],
-];
-```
-
+- **Views.** No rule turns `StandaloneView` usage into `ViewFactoryInterface` +
+  `ViewFactoryData` (the only view rule, `MigrateExtbaseViewInterfaceRector`, is v11). Write
+  the factory call by hand and pass the request.
+- **Hooks to events.** `EventListenerConfigurationToAttributeRector` (v13 set) only moves a
+  listener already registered in `Services.yaml` to `#[AsEventListener]`. A `SC_OPTIONS` hook
+  that v14 removed needs a new listener for the replacing PSR-14 event.
+- **Extbase actions.** `ExtbaseActionsWithRedirectMustReturnResponseInterfaceRector` (v12 set)
+  fixes redirecting actions only; every other action must return `ResponseInterface`
+  (`$this->htmlResponse()`, `$this->jsonResponse()`).
+- **Backend modules.** `MigrateBackendModuleRegistrationRector` (v12 set) generates
+  `Configuration/Backend/Modules.php`. Review `access`: 14.3 knows the gates `user`, `admin` and
+  `systemMaintainer`; `'user,group'` is rejected. Review `parent`: `web` is only an alias of
+  `content` in v14.
+- **TCA location.** The `tca-140` rules edit TCA arrays where they stand; they do not move TCA
+  out of `ext_tables.php` (deprecated since 14.3, #109438) into `Configuration/TCA/Overrides/`.
+- **Generated code.** Upgrade wizards and migrations that a rule generated need the second dry
+  run, as the Rules section says.
 
 ## References
 
