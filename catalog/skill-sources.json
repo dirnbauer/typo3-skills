@@ -573,7 +573,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/typo3-skills",
     "file_path": "skills/typo3-rector/SKILL.md",
-    "line_count": 327,
+    "line_count": 161,
     "frontmatter_keys": [
       "name",
       "description",
@@ -647,7 +647,7 @@
     "source_owner": "webconsulting",
     "source_url": "https://github.com/dirnbauer/webconsulting-skills",
     "file_path": "skills/typo3-shadcn-content-elements/SKILL.md",
-    "line_count": 152,
+    "line_count": 155,
     "frontmatter_keys": [
       "name",
       "description",

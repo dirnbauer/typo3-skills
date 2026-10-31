@@ -4,6 +4,12 @@
 
 > **Funding Extension:** EXT:solrfal is a funding contribution extension, not open source. It is available to [EB partners](https://www.typo3-solr.com/solr-for-typo3/open-source-version/) and via the [dkd shop](https://shop.dkd.de/).
 
+> **Verified source:** table, task, field and TypoScript names below come from the solrfal 12.0.5
+> package (dkd, 2026, for EXT:solr 12) and its bundled documentation, checked 2026-10-31. A
+> solrfal 14 package was not available for this check. Before relying on a name in a project that
+> runs solrfal 14, open that project's `vendor/apache-solr-for-typo3/solrfal/` and confirm it; the
+> release notes in its `Documentation/Releases/` list renamed keys.
+
 ## Contents
 
 - [1. What is solrfal?](#1-what-is-solrfal)
@@ -11,7 +17,7 @@
 - [3. Installation](#3-installation)
 - [4. Tika Server Setup](#4-tika-server-setup)
 - [5. Configuration](#5-configuration)
-- [6. Index Queue for Files](#6-index-queue-for-files)
+- [6. File Index Queue](#6-file-index-queue)
 - [7. Troubleshooting](#7-troubleshooting)
 - [8. Testing](#8-testing)
 
@@ -115,28 +121,69 @@ Limitation: Solr Cell uses the Tika version bundled with Solr, which may be olde
 
 ## 5. Configuration
 
-### Enable File Indexing
-
-File indexing is configured via the EXT:solr Index Queue, attached to content elements or records that reference files:
+solrfal hooks into EXT:solr's TypoScript under `plugin.tx_solr.index` and knows three contexts
+in which a file can be found (names from the solrfal 12.0.5 TypoScript reference):
 
 ```typoscript
-plugin.tx_solr.index.queue {
-    pages {
-        attachments {
-            fields = media
+plugin.tx_solr.index {
+    enableFileIndexing {
+        # Page context: files referenced by content elements, found while the page is indexed.
+        # Default 1. contentElementTypes maps a CType to the columns that hold file references;
+        # the shipped default covers text/textpic (bodytext, header_link) and uploads (media).
+        pageContext = 1
+        pageContext {
+            contentElementTypes {
+                textmedia = assets
+                my_download_box = downloads
+            }
+            fileExtensions = pdf, docx, xlsx, pptx
+            # take endtime and access groups from the page, access groups from the element
+            enableFields = endtime, accessGroups
+            contentEnableFields = accessGroups
+        }
+
+        # Storage context: every file of a FAL storage, independent of references. Default 0.
+        storageContext = 0
+        storageContext {
+            1 {
+                fileExtensions = pdf
+            }
         }
     }
 
-    news {
-        attachments {
-            # news v14: FAL relation column is `fal_related_files` (no plain `related_files` column)
-            fields = fal_related_files
+    # Record context: files attached to an Index Queue record such as a news item.
+    # The table must be in the queue already; `attachments = 1` turns detection on.
+    queue {
+        news {
+            attachments = 1
+            # news v14: the FAL relation column is `fal_related_files`; default `*` scans every column
+            attachments.fields = fal_related_files
+        }
+    }
+
+    # Field mapping for file documents, merged per context like a record's `fields` block
+    queue._FILES {
+        default {
+            fileLanguage_stringS = TEXT
+            fileLanguage_stringS.data = TSFE:sys_language_uid
+        }
+        pageContext {
+            # overrides for files found on pages
+        }
+        storageContext.1 {
+            # overrides for files of storage 1
+        }
+        recordContext.news {
+            # overrides for files attached to news
         }
     }
 }
 ```
 
-The `attachments.fields` setting specifies which FAL relation fields contain files to index in relation-based file indexing setups. In EXT:solr / EXT:tika projects, always confirm the exact field path and indexer you use before assuming this setting applies unchanged.
+Mapping blocks follow the same syntax as `plugin.tx_solr.index.queue.[configuration].fields`;
+`_FILES.default` applies to every file, the context blocks inherit from it. The exact keys and
+defaults are in the package's `Documentation/TypoScriptReference/Index.rst`; read that file in the
+installed version before adding a key.
 
 ### Supported File Types
 
@@ -160,25 +207,40 @@ Large files can cause timeouts or memory issues. Configure limits in EXT:tika ex
 - **Maximum file size:** Set a reasonable limit (e.g., 20 MB) to prevent Tika timeouts
 - **Tika timeout:** Increase the server timeout for large documents
 
-## 6. Index Queue for Files
+## 6. File Index Queue
 
-Files enter the Index Queue when:
-- A content element or record with file references is created/edited
-- The file reference field is in the `attachments.fields` configuration
-- The file type is extractable by Tika
+solrfal keeps its own queue table, `tx_solr_indexqueue_file`, next to EXT:solr's
+`tx_solr_indexqueue_item`. One row per file and context: the `file` uid, `context_type`
+(page, storage or record), `context_site`, `context_language`, `context_access_restrictions`,
+the referencing record (`context_record_table`, `context_record_uid`, `context_record_field`,
+`context_record_indexing_configuration`), `last_update`, `last_indexed`, `error` and
+`error_message`.
 
-Files are processed by the same "Index Queue Worker" scheduler task as regular records.
+Files enter this queue when:
+- a page with referencing content elements is indexed (page context),
+- the storage context is enabled for their storage,
+- a queued record of a table with `attachments = 1` is indexed (record context), and
+- their extension passes `fileExtensions`.
+
+Files are **not** processed by EXT:solr's "Index Queue Worker". solrfal registers its own
+Scheduler task, **"File Index Queue Worker"** (`ApacheSolrForTypo3\Solrfal\Scheduler\IndexingTask`,
+registered through `SC_OPTIONS['scheduler']['tasks']` in 12.0.5), which takes the number of files
+per run as an additional field. Add it beside the record worker; `typo3-scheduler-jobs` plans
+the interval. Rows with `error = 1` stay in the queue until the error is cleared; solrfal ships
+`ResetQueueErrorsCommand` for that (run `vendor/bin/typo3 list` to see its registered name).
 
 ### How File Documents Look in Solr
 
-File documents in Solr contain:
-- `type`: `tx_solrfal_file` (or similar, depending on configuration)
-- `title`: File name or extracted title metadata
-- `content`: Extracted text content from Tika
-- `url`: Download URL for the file
-- `fileReferenceUid_intS`: UID of the FAL file reference
-- `mimeType_stringS`: MIME type of the file
-- Standard fields: `siteHash`, `access`, `pid`, etc.
+`DocumentFactory` (12.0.5) writes these fields; `type` is the constant `tx_solr_file`:
+
+- `type`: `tx_solr_file`
+- `id`, `uid` (queue item uid), `pid`, `site`, `siteHash`, `access`, `appKey` = `EXT:solrfal`
+- `title`: the file name unless the mapping overrides it
+- `content`: text extracted by Tika
+- `url` and `filePublicUrl`: the public URL of the file
+- `fileUid`, `fileStorage`, `fileName`, `fileExtension`, `fileMimeType`, `fileSize`, `fileSha1`
+- `created`, `changed`: FAL creation and modification time
+- plus anything mapped under `queue._FILES`
 
 ## 7. Troubleshooting
 
@@ -201,11 +263,11 @@ ddev exec curl -s http://tika:9998/tika
 
 ### Files Not Appearing in Search Results
 
-1. Check `attachments.fields` in TypoScript includes the correct FAL field name
-2. Verify the file type is supported by Tika
-3. Check the Index Queue for file items and error messages
-4. Query Solr Admin: `q=*:*&fq=type:tx_solrfal_file&fl=uid,title,content,mimeType_stringS`
-5. Ensure the Scheduler worker has processed file items
+1. Check the context: is `enableFileIndexing.pageContext` on, or `attachments = 1` set for the record's queue configuration with the right `attachments.fields` column?
+2. Verify the extension passes `fileExtensions` and Tika supports the type
+3. Look at `tx_solr_indexqueue_file`: `SELECT file, context_type, error, error_message FROM tx_solr_indexqueue_file WHERE error = 1`
+4. Query Solr Admin: `q=*:*&fq=type:tx_solr_file&fl=id,title,fileName,fileMimeType,url`
+5. Ensure the **File Index Queue Worker** task has run, not only the record worker
 
 ### Performance
 
@@ -232,7 +294,7 @@ curl -T /path/to/test.pdf http://tika:9998/meta --header "Accept: application/js
 After indexing, check file documents in Solr Admin:
 
 ```
-q=*:*&fq=type:tx_solrfal_file&rows=5&fl=uid,title,content,mimeType_stringS,url
+q=*:*&fq=type:tx_solr_file&rows=5&fl=id,title,fileName,fileMimeType,fileSize,url
 ```
 
 ### Functional Test
@@ -258,17 +320,17 @@ final class FileIndexingTest extends FunctionalTestCase
     {
         $this->importCSVDataSet(__DIR__ . '/Fixtures/page_with_pdf.csv');
 
-        // Verify the file appears in the index queue
+        // solrfal keeps its own queue table
         $queryBuilder = $this->getConnectionPool()
-            ->getQueryBuilderForTable('tx_solr_indexqueue_item');
+            ->getQueryBuilderForTable('tx_solr_indexqueue_file');
         $count = $queryBuilder
             ->count('uid')
-            ->from('tx_solr_indexqueue_item')
-            ->where($queryBuilder->expr()->like('item_type', $queryBuilder->createNamedParameter('%file%')))
+            ->from('tx_solr_indexqueue_file')
+            ->where($queryBuilder->expr()->eq('context_type', $queryBuilder->createNamedParameter('page')))
             ->executeQuery()
             ->fetchOne();
 
-        self::assertGreaterThan(0, $count, 'PDF file should be in index queue');
+        self::assertGreaterThan(0, $count, 'PDF file should be in the file index queue');
     }
 }
 ```

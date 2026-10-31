@@ -5,7 +5,9 @@ Continues `typo3-records-list-types` from [full guide](full-guide.md).
 ## 16. File Structure
 
 Generated from the v2.0.2 checkout (`find Classes -type f | sort`), trimmed to directories plus the
-classes this skill refers to. Classes not listed here exist but are internal helpers.
+classes this skill refers to. Classes not listed here exist but are internal helpers. Re-checked
+2026-10-31: v2.0.2 is still the newest tag; `main` differs from it by one `.ddev/config.yaml`
+commit only, so every reference in this skill still matches the shipped code.
 
 ```
 records_list_types/

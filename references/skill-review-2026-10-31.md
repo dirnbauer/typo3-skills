@@ -85,19 +85,41 @@ The findings that would have misled a model most:
 
 ## Deferred
 
-Real work, each its own change:
+Real work, each its own change. All five were done the same evening in the follow-up PR:
 
-- `typo3-rector/SKILL.md` §4–§5 (~190 lines) duplicate `typo3-v14-reference`; cut to what Rector
-  cannot do.
-- `typo3-solr/SKILL-FRONTEND.md`: reframe around EXT:solr 14's vanilla controllers (the jQuery
-  section is now labelled "EXT:solr 13 and older"); re-verify `SKILL-SOLRFAL.md` worker, table and
-  field names against solrfal 14 (only a 2022 checkout was available).
-- `typo3-accessibility/references/07-testing-and-tools.md` §7.1 still reads as a full audit
-  protocol; shorten to the spot check.
-- `typo3-shadcn-content-elements/references/shadcn-preset-workflow.md`: the 30-step exact procedure
-  belongs in a script (S8).
-- `typo3-records-list-types`: re-check every reference against the next tagged release; the
-  extension moves faster than the skill.
+- `typo3-rector/SKILL.md` §4–§5 (~190 lines) duplicated `typo3-v14-reference`. Replaced by a
+  30-line "what the diff review checks by hand" section whose rule names were checked against
+  `ssch/typo3-rector` 3.16.0 (`config/v14/`, `rules/TYPO31x/`): no rule migrates `StandaloneView`
+  to `ViewFactoryInterface`, hooks to events, non-redirect actions to `ResponseInterface`, or TCA
+  out of `ext_tables.php`. 326 → 160 lines.
+- `typo3-solr/SKILL-FRONTEND.md` reframed around EXT:solr 14.0.2's shipped controllers: which
+  file binds to which class or `data-*` attribute (`a.solr-ajaxified`, `form[data-suggest]`,
+  `.tx_solr`, `tx_solr_updated`, `solrSearchAjaxType`), how to keep them in copied templates, and
+  the two cases where own JavaScript is justified. The 14.0.2 Ajaxify example still ships
+  `vendorName`/`switchableControllerActions`; the guide says both are ignored. jQuery removal is
+  an "old patterns" section.
+- `typo3-solr/SKILL-SOLRFAL.md` sections 5–8 rewritten from the solrfal 12.0.5 package (the
+  newest available locally; a 14 package was not): queue table `tx_solr_indexqueue_file`, the
+  separate "File Index Queue Worker" task, Solr `type` `tx_solr_file`, the `DocumentFactory`
+  field names (`fileUid`, `fileMimeType`, `fileName`, `fileSha1`, `filePublicUrl`, …) and the
+  three contexts (`enableFileIndexing.pageContext`, `storageContext`, `queue.*.attachments`,
+  `queue._FILES`). The previous text had a phantom `tx_solrfal_file` type, phantom
+  `fileReferenceUid_intS`/`mimeType_stringS` fields and the wrong queue table. The guide now says
+  to confirm names in the installed solrfal 14 before relying on them.
+- `typo3-accessibility/references/07-testing-and-tools.md` §7.1 is a four-step spot check of the
+  changed page plus a three-item user list; the programme protocol lives in
+  `typo3-wcag22-aa-agentic`. 127 → 103 lines.
+- `typo3-shadcn-content-elements`: steps 2–14 of the 30-step procedure are now
+  `scripts/extract-shadcn-preset.mjs` (Node 18+, no dependencies; reads `components.json`, copies
+  the `:root`/`.dark` tokens and font imports, writes them scoped to
+  `body[data-shadcn-preset="<id>"]`, exit 2 without a `:root` block). The reference keeps nine
+  manual steps. Tested on a synthetic scratch app (exit 0, 4 light and 2 dark variables; exit 2 and
+  1 on the error paths).
+- `typo3-records-list-types`: v2.0.2 was still the newest tag on 2026-10-31 and `main` differs by
+  one `.ddev/config.yaml` commit; the four Core event listeners and the trimmed file tree match
+  the checkout. Dated note added to reference 16; nothing else to change until the next tag.
+
+Still open by decision: the eleven descriptions (see above).
 
 ## Checks
 

@@ -1,47 +1,97 @@
-# EXT:solr Frontend: Custom JavaScript Integration
+# EXT:solr Frontend: Shipped Controllers and Custom JavaScript
 
-> Sub-guide of `typo3-solr`, loaded from its `SKILL.md` when needed: Custom JavaScript integration for EXT:solr search, suggest/autocomplete, and facet filtering with your own markup. Vanilla JS examples and AJAX endpoints for TYPO3 Fluid templates.
-
-> **Why this supplement?** EXT:solr 14 ships without jQuery: `Resources/Public/JavaScript/` holds vanilla controllers (`search_controller.js`, `suggest_controller.js`, `facet_*_controller.js`) and `autocomplete.min.js` (verified in 14.0.2). This guide is for projects that want their own markup and request handling instead of the shipped controllers; section 5 applies to EXT:solr 13 and older only.
+> Sub-guide of `typo3-solr`, loaded from its `SKILL.md` when needed: how the vanilla JavaScript that ships with EXT:solr 14 binds to the search markup, how to keep it working in your own Fluid templates, and how to replace it with your own fetch code where the shipped behaviour is not enough. Verified against EXT:solr 14.0.2 (`composer.lock` of a TYPO3 14.3 project, 2026-10-31).
 
 ## Contents
 
-- [1. EXT:solr AJAX Endpoints](#1-extsolr-ajax-endpoints)
-- [2. Suggest / Autocomplete with Vanilla JS](#2-suggest--autocomplete-with-vanilla-js)
-- [3. Facet Filtering with Vanilla JS](#3-facet-filtering-with-vanilla-js)
-- [4. Search Results with Vanilla JS](#4-search-results-with-vanilla-js)
-- [5. Removing jQuery (EXT:solr 13 and older)](#5-removing-jquery-extsolr-13-and-older)
+- [1. What EXT:solr 14 ships](#1-what-extsolr-14-ships)
+- [2. Keeping the shipped controllers in your own templates](#2-keeping-the-shipped-controllers-in-your-own-templates)
+- [3. Endpoints and parameters](#3-endpoints-and-parameters)
+- [4. Own suggest implementation](#4-own-suggest-implementation)
+- [5. Own facet and result loading](#5-own-facet-and-result-loading)
+- [6. Old patterns (EXT:solr 13 and older)](#6-old-patterns-extsolr-13-and-older)
 
-## 1. EXT:solr AJAX Endpoints
+## 1. What EXT:solr 14 ships
 
-EXT:solr exposes two key AJAX endpoints via TYPO3 page types:
+EXT:solr 14 has no jQuery dependency. `Resources/Public/JavaScript/` holds plain ES classes, each
+included by the static template or example that needs it:
+
+| File | Included by | Binds to | Does |
+|---|---|---|---|
+| `search_controller.js` | "Search - Ajaxify the search results" | every `a.solr-ajaxified` | fetches the link with `type=7383`, replaces the closest `.tx_solr` container, shows a `.tx-solr-loader` spinner, rewrites the URL with `history.replaceState`, then dispatches `tx_solr_updated` on `document.body` and re-binds itself on that event |
+| `suggest_controller.js` + `autocomplete.min.js` | "Search - (Example) Suggest/autocomplete" | every `form[data-suggest]` | reads the suggest URL from `data-suggest` and the top-results heading from `data-suggest-header`, requests `tx_solr[queryString]=<typed text>`, renders into an `.tx-solr-autosuggest` list under the `.tx-solr-suggest` input |
+| `facet_options_controller.js` | the Options facet examples | `a.tx-solr-facet-show-all`, `.facet-filter-box`, `.tx-solr-facet-hidden`, `.facet-filter-item` | show-all toggle (labels from `data-label-more` / `data-label-less`) and the type-to-filter box |
+| `facet_daterange_controller.js` | the DateRange example | elements with `data-facet-name`, `data-facet-url`, `data-range-gap`, `data-facet-reset-url` | date pickers that build the facet URL |
+| `facet_numericrange_controller.js` | the NumericRange example | `.tx-solr-numericRange__*` elements with `data-facet-url` | the two-thumb slider |
+
+The shipped Fluid partials already carry these hooks: pagination, sorting, facet options and
+"remove facet" links have `class="solr-ajaxified"`, and the `s:searchForm` ViewHelper renders the
+`<form>` with `data-suggest` (URL of page type 7384, argument `suggestPageType`) and
+`data-suggest-header`. The search input is named `{pluginNamespace}[q]`, so `tx_solr[q]` for the
+`pi_results` plugin.
+
+The TypeNum can be changed without editing the script: define a global `solrSearchAjaxType`
+before `search_controller.js` runs and it uses that value instead of 7383.
+
+## 2. Keeping the shipped controllers in your own templates
+
+Most projects only need their own markup, not their own JavaScript. Copy the templates through
+`plugin.tx_solr.view.templateRootPaths` (and partial/layout paths) and keep the hooks:
+
+- `class="solr-ajaxified"` on every link that should replace the result list without a page load
+  (pagination, sorting, facet add/remove). Links without the class reload the page; that is fine
+  for links that leave the results page.
+- A wrapping element with `class="tx_solr"` around the part the controller may replace. The
+  shipped `Results.html` wraps the whole plugin output; the fetched fragment replaces that element,
+  so your own JavaScript inside it is lost. Put your scripts outside and re-run them on
+  `tx_solr_updated`:
+
+```javascript
+const enhanceResults = () => {
+  document.querySelectorAll('.tx_solr [data-copy-link]').forEach(bind);
+};
+enhanceResults();
+document.body.addEventListener('tx_solr_updated', enhanceResults);
+```
+
+- `<s:searchForm>` for the form, so `data-suggest` and the hidden parameters stay correct. If you
+  write the `<form>` yourself, set `data-suggest` to the suggest URL (see section 3) and keep the
+  input inside the form with class `tx-solr-suggest`.
+- Facet partials keep the classes from the table above when you keep the matching controller.
+
+Include the two static templates "Search - Ajaxify the search results" and
+"Search - (Example) Suggest/autocomplete" instead of copying their TypoScript. The shipped
+Ajaxify example in 14.0.2 still contains `vendorName` and a `switchableControllerActions` block;
+both are ignored on v14 (`switchableControllerActions` deprecated in 10.3, #89463), so drop them
+if you do copy the file. What matters is `typeNum = 7383`, `extensionName = Solr`,
+`pluginName = pi_results`, `controller = Search`, `action = results`.
+
+## 3. Endpoints and parameters
 
 ```mermaid
 graph LR
     Input["User types query"]
-    Suggest["Suggest Endpoint<br/>(JSON)"]
-    Search["Search Endpoint<br/>(typeNum 7383, HTML)"]
+    Suggest["Suggest<br/>(typeNum 7384, JSON)"]
+    Search["Results<br/>(typeNum 7383, HTML fragment)"]
     DOM["Update DOM"]
     Input -->|debounced fetch| Suggest
-    Input -->|form submit fetch| Search
+    Input -->|form submit or facet link| Search
     Suggest --> DOM
     Search --> DOM
 ```
 
-### typeNum 7383: AJAX Search Results
+| Endpoint | TypeNum | Parameter | Returns |
+|---|---|---|---|
+| Results fragment | 7383 (`Examples/Ajaxify/setup.typoscript`) | the normal results URL: `tx_solr[q]`, facet and sorting parameters | the rendered results plugin without page layout, `Content-type: text/plain` |
+| Suggest | 7384 (`Examples/Suggest/setup.typoscript`, plugin `pi_suggest`, controller `Suggest`, action `suggest`) | `tx_solr[queryString]` | JSON |
 
-When configured, requests to `?type=7383&tx_solr[q]=...` return the search results HTML fragment (without page layout). The response replaces the content of `div.tx_solr`.
-
-### Suggest Endpoint
-
-The suggest controller returns JSON with suggestions and optional top results:
+The suggest JSON has two parts; `documents` is empty unless top results are enabled:
 
 ```json
 {
   "suggestions": {
     "typo3": 42,
-    "typo3 solr": 15,
-    "typo3 search": 8
+    "typo3 solr": 15
   },
   "documents": {
     "doc_1": {
@@ -54,383 +104,185 @@ The suggest controller returns JSON with suggestions and optional top results:
 }
 ```
 
-### TypoScript Setup
+Suggest is enabled by `plugin.tx_solr.suggest = 1` with `suggest.numberOfSuggestions` and
+`suggest.suggestField` (the example uses `spell`); the Suggest example static template sets
+these and includes the two scripts and `Resources/Public/StyleSheets/Frontend/suggest.css`.
 
-Use EXT:solr's shipped Ajaxify example (or include the corresponding TypoScript template) instead of the old `pi_base` copy pattern:
+## 4. Own suggest implementation
 
-```typoscript
-tx_solr_ajaxPage = PAGE
-tx_solr_ajaxPage {
-    typeNum = 7383
-    config {
-        disableAllHeaderCode = 1
-        xhtml_cleaning = 0
-        admPanel = 0
-        additionalHeaders.10.header = Content-type: text/plain
-        no_cache = 0
-    }
-
-    10 = USER
-    10 {
-        userFunc = TYPO3\CMS\Extbase\Core\Bootstrap->run
-        extensionName = Solr
-        pluginName = pi_results
-        # v14: a single controller/action only. `switchableControllerActions` was
-        # deprecated in v10.3 (#89463) and is ignored on v14; `vendorName` is a no-op — both dropped.
-        controller = Search
-        action = results
-        view < plugin.tx_solr.view
-        persistence < plugin.tx_solr.persistence
-        settings < plugin.tx_solr.settings
-    }
-}
-```
-
-> Note: prefer the extension's bundled Ajaxify/results configuration over hand-rolled
-> TypoScript — include EXT:solr's shipped example (`EXT:solr/Configuration/TypoScript/Examples/Ajaxify/setup.typoscript`)
-> and trim the legacy `switchableControllerActions`/`vendorName` keys if your installed
-> version still ships them. The results plugin is registered as `extensionName = Solr`,
-> `pluginName = pi_results`, controller `Search`.
-
-## 2. Suggest / Autocomplete with Vanilla JS
-
-Full working example with debouncing, keyboard navigation, and ARIA accessibility:
+Write your own suggest only when the shipped autocomplete cannot be styled or structured the way
+the design needs (for example a combobox inside a header overlay). Keep the request the same:
+`tx_solr[queryString]` against the page type 7384 URL. A minimal accessible combobox:
 
 ```javascript
 class SolrSuggest {
-  constructor(inputSelector, options = {}) {
-    this.input = document.querySelector(inputSelector);
-    if (!this.input) return;
+  constructor(input) {
+    this.input = input;
+    this.suggestUrl = input.form.dataset.suggest;   // rendered by s:searchForm
+    this.list = document.getElementById(input.getAttribute('aria-controls'));
+    this.timer = null;
+    this.active = -1;
+    this.terms = [];
 
-    this.options = {
-      suggestUrl: this.input.dataset.suggestUrl || '/suggest',
-      minChars: options.minChars || 3,
-      debounceMs: options.debounceMs || 250,
-      maxSuggestions: options.maxSuggestions || 10,
-    };
-
-    this.activeIndex = -1;
-    this.suggestions = [];
-    this.debounceTimer = null;
-
-    this.dropdown = document.createElement('ul');
-    this.dropdown.setAttribute('role', 'listbox');
-    this.dropdown.setAttribute('id', 'solr-suggest-list');
-    this.dropdown.classList.add('solr-suggest-dropdown');
-    this.dropdown.hidden = true;
-    this.input.parentNode.appendChild(this.dropdown);
-
-    this.input.setAttribute('role', 'combobox');
-    this.input.setAttribute('aria-autocomplete', 'list');
-    this.input.setAttribute('aria-controls', 'solr-suggest-list');
-    this.input.setAttribute('aria-expanded', 'false');
-
-    this.input.addEventListener('input', () => this.onInput());
-    this.input.addEventListener('keydown', (e) => this.onKeydown(e));
-    document.addEventListener('click', (e) => {
-      if (!this.input.contains(e.target) && !this.dropdown.contains(e.target)) {
-        this.close();
-      }
+    input.addEventListener('input', () => {
+      clearTimeout(this.timer);
+      const query = input.value.trim();
+      if (query.length < 3) return this.close();
+      this.timer = setTimeout(() => this.fetch(query), 250);
+    });
+    input.addEventListener('keydown', (event) => this.onKeydown(event));
+    document.addEventListener('click', (event) => {
+      if (!input.contains(event.target) && !this.list.contains(event.target)) this.close();
     });
   }
 
-  onInput() {
-    clearTimeout(this.debounceTimer);
-    const query = this.input.value.trim();
-
-    if (query.length < this.options.minChars) {
-      this.close();
-      return;
-    }
-
-    this.debounceTimer = setTimeout(() => this.fetchSuggestions(query), this.options.debounceMs);
-  }
-
-  async fetchSuggestions(query) {
-    try {
-      const url = new URL(this.options.suggestUrl, window.location.origin);
-      url.searchParams.set('tx_solr[queryString]', query); // parameter name as in suggest_controller.js (14.0.2)
-
-      const response = await fetch(url.toString(), {
-        headers: { 'Accept': 'application/json' },
-      });
-
-      if (!response.ok) return;
-      const data = await response.json();
-      this.render(data);
-    } catch (err) {
-      console.error('Solr suggest error:', err);
-    }
+  async fetch(query) {
+    const url = new URL(this.suggestUrl, window.location.origin);
+    url.searchParams.set('tx_solr[queryString]', query);
+    const response = await fetch(url, { headers: { Accept: 'application/json' } });
+    if (!response.ok) return;
+    this.render(await response.json());
   }
 
   render(data) {
-    this.dropdown.innerHTML = '';
-    this.suggestions = [];
-    this.activeIndex = -1;
-
-    const terms = Object.keys(data.suggestions || {});
-    terms.slice(0, this.options.maxSuggestions).forEach((term, i) => {
-      const li = document.createElement('li');
-      li.setAttribute('role', 'option');
-      li.setAttribute('id', `solr-suggest-${i}`);
-      li.textContent = term;
-      li.addEventListener('click', () => this.select(term));
-      this.dropdown.appendChild(li);
-      this.suggestions.push(term);
+    this.list.innerHTML = '';
+    this.terms = Object.keys(data.suggestions || {});
+    this.active = -1;
+    this.terms.forEach((term, index) => {
+      const item = document.createElement('li');
+      item.role = 'option';
+      item.id = `${this.list.id}-${index}`;
+      item.textContent = term;
+      item.addEventListener('click', () => this.select(term));
+      this.list.append(item);
     });
-
-    if (data.documents) {
-      const docs = Object.values(data.documents);
-      if (docs.length > 0) {
-        const divider = document.createElement('li');
-        divider.setAttribute('role', 'separator');
-        divider.classList.add('solr-suggest-divider');
-        this.dropdown.appendChild(divider);
-
-        docs.forEach((doc) => {
-          const li = document.createElement('li');
-          li.setAttribute('role', 'option');
-          const link = document.createElement('a');
-          link.href = doc.url;
-          link.textContent = doc.title;
-          li.appendChild(link);
-          this.dropdown.appendChild(li);
-        });
-      }
-    }
-
-    this.dropdown.hidden = this.suggestions.length === 0;
-    this.input.setAttribute('aria-expanded', String(!this.dropdown.hidden));
+    Object.values(data.documents || {}).forEach((doc) => {
+      const item = document.createElement('li');
+      item.role = 'option';
+      item.innerHTML = `<a href="${doc.url}"></a>`;
+      item.firstChild.textContent = doc.title;
+      this.list.append(item);
+    });
+    this.list.hidden = this.terms.length === 0;
+    this.input.setAttribute('aria-expanded', String(!this.list.hidden));
   }
 
-  onKeydown(e) {
-    if (this.dropdown.hidden) return;
-
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        this.activeIndex = Math.min(this.activeIndex + 1, this.suggestions.length - 1);
-        this.highlight();
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        this.activeIndex = Math.max(this.activeIndex - 1, -1);
-        this.highlight();
-        break;
-      case 'Enter':
-        if (this.activeIndex >= 0) {
-          e.preventDefault();
-          this.select(this.suggestions[this.activeIndex]);
-        }
-        break;
-      case 'Escape':
-        this.close();
-        break;
-    }
+  onKeydown(event) {
+    if (this.list.hidden) return;
+    if (event.key === 'ArrowDown') { event.preventDefault(); this.highlight(Math.min(this.active + 1, this.terms.length - 1)); }
+    if (event.key === 'ArrowUp') { event.preventDefault(); this.highlight(Math.max(this.active - 1, -1)); }
+    if (event.key === 'Enter' && this.active >= 0) { event.preventDefault(); this.select(this.terms[this.active]); }
+    if (event.key === 'Escape') this.close();
   }
 
-  highlight() {
-    this.dropdown.querySelectorAll('[role="option"]').forEach((el, i) => {
-      el.classList.toggle('active', i === this.activeIndex);
-    });
-    if (this.activeIndex >= 0) {
-      this.input.setAttribute('aria-activedescendant', `solr-suggest-${this.activeIndex}`);
-    } else {
-      this.input.removeAttribute('aria-activedescendant');
-    }
+  highlight(index) {
+    this.active = index;
+    this.list.querySelectorAll('[role="option"]').forEach((el, i) => el.classList.toggle('active', i === index));
+    if (index >= 0) this.input.setAttribute('aria-activedescendant', `${this.list.id}-${index}`);
+    else this.input.removeAttribute('aria-activedescendant');
   }
 
   select(term) {
     this.input.value = term;
     this.close();
-    this.input.closest('form')?.submit();
+    this.input.form.requestSubmit();
   }
 
   close() {
-    this.dropdown.hidden = true;
-    this.dropdown.innerHTML = '';
-    this.activeIndex = -1;
+    this.list.hidden = true;
+    this.list.innerHTML = '';
+    this.highlight(-1);
     this.input.setAttribute('aria-expanded', 'false');
-    this.input.removeAttribute('aria-activedescendant');
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  new SolrSuggest('input[data-solr-suggest]');
-});
+document.querySelectorAll('input[data-solr-suggest]').forEach((input) => new SolrSuggest(input));
 ```
 
-Minimal CSS:
-
-```css
-.solr-suggest-dropdown {
-  position: absolute;
-  z-index: 100;
-  background: var(--color-surface, #fff);
-  border: 1px solid var(--color-border, #ccc);
-  border-radius: 4px;
-  list-style: none;
-  padding: 0;
-  margin: 4px 0 0;
-  max-height: 300px;
-  overflow-y: auto;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.solr-suggest-dropdown [role="option"] {
-  padding: 8px 12px;
-  cursor: pointer;
-}
-
-.solr-suggest-dropdown [role="option"].active,
-.solr-suggest-dropdown [role="option"]:hover {
-  background: var(--color-primary-light, #e8f0fe);
-}
-
-.solr-suggest-divider {
-  border-top: 1px solid var(--color-border, #eee);
-  margin: 4px 0;
-}
-```
-
-HTML:
+Markup inside `<s:searchForm>` (the ViewHelper supplies `data-suggest` on the form). Do not add
+`class="tx-solr-suggest"` to this input, or the shipped controller binds to it as well:
 
 ```html
-<form action="/search" method="get">
-  <div style="position: relative;">
-    <input type="search"
-           name="tx_solr[q]"
-           data-solr-suggest
-           data-suggest-url="/index.php?type=7384"
-           placeholder="Search..."
-           autocomplete="off" />
-  </div>
-</form>
+<input type="search" name="tx_solr[q]" value="{q}"
+       data-solr-suggest role="combobox" aria-autocomplete="list"
+       aria-controls="solr-suggest-list" aria-expanded="false" autocomplete="off">
+<ul id="solr-suggest-list" role="listbox" class="solr-suggest-dropdown" hidden></ul>
 ```
 
-## 3. Facet Filtering with Vanilla JS
+## 5. Own facet and result loading
 
-Intercept facet links and load results via AJAX:
+Replace `search_controller.js` only when the replacement rule (closest `.tx_solr`) or the
+spinner does not fit. The request stays the same: the link's own URL with `type=7383`. Keep
+`history.pushState` so the back button works, dispatch `tx_solr_updated` so other scripts (and the
+shipped facet controllers, if you keep them) re-bind:
 
 ```javascript
-class SolrFacets {
-  constructor(containerSelector) {
-    this.container = document.querySelector(containerSelector);
-    if (!this.container) return;
-
-    this.resultsContainer = document.querySelector('.tx_solr');
-    this.bindFacetLinks();
-  }
-
-  bindFacetLinks() {
-    this.container.addEventListener('click', (e) => {
-      const link = e.target.closest('a[data-solr-facet]');
-      if (!link) return;
-
-      e.preventDefault();
-      this.loadResults(link.href);
+class SolrResults {
+  constructor(root) {
+    this.root = root;                                   // the element to replace
+    document.addEventListener('click', (event) => {
+      const link = event.target.closest('a[data-solr-ajax]');
+      if (!link || !this.root.contains(link)) return;
+      event.preventDefault();
+      history.pushState(null, '', link.href);
+      this.load(link.href);
     });
-  }
-
-  async loadResults(url) {
-    this.resultsContainer.classList.add('solr-loading');
-
-    try {
-      const ajaxUrl = new URL(url);
-      ajaxUrl.searchParams.set('type', '7383');
-
-      const response = await fetch(ajaxUrl.toString());
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-      const html = await response.text();
-      this.resultsContainer.innerHTML = html;
-
+    root.closest('form[data-solr-search]')?.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const url = `${event.target.action}?${new URLSearchParams(new FormData(event.target))}`;
       history.pushState(null, '', url);
+      this.load(url);
+    });
+    window.addEventListener('popstate', () => this.load(window.location.href));
+  }
 
-      this.bindFacetLinks();
-    } catch (err) {
-      console.error('Solr facet loading error:', err);
+  async load(href) {
+    const url = new URL(href, window.location.origin);
+    url.searchParams.set('type', '7383');
+    this.root.setAttribute('aria-busy', 'true');
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const fragment = document.createRange().createContextualFragment(await response.text());
+      const next = fragment.querySelector('[data-solr-results]') ?? fragment;
+      this.root.replaceChildren(...next.childNodes);
+      document.body.dispatchEvent(new CustomEvent('tx_solr_updated', { bubbles: true }));
+    } catch (error) {
+      this.root.innerHTML = '<p class="solr-error">Search is currently not available.</p>';
+      console.error('Solr results error:', error);
     } finally {
-      this.resultsContainer.classList.remove('solr-loading');
+      this.root.setAttribute('aria-busy', 'false');
     }
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  new SolrFacets('.solr-facets');
-});
+const results = document.querySelector('[data-solr-results]');
+if (results) new SolrResults(results);
 ```
 
-Add `data-solr-facet` to facet links in your Fluid partial:
+In your partials, mark the links the class should intercept and the element it replaces:
 
 ```html
-<a href="{facetOption.url}" data-solr-facet>{facetOption.label} ({facetOption.count})</a>
+<div data-solr-results>
+  <a href="{s:uri.facet.addFacetItem(facet: facet, facetItem: option)}" data-solr-ajax>{option.label}</a>
+  <span class="facet-result-count">{option.documentCount}</span>
+</div>
 ```
 
-## 4. Search Results with Vanilla JS
+Facet URLs come from the `s:uri.facet.*` and `s:uri.paginate.*` ViewHelpers, as in the shipped
+partials; do not assemble `tx_solr[filter][]` strings by hand.
 
-Full AJAX search form without jQuery:
+## 6. Old patterns (EXT:solr 13 and older)
 
-```javascript
-class SolrSearch {
-  constructor(formSelector) {
-    this.form = document.querySelector(formSelector);
-    if (!this.form) return;
+EXT:solr 13 and older shipped jQuery-based `Resources/Public/JavaScript/` files and a results
+container that the shipped script found by `div.tx_solr`. To use your own JavaScript there:
 
-    this.resultsContainer = document.querySelector('.tx_solr');
-    this.form.addEventListener('submit', (e) => this.onSubmit(e));
+1. Do not include the static templates "Search - Ajaxify the search results" and
+   "Search - (Example) Suggest/autocomplete".
+2. Configure the two page types yourself (TypeNums 7383 and 7384, section 3).
+3. Replace the `solr-ajaxified` class with your own `data-solr-*` attributes in the copied
+   templates, so the old script cannot bind.
+4. Use the classes from sections 4 and 5.
 
-    window.addEventListener('popstate', () => {
-      this.loadResults(window.location.href);
-    });
-  }
-
-  async onSubmit(e) {
-    e.preventDefault();
-    const formData = new FormData(this.form);
-    const params = new URLSearchParams(formData);
-    const url = `${this.form.action}?${params.toString()}`;
-
-    history.pushState(null, '', url);
-    await this.loadResults(url);
-  }
-
-  async loadResults(url) {
-    this.resultsContainer.setAttribute('aria-busy', 'true');
-    this.resultsContainer.classList.add('solr-loading');
-
-    try {
-      const ajaxUrl = new URL(url, window.location.origin);
-      ajaxUrl.searchParams.set('type', '7383');
-
-      const response = await fetch(ajaxUrl.toString());
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-      const html = await response.text();
-      this.resultsContainer.innerHTML = html;
-    } catch (err) {
-      this.resultsContainer.innerHTML =
-        '<p class="solr-error">Search is currently not available. Please try again later.</p>';
-      console.error('Solr search error:', err);
-    } finally {
-      this.resultsContainer.setAttribute('aria-busy', 'false');
-      this.resultsContainer.classList.remove('solr-loading');
-    }
-  }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  new SolrSearch('form[data-solr-search]');
-});
-```
-
-## 5. Removing jQuery (EXT:solr 13 and older)
-
-EXT:solr 14 has no jQuery to remove; skip this section there. On EXT:solr 13 and older:
-
-1. Do not include the static template "Search - Ajaxify the search results" (titles as registered in `Configuration/TCA/Overrides/sys_template.php`)
-2. Do not include the static template "Search - (Example) Suggest/autocomplete"
-3. Configure the AJAX page type manually (see section 1)
-4. Replace `solr-ajaxified` CSS class with `data-solr-*` attributes in your Fluid templates
-5. Use the vanilla JS classes from this guide
-
+On EXT:solr 14 there is no jQuery to remove; the shipped controllers are the default and the
+sections above describe the two places where replacing them is justified.

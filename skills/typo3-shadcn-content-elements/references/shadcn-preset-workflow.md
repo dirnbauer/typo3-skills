@@ -133,39 +133,33 @@ When the user gives another preset id, such as `b6G5977cw`:
 9. Check the styleguide page if it exists.
 10. Check at least one TYPO3 backend layout preview.
 
-When the id is not supported yet:
+When the id is not supported yet, the token extraction is a script and the rest is a short
+manual list. Start from a clean or understood git state.
 
-1. Start from a clean or understood git state.
-2. Generate a scratch shadcn project outside the TYPO3 extension.
-3. Record `style` from `components.json`.
-4. Record `tailwind.baseColor`.
-5. Record `iconLibrary`.
-6. Record `menuColor`.
-7. Record `menuAccent`.
-8. Open the generated CSS source.
-9. Copy every light `:root` token.
-10. Copy every `.dark` token.
-11. Copy font imports and font-family choices.
-12. Add `body[data-shadcn-preset="<id>"]` to the theme CSS.
-13. Add `.dark body[data-shadcn-preset="<id>"]` to the theme CSS.
-14. Map font variables to project variables such as `--d-font-sans`,
-    `--d-font-heading`, and `--d-font-mono`.
-15. Add the id to the TYPO3 Site Settings enum.
-16. Add a new style enum value when needed.
-17. Do not make the new id the global default unless the user asked for that.
-18. Add/update documentation screenshots.
-19. Update README and project docs.
-20. Update tests that assert supported presets.
-21. Run the relevant CSS build if classes or Tailwind sources changed.
-22. Run `npx shadcn@latest info --json`.
-23. Rebuild the local registry when `registry.json` changed.
-24. Run the project tests.
-25. Run `git diff --check`.
-26. Flush TYPO3 caches.
-27. Browser-check frontend light mode.
-28. Browser-check frontend dark mode.
-29. Browser-check TYPO3 backend previews.
-30. Commit the resulting token/settings/docs slice.
+1. Generate the scratch app outside the TYPO3 extension (see [Scratch App](#scratch-app)).
+2. Run the extractor from this skill:
+
+   ```bash
+   node <skill>/scripts/extract-shadcn-preset.mjs \
+     --scratch /tmp/preset-check --preset <id> \
+     --out /tmp/preset-<id>.css --meta /tmp/preset-<id>.json
+   ```
+
+   It reads `components.json` (`style`, `tailwind.baseColor`, `iconLibrary`, `menuColor`,
+   `menuAccent`), copies every `:root` and `.dark` token from the Tailwind source CSS, keeps the
+   font `@import` lines and writes them scoped to `body[data-shadcn-preset="<id>"]` and
+   `.dark body[data-shadcn-preset="<id>"]`. Exit 2 means it found no `:root` block; pass `--css`
+   with the right file. The JSON records what was extracted for the commit message and docs.
+3. Append the CSS to the theme file (`Resources/Public/Css/shadcn-theme.css`) and map the font
+   variables listed in the comment to `--d-font-sans`, `--d-font-heading` and `--d-font-mono`.
+4. Add the id to the TYPO3 Site Settings enum, and a new style enum value when `style` is new.
+   Do not make the new id the global default unless the user asked for that.
+5. Update README, project docs and screenshots; update tests that assert supported presets.
+6. Run the CSS build if classes or Tailwind sources changed, then `npx shadcn@latest info --json`,
+   and rebuild the local registry when `registry.json` changed.
+7. Run the project tests and `git diff --check`, flush TYPO3 caches.
+8. Browser-check the frontend in light and dark mode and at least one TYPO3 backend preview.
+9. Commit the token/settings/docs slice.
 
 ## shadcn/create Left-Nav Values
 
