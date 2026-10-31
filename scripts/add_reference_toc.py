@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Insert a `## Contents` list into owned references that are long enough to need one.
+"""Insert a `## Contents` list into owned skill markdown that is long enough to need one.
 
 Anthropic's skill authoring guidance asks for a table of contents on any reference file over
 100 lines, so an agent that previews only the head of a file still sees its full scope.
@@ -19,7 +19,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from validate_structure import ROOT, SKILLS, has_toc, outside_fences, vendored  # noqa: E402
+from validate_structure import ROOT, has_toc, outside_fences, owned_markdown, vendored  # noqa: E402
 
 THRESHOLD = 100
 
@@ -72,9 +72,7 @@ def main() -> int:
     args = ap.parse_args()
     skip = vendored()
     pending = 0
-    for ref in sorted(SKILLS.glob("*/references/*.md")):
-        if ref.parts[-3] in skip:
-            continue
+    for ref in owned_markdown(skip):
         lines = ref.read_text(encoding="utf-8").split("\n")
         if len(lines) <= THRESHOLD or has_toc(lines):
             continue

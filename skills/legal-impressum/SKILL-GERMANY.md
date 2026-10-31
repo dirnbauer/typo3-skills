@@ -1,17 +1,6 @@
----
-name: legal-impressum-germany
-description: German Impressum requirements under DDG and MStV. All Rechtsformen including GmbH, AG, UG, GbR, OHG, KG.
-version: 1.0.0
-triggers:
-  - impressum germany
-  - impressum deutschland
-  - DDG
-  - TMG
-  - telemediengesetz
-  - medienstaatsvertrag
----
-
 # German Impressum Requirements
+
+> Sub-guide of `legal-impressum`, loaded from its `SKILL.md` when needed: German Impressum requirements under DDG and MStV. All Rechtsformen including GmbH, AG, UG, GbR, OHG, KG.
 
 > **Jurisdiction:** Germany (Deutschland)
 > 
@@ -23,6 +12,19 @@ triggers:
 This skill covers German Impressum (Anbieterkennzeichnung) requirements for websites and telemedien.
 
 ---
+
+## Contents
+
+- [1. Legal Framework](#1-legal-framework)
+- [2. Required Fields (§ 5 DDG)](#2-required-fields--5-ddg)
+- [3. All German Rechtsformen](#3-all-german-rechtsformen)
+- [4. Templates by Rechtsform](#4-templates-by-rechtsform)
+- [5. Journalistic Content (§ 18 MStV)](#5-journalistic-content--18-mstv)
+- [6. Austria vs Germany Comparison](#6-austria-vs-germany-comparison)
+- [7. Penalties](#7-penalties)
+- [8. Compliance Checklist](#8-compliance-checklist)
+- [9. Resources](#9-resources)
+- [Credits & Attribution](#credits--attribution)
 
 ## 1. Legal Framework
 

@@ -16,6 +16,17 @@ or, if this is a project-local scaffold only:
 .a11y/a11y.config.yml
 ```
 
+## Contents
+
+- [Task](#task)
+- [Project variables](#project-variables)
+- [Required workflow](#required-workflow)
+- [Manual Chrome helper workflow](#manual-chrome-helper-workflow)
+- [Legal profile rules](#legal-profile-rules)
+- [Optional Deque axe MCP](#optional-deque-axe-mcp)
+- [HITL queue](#hitl-queue)
+- [Final response format](#final-response-format)
+
 ## Task
 
 Audit and improve this TYPO3 website/sitepackage for accessibility with a WCAG 2.2 AA technical target and generate a draft Erklärung zur Barrierefreiheit / accessibility statement. Use a small mandatory HITL review queue only for items that cannot be safely decided automatically.

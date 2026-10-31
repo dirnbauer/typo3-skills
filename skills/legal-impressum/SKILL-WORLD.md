@@ -1,16 +1,6 @@
----
-name: legal-impressum-world
-description: International legal notice requirements. UK, Switzerland, USA, and worldwide best practices for multi-jurisdiction websites.
-version: 1.0.0
-triggers:
-  - impressum international
-  - legal notice worldwide
-  - uk imprint
-  - swiss impressum
-  - usa website disclosure
----
-
 # International Legal Notice Requirements
+
+> Sub-guide of `legal-impressum`, loaded from its `SKILL.md` when needed: International legal notice requirements. UK, Switzerland, USA, and worldwide best practices for multi-jurisdiction websites.
 
 > **Jurisdiction:** Worldwide (non-EU focus)
 > 
@@ -22,6 +12,20 @@ triggers:
 This skill covers legal notice requirements for websites outside the EU, including UK (post-Brexit), Switzerland, USA, and international best practices.
 
 ---
+
+## Contents
+
+- [1. United Kingdom (Post-Brexit)](#1-united-kingdom-post-brexit)
+- [2. Switzerland](#2-switzerland)
+- [3. United States](#3-united-states)
+- [4. Other Countries](#4-other-countries)
+- [5. Multi-Jurisdiction Strategy](#5-multi-jurisdiction-strategy)
+- [6. Language Considerations](#6-language-considerations)
+- [7. Universal Template (Global Best Practice)](#7-universal-template-global-best-practice)
+- [8. Common Mistakes to Avoid](#8-common-mistakes-to-avoid)
+- [9. Compliance Checklist (Global)](#9-compliance-checklist-global)
+- [10. Resources](#10-resources)
+- [Credits & Attribution](#credits--attribution)
 
 ## 1. United Kingdom (Post-Brexit)
 

@@ -2,7 +2,8 @@
 """Enforce SKILL-SPEC.md S6 and S7 — directives and progressive disclosure.
 
 S6: write directives, not hedged suggestions. Soft phrasing is discarded under pressure.
-S7: SKILL.md stays under 500 lines; a reference over 100 lines carries a table of contents.
+S7: SKILL.md stays under 500 lines; any other owned markdown file over 100 lines carries a table
+    of contents, and only SKILL.md carries skill frontmatter.
 
 These two rules existed as prose before this script did, and prose rules do not hold. A
 sweep found four owned references over 300 lines with no navigation, which is precisely the
@@ -58,6 +59,21 @@ def outside_fences(lines: list[str]):
             yield i, line
 
 
+def owned_markdown(skip: set[str]):
+    """Every markdown file an owned skill ships besides SKILL.md.
+
+    Run-directory and project templates are copied into projects as they are, so their
+    frontmatter and length belong to the template, not to the skill's navigation.
+    """
+    for path in sorted(SKILLS.glob("*/**/*.md")):
+        rel = path.relative_to(SKILLS).parts
+        if rel[0] in skip or path.name == "SKILL.md":
+            continue
+        if any(part in ("templates", "node_modules", "evals") for part in rel[1:-1]):
+            continue
+        yield path
+
+
 def has_toc(lines: list[str]) -> bool:
     head = "\n".join(lines[:60]).lower()
     return any(m in head for m in TOC_MARKERS)
@@ -94,16 +110,23 @@ def main() -> int:
                     "detail": f"hedged phrasing: {line.strip()[:80]}",
                 })
 
-    for ref in sorted(SKILLS.glob("*/references/*.md")):
-        name = ref.parts[-3]
-        if name in skip:
-            continue
+    for ref in owned_markdown(skip):
+        name = ref.relative_to(SKILLS).parts[0]
         checked["references"] += 1
-        lines = ref.read_text(encoding="utf-8", errors="ignore").split("\n")
+        text = ref.read_text(encoding="utf-8", errors="ignore")
+        lines = text.split("\n")
         if len(lines) > args.max_ref_lines and not has_toc(lines):
             findings.append({
                 "rule": "S7", "skill": name, "file": str(ref.relative_to(ROOT)),
                 "detail": f"{len(lines)} lines with no table of contents",
+            })
+        # A `name:` frontmatter block makes a sub-guide look like a second skill to loaders
+        # and readers; only SKILL.md is a skill.
+        front = re.match(r"---\n(.*?)\n---\n", text, re.S)
+        if front and re.search(r"^name:", front.group(1), re.M):
+            findings.append({
+                "rule": "S7", "skill": name, "file": str(ref.relative_to(ROOT)),
+                "detail": "skill-style frontmatter outside SKILL.md; state the parent skill in the body",
             })
 
     if args.json:

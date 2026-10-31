@@ -14,6 +14,13 @@ There are two stages with different timing:
 
 Use `t3u approval --stage intent ...` and `t3u approval --stage acceptance --evidence ...`.
 
+## Contents
+
+- [40.1 The matrix](#401-the-matrix)
+- [40.2 Approval granularity for rendering changes](#402-approval-granularity-for-rendering-changes)
+- [40.3 The approval record](#403-the-approval-record)
+- [40.4 Scope of an approval](#404-scope-of-an-approval)
+
 ## 40.1 The matrix
 
 | # | Action | Automatic | Approval | Granularity |

@@ -3,6 +3,14 @@
 Use `in2code/powermail_cond`, extension key `powermail_cond` (not `powermail_condition`).
 Resolve the [version line](references/v14-only-changes.md) before installation.
 
+## Contents
+
+- [Rule meaning: action on match, opposite action otherwise](#rule-meaning-action-on-match-opposite-action-otherwise)
+- [Operators and edge cases](#operators-and-edge-cases)
+- [Targets, relations and loops](#targets-relations-and-loops)
+- [Frontend and endpoint integration](#frontend-and-endpoint-integration)
+- [Validation and support boundaries](#validation-and-support-boundaries)
+
 ## Rule meaning: action on match, opposite action otherwise
 
 Create one condition container for the form, add a condition targeting a field or fieldset,

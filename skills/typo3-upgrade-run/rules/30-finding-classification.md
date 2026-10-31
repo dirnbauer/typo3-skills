@@ -4,6 +4,17 @@ Normative. Every difference, failure, and violation produced by any measurement 
 
 Classification is not bookkeeping. The class determines who fixes what, and where: a `regression` is fixed in the site, `harness-noise` is fixed in the harness, and `content-drift` means the comparison itself is void. Getting the class wrong sends the repair to the wrong place.
 
+## Contents
+
+- [30.1 The seven classes](#301-the-seven-classes)
+- [30.2 The decision tree](#302-the-decision-tree)
+- [30.3 harness-noise is a defect, not a dismissal](#303-harness-noise-is-a-defect-not-a-dismissal)
+- [30.4 Severity](#304-severity)
+- [30.5 Finding lifecycle](#305-finding-lifecycle)
+- [30.6 Residual findings at exit](#306-residual-findings-at-exit)
+- [30.7 Resolving content-drift](#307-resolving-content-drift)
+- [30.8 Declared changes are rules, not edits](#308-declared-changes-are-rules-not-edits)
+
 ## 30.1 The seven classes
 
 | Class | Meaning | Where it is fixed | Blocks Contract A? |

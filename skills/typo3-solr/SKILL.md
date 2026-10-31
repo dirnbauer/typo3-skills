@@ -5,7 +5,7 @@ compatibility: "TYPO3 14.x"
 metadata:
   skill_type: preference
   version: "1.0.0"
-  related_skills: "typo3-content-blocks, typo3-datahandler, typo3-seo, ai-search-optimization"
+  related_skills: "typo3-content-blocks, typo3-datahandler, typo3-seo"
   origin: "webconsulting"
 license: "MIT / CC-BY-SA-4.0"
 ---
@@ -340,7 +340,9 @@ is obsolete. Resolve the actual packages and Tika server requirements together; 
 13.1 example is not a target pin. Check [Apache Solr security](https://solr.apache.org/security.html)
 and Apache Tika advisories before deploying the server images.
 
-See [SKILL-SOLRFAL.md](SKILL-SOLRFAL.md) for complete file indexing setup.
+Read [SKILL-SOLRFAL.md](SKILL-SOLRFAL.md) when PDFs or other files must be indexed (EXT:solrfal and Tika).
+Read [SKILL-FRONTEND.md](SKILL-FRONTEND.md) when the results page, suggest/autocomplete or facets need
+custom JavaScript or AJAX endpoints instead of the default Fluid output.
 
 
 ## Sources

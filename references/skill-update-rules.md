@@ -87,8 +87,12 @@ The description is the trigger. Every agent reads it on every turn.
 
 - References are **one level deep** from `SKILL.md`, one topic per file, and the skill says **when**
   to load each one.
-- A reference over **100 lines** has a `## Contents` list (enforced). Generate it with
+- Any owned markdown file over **100 lines** — references, `SKILL-*.md` sub-guides, rules, phase
+  notes, prompts — has a `## Contents` list (enforced; `templates/` are exempt). Generate it with
   `python3 scripts/add_reference_toc.py --write`.
+- Only `SKILL.md` carries skill frontmatter. A sub-guide states its parent skill in its first lines
+  and is linked from `SKILL.md` with the situation that needs it (enforced).
+- `metadata.related_skills` names only skills that exist in this collection (enforced).
 - A sequence that must be exact belongs in a script (S8). The skill says whether to **run** or
   **read** each script. Scripts handle their own errors, pin dependencies and explain constants.
 - Cross-skill links point at a file that exists, with an anchor that exists.

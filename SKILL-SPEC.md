@@ -183,8 +183,10 @@ Three layers, loaded on demand: frontmatter always → `SKILL.md` when triggered
 `references/` only when the skill asks.
 
 - `SKILL.md` under 500 lines. Detail moves to `references/`.
-- A reference over 100 lines gets a table of contents (Anthropic best practice since 2025; enforced at
-  100 lines from 2026-10-31). `scripts/add_reference_toc.py --write` inserts one.
+- Every owned markdown file besides `SKILL.md` that runs over 100 lines gets a table of contents
+  (Anthropic best practice; enforced at 100 lines from 2026-10-31; `templates/` exempt).
+  `scripts/add_reference_toc.py --write` inserts one.
+- Only `SKILL.md` carries skill frontmatter; a sub-guide names its parent skill in its body.
 - One topic per reference file.
 
 Loading everything defeats the mechanism the collection is built on.

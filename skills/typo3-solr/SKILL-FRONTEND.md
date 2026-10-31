@@ -1,14 +1,16 @@
----
-name: typo3-solr/FRONTEND
-description: >-
-  Custom JavaScript integration for EXT:solr search, suggest/autocomplete, and
-  facet filtering without jQuery. Vanilla JS examples and AJAX endpoints for
-  TYPO3 Fluid templates.
----
-
 # EXT:solr Frontend: Custom JavaScript Integration
 
+> Sub-guide of `typo3-solr`, loaded from its `SKILL.md` when needed: Custom JavaScript integration for EXT:solr search, suggest/autocomplete, and facet filtering without jQuery. Vanilla JS examples and AJAX endpoints for TYPO3 Fluid templates.
+
 > **Why this supplement?** EXT:solr ships with jQuery-based suggest and AJAX. Modern TYPO3 projects often avoid jQuery. This guide shows how to use EXT:solr's AJAX endpoints with vanilla JavaScript or lightweight frameworks.
+
+## Contents
+
+- [1. EXT:solr AJAX Endpoints](#1-extsolr-ajax-endpoints)
+- [2. Suggest / Autocomplete with Vanilla JS](#2-suggest--autocomplete-with-vanilla-js)
+- [3. Facet Filtering with Vanilla JS](#3-facet-filtering-with-vanilla-js)
+- [4. Search Results with Vanilla JS](#4-search-results-with-vanilla-js)
+- [5. Removing jQuery Dependency](#5-removing-jquery-dependency)
 
 ## 1. EXT:solr AJAX Endpoints
 

@@ -10,6 +10,17 @@ programme.
 
 Targets in `references/quality-bars.md`; commands in `references/measurement-recipes.md`.
 
+## Contents
+
+- [Preconditions](#preconditions)
+- [Loop 500 — final reporting sample and improvement handoff](#loop-500--final-reporting-sample-and-improvement-handoff)
+- [Loop 520 — accessibility, split by whether the fix moves pixels](#loop-520--accessibility-split-by-whether-the-fix-moves-pixels)
+- [Loop 510 always includes the <head> audit](#loop-510-always-includes-the-head-audit)
+- [Rules that still apply](#rules-that-still-apply)
+- [Exit per loop](#exit-per-loop)
+- [Honesty requirement](#honesty-requirement)
+- [Blocking](#blocking)
+
 ## Preconditions
 `contract_b.unlocked == true`, and `contract_a.closed_at` earlier than this loop's `created_at`.
 Each track has its own approval and its own derived baseline `B-<n>`.

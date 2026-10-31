@@ -4,6 +4,18 @@ Normative. The update is controlled by a sealed directed graph, not a conversati
 `config/upgrade-graph.yml` says what may happen; `state.json.graph` says what did happen. The graph
 definition hash is sealed by `t3u graph-init`. Definition drift makes the run invalid.
 
+## Contents
+
+- [10.1 Node contract](#101-node-contract)
+- [10.2 Edge contract](#102-edge-contract)
+- [10.3 Joins and branches](#103-joins-and-branches)
+- [10.4 Resource locks and parallelism](#104-resource-locks-and-parallelism)
+- [10.5 Cycles are bounded recovery edges](#105-cycles-are-bounded-recovery-edges)
+- [10.6 Graph-level aborts](#106-graph-level-aborts)
+- [10.7 Completion](#107-completion)
+- [10.8 Worker handoff and independent review](#108-worker-handoff-and-independent-review)
+- [10.9 Change scope](#109-change-scope)
+
 ## 10.1 Node contract
 
 Every node declares:

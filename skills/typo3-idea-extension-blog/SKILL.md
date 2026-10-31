@@ -5,7 +5,7 @@ compatibility: "TYPO3 14.3 LTS (^14.3), optional 13.4 fallback; PHP 8.2 floor, 8
 metadata:
   skill_type: preference
   version: "1.0.0"
-  related_skills: "grill-me, firecrawl, typo3-v14-reference, typo3-testing, webconsulting-create-documentation"
+  related_skills: "typo3-v14-reference, typo3-testing, webconsulting-create-documentation"
   origin: "webconsulting"
 license: "MIT / CC-BY-SA-4.0"
 ---

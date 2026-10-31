@@ -2,6 +2,12 @@
 
 Full narration script from the T3 Monitoring product tour, plus guidelines for writing new narration.
 
+## Contents
+
+- [Complete Script](#complete-script)
+- [The Prompt](#the-prompt)
+- [Writing Guidelines](#writing-guidelines)
+
 ## Complete Script
 
 Scene durations are **driven by audio length** (not hardcoded). The generate script

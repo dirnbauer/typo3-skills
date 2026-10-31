@@ -5,6 +5,18 @@ examples, not a database seed or proof of legal compliance. Create the form and 
 backend; adapt existing project provisioning only through an authorized DataHandler workflow.
 Keep stored values stable across translations.
 
+## Contents
+
+- [Other details](#other-details)
+- [Business details with OR](#business-details-with-or)
+- [Checkbox-dependent delivery fieldset](#checkbox-dependent-delivery-fieldset)
+- [Two prerequisites with AND](#two-prerequisites-with-and)
+- [Integer threshold](#integer-threshold)
+- [Multistep with conditional fields and pages](#multistep-with-conditional-fields-and-pages)
+- [Custom rule operator (v14 fork only)](#custom-rule-operator-v14-fork-only)
+- [Programmatic rule payload](#programmatic-rule-payload)
+- [Browser acceptance test](#browser-acceptance-test)
+
 ## Other details
 
 For select marker `category`, configure editor options:

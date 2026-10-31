@@ -2,6 +2,14 @@
 
 WCAG 2.2 AA requires all active Level A and Level AA success criteria. This base list contains 55 active checkpoints: 31 Level A and 24 Level AA. 4.1.1 Parsing is included only as a legacy helper in the JSON/YAML data because WCAG 2.2 removed it.
 
+## Contents
+
+- [Perceivable](#perceivable)
+- [Operable](#operable)
+- [Understandable](#understandable)
+- [Robust](#robust)
+- [Legacy helper](#legacy-helper)
+
 ## Perceivable
 
 ### 1.1 Text Alternatives
