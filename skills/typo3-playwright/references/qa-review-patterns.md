@@ -4,6 +4,15 @@ Use this reference for a reported defect or a bounded review of an existing jour
 Return findings and evidence to the caller; keep its deadline, retry budget and closure owner.
 This reference adds no installation, deployment, publication or application-fix authority.
 
+## Contents
+
+- [Reproduce before changing the test](#reproduce-before-changing-the-test)
+- [Check requirements and test quality separately](#check-requirements-and-test-quality-separately)
+- [Prove that the assertion discriminates](#prove-that-the-assertion-discriminates)
+- [Order by risk; retain the coverage contract](#order-by-risk-retain-the-coverage-contract)
+- [Handover](#handover)
+- [Source notes and thanks](#source-notes-and-thanks)
+
 ## Reproduce before changing the test
 
 Record the observed build, approved local origin, fixture, role, language, browser, viewport,

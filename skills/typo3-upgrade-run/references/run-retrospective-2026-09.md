@@ -1,5 +1,14 @@
 # Fleet upgrade retrospective — 2026-09-05
 
+## Contents
+
+- [Scope and evidence](#scope-and-evidence)
+- [Projects, results and remaining evidence gaps](#projects-results-and-remaining-evidence-gaps)
+- [Latest concrete measurements and their limits](#latest-concrete-measurements-and-their-limits)
+- [Problem → control → owner](#problem--control--owner)
+- [What else belongs where](#what-else-belongs-where)
+- [Skill maintenance and attribution](#skill-maintenance-and-attribution)
+
 ## Scope and evidence
 
 Read-only audit of local project Git histories, current Composer locks, `.typo3-update` state,

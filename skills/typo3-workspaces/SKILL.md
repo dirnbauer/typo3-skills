@@ -4,7 +4,7 @@ description: "Lets TYPO3 editors prepare and hold finished content before it goe
 compatibility: "TYPO3 14.x"
 metadata:
   skill_type: preference
-  version: "2.0.0"
+  version: "2.1.0"
   origin: "webconsulting"
 license: "MIT / CC-BY-SA-4.0"
 ---
@@ -12,32 +12,30 @@ license: "MIT / CC-BY-SA-4.0"
 
 > Source: https://github.com/dirnbauer/webconsulting-skills
 
-> **Compatibility:** TYPO3 v14.x
-> All code examples in this skill are designed to work on TYPO3 v14.
+Workspaces let editors prepare, review and publish content without touching the live site. Code
+examples target TYPO3 v14; workspace API facts were checked against `typo3/cms-workspaces` 14.3.10.
 
-> **TYPO3 API First:** Always use TYPO3's built-in APIs, core features, and established conventions before creating custom implementations. Do not reinvent what TYPO3 already provides. Always verify that the APIs and methods you use exist and are not deprecated in TYPO3 v14 by checking the official TYPO3 documentation.
+## Rules
 
-## Sources
-
-This skill is based on 17 authoritative sources:
-
-1. [TYPO3 Workspaces Extension Docs](https://docs.typo3.org/c/typo3/cms-workspaces/main/en-us/Index.html)
-2. [Versioning (Workspaces Extension)](https://docs.typo3.org/c/typo3/cms-workspaces/main/en-us/Administration/Versioning/Index.html)
-3. [Creating a Custom Workspace](https://docs.typo3.org/c/typo3/cms-workspaces/main/en-us/Administration/CustomWorkspace/Index.html)
-4. [Configuration Options (Workspaces)](https://docs.typo3.org/c/typo3/cms-workspaces/main/en-us/Administration/Configuration/Index.html)
-5. [PSR-14 Events (Workspaces)](https://docs.typo3.org/c/typo3/cms-workspaces/main/en-us/Events/Index.html)
-6. [Versioning & Workspaces (TYPO3 Explained / Core API)](https://docs.typo3.org/m/typo3/reference-coreapi/main/en-us/ApiOverview/Workspaces/Index.html)
-7. [TCA versioningWS Reference](https://docs.typo3.org/m/typo3/reference-tca/main/en-us/Ctrl/Index.html#confval-ctrl-versioningws)
-8. [Restriction Builder (TYPO3 Explained / Doctrine DBAL)](https://docs.typo3.org/m/typo3/reference-coreapi/main/en-us/ApiOverview/Database/DoctrineDbal/RestrictionBuilder/Index.html)
-9. [b13 Blog: The Elegant Efficiency of TYPO3 Overlays (Benni Mack)](https://b13.com/blog/mastering-localization-and-content-staging)
-10. [Scheduler Tasks (Workspaces)](https://docs.typo3.org/c/typo3/cms-workspaces/main/en-us/Administration/Scheduler/Index.html)
-11. [Users Guide (Workspaces)](https://docs.typo3.org/c/typo3/cms-workspaces/main/en-us/UsersGuide/Index.html)
-12. [TYPO3-CORE-SA-2025-022: Information Disclosure in Workspaces Module](https://typo3.org/security/advisory/typo3-core-sa-2025-022)
-13. [Localized Content Guide](https://docs.typo3.org/m/typo3/guide-frontendlocalization/main/en-us/LocalizedContent/Index.html)
-14. [File Collections (TYPO3 Explained)](https://docs.typo3.org/m/typo3/reference-coreapi/main/en-us/ApiOverview/Fal/Collections/Index.html)
-15. [FAL Database Architecture](https://docs.typo3.org/m/typo3/reference-coreapi/main/en-us/ApiOverview/Fal/Architecture/Database.html)
-16. [Forge Bug #60343: sys_file_metadata does not recognize workspace](https://forge.typo3.org/issues/60343)
-17. [Forge Feature #97923: Combined folder_identifier field for sys_file_collection](https://forge.typo3.org/issues/97923)
+- **Files are not versioned.** An uploaded or overwritten file in `fileadmin/` is live in every
+  workspace at once. Upload new files under new, non-guessable names instead of overwriting, and
+  never rely on "not published yet" to keep a document confidential. See section 2.
+- **Folder-based file collections show the live folder.** Prefer static collections when workspace
+  isolation matters. See section 2a.
+- **Query so drafts resolve.** Backend code applies `BackendUtility::workspaceOL()`, frontend code
+  relies on `WorkspaceRestriction` plus `PageRepository::versionOL()`; load the query migration
+  reference before changing a repository or QueryBuilder call.
+- **Publish and discard through DataHandler**: the `version` command with `action => 'publish'`
+  and `swapWith` set to the workspace version uid, or the v14 `discard` command on the versioned uid.
+  Never move workspace rows by SQL.
+- **Set `versioningWS` explicitly on every table that editors change in a workspace**, inline child
+  tables included (#106821: a missing flag on a child table logs a deprecation now and becomes a
+  hard requirement in v15).
+- **`versioningWS_alwaysAllowLiveEdit` only works on tables without `versioningWS`.** Since a 14.3 patch
+  after 14.3.7 (#106077, present in 14.3.9) the combination is removed during TCA migration with a deprecation entry, and records of
+  workspace-aware tables are always versioned.
+- **Grant LIVE workspace access explicitly** to the users and groups that need it; it is not
+  implied.
 
 ## 1. Core Concepts
 
@@ -47,7 +45,7 @@ Workspaces allow editors to prepare content changes **without affecting the live
 
 There are two types:
 
-- **LIVE workspace** (ID=0): The default state. Every change is immediately visible. Access must be **explicitly granted** to backend users/groups.
+- **LIVE workspace** (ID=0): The default state. Every change is immediately visible. Access is granted explicitly to backend users or groups.
 - **Custom workspaces** (ID>0): Safe editing environments. Changes are versioned, previewable, and go through stages before going live.
 
 ### How Versioning Works (Database Level)
@@ -92,9 +90,9 @@ The `uid` of the live record is **always preserved** during overlay -- this keep
 - TYPO3 v14 still accepts DataHandler `version` commands with **`action => 'publish'`** (preferred) or **`action => 'swap'`** (alias handled the same as publish in `DataHandlerHook`). The parameter key for the workspace version UID remains **`swapWith`**, not `uid`.
 - Do not rely on historic **bidirectional workspace “swap modes”** on `sys_workspace` (removed in v11, #92206) — that is separate from the `swap` **keyword** in cmdmaps.
 
-## 2. CRITICAL: File/FAL Limitation
+## 2. File/FAL limitation
 
-> **Files (FAL) are NOT versioned.** This is the single most important limitation of TYPO3 Workspaces.
+> **Files (FAL) are not versioned.** This is the most consequential limitation of TYPO3 Workspaces.
 > See also Section 2a below for the additional **file collection** limitation (folder-based collections).
 
 ### What This Means
@@ -106,7 +104,7 @@ The `uid` of the live record is **always preserved** during overlay -- this keep
 
 ### The Predictable Filename Security Problem
 
-**Scenario:** An editor creates a workspace version of a page replacing `geschaeftsbericht2024.pdf` with `geschaeftsbericht2025.pdf`. The workspace is NOT published yet. However:
+**Scenario:** An editor creates a workspace version of a page replacing `geschaeftsbericht2024.pdf` with `geschaeftsbericht2025.pdf`. The workspace is not published yet. However:
 
 1. The new PDF is uploaded to `fileadmin/` immediately (files are live!)
 2. An external person guesses the URL by incrementing the year
@@ -130,7 +128,7 @@ fileadmin/reports/gb-a8f3e2b1c9d4.pdf
 
 ```php
 // config/system/settings.php
-// Use a private storage that is NOT publicly accessible
+// Use a private storage that is not publicly accessible
 // Deliver files programmatically via a controller
 ```
 
@@ -157,15 +155,15 @@ location /fileadmin/confidential/ {
 
 **5. Use separate file references per workspace version:**
 
-Upload the new file with a different name. Do NOT overwrite the existing file. The workspace version of the content element references the new file, the live version keeps the old one. Upon publishing, both files exist but only the new one is referenced.
+Upload the new file with a different name instead of overwriting the existing file. The workspace version of the content element references the new file, the live version keeps the old one. Upon publishing, both files exist but only the new one is referenced.
 
 ### Rules for Workspace-Safe File Handling
 
-- **NEVER** overwrite files that are used in content elements across workspaces
-- **ALWAYS** upload new files with unique names when preparing workspace content
-- **NEVER** rely on "the page is not published yet" to protect file confidentiality
-- **CONSIDER** EXT:secure_downloads for any confidential documents
-- **AUDIT** `fileadmin/` for files with predictable naming patterns
+- Do not overwrite files that content elements use: the change reaches every workspace and live at once.
+- Upload new files with unique names when preparing workspace content.
+- Do not rely on "the page is not published yet" to protect a file: its URL is reachable on upload.
+- Use EXT:secure_downloads (or a non-public storage) for confidential documents.
+- Audit `fileadmin/` for files with predictable naming patterns.
 
 ## 2a. File Collections and Workspaces
 
@@ -178,7 +176,7 @@ Upload the new file with a different name. Do NOT overwrite the existing file. T
 | `type` value | Resolution mechanism | Database relations involved |
 |---|---|---|
 | `static` (0) | `sys_file_reference` rows (`tablenames='sys_file_collection'`, `fieldname='files'`) | One `sys_file_reference` row per file |
-| `folder` (1) | `folder_identifier` string (e.g. `1:/user_upload/gallery/`) | **None** -- no join table, no reference rows |
+| `folder` (1) | `folder_identifier` string (e.g. `1:/user_upload/gallery/`) | None -- no join table, no reference rows |
 | `category` (2) | `category` uid resolved via `sys_category_record_mm` | MM table (handled via parent record overlay) |
 
 The TCA for `sys_file_collection` has `versioningWS => true`. This means the **collection record itself** gets workspace versions with `t3ver_*` fields. However, the record-level versioning only versions the fields stored in `sys_file_collection` -- it does **not** version the files that the collection resolves.
@@ -188,7 +186,7 @@ The TCA for `sys_file_collection` has `versioningWS => true`. This means the **c
 | Collection Type | Record versioned? | File binding versioned? | Physical files versioned? | Workspace-safe? |
 |---|---|---|---|---|
 | **Static** | Yes | Yes (`sys_file_reference` has `versioningWS = true`) | No | Partially safe |
-| **Folder-based** | Yes (record only) | **No** -- no DB binding exists | No | **Not safe** |
+| **Folder-based** | Yes (record only) | No -- no DB binding exists | No | **Not safe** |
 | **Category-based** | Yes | Partially (category MM handled via parent overlay) | No | Partially safe |
 
 ### Why Folder-Based Collections Break Workspace Isolation
@@ -218,7 +216,7 @@ Use `type=static` instead of `type=folder`. The file-to-collection binding is a 
 
 For folder-based collections, create a new folder for the workspace change (e.g. `gallery-v2/`) and change the `folder_identifier` in the workspace version of the collection record. The live version still points to the original folder.
 
-**3. Do NOT modify shared folder contents while workspace drafts reference them:**
+**3. Leave shared folder contents unchanged while workspace drafts reference them:**
 
 If a folder-based collection is used in workspace content, avoid adding or removing files from that folder until the workspace is published.
 
@@ -259,11 +257,11 @@ final class CleanupOldCollectionFolderListener
 
 ### Rules for Workspace-Safe File Collections
 
-- **PREFER** static collections (`type=static`) over folder-based when workspaces are used
-- **NEVER** add or remove files from a folder that is referenced by a folder-based collection in an unpublished workspace
-- **USE** separate folders per workspace version if folder-based collections are required
-- **DOCUMENT** for editors that folder-based collections show live folder contents regardless of workspace state
-- **TEST** file collection behavior in workspace preview before relying on it for editorial workflows
+- Prefer static collections (`type=static`) over folder-based ones when workspaces are used.
+- Do not add or remove files in a folder that a folder-based collection in an unpublished workspace references; the change is live immediately.
+- Use separate folders per workspace version if folder-based collections are required.
+- Tell editors that folder-based collections show live folder contents regardless of workspace state.
+- Test file collection behavior in workspace preview before relying on it for editorial workflows.
 
 ## 3. Installation & Setup Checklist
 
@@ -318,17 +316,17 @@ Use this checklist to verify your workspace setup is complete:
 #### Tables (TCA)
 
 - [ ] All custom extension tables have `'versioningWS' => true` in `$GLOBALS['TCA'][<table>]['ctrl']`
-- [ ] Tables that must NOT be versioned have `'versioningWS' => false`
-- [ ] Tables requiring live-editing in workspace have `'versioningWS_alwaysAllowLiveEdit' => true`
+- [ ] Tables that stay unversioned have `'versioningWS' => false`
+- [ ] Unversioned tables that editors change while in a workspace have `'versioningWS_alwaysAllowLiveEdit' => true` (ignored on tables with `versioningWS` from 14.3.9 at the latest, #106077)
 - [ ] `t3ver_*` database columns exist (auto-created when `versioningWS = true`)
 
 > **Inline / IRRE child tables (Deprecation [#106821](https://docs.typo3.org/c/typo3/cms-core/main/en-us/Changelog/14.0/Deprecation-106821-WorkspaceAwareInlineChildTablesAreEnforced.html)):** If `versioningWS` is missing on a child table, Core **logs a deprecation** and may **auto-add** the flag at TCA build time — it does **not** throw a hard error. Set the flag explicitly in TCA; it will become a **hard requirement in v15**.
 
 #### Scheduler Tasks
 
-- [ ] "Workspaces auto-publication" task created and enabled
-- [ ] "Workspaces cleanup preview links" task created and enabled
-- [ ] Cron frequency is appropriate (e.g., every 15 minutes)
+- [ ] "Execute console commands" task running `workspace:autopublish` created and enabled (or a cron entry for `vendor/bin/typo3 workspace:autopublish`)
+- [ ] "Execute console commands" task running `cleanup:previewlinks` created and enabled
+- [ ] Cron frequency is appropriate (e.g., every 15 minutes); `typo3-scheduler-jobs` owns the full Scheduler setup
 
 #### TSconfig
 
@@ -338,6 +336,28 @@ Use this checklist to verify your workspace setup is complete:
 - [ ] `options.workspaces.previewPageId` set for custom record preview pages
 
 
-## Detailed Reference
+## References
 
-Read [the full guide](references/full-guide.md) when the task needs detailed examples, long templates, troubleshooting matrices, appendices, or sections not included above. Keep this file unloaded for narrow tasks so the skill follows progressive disclosure.
+Load only the file the current task needs:
+
+- [Migrating queries to workspace-aware queries](references/06-migrating-queries-without-workspaces-to-with-workspaces.md):
+  when your own QueryBuilder, Extbase or legacy query must return drafts correctly.
+- [Making extensions workspace-compatible](references/05-making-extensions-workspace-compatible.md):
+  when adding workspace support to custom tables, backend modules or plugins.
+- [Debugging and troubleshooting](references/08-debugging-and-troubleshooting.md) and the
+  [diagnostics and repair playbook](references/09a-workspace-diagnostics-and-repair-playbook.md):
+  when a preview shows live content, publishing loses references or workspace rows look broken.
+- [DataHandler setup script](references/04-datahandler-setup-script.md): when creating workspaces,
+  stages or test data from code.
+- [Translations with workspaces](references/07-translations-with-workspaces.md): when localized
+  records are drafted, previewed or published.
+- [Testing workspace support](references/09-testing-workspace-support.md): when writing functional
+  tests for workspace behavior.
+- [PSR-14 events reference](references/11-psr-14-events-reference.md): when hooking into publishing,
+  previews or the Workspaces module.
+- [v14-only changes](references/v14-only-changes.md): when code written for v12 or v13 meets v14
+  workspace changes.
+- [Best practices](references/10-best-practices.md) and [related skills](references/related-skills.md):
+  when planning an editorial workflow or routing to a sibling skill.
+- [Credits, attribution and sources](references/credits-and-attribution.md): when citing the 17
+  documentation pages, advisories and Forge issues this skill is based on.

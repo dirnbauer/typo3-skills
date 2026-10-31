@@ -693,7 +693,8 @@ Composer metadata is the source of truth, and v15 no longer evaluates the file.
 
 **Fix.** For packages local to `packages/`, remove `ext_emconf.php` and declare
 `type: typo3-cms-extension` plus `extra.typo3/cms.extension-key` in `composer.json`. Retain the file
-only for TER/Tailor publication or Classic mode; in that loader context keep `$EM_CONF[$_EXTKEY]`
+only for TER/Tailor publication or an extension that still installs on v13 or older (v14 Classic mode
+reads `composer.json` since 14.2, Feature-108345); in that loader context keep `$EM_CONF[$_EXTKEY]`
 and its TER-compatible file restrictions. Do not hardcode the key merely to silence analysis.
 
 ---

@@ -4,6 +4,15 @@ Read during intake scheduling and before running concurrent proof jobs. Apply th
 newly initialized graph and pinned harness. Never rewrite an existing graph, self-test lock or
 Baseline A to retrofit concurrency. Old graphs without `shared_proof_reads` retain exclusive freezes.
 
+## Contents
+
+- [Graph jobs and browser workers are different](#graph-jobs-and-browser-workers-are-different)
+- [Dispatch what the graph offers](#dispatch-what-the-graph-offers)
+- [One machine budget](#one-machine-budget)
+- [Calibrate once, reuse the evidence](#calibrate-once-reuse-the-evidence)
+- [Independent implementation preparation](#independent-implementation-preparation)
+- [Validation and sources](#validation-and-sources)
+
 ## Graph jobs and browser workers are different
 
 `graph-next` and `graph-forecast` use the same resource-claim model. A new graph lets frozen readers

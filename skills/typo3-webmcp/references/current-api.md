@@ -1,7 +1,17 @@
 # Current WebMCP API and product boundaries
 
-Source snapshot: 2026-08-28. WebMCP is a living W3C Community Group proposal and Chrome experiment;
-recheck the primary sources whenever implementation or release status matters.
+Source snapshot: 2026-08-28, rechecked 2026-10-31 against the Draft Community Group Report of
+2026-10-27. WebMCP is a living W3C Community Group proposal and Chrome experiment; recheck the
+primary sources whenever implementation or release status matters.
+
+Confirmed in the 2026-10-27 draft: `document.modelContext` (a `Document` attribute) with
+`registerTool()`, `getTools()` and `executeTool()`; unregistration by aborting the `signal`
+registration option (no public `unregisterTool()`, `provideContext()` or `clearContext()`); the
+annotations `readOnlyHint`, `untrustedContentHint` and `consequentialHint` (default false; marks
+significant or non-reversible actions so a client can require confirmation); `exposedTo` origin
+lists, which also need iframe `allow="tools"` delegation and the caller's `fromOrigins`; and the
+`tools` Permissions Policy feature. The declarative form attributes below are documented by Chrome,
+not in the draft text read on that date.
 
 ## Current surface
 

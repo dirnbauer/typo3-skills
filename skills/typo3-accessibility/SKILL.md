@@ -1,6 +1,6 @@
 ---
 name: "typo3-accessibility"
-description: "Accessible markup patterns for TYPO3 v14: skip links, landmark regions, heading structure, keyboard and tab order, visible focus rings and outlines, ARIA for accordions, dropdowns and modals, accessible form labels and error messages, alt text and colour contrast, in Fluid templates, PHP helpers and vanilla JavaScript widgets - plus a manual go-live checklist to verify by hand before launch. Use when a screen reader such as NVDA or VoiceOver does not announce something as expandable, checked or invalid, when a keyboard or focus problem needs the correct markup, or when reviewing template and element code against WCAG 2.2 AA. Companion skill for automated scanning: typo3-wcag22-aa-agentic."
+description: "Writes and fixes accessible markup patterns for TYPO3 v14: skip links, landmark regions, heading structure, keyboard and tab order, visible focus rings and outlines, ARIA for accordions, dropdowns and modals, accessible form labels and error messages, alt text and colour contrast, in Fluid templates, PHP helpers and vanilla JavaScript widgets - plus a manual go-live checklist to verify by hand before launch. Use when a screen reader such as NVDA or VoiceOver does not announce something as expandable, checked or invalid, when a keyboard or focus problem needs the correct markup, or when reviewing template and element code against WCAG 2.2 AA. Companion skill for automated scanning: typo3-wcag22-aa-agentic."
 metadata:
   skill_type: preference
   version: "1.0.0"
@@ -12,13 +12,30 @@ license: "MIT / CC-BY-SA-4.0"
 
 > Source: https://github.com/dirnbauer/webconsulting-skills
 
-> **Compatibility:** TYPO3 **v14.x only**. Older cores are out of scope for this collection.
+## Rules
 
-> **TYPO3 API First:** Always use TYPO3's built-in APIs, Fluid ViewHelpers, and core
-> features before adding custom markup. Verify methods exist in TYPO3 v14.
+- Target TYPO3 v14 (`^14.3`). Older cores are out of scope for this collection.
+- Use TYPO3's built-in APIs, Fluid ViewHelpers and Core features before custom markup, and
+  check every class, ViewHelper and argument against the installed v14 source.
+- Prefer native HTML over ARIA; add ARIA only where no native element carries the semantics.
+- Solve with Fluid partials, PHP middleware and vanilla JavaScript; this skill avoids TypoScript.
+- A passing automated scan is evidence, not a WCAG conformance claim.
+- This skill owns the correct markup. Scanning a URL with Playwright and axe, a CI baseline or the
+  Erklaerung zur Barrierefreiheit belong to `typo3-wcag22-aa-agentic`.
 
-> **PHP & JS over TypoScript:** This skill provides PHP middleware, Fluid partials, and
-> vanilla JavaScript solutions. TypoScript examples are avoided; use PHP-based approaches.
+## References: when to load
+
+Load one file only when the task needs it:
+
+- [PHP middleware and helpers](references/03-php-accessibility-middleware-and-helpers.md): PSR-15 language-attribute middleware, alt-text validation on save, an `sr-only` ViewHelper.
+- [JavaScript widgets](references/04-javascript-accessible-widgets.md): keyboard handlers for accordion, tabs and dialogs, reduced motion, a live-region announcer.
+- [CSS focus and contrast](references/05-css-focus-and-contrast-essentials.md): focus rings, `prefers-reduced-motion`, contrast tokens.
+- [TYPO3-specific configuration](references/06-typo3-specific-configuration.md): TCA that requires alt text, header layouts, EXT:form markup, CSP for focus styles.
+- [Testing and tools](references/07-testing-and-tools.md): before running `scripts/wcag22_audit.cjs` or writing an audit report.
+- [Accessibility extensions](references/08-accessibility-extensions.md): when asked which TER extensions help.
+- [WCAG 2.2 quick reference](references/09-wcag-2-2-quick-reference.md): when mapping a finding to a success criterion.
+- [Anti-patterns](references/10-anti-patterns-flag-these-in-reviews.md): when reviewing template or element code.
+- [v14-only changes](references/v14-only-accessibility-changes.md): backend combobox, native `<dialog>` modals, Fluid 5 typing.
 
 ## 1. Accessibility Checklist (Go-Live Gate)
 
@@ -50,7 +67,7 @@ Run through this checklist before every deployment. Mark items as you fix them.
 - [ ] All interactive elements reachable via Tab
 - [ ] Focus order matches visual order
 - [ ] Visible focus indicator on all interactive elements (`:focus-visible`)
-- [ ] No focus traps (except modals — which must trap correctly)
+- [ ] No focus traps (except modals, which trap focus until closed)
 - [ ] Escape closes modals/overlays and returns focus to trigger
 - [ ] Custom widgets have correct keyboard handlers
 
@@ -74,10 +91,10 @@ Run through this checklist before every deployment. Mark items as you fix them.
 - [ ] `prefers-reduced-motion` respected (CSS and JS)
 - [ ] No content flashes more than 3 times per second
 - [ ] Touch targets meet **WCAG 2.2 AA 2.5.8** (minimum **24×24 CSS pixels**); use **44×44** as a stricter comfort target where feasible
-- [ ] `user-scalable=no` is NOT set in viewport meta
+- [ ] `user-scalable=no` is not set in viewport meta
 
 ### TYPO3-Specific
-- [ ] Backend: alt text fields are filled for all images in File List
+- [ ] Backend: alt text fields are filled for all images in the Media module (File List before v14)
 - [ ] Backend: content elements have descriptive headers (or `header_layout = 100` for hidden)
 - [ ] Backend: page properties have proper `<title>` and `description`
 - [ ] Fluid templates use `<f:link.page>` / `<f:link.typolink>` (not `<a>` with manual hrefs)
@@ -104,7 +121,7 @@ Use the detailed procedure in [Testing & Tools](references/07-testing-and-tools.
 
 ```html
 <!-- EXT:site_package/Resources/Private/Layouts/Default.html -->
-<!-- Layout files must NOT contain <f:layout> — that tag belongs in Templates to select a layout. -->
+<!-- Layout files do not contain <f:layout>; that tag belongs in Templates to select a layout. -->
 <f:render section="Main" />
 ```
 

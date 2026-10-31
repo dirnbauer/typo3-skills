@@ -21,6 +21,12 @@ node scripts/backend-permissions-audit.mjs --ddev-dir . \
 
 ---
 
+## Contents
+
+- [The three things an upgrade actually breaks](#the-three-things-an-upgrade-actually-breaks)
+- [Admin accounts](#admin-accounts)
+- [Then log in as a real editor](#then-log-in-as-a-real-editor)
+
 ## The three things an upgrade actually breaks
 
 ### 1. Content types in use that the editor group does not allow

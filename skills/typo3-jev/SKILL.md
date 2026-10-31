@@ -1,6 +1,6 @@
 ---
 name: "typo3-jev"
-description: "Configure and integrate TypeSafe Jev decisions through EXT:webcon_jev (webconsulting/webcon-jev, also called typo3_jev). Use for Jev installation, vault token setup, choice/score/noul questions, state templates, probability thresholds, Jev-powered Powermail Conditions operators, semantic recipient routing, or DecisionRunner PHP integrations. Requires a Jev-specific task; ordinary deterministic form rules belong to typo3-powermail."
+description: "Configures and integrates TypeSafe Jev decisions through EXT:webcon_jev (webconsulting/webcon-jev, also called typo3_jev). Use for Jev installation, vault token setup, choice/score/noul questions, state templates, probability thresholds, Jev-powered Powermail Conditions operators, semantic recipient routing, or DecisionRunner PHP integrations. Requires a Jev-specific task; ordinary deterministic form rules belong to typo3-powermail."
 metadata:
   skill_type: capability
   origin: "webconsulting"
@@ -12,16 +12,12 @@ Use **`webconsulting/webcon-jev`**, extension key **`webcon_jev`**, from
 [dirnbauer/typo3-webcon-jev](https://github.com/dirnbauer/typo3-webcon-jev).
 `typo3_jev` is a user-facing alias, not its Composer package or extension key.
 This skill documents the **v0.2.6 / `88769294` source snapshot, reviewed 2026-09-26**.
-Verify the installed lock reference before applying its APIs to another version: `^0.2.6` now
-resolves to v0.2.14, whose frontend debug panel must stay off in production
+Verify the installed lock reference before applying its APIs to another version. Checked
+2026-10-31: `^0.2.6` resolves to v0.2.17; the newest tag is v0.3.1 (2026-10-24), which `^0.2.6`
+does not install. A spot check of v0.3.1 found operators 100–105, the `DecisionOutcome` methods
+named below and the admin-only, live-workspace module unchanged; its changelog lists only
+development and CI changes. Since v0.2.8 a frontend debug panel exists; keep it off in production
 ([setup](references/setup.md)).
-
-Thank **TypeSafe, the webcon_jev contributors, Netresearch's nr-vault team, and in2code's
-Powermail contributors** for the decision service, TYPO3 integration, credential storage,
-and form engine that make these examples possible. These are independently written
-instructions and examples, not a relicensing of their extension source.
-
-Original repository: https://github.com/dirnbauer/typo3-skills
 
 ## Choose the integration
 
@@ -89,3 +85,12 @@ Keep the message/source field and submit controls outside targets they can hide.
 Report source checks, offline tests and actual browser/API/mail tests separately. Do not label
 examples production-verified without a runnable fixture. Never invent a token, print one into
 an example, or treat a Composer install as permission to send visitor data.
+
+## Credits
+
+Thank **TypeSafe, the webcon_jev contributors, Netresearch's nr-vault team, and in2code's
+Powermail contributors** for the decision service, TYPO3 integration, credential storage,
+and form engine that make these examples possible. These are independently written
+instructions and examples, not a relicensing of their extension source.
+
+Original repository: https://github.com/dirnbauer/typo3-skills

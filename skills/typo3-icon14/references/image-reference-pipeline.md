@@ -5,6 +5,14 @@ including simple module, extension, plugin, record and action glyphs. A coherent
 family sheet can guide related icons. Follow the host tool's rules for separate
 asset requests. Registration-only changes and unchanged Core reuse need no generation.
 
+## Contents
+
+- [Match the actual backend](#match-the-actual-backend)
+- [Provider selection and fallback for every icon](#provider-selection-and-fallback-for-every-icon)
+- [API helper](#api-helper)
+- [Verified API references](#verified-api-references)
+- [Inspect, redraw and verify](#inspect-redraw-and-verify)
+
 ## Match the actual backend
 
 Inspect two or three neighboring icons and the matching TYPO3.Icons catalog.

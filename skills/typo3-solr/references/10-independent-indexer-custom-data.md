@@ -2,9 +2,16 @@
 
 Continues `typo3-solr` from [full guide](full-guide.md).
 
+## Contents
+
+- [Indexer service](#indexer-service)
+- [CLI Command Wrapper](#cli-command-wrapper)
+
 ## 10. Independent Indexer (Custom Data)
 
 For external data or when the RecordIndexer is not sufficient:
+
+### Indexer service
 
 ```php
 <?php

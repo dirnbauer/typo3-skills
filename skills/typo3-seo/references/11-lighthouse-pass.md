@@ -10,6 +10,13 @@ of 3 runs): Performance 72–83 → 88–96, Accessibility 79–89 → 100, Best
 SEO 85–92 → 100, Agentic Browsing 33–67 → 100. Mobile LCP 4.2–14.4 s → 2.6–3.6 s; page weight of
 the home page 1.3 MB → 0.57 MB. Desktop 88–97 → 99–100.
 
+## Contents
+
+- [Measure the right thing first](#measure-the-right-thing-first)
+- [Always — every site](#always--every-site)
+- [Check per site — found on one site, may not apply elsewhere](#check-per-site--found-on-one-site-may-not-apply-elsewhere)
+- [Verify before deploying](#verify-before-deploying)
+
 ## Measure the right thing first
 
 1. **Same Lighthouse version as the client**, mobile and desktop, at least 3 runs per URL, median,

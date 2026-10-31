@@ -2,6 +2,16 @@
 
 Use this reference when a TYPO3/Fluid project must follow a shadcn/create preset.
 
+## Contents
+
+- [Rule](#rule)
+- [Project CLI Context](#project-cli-context)
+- [Scratch App](#scratch-app)
+- [Porting To TYPO3](#porting-to-typo3)
+- [Local Registry](#local-registry)
+- [Switching Presets](#switching-presets)
+- [shadcn/create Left-Nav Values](#shadcncreate-left-nav-values)
+
 ## Rule
 
 shadcn presets are build-time design-system inputs. They generate CSS variables, fonts, radius, icon-library settings, component class contracts, and registry metadata. A TYPO3 site should not fetch a preset dynamically at runtime. Generate or inspect the preset in a scratch app, then commit the resulting tokens and translated Fluid component classes.

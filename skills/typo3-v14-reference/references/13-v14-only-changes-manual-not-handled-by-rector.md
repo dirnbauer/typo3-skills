@@ -2,6 +2,24 @@
 
 Continues `typo3-v14-reference` from [full guide](full-guide.md).
 
+## Contents
+
+- [Extbase follows fallbackType [v14.3.6+]](#extbase-follows-fallbacktype-v1436)
+- [Fluid 5.0 Template Changes [v14 only]](#fluid-50-template-changes-v14-only)
+- [TypoScriptFrontendController Removed [v14 only]](#typoscriptfrontendcontroller-removed-v14-only)
+- [Backend Module Renaming [v14 only]](#backend-module-renaming-v14-only)
+- [Runtime TCA Modifications Forbidden [v14 only]](#runtime-tca-modifications-forbidden-v14-only)
+- [Plugin Subtypes Removed [v14 only]](#plugin-subtypes-removed-v14-only)
+- [EXT:form Hooks → PSR-14 Events [v14 only]](#extform-hooks--psr-14-events-v14-only)
+- [Frontend Asset Pipeline [v14 only]](#frontend-asset-pipeline-v14-only)
+- [New TCA Features [v14 only]](#new-tca-features-v14-only)
+- [New Fluid ViewHelpers [v14 only]](#new-fluid-viewhelpers-v14-only)
+- [Localization System [v14 only]](#localization-system-v14-only)
+- [New DataHandler Features [v14 only]](#new-datahandler-features-v14-only)
+- [v14.1 Features [v14.1+ only]](#v141-features-v141-only)
+- [v14.2 Features [v14.2+ only]](#v142-features-v142-only)
+- [New v14 Deprecations (removed in v15) — Not Yet Handled by Rector](#new-v14-deprecations-removed-in-v15--not-yet-handled-by-rector)
+
 ## 13. v14-Only Changes (Manual — Not Handled by Rector)
 
 > The following changes apply **exclusively to TYPO3 v14** and require **manual migration**.
@@ -66,7 +84,7 @@ ddev mysql -e "SELECT sys_language_uid, COUNT(*), SUM(l10n_parent > 0) FROM tx_n
 ```
 
 Then request every translated list page and a sample of detail URLs per language, before and after
-the update, and compare item counts and HTTP status codes (the [news count check](../../typo3-news-tags/SKILL.md#11-news-in-translated-languages-from-typo3-1436-fallbacktype)).
+the update, and compare item counts and HTTP status codes (the [news count check](../../typo3-news-tags/SKILL.md#translated-news-after-a-typo3-143-update)).
 
 **Options.** The owner decides per project, before the update reaches production:
 

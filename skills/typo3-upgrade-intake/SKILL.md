@@ -1,8 +1,8 @@
 ---
 name: typo3-upgrade-intake
 description: >-
-  Perform the read-only preflight for an orchestrated CMS transition: prove the selected
-  repository, local application runtime, database, fileadmin, site configuration and dated-dataset identity; inspect URL
+  Performs the read-only preflight for an orchestrated CMS transition: proves the selected
+  repository, local application runtime, database, fileadmin, site configuration and dated-dataset identity; inspects URL
   discovery, installed-extension compatibility, credential boundaries, backup readiness,
   risks and conditional routes. Use when preparing any mutation or when the selected dataset/runtime
   may be wrong. Produces evidence and routing decisions; never changes the
@@ -32,7 +32,7 @@ Start every node from `t3u node-brief --node <id>`; it carries the contract, rou
 | `extension-inventory` | Checklist items 4–7; flagged **R**: a second verifier reviews the resolutions |
 | `url-discovery` | Checklist item 3; a missing sitemap is `findings` → `sitemap-recovery` |
 | `identity-recovery` | Correct the identity evidence; never "fix" the site to match an assumption |
-| `data-recovery` | `scripts/pull-live-dataset.mjs` (read-only on the server): delete the local fileadmin first, then sync; snapshot before the import. A dataset usable only with named gaps (case-colliding or missing files, absent tables) closes `findings` |
+| `data-recovery` | `../typo3-upgrade-run/scripts/pull-live-dataset.mjs` (read-only on the server): delete the local fileadmin first, then sync; snapshot before the import. A dataset usable only with named gaps (case-colliding or missing files, absent tables) closes `findings` |
 | `dataset-acceptance-decision` | Name every gap and its effect on proof coverage, ask the owner, record the answer as an approval and cite it; `pass` (reviewed) re-runs `dataset-freshness` against the accepted gaps, `blocked` stops |
 | `sitemap-recovery` | Diagnose only; `not-applicable` (reviewed) routes to `degraded-discovery` |
 | `degraded-discovery` | Approved page-tree or crawl fallback with named coverage gaps |
@@ -152,7 +152,7 @@ plus the open question ([lean profile](../typo3-upgrade-run/references/graph-run
     write the selected-route runtime plan and run `t3u graph-forecast` before the baseline. A missing
     or non-fitting estimate blocks admission. The size-dependent 8/24/48h caps are not completion guarantees.
 14. Database health (`db-health-intake`): install the pinned `lolli/dbdoctor` (1.0.6 on a 12.4 source,
-    the exact 2.2.x on 13.4) with `--dev` in its own commit, run `scripts/db-health.mjs check`, then
+    the exact 2.2.x on 13.4) with `--dev` in its own commit, run `../typo3-upgrade-run/scripts/db-health.mjs check`, then
     `probe` for the full `(check, table, uid)` inventory, and record version and runtime. Classify every
     group as `pre-existing` or owner-approved for a fix, following the round-1 policy (record only, or
     fix approved groups before Baseline A). Never approve the 1.0.6 `…ParentLanguageDifferent` groups,

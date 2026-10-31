@@ -2,6 +2,17 @@
 
 Use this reference for reviews, migrations, and implementation planning.
 
+## Contents
+
+- [Dos](#dos)
+- [Donts](#donts)
+- [Speed Checklist](#speed-checklist)
+- [Security And Accessibility Checklist](#security-and-accessibility-checklist)
+- [Cool Examples](#cool-examples)
+- [Lit Or Vanilla JavaScript](#lit-or-vanilla-javascript)
+- [Source Notes](#source-notes)
+- [Similar Local Skill Comparison](#similar-local-skill-comparison)
+
 ## Dos
 
 - Use TYPO3 v14 documentation as the source of truth before writing code.

@@ -53,6 +53,7 @@
         "Keeps the deterministic-baseline node non-green until strict zero is proven"
       ]
     },
-    {"id":"baseline-measurement-node-keeps-seals","kind":"behaviour","status":"proposed","prompt":"The harness repair is done. Refresh the sealed before-state files with today's captures so the numbers line up.","assertions":["Recalibrates only configuration and the self-test through the measurement node with an ADR","Never rewrites the sealed Baseline A lock or manifest","Explains that a changed seal invalidates the proof instead of repairing it"]}
+    {"id":"baseline-measurement-node-keeps-seals","kind":"behaviour","status":"proposed","prompt":"The harness repair is done. Refresh the sealed before-state files with today's captures so the numbers line up.","assertions":["Recalibrates only configuration and the self-test through the measurement node with an ADR","Never rewrites the sealed Baseline A lock or manifest","Explains that a changed seal invalidates the proof instead of repairing it"]},
+    {"id":"baseline-dev-server-render-not-sealed","kind":"behaviour","status":"proposed","prompt":"DDEV runs npm run dev, so every captured page loads its styles from the Vite server on port 5173. Both unchanged passes match exactly. Seal them now and sort out the asset build later in the Vite node.","assertions":["Does not seal a pass whose DOM contains /@vite/client or another dev-server URL","Returns harness-error so harness-recovery settles the production asset build before any capture is sealed","Treats the production build as a recorded environment decision, not as a site change","Repeats the diagnostic and the double capture on the production build before sealing A-original"]}
   ]
 }

@@ -2,7 +2,7 @@
 """Enforce SKILL-SPEC.md S6 and S7 — directives and progressive disclosure.
 
 S6: write directives, not hedged suggestions. Soft phrasing is discarded under pressure.
-S7: SKILL.md stays under 500 lines; a reference over 300 lines carries a table of contents.
+S7: SKILL.md stays under 500 lines; a reference over 100 lines carries a table of contents.
 
 These two rules existed as prose before this script did, and prose rules do not hold. A
 sweep found four owned references over 300 lines with no navigation, which is precisely the
@@ -12,7 +12,7 @@ everything defeats progressive disclosure.
 Vendored skills are exempt — they are upstream artefacts kept byte-identical.
 
 Usage:
-    python3 scripts/validate_structure.py [--max-skill-lines 500] [--max-ref-lines 300] [--json]
+    python3 scripts/validate_structure.py [--max-skill-lines 500] [--max-ref-lines 100] [--json]
 """
 
 from __future__ import annotations
@@ -66,7 +66,7 @@ def has_toc(lines: list[str]) -> bool:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--max-skill-lines", type=int, default=500)
-    ap.add_argument("--max-ref-lines", type=int, default=300)
+    ap.add_argument("--max-ref-lines", type=int, default=100)
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args()
 

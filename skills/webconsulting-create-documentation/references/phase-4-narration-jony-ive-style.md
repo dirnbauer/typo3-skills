@@ -2,6 +2,15 @@
 
 Continues `webconsulting-create-documentation` from [full guide](full-guide.md).
 
+## Contents
+
+- [Voice characteristics](#voice-characteristics)
+- [Writing narration copy](#writing-narration-copy)
+- [Export the narration script (single source of truth)](#export-the-narration-script-single-source-of-truth)
+- [NarrationSubtitle component](#narrationsubtitle-component)
+- [Subtitle styling principles](#subtitle-styling-principles)
+- [When to update subtitles](#when-to-update-subtitles)
+
 ## Phase 4: Narration (Jony Ive Style)
 
 ### Voice characteristics

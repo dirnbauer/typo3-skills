@@ -1,5 +1,15 @@
 # Unattended controller contract
 
+## Contents
+
+- [Architecture](#architecture)
+- [Admission and prediction](#admission-and-prediction)
+- [Batch the owner decisions](#batch-the-owner-decisions)
+- [Prepare test accounts once](#prepare-test-accounts-once)
+- [Who runs the backend login journeys](#who-runs-the-backend-login-journeys)
+- [Work, recovery and safe resumption](#work-recovery-and-safe-resumption)
+- [Unattended terminal states](#unattended-terminal-states)
+
 ## Architecture
 
 The graph selects the next job; a worker solves that bounded job; deterministic tools judge the

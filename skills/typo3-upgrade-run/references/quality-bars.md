@@ -9,6 +9,17 @@ score is a *relative* signal — the improvement between two runs is the evidenc
 
 Contract B cannot start before the Contract A closure certificate exists.
 
+## Contents
+
+- [Contract A Lighthouse floors, decided at intake](#contract-a-lighthouse-floors-decided-at-intake)
+- [Loop 500 — Performance and Core Web Vitals](#loop-500--performance-and-core-web-vitals)
+- [Loop 510 — SEO and structured data](#loop-510--seo-and-structured-data)
+- [Loop 520 — Accessibility beyond automated-green](#loop-520--accessibility-beyond-automated-green)
+- [Loop 530 — Security posture](#loop-530--security-posture)
+- [Loop 540 — Media and cache](#loop-540--media-and-cache)
+- [Loop 550 — Code quality](#loop-550--code-quality)
+- [Loop 560 — Information architecture and content](#loop-560--information-architecture-and-content)
+
 ## Contract A Lighthouse floors, decided at intake
 
 The `lighthouse` closure check compares Contract A medians with no-regression floors, not with the

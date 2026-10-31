@@ -20,6 +20,29 @@ license: "MIT / CC-BY-SA-4.0"
 
 This skill provides comprehensive guidance on Austrian Impressum (legal notice) requirements for websites and electronic media, covering all company types (Gesellschaftsformen).
 
+## Rules
+
+- Build the text from the operator's actual company form and register data (Firmenbuch or ZVR
+  extract, GISA entry, UID). Never invent an FN, UID, court, capital figure or shareholder.
+- Austrian disclosure rests on ECG, UGB, GewO and MedienG. A German Impressum (DDG) does not carry
+  over by swapping the address: use [SKILL-GERMANY.md](./SKILL-GERMANY.md) for German entities and
+  [SKILL-EU.md](./SKILL-EU.md) for cross-border sites.
+- Decide first whether the site needs the short Offenlegung (§ 25 Abs 5 MedienG) or the full one;
+  load the [Offenlegung reference](references/05-oeffentliches-medium-full-offenlegungspflicht.md)
+  for the full case.
+- Check uncertain duties against the current text in RIS (ris.bka.gv.at) and say that the result
+  is not legal advice; send entity-specific doubts to a qualified Austrian legal professional.
+- Remove legacy EU ODR platform links; the platform closed on 2025-07-20.
+
+## References: when to load
+
+- [Offenlegung (§ 25 MedienG)](references/05-oeffentliches-medium-full-offenlegungspflicht.md):
+  when the site carries editorial content beyond self-presentation, or for the full template.
+- [Compliance details](references/compliance.md): when the task also covers privacy notice, cookie
+  consent, ODR/ADR wording or a full compliance checklist.
+- [Penalties and sources](references/penalties-and-sources.md): when the user asks about fines or
+  official sources.
+
 ---
 
 ## 1. Legal Framework Overview
@@ -32,7 +55,7 @@ This skill provides comprehensive guidance on Austrian Impressum (legal notice) 
 | § 24 MedienG | Mediengesetz (Impressum) | Media works | Up to €20,000 |
 | § 25 MedienG | Mediengesetz (Offenlegung) | Periodical media / public websites | Up to €20,000 |
 | Art. 13-14 DSGVO | Datenschutz-Grundverordnung | Privacy notice | Up to €20M or 4% |
-| § 4 DLG | Dienstleistungsgesetz | Service providers | Varies |
+| § 22 DLG | Dienstleistungsgesetz (information about the service provider; verified in RIS 2026-10-31) | Service providers | Varies |
 | ODR-VO (repealed) | Online Dispute Resolution | Platform discontinued 2025-07-20 (VO (EU) 2024/3228) | Remove legacy ODR links — keeping them is an Abmahnung risk |
 
 ---
@@ -85,7 +108,7 @@ Additional requirements for **Firmenbuch-registered companies** on all business 
 | Rechtsform | Legal form (GmbH, AG, OG, KG, etc.) |
 | Sitz | Registered seat (city) |
 | Firmenbuchnummer | FN number with registration court |
-| Firmenbuchgericht | Court where registered (e.g., "LG Wien") |
+| Firmenbuchgericht | Court where registered: Handelsgericht Wien in Vienna, otherwise the Landesgericht of the seat (e.g., "Landesgericht Linz"; Graz: Landesgericht für ZRS Graz) — verified 2026-10-31 |
 | Kapital | If voluntarily stated, disclose the relevant capital and any outstanding contributions required by § 14(2) UGB |
 | Liquidation | "in Liquidation" if applicable |
 
@@ -97,7 +120,7 @@ have uncertain entity-specific duties reviewed by a qualified Austrian legal pro
 
 ### 3.3 Gewerbeordnung (§ 63 GewO)
 
-For **trade businesses NOT in Firmenbuch**:
+For **trade businesses not registered in the Firmenbuch**:
 
 | Field | Description |
 |-------|-------------|

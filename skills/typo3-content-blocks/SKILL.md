@@ -1,6 +1,6 @@
 ---
 name: "typo3-content-blocks"
-description: "Defines what a TYPO3 block IS: its field definitions in config.yaml, and how fields nest into collections or repeatable children. Covers Content Blocks for elements, records, page types and file types as the single source of truth. Use when creating a new block, writing or debugging config.yaml and make:content-block output, migrating Mask or legacy fluid_styled_content while preserving existing records, fixing a block preview that renders blank in the backend, or working with IRRE, labels and friendsoftypo3/content-blocks behaviour. For visual design of blocks: typo3-shadcn-content-elements."
+description: "Defines what a TYPO3 block is: its field definitions in config.yaml, and how fields nest into collections or repeatable children. Covers Content Blocks for elements, records, page types and file types as the single source of truth. Use when creating a new block, writing or debugging config.yaml and make:content-block output, migrating Mask or legacy fluid_styled_content while preserving existing records, fixing a block preview that renders blank in the backend, or working with IRRE, labels and friendsoftypo3/content-blocks behaviour. For visual design of blocks: typo3-shadcn-content-elements."
 compatibility: "TYPO3 v14.3+ — `friendsoftypo3/content-blocks` 2.x (verify on [Packagist](https://packagist.org/packages/friendsoftypo3/content-blocks))"
 metadata:
   skill_type: preference
@@ -13,45 +13,53 @@ license: "MIT / CC-BY-SA-4.0"
 
 > Source: https://github.com/dirnbauer/webconsulting-skills
 
-> **Compatibility:** This skill targets **TYPO3 v14.3+** with **Content Blocks 2.x**. Always match the [Packagist `friendsoftypo3/content-blocks`](https://packagist.org/packages/friendsoftypo3/content-blocks) constraint to your Core version.
-> For **Content Blocks 2.x**, the line this skill targets, upstream requires **TYPO3 ≥ 14.3** (`typo3/cms-core: ^14.3`) — confirm the exact patch constraint on Packagist. The 1.x line was v13-only and is not what a v14 project installs.
-> Examples use TYPO3 v14 APIs and CB 2.x; adjust `composer.json` if upstream constraints differ.
+Target **TYPO3 v14.3+** with **Content Blocks 2.x**; the 1.x line is v13-only and does not resolve
+in a v14 project. Checked on Packagist 2026-10-31: the newest release, 2.4.10 (2026-09-22),
+requires `typo3/cms-core ^14.3.7` and PHP `^8.2`; 2.4.8 requires `^14.3.5`. Read the constraint of
+the release Composer actually selects. Verify every Content Blocks and Core API against the
+installed `vendor/` source, not memory or the online docs (this skill was spot-checked against
+Content Blocks 2.4.10 on TYPO3 14.3.9).
 
-> **TYPO3 API First:** Always use TYPO3's built-in APIs, core features, and established conventions before creating custom implementations. Do not reinvent what TYPO3 already provides. Always verify that the APIs and methods you use exist and are not deprecated in TYPO3 v14 by checking the official TYPO3 documentation.
+## Rules
 
-> **Migration Coverage:** Content Blocks migration and cross-skill handoff guidance are documented directly in this skill and its local add-ons.
+- **One `config.yaml` per block is the source of truth.** Content Blocks generates TCA, SQL,
+  TypoScript rendering, backend forms and label wiring from it. Do not hand-write TCA or SQL for a
+  block's own fields; change the YAML and run the schema update.
+- **Preserve existing records during migration.** Keep field identifiers, prefix settings,
+  `typeName`/CType values and Collection tables stable; a renamed identifier leaves records that
+  look empty. Read [Common Pitfalls & Hard-Won Lessons](references/common-pitfalls-and-hard-won-lessons.md)
+  before migrating Mask, fluid_styled_content or a classic extension.
+- **Give every nested or shared-name Collection an explicit `table:`.** A bare identifier such as
+  `items` or `pages` becomes the table name and can collide (pitfalls 1 and 5 in the reference above).
+- **Reusing `bodytext` alone does not enable rich text** for a new CType. For migration or preset
+  changes, read the [rich-text round-trip contract](references/rich-text-roundtrip.md).
+- **Link fields are objects, not strings.** For converted link columns, nested links or plugin type
+  restrictions, read [typed links and no-change saves](references/typed-link-migration.md).
+- **Backend previews:** on 14.3 a migrated preview that renders collections with the
+  `PageLayout/Grid` partial makes child rows use the parent's preview and throws `#1775553111`; read
+  [backend previews](references/19-backend-previews.md#child-rows-rendered-through-the-parents-preview).
+- **After creating or changing a block**, run `ddev typo3 cache:flush -g system` and
+  `ddev typo3 extension:setup --extension=<ext_key>`, then check the backend form, preview and
+  frontend output with real records.
+- **Visual design** (shadcn/ui tokens, shared Fluid atoms, icons, seed data) belongs to
+  `typo3-shadcn-content-elements`; this skill owns the content model.
 
-## 1. The Single Source of Truth Principle
+## Where to read next
 
-Content Blocks is the **modern approach** to creating custom content types in TYPO3. It eliminates redundancy by providing a **single YAML configuration** that generates:
+| Task | Read |
+|---|---|
+| Record types, page types, file types | [full guide](references/full-guide.md) sections 6–8 |
+| Field type options, prefixing, templating features | [full guide](references/full-guide.md) sections 9–11 |
+| Converting a classic TCA/SQL extension to Content Blocks, or back | [SKILL-MIGRATION.md](SKILL-MIGRATION.md) |
+| Troubleshooting a block that does not appear or save | [troubleshooting](references/16-troubleshooting.md) |
+| v14-only TCA features (country, itemsProcessors, per-colPos restrictions) | [v14-only changes](references/v14-only-changes.md) |
 
-- TCA (Table Configuration Array)
-- Database schema (SQL)
-- TypoScript rendering
-- Backend forms and previews
-- Labels and translations
-
-### Why Content Blocks?
-
-| Traditional Approach | Content Blocks Approach |
-|---------------------|------------------------|
-| Multiple TCA files | One `config.yaml` |
-| Manual SQL definitions | Auto-generated schema |
-| Separate TypoScript | Auto-registered rendering |
-| Scattered translations | Single `labels.xlf` |
-| Complex setup | Simple folder structure |
-
-## 2. Installation
+## 1. Installation
 
 ```bash
-# Install via Composer (DDEV recommended)
 ddev composer require friendsoftypo3/content-blocks
-
-# After installation, clear caches
 ddev typo3 cache:flush
 ```
-
-> **Version constraint:** Content Blocks **2.x** requires TYPO3 **≥ 14.3** (`typo3/cms-core: ^14.3`, tightened to a specific patch in recent releases). Do not pin 1.x in a v14 project — it is the v13 line and will not resolve.
 
 ### Security Configuration (Classic Mode)
 
@@ -62,7 +70,7 @@ For non-composer installations, deny web access to ContentBlocks folder:
 RewriteRule (?:typo3conf/ext|typo3/sysext|typo3/ext)/[^/]+/(?:Configuration|ContentBlocks|Resources/Private|Tests?|Documentation|docs?)/ - [F]
 ```
 
-## 3. Content Types Overview
+## 2. Content Types Overview
 
 Content Blocks supports four content types:
 
@@ -73,7 +81,7 @@ Content Blocks supports four content types:
 | `PageTypes` | `ContentBlocks/PageTypes/` | `pages` | Custom page types (blog, landing page) |
 | `FileTypes` | `ContentBlocks/FileTypes/` | `sys_file_reference` | Extended file references (photographer, copyright) |
 
-## 4. Folder Structure
+## 3. Folder Structure
 
 ```
 EXT:my_sitepackage/
@@ -114,7 +122,7 @@ EXT:my_sitepackage/
             └── config.yaml
 ```
 
-## 5. Creating Content Elements
+## 4. Creating Content Elements
 
 ### Kickstart Command (Recommended)
 
@@ -225,39 +233,12 @@ fields:
 </html>
 ```
 
-### shadcn/ui Frontend Template Pattern
+### Styled frontends
 
-When a Content Block should follow shadcn/ui styling, keep the Content Block YAML as the content model and move repeated visual structure into shared Fluid components. The `frontend.fluid.html` entrypoint should map `{data}` fields to typed atomic components rather than duplicating bespoke CSS in every block.
-
-```html
-<!-- templates/frontend.fluid.html -->
-<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
-      xmlns:d="http://typo3.org/ns/Vendor/Sitepackage/Components/ComponentCollection"
-      data-namespace-typo3-fluid="true">
-
-<section class="py-12 md:py-16">
-    <d:molecule.card class="mx-auto max-w-2xl">
-        <d:molecule.cardHeader>
-            <d:molecule.cardTitle>{data.header}</d:molecule.cardTitle>
-            <f:if condition="{data.subheadline}">
-                <d:molecule.cardDescription>{data.subheadline}</d:molecule.cardDescription>
-            </f:if>
-        </d:molecule.cardHeader>
-        <d:molecule.cardContent>
-            <f:format.html>{data.bodytext}</f:format.html>
-        </d:molecule.cardContent>
-    </d:molecule.card>
-</section>
-</html>
-```
-
-Guidelines:
-- Preserve existing field identifiers, `fixture.json`, labels, and editor workflows unless the content model itself is changing.
-- Use shared Fluid components for shadcn primitives such as Button, Badge, Card, Form controls, Tabs, Accordion, Alert, Table, and Sheet/Dialog shells.
-- Put `<f:argument>` type contracts in reusable Fluid components and partials. Avoid adding required arguments to a Content Block entry template unless the render context is fully controlled.
-- Use `f:asset.css` / `f:asset.script` only for block-specific assets. Shared shadcn/Tailwind tokens and utility classes belong in the site CSS entrypoint.
-- For interactive shadcn patterns, use Alpine or small vanilla controllers with ARIA and `data-state` attributes instead of React/Radix runtime dependencies.
-- Create or update styleguide fixtures so every Content Block can be rendered with realistic content in light and dark mode.
+When a block should follow shadcn/ui styling, keep `config.yaml` as the content model and map
+`{data}` fields to shared Fluid components instead of per-block CSS. Preserve existing field
+identifiers, `fixture.json`, labels and editor workflows unless the content model itself changes.
+Tokens, atoms, icons, previews and seed data are covered by `typo3-shadcn-content-elements`.
 
 ### Backend Preview Template
 
@@ -284,9 +265,7 @@ Guidelines:
 Migrated previews (Mask importer, `make:content-block`) dump raw fields; collections drawn with the
 `PageLayout/Grid` partial show empty cards for non-`tt_content` children. For one shared preview design,
 item lists with side-panel editing, link-field values and inline record labels, read
-[backend previews](references/19-backend-previews.md). On 14.3 a migrated preview that renders
-collections with `PageLayout/Grid` makes child rows use the parent's preview and throws `#1775553111`:
-[child rows rendered through the parent's preview](references/19-backend-previews.md#child-rows-rendered-through-the-parents-preview).
+[backend previews](references/19-backend-previews.md).
 
 
 ## Detailed Reference

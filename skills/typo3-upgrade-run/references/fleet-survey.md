@@ -9,6 +9,12 @@ projects, read-only, before any of them is started, to answer three questions:
 
 Run it when a batch of sites has to move to a new major. For one project, go straight to P00.
 
+## Contents
+
+- [The one rule](#the-one-rule)
+- [What to collect, per project](#what-to-collect-per-project)
+- [Reporting](#reporting)
+
 ## The one rule
 
 **Read only. Change nothing.** No `composer update`, no cache flush, no DDEV start, no writes of

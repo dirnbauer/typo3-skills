@@ -9,6 +9,15 @@ what to achieve, when it is done, and where its evidence goes. Flags: **R** inde
 Policy: `require_artifacts: true`, `require_forecast: true`, `require_feature_contracts: true`, `require_node_contracts: true`, `require_independent_review: true`, `guard_change_scope: true`, `recovery_change_budget: {"files":10,"lines":400}`, `serialize_mutations: true`, `shared_proof_reads: true`, `max_node_attempts: 3`, `max_total_retries: 12`.
 Nodes: 72; edges: 206; bounded retry edges: 37.
 
+## Contents
+
+- [Intake: identity, data, discovery and inventories (read-only)](#intake-identity-data-discovery-and-inventories-read-only)
+- [Baseline A](#baseline-a)
+- [Migration ladder](#migration-ladder)
+- [Specialist branches](#specialist-branches)
+- [Final proof and Contract A](#final-proof-and-contract-a)
+- [Contract B and handover](#contract-b-and-handover)
+
 ## Intake: identity, data, discovery and inventories (read-only)
 
 | Node | Phase | Owner | Mutation | Flags | Objective | Done when | Evidence |

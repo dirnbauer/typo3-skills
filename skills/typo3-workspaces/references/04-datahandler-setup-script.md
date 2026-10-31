@@ -2,6 +2,11 @@
 
 Continues `typo3-workspaces` from [full guide](full-guide.md).
 
+## Contents
+
+- [CLI Command: Create Workspace with DataHandler](#cli-command-create-workspace-with-datahandler)
+- [SQL Setup (LOCAL DDEV ONLY)](#sql-setup-local-ddev-only)
+
 ## 4. DataHandler Setup Script
 
 ### CLI Command: Create Workspace with DataHandler

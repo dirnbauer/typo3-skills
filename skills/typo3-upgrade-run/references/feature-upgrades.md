@@ -4,6 +4,14 @@ Phase P10, loops 200–220. Each runs **after** the core upgrade and **before** 
 and each is a declared-change loop: re-shoot the affected sample pages afterwards, and any rendering
 change needs an approval per difference class or it is a `regression`.
 
+## Contents
+
+- [Mandatory Core Redirects baseline](#mandatory-core-redirects-baseline)
+- [Loop 200 — Solr](#loop-200--solr)
+- [Loop 210 — Visual Editor](#loop-210--visual-editor)
+- [Loop 220 — CKEditor RTE](#loop-220--ckeditor-rte)
+- [Contract B loop 530 — Security headers](#contract-b-loop-530--security-headers)
+
 ## Mandatory Core Redirects baseline
 
 Every whole-site upgrade includes the Core Redirects module. During P05, prove whether

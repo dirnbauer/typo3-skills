@@ -6,6 +6,12 @@ thirteen closure checks carry the resulting evidence. Browser states and retry b
 Include selected journey timings in the existing runtime forecast. Count a shared test invocation
 once even when several assertions consume its report; do not reserve one full capture per feature.
 
+## Contents
+
+- [Intake](#intake)
+- [Final coverage](#final-coverage)
+- [Recovery and compatibility](#recovery-and-compatibility)
+
 ## Intake
 
 Copy `templates/run-directory/manifests/feature-contracts.example.json` to the run's

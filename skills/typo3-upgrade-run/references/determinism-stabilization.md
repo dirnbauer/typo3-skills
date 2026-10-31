@@ -8,6 +8,19 @@ Passing loop 000 by shrinking the sample, raising a threshold, or excluding a pa
 forbidden — it makes every later comparison meaningless, because the harness can then no longer tell
 a real regression from its own noise.
 
+## Contents
+
+- [The context](#the-context)
+- [The init script — run before any page code](#the-init-script--run-before-any-page-code)
+- [The style patch](#the-style-patch)
+- [Before every shot](#before-every-shot)
+- [Diagnosing by failure shape](#diagnosing-by-failure-shape)
+- [Server-side randomness and media adapters](#server-side-randomness-and-media-adapters)
+- [When a page genuinely cannot be stabilised](#when-a-page-genuinely-cannot-be-stabilised)
+- [Consent banners: verify by hand, then seed and remove](#consent-banners-verify-by-hand-then-seed-and-remove)
+- [Native video controls: hide during pixels, cover behavior separately](#native-video-controls-hide-during-pixels-cover-behavior-separately)
+- [Carousels: pinned to slide 1, and slide 2+ is declared untested](#carousels-pinned-to-slide-1-and-slide-2-is-declared-untested)
+
 ## The context
 
 ```js

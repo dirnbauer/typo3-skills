@@ -2,6 +2,14 @@
 
 Continues `typo3-solr` from [full guide](full-guide.md).
 
+## Contents
+
+- [Pages](#pages)
+- [Custom Records](#custom-records)
+- [Content Objects](#content-objects)
+- [Records Outside Siteroot](#records-outside-siteroot)
+- [Monitoring](#monitoring)
+
 ## 6. Index Queue Configuration
 
 The Index Queue is the central mechanism for getting TYPO3 records into Solr.

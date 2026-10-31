@@ -2,6 +2,13 @@
 
 Continues `typo3-accessibility` from [full guide](full-guide.md).
 
+## Contents
+
+- [6.1 TCA: Require Alt Text on Images](#61-tca-require-alt-text-on-images)
+- [6.2 TCA: Header Layout Options](#62-tca-header-layout-options)
+- [6.3 Form Framework: Accessible Forms (EXT:form)](#63-form-framework-accessible-forms-extform)
+- [6.4 Content Security Policy: Allow Inline Focus Styles](#64-content-security-policy-allow-inline-focus-styles)
+
 ## 6. TYPO3-Specific Configuration
 
 ### 6.1 TCA: Require Alt Text on Images

@@ -1,5 +1,14 @@
 # Twelve-project review — 2026-10-21
 
+## Contents
+
+- [Scope and evidence limits](#scope-and-evidence-limits)
+- [New or sharpened controls](#new-or-sharpened-controls)
+- [Owner-requested backend conventions](#owner-requested-backend-conventions)
+- [What not to turn into policy](#what-not-to-turn-into-policy)
+- [Timing evidence and efficient routing](#timing-evidence-and-efficient-routing)
+- [Implemented follow-up and remaining evidence](#implemented-follow-up-and-remaining-evidence)
+
 ## Scope and evidence limits
 
 Window: **2026-09-09 through 2026-10-21**, Europe/Vienna. Read-only inspection of all twelve

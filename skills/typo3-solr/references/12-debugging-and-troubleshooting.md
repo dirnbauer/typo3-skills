@@ -2,6 +2,17 @@
 
 Continues `typo3-solr` from [full guide](full-guide.md).
 
+## Contents
+
+- [Step-by-Step Troubleshooting Guide (Beginner)](#step-by-step-troubleshooting-guide-beginner)
+  - [Step 1: Understand the Architecture](#step-1-understand-the-architecture)
+  - [Step 2: Is Solr Reachable? (Connection Check)](#step-2-is-solr-reachable-connection-check)
+  - [Step 3: Is Content in the Index Queue? (Indexing Check)](#step-3-is-content-in-the-index-queue-indexing-check)
+  - [Step 4: Have Documents Arrived in Solr? (Solr Check)](#step-4-have-documents-arrived-in-solr-solr-check)
+  - [Step 5: Does the Frontend Show Results? (Frontend Check)](#step-5-does-the-frontend-show-results-frontend-check)
+  - [Step 6: Something Else is Wrong -- Enable Logging](#step-6-something-else-is-wrong----enable-logging)
+  - [Step 7: Still Stuck? Escalation Path](#step-7-still-stuck-escalation-path)
+
 ## 12. Debugging & Troubleshooting
 
 This section is the core reference for diagnosing and fixing EXT:solr issues. If you are new to EXT:solr, start with the step-by-step guide below before jumping to the reference sections.

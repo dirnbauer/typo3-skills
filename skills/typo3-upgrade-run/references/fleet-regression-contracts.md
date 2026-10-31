@@ -5,6 +5,16 @@ The [seven-project review](run-retrospective-2026-09-16.md) supplies observation
 The [twelve-project October review](run-retrospective-2026-10-21.md) adds specific missing assertions.
 Inspect the project's actual implementation before selecting assertions. Reuse its existing tests.
 
+## Contents
+
+- [One graph, feature-dependent evidence](#one-graph-feature-dependent-evidence)
+- [Mail, newsletter and CAPTCHA — interactions](#mail-newsletter-and-captcha--interactions)
+- [Tracking, CSP and context — interactions / backend-editor](#tracking-csp-and-context--interactions--backend-editor)
+- [Patch updates and real editor compatibility — backend-editor](#patch-updates-and-real-editor-compatibility--backend-editor)
+- [Cached behavior and responsive inputs — runtime / interactions](#cached-behavior-and-responsive-inputs--runtime--interactions)
+- [Routes and persisted content — http-dom, redirects, schema](#routes-and-persisted-content--http-dom-redirects-schema)
+- [Remote consequences stay in handover](#remote-consequences-stay-in-handover)
+
 ## One graph, feature-dependent evidence
 
 Record applicability for `mail`, `newsletter`, `captcha`, `tracking`, `backend`, `cache`, `routes`

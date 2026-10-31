@@ -4,7 +4,7 @@ description: "Fixes TYPO3 labels and localization: label files (locallang.xlf, l
 compatibility: "TYPO3 13.4 and TYPO3 14.x; TYPO3 14 preferred"
 metadata:
   skill_type: preference
-  version: "2.1.0"
+  version: "2.1.1"
   related_skills: "typo3-content-blocks, typo3-shadcn-content-elements, typo3-conformance, typo3-v14-reference"
   origin: "webconsulting"
 license: "MIT / CC-BY-SA-4.0"
@@ -345,6 +345,17 @@ Content Blocks labels commonly live beside the block in
 5. Convert generated v14-only catalogs to XLIFF 2.0 after the key list is known.
 
 
-## Detailed Reference
+## References
 
-Read [the full guide](references/full-guide.md) when the task needs detailed examples, long templates, troubleshooting matrices, appendices, or sections not included above. Keep this file unloaded for narrow tasks so the skill follows progressive disclosure.
+Load only the file the current task needs:
+
+- [Updating TYPO3 13 to TYPO3 14](references/updating-typo3-13-to-typo3-14.md): when moving label
+  files, references or formats from the v13 layout to v14 conventions.
+- [What to do if something fails](references/what-to-do-if-something-fails.md): when a label still
+  shows its key, a translation is ignored or caches keep an old label.
+- [Common pitfalls](references/common-pitfalls.md): when reviewing a label change before merging.
+- [Verification commands](references/verification-commands.md): when proving XML validity, unique
+  IDs and source/target parity.
+- [Quality bar](references/quality-bar.md): when judging whether translated copy is release-ready.
+- [FAQ](references/faq.md) and [official sources](references/official-sources.md): when a specific
+  question or an upstream citation is needed.

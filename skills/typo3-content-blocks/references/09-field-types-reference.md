@@ -2,6 +2,17 @@
 
 Continues `typo3-content-blocks` from [full guide](full-guide.md).
 
+## Contents
+
+- [Simple Fields](#simple-fields)
+- [Relational Fields](#relational-fields)
+- [Structural Fields](#structural-fields)
+- [Common Field Options](#common-field-options)
+- [File Field Example](#file-field-example)
+- [Select Field Example](#select-field-example)
+- [Collection Field Example (Inline IRRE)](#collection-field-example-inline-irre)
+- [Multilevel Collection Example](#multilevel-collection-example)
+
 ## 9. Field Types Reference
 
 ### Simple Fields

@@ -62,6 +62,17 @@
       "prompt": "Define the fields for a new record type.",
       "expect_skill": "typo3-content-blocks",
       "note": "Modelling precedes presentation."
+    },
+    {
+      "id": "typo3-records-list-types-behaviour-vcs-install",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "composer require webconsulting/records-list-types says the package could not be found. Should I set minimum-stability to dev so it installs?",
+      "assertions": [
+        "Checks whether the package is published on Packagist before changing anything.",
+        "Adds a scoped VCS repository entry to the root composer.json and requires a stable tag instead of lowering minimum-stability.",
+        "Reads the resolved release's composer.json constraints before running extension:setup."
+      ]
     }
   ]
 }

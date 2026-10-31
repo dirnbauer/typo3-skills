@@ -12,6 +12,19 @@ capabilities win when they preserve the used contract; new optional community pa
 adoption, maintenance and target compatibility. Existing local/customer features are not candidates
 for automatic removal just because they lack public download figures.
 
+## Contents
+
+- [Declare the blockers loudly, before any migration work](#declare-the-blockers-loudly-before-any-migration-work)
+- [1. On Packagist](#1-on-packagist)
+- [2. Local extension in packages/](#2-local-extension-in-packages)
+- [3. No v14-compatible release](#3-no-v14-compatible-release)
+- [4. Extract only the used provider surface](#4-extract-only-the-used-provider-surface)
+- [Persisted-reference scan before removal, replacement or extraction](#persisted-reference-scan-before-removal-replacement-or-extraction)
+- [Known blockers with a standing answer](#known-blockers-with-a-standing-answer)
+- [5. Still broken after migration attempts](#5-still-broken-after-migration-attempts)
+- [Recording](#recording)
+- [Interaction with the visual contract](#interaction-with-the-visual-contract)
+
 ## Declare the blockers loudly, before any migration work
 
 Resolve the whole set at inventory time and **say out loud, at the top of the plan, which extensions

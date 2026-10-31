@@ -2,6 +2,13 @@
 
 Continues `typo3-records-list-types` from [full guide](full-guide.md).
 
+## Contents
+
+- [Override Templates via TSconfig](#override-templates-via-tsconfig)
+- [Custom Record Actions](#custom-record-actions)
+- [Custom Thumbnail Logic](#custom-thumbnail-logic)
+- [JavaScript Hooks](#javascript-hooks)
+
 ## 13. Extending
 
 ### Override Templates via TSconfig

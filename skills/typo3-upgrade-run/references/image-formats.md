@@ -18,6 +18,15 @@ it is why AVIF is the default rather than a nice-to-have.
 
 ---
 
+## Contents
+
+- [1. Check what the processor can actually do — first, at P01](#1-check-what-the-processor-can-actually-do--first-at-p01)
+- [2. The TypoScript property is ext, not fileExtension](#2-the-typoscript-property-is-ext-not-fileextension)
+- [3. Force processing when the source is already the target size](#3-force-processing-when-the-source-is-already-the-target-size)
+- [4. Browser fallback: <picture>, not a bare <img>](#4-browser-fallback-picture-not-a-bare-img)
+- [5. Where NOT to use AVIF](#5-where-not-to-use-avif)
+- [6. Verify, do not assume](#6-verify-do-not-assume)
+
 ## 1. Check what the processor can actually do — first, at P01
 
 Never configure a format the installation cannot write; every image silently falls back and you

@@ -1,5 +1,15 @@
 # Seven-project upgrade follow-up — 2026-09-16
 
+## Contents
+
+- [Scope and evidence limits](#scope-and-evidence-limits)
+- [Project observations](#project-observations)
+- [New lessons versus the September 5 controls](#new-lessons-versus-the-september-5-controls)
+- [Do not generalize these workarounds](#do-not-generalize-these-workarounds)
+- [Task evidence and timing limits](#task-evidence-and-timing-limits)
+- [Implemented collection changes and remaining site work](#implemented-collection-changes-and-remaining-site-work)
+- [Collection validation](#collection-validation)
+
 ## Scope and evidence limits
 
 Window: **2026-08-05 through 2026-09-16**, approximately six weeks. Read local Git refs, selected

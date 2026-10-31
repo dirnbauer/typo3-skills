@@ -2,6 +2,12 @@
 
 Continues `typo3-v14-reference` from [full guide](full-guide.md).
 
+## Contents
+
+- [Static TCA Only](#static-tca-only)
+- [Auto-Created Columns from ctrl](#auto-created-columns-from-ctrl)
+- [TCA Overrides](#tca-overrides)
+
 ## 7. TCA Configuration (TYPO3 v14)
 
 ### Static TCA Only

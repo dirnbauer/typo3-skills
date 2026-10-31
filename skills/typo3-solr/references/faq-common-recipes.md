@@ -2,6 +2,12 @@
 
 Continues `typo3-solr` from [full guide](full-guide.md).
 
+## Contents
+
+- [One Table, Two Index Configs (e.g. News + Events from EXT:news)](#one-table-two-index-configs-eg-news--events-from-extnews)
+- [Different Detail Page URLs per Config](#different-detail-page-urls-per-config)
+- [Three or More Configs from One Table](#three-or-more-configs-from-one-table)
+
 ## FAQ / Common Recipes
 
 ### One Table, Two Index Configs (e.g. News + Events from EXT:news)

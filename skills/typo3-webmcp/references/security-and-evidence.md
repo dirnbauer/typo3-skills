@@ -2,6 +2,15 @@
 
 Read this reference before a tool accepts input, returns non-static content, or changes state.
 
+## Contents
+
+- [Threat boundaries](#threat-boundaries)
+- [Schema and output rules](#schema-and-output-rules)
+- [Deterministic test matrix](#deterministic-test-matrix)
+- [Agent evals](#agent-evals)
+- [Upgrade evidence](#upgrade-evidence)
+- [Sources and licences](#sources-and-licences)
+
 ## Threat boundaries
 
 WebMCP crosses four untrusted boundaries at once: agent-selected arguments, natural-language tool

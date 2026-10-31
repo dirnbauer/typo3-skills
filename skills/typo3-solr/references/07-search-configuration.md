@@ -2,6 +2,14 @@
 
 Continues `typo3-solr` from [full guide](full-guide.md).
 
+## Contents
+
+- [Essential Settings](#essential-settings)
+- [Faceting](#faceting)
+- [Suggest / Autocomplete](#suggest--autocomplete)
+- [Sorting, Highlighting, Spellcheck](#sorting-highlighting-spellcheck)
+- [Route Enhancers](#route-enhancers)
+
 ## 7. Search Configuration
 
 ### Essential Settings

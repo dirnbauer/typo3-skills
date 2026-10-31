@@ -11,6 +11,12 @@ wanted, and the evidence for it comes free from the audit below.
 
 ---
 
+## Contents
+
+- [1. The minimum set](#1-the-minimum-set)
+- [2. A generated Open Graph card](#2-a-generated-open-graph-card)
+- [3. The Impressum](#3-the-impressum)
+
 ## 1. The minimum set
 
 Run this first. It takes one command and tells you how much of the problem is real:

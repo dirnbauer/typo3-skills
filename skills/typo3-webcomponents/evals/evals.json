@@ -51,6 +51,17 @@
       "prompt": "Redraw our extension icons in the v14 line style.",
       "expect_skill": "typo3-icon14",
       "note": "SVG design, not JavaScript."
+    },
+    {
+      "id": "typo3-webcomponents-behaviour-frontend-reuse",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Our backend already ships a Lit status badge under @acme/site/backend/badge.js. Can the public website just import that same module so visitors get the badge too?",
+      "assertions": [
+        "Explains that backend import-map modules, top.TYPO3 and backend CSS are not available in frontend requests.",
+        "Defaults to semantic HTML, CSS or a small vanilla module for the frontend and names Lit only when a reusable island justifies the dependency.",
+        "Routes any frontend bundling of Lit to the frontend build pipeline (typo3-vite) instead of the backend import map."
+      ]
     }
   ]
 }

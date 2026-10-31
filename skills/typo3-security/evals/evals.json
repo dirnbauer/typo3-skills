@@ -74,6 +74,19 @@
         "Reports findings without modifying settings, credentials or services.",
         "Does not present every example as universally verified for the installed minor version."
       ]
+    },
+    {
+      "id": "file-extension-lists-replace-defaults",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "For hardening, set textfile_ext to txt,html,css,js and add sh to the upload deny list in settings.php.",
+      "assertions": [
+        "Explains that setting textfile_ext, mediafile_ext or miscfile_ext replaces the Core list, and starts from the installed 14.3 defaults",
+        "Appends to the Core default fileDenyPattern instead of replacing it, keeping pht, phpsh, shtml and .htaccess",
+        "Mentions security.system.enforceAllowedFileExtensions as the switch that turns the lists into an upload allow-list",
+        "Verifies keys and defaults against the installed TYPO3 source rather than memory"
+      ],
+      "note": "Regression for an example that silently dropped Core defaults; added 2026-10-31."
     }
   ]
 }

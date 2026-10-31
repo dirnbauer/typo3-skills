@@ -20,7 +20,8 @@ and maintained extension tools; it does not rebuild their scanners, parsers or m
 
    It blocks on the removed three-argument `addTCAcolumns()` signature, incomplete Composer extension
    metadata and `ext_emconf.php` retained by project-local packages. Use `--publishable key,key` only
-   for packages actually shipped through TER/Tailor or required by Classic mode.
+   for packages actually shipped through TER/Tailor or still installed on v13 or older; v14 Classic
+   mode reads the metadata from `composer.json` since 14.2 (Feature-108345).
    This helper checks collection-specific residuals; use the Core Extension Scanner first for
    supported compatibility discovery and native `fluid:analyze` for template diagnostics. Check
    actual file coverage, including legacy `.html`; JSON-mode exit 0 can still contain findings.

@@ -2,7 +2,7 @@
 name: typo3-design-system-page
 metadata:
   skill_type: preference
-description: "Build and maintain an accessible design-system overview inside a chosen TYPO3 installation: audit the rendered site and brand assets, document message, conditional contrast evidence, semantic colors and ramps, typography, foundations, components, imagery, and facts, then generate design.md, tokens.json, and a downloadable one-page PDF with a text-free AI visual. Use for living style guides, brand portals, design token documentation, corporate design pages, or design-system downloads. Insert content only after the user creates the target TYPO3 page and supplies its UID. Content Block schemas belong to typo3-content-blocks; product help centers belong to webconsulting-create-documentation."
+description: "Builds and maintains an accessible design-system overview inside a chosen TYPO3 installation: audit the rendered site and brand assets, document message, conditional contrast evidence, semantic colors and ramps, typography, foundations, components, imagery, and facts, then generate design.md, tokens.json, and a downloadable one-page PDF with a text-free AI visual. Use for living style guides, brand portals, design token documentation, corporate design pages, or design-system downloads. Insert content only after the user creates the target TYPO3 page and supplies its UID. Content Block schemas belong to typo3-content-blocks; product help centers belong to webconsulting-create-documentation."
 ---
 
 # TYPO3 design-system page

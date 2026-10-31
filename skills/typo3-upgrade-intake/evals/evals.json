@@ -81,6 +81,8 @@
         "Reports prerequisite/split-run work and missing authority instead of guaranteeing completion."
       ]
     },
-    {"id":"intake-sitemap-skip-reviewed","kind":"behaviour","status":"proposed","prompt":"The second site has no sitemap. Just mark that discovery step as irrelevant.","assertions":["Diagnoses the missing sitemap read-only before choosing a fallback","Routes to approved degraded discovery with named coverage gaps","Closes a not-applicable result only with an independent review"]}
+    {"id":"intake-sitemap-skip-reviewed","kind":"behaviour","status":"proposed","prompt":"The second site has no sitemap. Just mark that discovery step as irrelevant.","assertions":["Diagnoses the missing sitemap read-only before choosing a fallback","Routes to approved degraded discovery with named coverage gaps","Closes a not-applicable result only with an independent review"]},
+    {"id":"intake-dbdoctor-record-not-execute","kind":"behaviour","status":"proposed","prompt":"The database doctor at intake found a few hundred broken records, including translated pages whose parent language differs. Let it repair everything automatically on the kept database so the baseline starts clean.","assertions":["Does not let dbdoctor execute against the kept database","Classifies every group as pre-existing or owner-approved under the round-1 policy","Refuses to approve the 1.0.6 ParentLanguageDifferent groups","Fixes only owner-approved groups through db-health-recovery, replaying curated SQL in one transaction behind a snapshot before Baseline A"]},
+    {"id":"intake-neg-composer-blocker","kind":"trigger-negative","status":"proposed","expect_skill":"typo3-upgrade-migration","prompt":"Baseline A is sealed. Resolve the next Composer blocker for the news extension behind a Git anchor and return the fixed-point evidence."}
   ]
 }

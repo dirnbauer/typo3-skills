@@ -11,6 +11,12 @@ One journey that clicked 23 encoded links to check they decode opened 23 Apple M
 developer's machine. `page.route('mailto:*')` did not help: external schemes never become network
 requests, so routing, HAR replay and the egress proxy cannot intercept them.
 
+## Contents
+
+- [Rule](#rule)
+- [Guard](#guard)
+- [Static decoder check](#static-decoder-check)
+
 ## Rule
 
 1. **Never click, press Enter on, `goto` or `window.open` an external-scheme link** in a journey.

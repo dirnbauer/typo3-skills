@@ -17,9 +17,9 @@
     "a11y:manual:merge:file": "node scripts/merge-manual-review.mjs --file"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.12.1",
-    "@playwright/test": "^1.61.1",
-    "axe-core": "^4.12.1",
+    "@axe-core/playwright": "^4.14.0",
+    "@playwright/test": "^1.64.1",
+    "axe-core": "^4.14.0",
     "fast-xml-parser": "^5.10.0",
     "glob": "^13.0.6",
     "handlebars": "^4.7.9",

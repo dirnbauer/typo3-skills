@@ -2,6 +2,13 @@
 
 Continues `typo3-workspaces` from [full guide](full-guide.md).
 
+## Contents
+
+- [Quick Diagnostic Checklist](#quick-diagnostic-checklist)
+- [SQL Queries for Debugging (DDEV Local Only)](#sql-queries-for-debugging-ddev-local-only)
+- [Programmatic Permission Check](#programmatic-permission-check)
+- [Common Issues & Solutions](#common-issues--solutions)
+
 ## 8. Debugging & Troubleshooting
 
 ### Quick Diagnostic Checklist

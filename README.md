@@ -252,29 +252,29 @@ the upstream state recorded in [VENDORED.md](VENDORED.md).
 | `security-incident-reporting` | Builds security incident reports, DDoS post-mortems, timelines, IoC sections, CVE correlation, severity scoring… | webconsulting |
 | `thermo-nuclear-code-quality-review` | Run an exceptionally strict, review-only maintainability audit of a branch diff, focused on structural… | Cursor |
 | `typo3-a11y` | Use when building accessible navigation, forms, filters, tables, skip links, disclosure widgets, or reviewing… | Netresearch |
-| `typo3-accessibility` | Accessible markup patterns for TYPO3 v14: skip links, landmark regions, heading structure, keyboard and tab order… | webconsulting |
-| `typo3-backend-rights` | Build and audit TYPO3 backend editor rights after an explicit choice between one user-facing main group with… | webconsulting |
-| `typo3-batch` | Roll out one repeated change over multiple TYPO3 extensions in a monorepo or packages/ directory. Use when… | webconsulting |
+| `typo3-accessibility` | Writes and fixes accessible markup patterns for TYPO3 v14: skip links, landmark regions, heading structure… | webconsulting |
+| `typo3-backend-rights` | Builds and audits TYPO3 backend editor rights after an explicit choice between one user-facing main group with… | webconsulting |
+| `typo3-batch` | Rolls out one repeated change over multiple TYPO3 extensions in a monorepo or packages/ directory. Use when… | webconsulting |
 | `typo3-ckeditor5` | Use when developing CKEditor 5 custom plugins for TYPO3 v12+ (v14.3 LTS bundles CKE5 v47; v13 shipped 41-42)… | Netresearch |
 | `typo3-conformance` | Use when checking which TYPO3 versions an extension says it supports, when composer.json and ext_emconf.php… | Netresearch |
-| `typo3-content-blocks` | Defines what a TYPO3 block IS: its field definitions in config.yaml, and how fields nest into collections or… | webconsulting |
+| `typo3-content-blocks` | Defines what a TYPO3 block is: its field definitions in config.yaml, and how fields nest into collections or… | webconsulting |
 | `typo3-core-contributions` | Use when contributing to TYPO3 Core — Forge issues, Gerrit patches, cherry-picks, CI debugging — or when working… | Netresearch |
 | `typo3-datahandler` | Creates, updates, moves, localizes and deletes TYPO3 records programmatically from PHP - import scripts, CLI… | webconsulting |
 | `typo3-ddev` | Use whenever a running TYPO3 instance is wanted, started or reached: ddev commands, backend URLs, DDEV setup… | Netresearch |
-| `typo3-design-system-page` | Build and maintain an accessible design-system overview inside a chosen TYPO3 installation: audit the rendered… | webconsulting |
+| `typo3-design-system-page` | Builds and maintains an accessible design-system overview inside a chosen TYPO3 installation: audit the rendered… | webconsulting |
 | `typo3-docs` | Use when TYPO3 extension documentation has to render on docs.typo3.org, which builds a manual from… | Netresearch |
 | `typo3-extension-upgrade` | Use when an extension has to work with a newer or the current TYPO3 LTS, when a version bump breaks compatibility… | Netresearch |
-| `typo3-fractor` | Automatically rewrite TYPO3 non-PHP files with Fractor: outdated TypoScript condition syntax, FlexForm XML… | webconsulting |
+| `typo3-fractor` | Automatically rewrites TYPO3 non-PHP files with Fractor: outdated TypoScript condition syntax, FlexForm XML… | webconsulting |
 | `typo3-icon14` | Designs and migrates TYPO3 extension icons to the v14 line-art style, including source SVG cleanup, light/dark… | webconsulting |
 | `typo3-idea-extension-blog` | Evaluates whether an outside idea is worth building as a TYPO3 extension, checks whether someone has already done… | webconsulting |
-| `typo3-initial-release` | Prepare the first public 1.0.0 release of a TYPO3 14.3+ extension. Use for initial TER upload or Packagist… | webconsulting |
-| `typo3-jev` | Configure and integrate TypeSafe Jev decisions through EXT:webcon_jev (webconsulting/webcon-jev, also called… | webconsulting |
+| `typo3-initial-release` | Prepares the first public 1.0.0 release of a TYPO3 14.3+ extension. Use for initial TER upload or Packagist… | webconsulting |
+| `typo3-jev` | Configures and integrates TypeSafe Jev decisions through EXT:webcon_jev (webconsulting/webcon-jev, also called… | webconsulting |
 | `typo3-news-tags` | Bulk-generates thematic tags for georgringer/news (EXT:news) and assigns them to existing news records via keyword… | webconsulting |
-| `typo3-playwright` | Use when building or repairing Playwright browser tests for TYPO3 visitor journeys, AJAX widgets, CKEditor… | webconsulting |
+| `typo3-playwright` | Builds and repairs Playwright browser tests for TYPO3, turning a component inventory into executable assertions… | webconsulting |
 | `typo3-powermail` | Builds and debugs Powermail 13+ contact and enquiry forms in TYPO3: form setup and validation, conditional fields… | webconsulting |
 | `typo3-project-upgrade` | Use when upgrading a deployed TYPO3 project/instance to a new LTS version (v14.3 LTS is the current target… | Netresearch |
 | `typo3-records-list-types` | Changes how records are presented in the TYPO3 v14 Records module: cards with thumbnails instead of a plain table… | webconsulting |
-| `typo3-rector` | Automatically fix deprecated PHP calls in TYPO3 code by running Rector: configuration, dry run, review the diff… | webconsulting |
+| `typo3-rector` | Automatically fixes deprecated PHP calls in TYPO3 code by running Rector: configuration, dry run, review the diff… | webconsulting |
 | `typo3-scheduler-jobs` | Audits, plans, configures, groups, and verifies TYPO3 14.3 Scheduler tasks for a specific installation, including… | webconsulting |
 | `typo3-security` | Hardens TYPO3 v14 installations and extensions: secure configuration, trusted hosts, file permissions, locking… | webconsulting |
 | `typo3-seo` | Makes TYPO3 pages show up correctly in search engines like Google through XML sitemaps, canonical URLs, hreflang… | webconsulting |
@@ -286,18 +286,18 @@ the upstream state recorded in [VENDORED.md](VENDORED.md).
 | `typo3-testing` | Use when a reported defect has to be reproduced as a failing test before it is fixed, when a change to a template… | Netresearch |
 | `typo3-translations` | Fixes TYPO3 labels and localization: label files (locallang.xlf, labels.xlf) in XLIFF 1.2 and 2.0, singular and… | webconsulting |
 | `typo3-typoscript-ref` | Use when writing, editing, reviewing or debugging TypoScript, TSconfig or Fluid templates in TYPO3 projects (v14.3… | Netresearch |
-| `typo3-upgrade-baseline` | Build and seal the deterministic pre-change Baseline A for a whole-site TYPO3 14.3 upgrade graph. Use when… | webconsulting |
-| `typo3-upgrade-closure` | Prove and close Contract A after a whole-site TYPO3 14.3 upgrade. Use when the target is stable for… | webconsulting |
+| `typo3-upgrade-baseline` | Builds and seals the deterministic pre-change Baseline A for a whole-site TYPO3 14.3 upgrade graph. Use when… | webconsulting |
+| `typo3-upgrade-closure` | Proves and closes Contract A after a whole-site TYPO3 14.3 upgrade. Use when the target is stable for… | webconsulting |
 | `typo3-upgrade-effort-model` | Use when estimating effort for TYPO3 LTS major version upgrades (current target: v14.3 LTS, released 2026-04-21)… | Netresearch |
-| `typo3-upgrade-intake` | Perform the read-only preflight for an orchestrated CMS transition: prove the selected repository, local… | webconsulting |
-| `typo3-upgrade-migration` | Execute one graph-authorized dependency, code, schema, or data migration node within a whole-site TYPO3 v12/v13 to… | webconsulting |
-| `typo3-upgrade-retrospective` | Audit one or more past or incomplete TYPO3 upgrade runs, project repositories, Codex tasks/threads, and evidence… | webconsulting |
-| `typo3-upgrade-run` | Plan and execute the entire DDEV-based TYPO3 project/site update from 12 or 13 to supported 14.3 LTS and prove… | webconsulting |
-| `typo3-v14-reference` | TYPO3 v14 API reference: how to write v14 code. Covers controllers, building a view with ViewFactory, Fluid… | webconsulting |
+| `typo3-upgrade-intake` | Performs the read-only preflight for an orchestrated CMS transition: proves the selected repository, local… | webconsulting |
+| `typo3-upgrade-migration` | Executes one graph-authorized dependency, code, schema, or data migration node within a whole-site TYPO3 v12/v13… | webconsulting |
+| `typo3-upgrade-retrospective` | Audits one or more past or incomplete TYPO3 upgrade runs, project repositories, Codex tasks/threads, and evidence… | webconsulting |
+| `typo3-upgrade-run` | Plans and executes the entire DDEV-based TYPO3 project/site update from 12 or 13 to supported 14.3 LTS and proves… | webconsulting |
+| `typo3-v14-reference` | Shows how to write TYPO3 v14 code as a v14 API reference. Covers controllers, building a view with ViewFactory… | webconsulting |
 | `typo3-visual-editor` | Lets TYPO3 editors click into a page and type directly on the frontend instead of opening backend forms, using… | webconsulting |
 | `typo3-vite` | Use when configuring Vite 7 for TYPO3 v13/v14 LTS projects, setting up SCSS architecture with Bootstrap 5.3… | Netresearch |
 | `typo3-wcag22-aa-agentic` | Runs automated accessibility audits against a live TYPO3 URL with Playwright and axe-core, maps every violation… | webconsulting |
-| `typo3-webcomponents` | Build, review, or migrate TYPO3 v14 backend Web Components with Lit, ES module import maps… | webconsulting |
+| `typo3-webcomponents` | Builds, reviews, or migrates TYPO3 v14 backend Web Components with Lit, ES module import maps… | webconsulting |
 | `typo3-webmcp` | Designs, implements, secures, and verifies browser-side WebMCP tools for TYPO3 14.3 frontends through… | webconsulting |
 | `typo3-workspaces` | Lets TYPO3 editors prepare and hold finished content before it goes live, then stage, review and publish it. Use… | webconsulting |
 | `web-design-guidelines` | Review UI code for Web Interface Guidelines compliance. Use when asked to \"review my UI\", \"check… | Vercel |

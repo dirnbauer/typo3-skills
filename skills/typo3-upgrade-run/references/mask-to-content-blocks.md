@@ -9,6 +9,18 @@ There is an importer, and it does most of the work. **The trap is when you run i
 
 ---
 
+## Contents
+
+- [The sequencing trap — read this before planning the upgrade](#the-sequencing-trap--read-this-before-planning-the-upgrade)
+- [Before you start](#before-you-start)
+- [Running it](#running-it)
+- [What the importer does not do](#what-the-importer-does-not-do)
+- [Preserve the content API, not only the rendered HTML](#preserve-the-content-api-not-only-the-rendered-html)
+- [Six fixes the generated blocks needed](#six-fixes-the-generated-blocks-needed)
+- [Backend previews that crash on 14.3](#backend-previews-that-crash-on-143)
+- [Proving it worked](#proving-it-worked)
+- [If you are already on v14](#if-you-are-already-on-v14)
+
 ## The sequencing trap — read this before planning the upgrade
 
 The importer runs on **v13**, not v14:

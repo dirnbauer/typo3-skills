@@ -4,6 +4,16 @@ Schema convergence is not data integrity. A database analyzer can become green w
 truncated, relations point nowhere, workspace overlays are lost or obsolete columns containing
 live data are dropped. Use this playbook around P09 and every destructive cleanup.
 
+## Contents
+
+- [Pre-migration data checks](#pre-migration-data-checks)
+- [Move data before removing its source model](#move-data-before-removing-its-source-model)
+- [Review all eight schema operation types](#review-all-eight-schema-operation-types)
+- [Stage destructive changes reversibly](#stage-destructive-changes-reversibly)
+- [Relations and generated files](#relations-and-generated-files)
+- [Generated-artifact guard](#generated-artifact-guard)
+- [Exit evidence](#exit-evidence)
+
 ## Pre-migration data checks
 
 Inspect source-version assumptions before running schema migrations. Old databases often contain

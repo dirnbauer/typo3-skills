@@ -135,6 +135,18 @@
         "Re-runs component, axe and Lighthouse quality gates"
       ],
       "files": []
+    },
+    {
+      "id": "typo3-webmcp-behaviour-06",
+      "kind": "behaviour",
+      "status": "proposed",
+      "prompt": "Expose our appointment booking as a WebMCP tool. The agent already asks the user, so no extra confirmation in the page is needed.",
+      "assertions": [
+        "Sets consequentialHint on the booking tool and does not mark it readOnlyHint",
+        "Keeps a visible human confirmation immediately before the booking is sent",
+        "Reuses the same server validation, CSRF protection and rate limits as the human form"
+      ],
+      "note": "Covers the consequentialHint annotation of the 2026-10-27 draft; added 2026-10-31."
     }
   ]
 }

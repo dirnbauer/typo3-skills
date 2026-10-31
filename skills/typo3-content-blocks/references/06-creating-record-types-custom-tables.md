@@ -2,6 +2,15 @@
 
 Continues `typo3-content-blocks` from [full guide](full-guide.md).
 
+## Contents
+
+- [Extbase-Compatible Table Naming](#extbase-compatible-table-naming)
+- [Minimal Record Type](#minimal-record-type)
+- [Full Record Type Example](#full-record-type-example)
+- [Record Type options (reference)](#record-type-options-reference)
+- [Multi-Type Records (Single Table Inheritance)](#multi-type-records-single-table-inheritance)
+- [Record Types as Collection Children](#record-types-as-collection-children)
+
 ## 6. Creating Record Types (Custom Tables)
 
 Record Types create **custom database tables** for structured data like teams, products, events, etc.

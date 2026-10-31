@@ -11,7 +11,13 @@ Early Access Programme for TYPO3 14. Do not claim there is no v14 vendor offerin
 
 The dirnbauer Powermail fork's reviewed **14.0.3.4** tag requires Core `^14.3.6`,
 PHP `>=8.3 <8.6`. The conditions fork's `typo3-v14` branch requires PHP `^8.4`,
-Core `^14.3` and Powermail `^14.0`. Its observed tags contain no v14 release.
+Core `^14.3` and Powermail `^14.0`. On 2026-09-26 its tags contained no v14 release.
+
+Rechecked **2026-10-31**: Packagist still lists 13.3.0 and 13.1.2 as the newest public
+releases. The Powermail fork's newest tag is **14.0.3.9** (same Core/PHP requirements), and
+the conditions fork now has tag **14.0.0** (`004f0bfe`; PHP `^8.4`, Core `^14.3`, Powermail
+`^14.0`, ships `In2code\PowermailCond\Event\EvaluateRuleEvent` and the `in2code/powermail-cond`
+set). Prefer that tag over the moving branch.
 For the pair, use PHP 8.4 (or a separately verified compatible version) and satisfy the
 stricter Powermail Core floor. A fork tag is not an official in2code release.
 
@@ -42,7 +48,7 @@ not inherited by Composer. Restrict each repository to its intended package:
   ],
   "require": {
     "in2code/powermail": "^14.0",
-    "in2code/powermail_cond": "dev-typo3-v14"
+    "in2code/powermail_cond": "^14.0"
   }
 }
 ```
@@ -50,8 +56,8 @@ not inherited by Composer. Restrict each repository to its intended package:
 Merge rather than replace existing repositories/requirements. Resolve the latest compatible
 stable Powermail tag with the normal scoped Composer update workflow; inspect the selected
 version and lock references. Do not broadly lower `minimum-stability` or use `--ignore-platform-reqs`.
-Keep the condition branch explicit: branch updates move, `composer install` from the
-committed lockfile does not. Review the package diffs on each update.
+If a project must stay on `dev-typo3-v14`, keep the branch explicit: branch updates move,
+`composer install` from the committed lockfile does not. Review the package diffs on each update.
 
 Composer behavior: [repositories are root-only](https://getcomposer.org/doc/05-repositories.md),
 [repository filtering](https://getcomposer.org/doc/articles/repository-priorities.md).

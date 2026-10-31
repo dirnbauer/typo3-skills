@@ -7,6 +7,15 @@ with `t3u init`, collect this evidence during the read-only intake node, then se
 t3u runtime-seal --evidence .typo3-update/nodes/intake/runtime-size.json
 ```
 
+## Contents
+
+- [Profiles](#profiles)
+- [Owner-approved extension or waiver](#owner-approved-extension-or-waiver)
+- [Feasibility before mutation](#feasibility-before-mutation)
+- [Measured fleet durations](#measured-fleet-durations)
+- [Classification](#classification)
+- [Evidence format](#evidence-format)
+
 ## Profiles
 
 | Profile | Hard deadline | Migration cutoff | Closure reserve |

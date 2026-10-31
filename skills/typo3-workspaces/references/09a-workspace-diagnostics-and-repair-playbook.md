@@ -2,6 +2,14 @@
 
 Continues `typo3-workspaces` from [full guide](full-guide.md).
 
+## Contents
+
+- [First Rule: Separate Proven Database Bugs from Manual-Only Risks](#first-rule-separate-proven-database-bugs-from-manual-only-risks)
+- [Automatic Checks to Run](#automatic-checks-to-run)
+- [Failure Classes and How to Solve Them](#failure-classes-and-how-to-solve-them)
+- [Manual-Only Failures](#manual-only-failures)
+- [Repair Rules](#repair-rules)
+
 ## 9a. Workspace Diagnostics and Repair Playbook
 
 Use this when a workspace UI says records are pending but publish does nothing,

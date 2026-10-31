@@ -1,7 +1,7 @@
 ---
 name: typo3-upgrade-baseline
 description: >-
-  Build and seal the deterministic pre-change Baseline A for a whole-site TYPO3 14.3
+  Builds and seals the deterministic pre-change Baseline A for a whole-site TYPO3 14.3
   upgrade graph. Use when preflight passed and source evidence is ready, or when repeated
   screenshots of an untouched render disagree because of nondeterministic GIF/carousel,
   lazy media, consent state, sitemap, browser session, font, image, or harness input. Owns URL manifest, fingerprints, component journey
