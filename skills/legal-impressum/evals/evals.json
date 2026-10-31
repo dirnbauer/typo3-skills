@@ -64,7 +64,8 @@
       "kind": "trigger-negative",
       "expect_skill": "typo3-content-blocks",
       "prompt": "Build a reusable content element for legal pages so editors can maintain the Impressum and privacy policy themselves.",
-      "note": "The deliverable is a Content Block; the legal wording is not what is being asked for."
+      "note": "The deliverable is a Content Block; the legal wording is not what is being asked for.",
+      "known_limitation": "Lexical proxy: 'legal', 'Impressum' and 'privacy policy' are this skill's own vocabulary, and the deliverable (a Content Block) is only implied by 'reusable content element'. Rewording either description to win would tune the proxy, not routing (SKILL-SPEC S4)."
     },
     {
       "status": "draft",
