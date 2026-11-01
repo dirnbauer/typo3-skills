@@ -41,6 +41,10 @@ For maps, lazy media, on-demand CSS/JS or a changed asset build, read
 [dynamic-component proof](references/dynamic-component-proof.md). Keep deterministic pixel fixtures
 separate from real widget journeys and verify rendered asset hashes before expensive captures.
 
+For paired staging/live captures, large screenshot sets or lossless AVIF evidence, read
+[reliable regression captures](references/reliable-regression-captures.md). An image-loading warning
+does not satisfy a requirement that every selected page has finished loading its images.
+
 ## Hard rules
 
 - **Never activate an external-scheme link.** A click, Enter or `goto` on `mailto:`, `tel:`, `sms:`,
